@@ -1,0 +1,42 @@
+<!-- https://github.com/i-pi/pimd-mooc/blob/main/3-advanced-pimd.ipynb -->
+<simulation verbosity='medium'>
+    <output prefix='simulation'>
+        <properties filename='out' stride='100'>[ step, time, conserved, temperature, kinetic_opsc, kinetic_tdsc,
+            potential ]
+        </properties>
+        <trajectory filename='pos' stride='100'>positions</trajectory>
+        <checkpoint stride='100'/>
+    </output>
+    <total_steps>100000</total_steps>
+    <prng>
+        <seed>32415</seed>
+    </prng>
+    <ffsocket name='driver' mode='unix' pbc='False'>
+        <address>driver</address>
+    </ffsocket>
+    <system>
+        <!-- change number of beads here -->
+        <initialize nbeads='1'>
+            <file mode='ase'>init.xyz</file>
+            <velocities mode='thermal' units='kelvin'>1</velocities>
+        </initialize>
+        <forces>
+            <force forcefield='driver'></force>
+        </forces>
+        <motion mode='dynamics'>
+            <fixcom>False</fixcom>
+            <dynamics mode='sc'>
+                <timestep>0.01</timestep>
+                <nmts>[1]</nmts>
+                <thermostat mode='pile_l'>
+                    <tau>10</tau>
+                    <pile_lambda>0.5</pile_lambda>
+                </thermostat>
+            </dynamics>
+        </motion>
+        <ensemble>
+            <!-- change temperature here -->
+            <temperature>1</temperature>
+        </ensemble>
+    </system>
+</simulation>
