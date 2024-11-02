@@ -1,8 +1,8 @@
 <!-- https://github.com/i-pi/pimd-mooc/blob/main/3-advanced-pimd.ipynb -->
 <simulation verbosity='medium'>
     <output prefix='simulation'>
-        <properties filename='out' stride='100'>[ step, time, conserved, temperature, kinetic_opsc, kinetic_tdsc,
-            potential ]
+        <properties filename='out' stride='100'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
+            kinetic_md{electronvolt}, potential{electronvolt}, pressure_md{megapascal} ]
         </properties>
         <trajectory filename='pos' stride='100'>positions</trajectory>
         <checkpoint stride='100'/>
@@ -17,13 +17,12 @@
     <system>
         <initialize nbeads='1'>
             <file mode='ase'>init.xyz</file>
-            <velocities mode='thermal' units='kelvin'>1</velocities>
+            <velocities mode='thermal' units='kelvin'>300</velocities>
         </initialize>
         <forces>
             <force forcefield='driver'></force>
         </forces>
         <motion mode='dynamics'>
-            <fixcom>False</fixcom>
             <dynamics mode='sc'>
                 <timestep>0.01</timestep>
                 <nmts>[1]</nmts>
@@ -34,7 +33,7 @@
             </dynamics>
         </motion>
         <ensemble>
-            <temperature>1</temperature>
+            <temperature>300</temperature>
         </ensemble>
     </system>
 </simulation>
