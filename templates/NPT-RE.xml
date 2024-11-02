@@ -1,3 +1,4 @@
+<!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
 <simulation verbosity='high'>
     <output prefix='simulation'>
         <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},

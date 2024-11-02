@@ -15,7 +15,6 @@
         <address>driver</address>
     </ffsocket>
     <system>
-        <!-- change number of beads here -->
         <initialize nbeads='1'>
             <file mode='ase'>init.xyz</file>
             <velocities mode='thermal' units='kelvin'>1</velocities>
@@ -35,7 +34,6 @@
             </dynamics>
         </motion>
         <ensemble>
-            <!-- change temperature here -->
             <temperature>1</temperature>
         </ensemble>
     </system>

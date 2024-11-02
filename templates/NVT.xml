@@ -1,6 +1,6 @@
+<!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
 <simulation verbosity='high'>
     <output prefix='simulation'>
-        <!-- Select the properties and trajectories of your liking. If you want the same units as in ASE, just specify  {ase}. -->
         <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
             kinetic_md{electronvolt}, potential{electronvolt}, pressure_md{megapascal} ]
         </properties>
@@ -28,7 +28,6 @@
                 <thermostat mode='svr'>
                     <tau units='femtosecond'>200</tau>
                 </thermostat>
-                <!-- Change as per your system  -->
                 <timestep units='femtosecond'>0.50</timestep>
             </dynamics>
         </motion>

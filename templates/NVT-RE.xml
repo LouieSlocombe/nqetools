@@ -1,3 +1,4 @@
+<!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
 <simulation verbosity='high'>
     <output prefix='simulation'>
         <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
@@ -35,7 +36,6 @@
                         <thermostat mode='svr'>
                             <tau units='femtosecond'>100</tau>
                         </thermostat>
-                        <!-- Change as per your system  -->
                         <timestep units='femtosecond'>0.50</timestep>
                     </dynamics>
                 </motion>
