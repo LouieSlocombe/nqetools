@@ -1,6 +1,6 @@
 import os
 import sys
-
+from scipy.constants import physical_constants
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
     """ Adds to system paths so that one can run from the jupyter
@@ -18,3 +18,8 @@ def rm_ipi_tmp(tmp=r"/tmp/ipi_localhost"):
             pass
     return None
 
+
+
+
+# Conversion factor from Bohr to Angstrom
+bohr_to_angstrom = physical_constants["Bohr radius"][0] * 1e10

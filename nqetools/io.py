@@ -9,9 +9,19 @@ import ase.io
 import numpy as np
 from ipi.utils.io import read_file
 
+from nqetools.tools import bohr_to_angstrom
+
 
 def read_ipi_xyz(filename):
-    """ Reads a file in xyz i-PI format and returns it in ASE format. """
+    """
+    Reads a file in xyz i-PI format and returns it in ASE format.
+
+    Parameters:
+    filename (str): The path to the xyz file in i-PI format.
+
+    Returns:
+    list: A list of ASE Atoms objects representing the frames in the file.
+    """
 
     file_handle = open(filename, "r")
     frames = []
@@ -19,8 +29,8 @@ def read_ipi_xyz(filename):
         try:
             ret = read_file("xyz", file_handle)
             frames.append(ase.Atoms(ret["atoms"].names,
-                                    positions=ret["atoms"].q.reshape((-1, 3)) * 0.529177,
-                                    cell=ret["cell"].h.T * 0.529177, pbc=True))
+                                    positions=ret["atoms"].q.reshape((-1, 3)) * bohr_to_angstrom,
+                                    cell=ret["cell"].h.T * bohr_to_angstrom, pbc=True))
         except EOFError:
             break
         except:
@@ -29,13 +39,21 @@ def read_ipi_xyz(filename):
 
 
 def read_ipi_output(filename):
-    """ Reads an i-PI output file and returns a dictionary with the properties in a tidy order. """
+    """
+    Reads an i-PI output file and returns a dictionary with the properties in a tidy order.
+
+    Parameters:
+    filename (str): The path to the i-PI output file.
+
+    Returns:
+    dict: A dictionary where keys are property names and values are the corresponding data columns.
+    """
 
     f = open(filename, "r")
 
     regex = re.compile(".*column *([0-9]*) *--> ([^ {]*)")
 
-    fields = [];
+    fields = []
     cols = []
     for line in f:
         if line[0] == "#":
@@ -61,23 +79,49 @@ def read_ipi_output(filename):
 
 
 def write_xml(root, file):
-    # Make sure the directory exists
+    """
+    Writes an XML tree to a file, creating any necessary directories.
+
+    Parameters:
+    root (xml.etree.ElementTree.Element): The root element of the XML tree.
+    file (str): The path to the file where the XML tree will be written.
+
+    Returns:
+    None
+    """
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    # Write the input file
-    tree = ET.ElementTree(root)
-    tree.write(file)
+    ET.ElementTree(root).write(file)
     return None
 
 
 def write_xyz(atoms, file, vacuum=20.0):
+    """
+    Writes an ASE Atoms object to an XYZ file, ensuring the directory exists and centering the atoms with a specified vacuum.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE Atoms object to write.
+    file (str): The path to the output XYZ file.
+    vacuum (float, optional): The vacuum padding to apply when centering the atoms. Default is 20.0.
+
+    Returns:
+    ase.Atoms: The centered ASE Atoms object.
+    """
     atoms.center(vacuum=vacuum)
-    # Make sure the directory exists
     os.makedirs(os.path.dirname(file), exist_ok=True)
     ase.io.write(file, atoms)
     return atoms
 
 
 def remove_directory(directory):
+    """
+    Removes a directory if it exists, otherwise prints a message.
+
+    Parameters:
+    directory (str): The path to the directory to be removed.
+
+    Returns:
+    None
+    """
     if os.path.exists(directory):
         shutil.rmtree(directory)
     else:
@@ -86,16 +130,46 @@ def remove_directory(directory):
 
 
 def copy_and_rename_file(src, dst_dir, new_name):
-    dst = os.path.abspath(os.path.join(dst_dir, new_name))
-    shutil.copy(src, dst)
+    """
+    Copies a file to a new directory and renames it.
+
+    Parameters:
+    src (str): The path to the source file.
+    dst_dir (str): The path to the destination directory.
+    new_name (str): The new name for the copied file.
+
+    Returns:
+    None
+    """
+    shutil.copy(src, os.path.join(dst_dir, new_name))
     return None
 
 
 def list_files_with_pattern(directory, pattern):
+    """
+    Lists files in a directory that match a given pattern.
+
+    Parameters:
+    directory (str): The path to the directory to search in.
+    pattern (str): The pattern to match files against.
+
+    Returns:
+    list: A list of file paths that match the given pattern.
+    """
     return glob.glob(os.path.join(directory, pattern))
 
 
 def get_final_xyz(dir, sub="*FINAL_*.xyz"):
+    """
+    Filters and returns the final XYZ file from a directory.
+
+    Parameters:
+    dir (str): The path to the directory to search in.
+    sub (str, optional): The pattern to match files against. Default is "*FINAL_*.xyz".
+
+    Returns:
+    str: The path to the final XYZ file that matches the criteria.
+    """
     l = list_files_with_pattern(dir, sub)
     # Only select files that end with xyz
     l_filt = [f for f in l if f.endswith(".xyz")]
@@ -107,10 +181,31 @@ def get_final_xyz(dir, sub="*FINAL_*.xyz"):
 
 
 def get_final_hess(dir, sub=f"*FINAL.hess*"):
+    """
+    Retrieves the final Hessian file from a directory.
+
+    Parameters:
+    dir (str): The path to the directory to search in.
+    sub (str, optional): The pattern to match files against. Default is "*FINAL.hess*".
+
+    Returns:
+    str: The path to the final Hessian file that matches the criteria.
+    """
     return list_files_with_pattern(dir, sub)[0]
 
 
 def copy_xyz(file_in, new_dir, file_out="init.xyz"):
+    """
+    Copies an XYZ file to a new directory, renaming it if necessary.
+
+    Parameters:
+    file_in (str): The path to the input XYZ file.
+    new_dir (str): The path to the destination directory.
+    file_out (str, optional): The name for the output file. Default is "init.xyz".
+
+    Returns:
+    None
+    """
     os.makedirs(new_dir, exist_ok=True)
     # Load the file
     atoms = ase.io.read(file_in, index=":")
@@ -124,6 +219,17 @@ def copy_xyz(file_in, new_dir, file_out="init.xyz"):
 
 
 def copy_hess(file_in, new_dir, file_out="hessian.dat"):
+    """
+    Copies a Hessian file to a new directory, renaming it if necessary.
+
+    Parameters:
+    file_in (str): The path to the input Hessian file.
+    new_dir (str): The path to the destination directory.
+    file_out (str, optional): The name for the output file. Default is "hessian.dat".
+
+    Returns:
+    None
+    """
     os.makedirs(new_dir, exist_ok=True)
     copy_and_rename_file(file_in, new_dir, file_out)
     return None
