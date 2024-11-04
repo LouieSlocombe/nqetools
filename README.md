@@ -14,13 +14,7 @@ Conda one line `conda install numpy matplotlib`
 Pip one line `pip install ase sella ipi`
 
 # MACE
-Now, to use Mace, there are two options:
-
-## mace-jax
-For fast model eval:
-- mace-jax `pip install git+https://github.com/ACEsuit/mace-jax`
-
-## mace-torch
-For model eval and training:
-- Follow the instructions here, using conda is probably better `https://pytorch.org/get-started/locally/`
-- mace-torch `pip install mace-torch`
+There are two options to use Mace, but the torch option seems best. For model eval and training:
+- Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`.
+- It might look something like this `conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia`.
+- mace-torch `pip install mace-torch`.
