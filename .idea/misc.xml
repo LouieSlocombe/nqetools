@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="mol_comp_linux" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="mol_comp_linux" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="ipi_env" project-jdk-type="Python SDK" />
 </project>
