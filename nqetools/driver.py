@@ -38,9 +38,7 @@ client.run(atoms, use_stress=True)
 
 
 def write_cp2k_driver():
-    """
-    """
-    return None
+    raise ValueError(f"Driver cp2k is not recognized.")
 
 
 def write_nwchem_driver(
@@ -54,17 +52,20 @@ def write_nwchem_driver(
         solv=None,
         host="driver"):
     in_str = f"""
+import os
+import tempfile
+
 from ase.calculators.nwchem import NWChem
 from ase.io import read
 from ase.calculators.socketio import SocketClient
 
-def get_nwchem_calculator(charge=0,
-                          xc='B3LYP',
-                          multi=1,
-                          basis_set='6-31G**',
-                          disp=None,
-                          solv=None):
-    tmp = dict(label='calc/nwchem', charge=charge, basis=basis_set)
+def nwchem_calc(charge=0,
+                xc='B3LYP',
+                multi=1,
+                basis_set='6-31G**',
+                disp=None,
+                solv=None):
+    tmp = dict(label=os.path.join(tempfile.mkdtemp(), 'nwchem'), charge=charge, basis=basis_set)
 
     if xc.upper() == 'CAM-B3LYP':
         tmp['dft'] = dict(
@@ -103,12 +104,12 @@ def get_nwchem_calculator(charge=0,
     return NWChem(**tmp)
     
 atoms = read('{in_file}', 0)
-atoms.calc = get_nwchem_calculator(charge={charge}, 
-                                   xc={xc}, 
-                                   multi={multi}, 
-                                   basis_set={basis_set}, 
-                                   disp={disp}, 
-                                   solv={solv})
+atoms.calc = nwchem_calc(charge={charge}, 
+                         xc={xc}, 
+                         multi={multi},
+                         basis_set={basis_set},
+                         disp={disp},
+                         solv={solv})
 client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=True)
 
@@ -120,7 +121,99 @@ client.run(atoms, use_stress=True)
 
 
 def write_qchem_driver():
-    return None
+    raise ValueError(f"Driver qchem is not recognized.")
+
+
+def write_orca_driver(
+        in_file="init.xyz",
+        out_file="run-ase-orca.py",
+        charge=0,
+        xc="B3LYP",
+        multi=1,
+        basis_set="6-31G**",
+        disp=None,
+        solv=None,
+        calc_type='DFT',
+        atom_list=None,
+        calc_extra=None,
+        scf_option=None,
+        host="driver"):
+    in_str_1 = """
+import os
+import tempfile
+
+from ase.calculators.orca import ORCA
+from ase.io import read
+from ase.calculators.socketio import SocketClient
+
+def orca_calc(calc_type='DFT',
+              xc='B3LYP',
+              charge=0,
+              mult=1,
+              basis_set='6-31+G(d,p)',
+              nprocs=1,
+              solv=True,
+              disp=True,
+              atom_list=None,
+              calc_extra=None,
+              scf_option=None):
+    inpt_procs = f'%pal nprocs {nprocs} end' if nprocs > 1 else ''
+    inpt_solv = f'''
+    %CPCM SMD TRUE
+        SMDSOLVENT '{solv if solv else "WATER"}'
+    END''' if solv else ''
+    inpt_disp = disp if disp else ''
+    inpt_xtb = f'''
+    %QMMM QMATOMS {str(atom_list).strip('[]')} END END
+    ''' if atom_list else ''
+    inpt_blocks = inpt_procs + inpt_solv + (inpt_xtb if calc_type == 'QM/XTB2' else '')
+
+    if calc_type == 'DFT':
+        inpt_simple = f'{xc} {inpt_disp} {basis_set}'
+    elif calc_type in ['MP2', 'CCSD']:
+        inpt_simple = f'DLPNO-{calc_type} {basis_set} {basis_set}/C'
+    elif calc_type == 'QM/XTB2':
+        inpt_simple = f'{calc_type} {xc} {inpt_disp} {basis_set}'
+    else:
+        inpt_simple = f'{calc_type} {basis_set}'
+
+    if scf_option:
+        inpt_simple += f' {scf_option}'
+    if calc_extra:
+        inpt_simple += f' {calc_extra}'
+
+    return ORCA(
+        charge=charge,
+        mult=mult,
+        directory=os.path.join(tempfile.mkdtemp(), 'orca'),
+        orcasimpleinput=inpt_simple,
+        orcablocks=inpt_blocks
+    )
+
+    """
+    in_str_2 = f"""
+    
+atoms = read('{in_file}', 0)
+atoms.calc = orca_calc(calc_type='{calc_type}',
+                       xc='{xc}',
+                       charge={charge},
+                       multi={multi},
+                       basis_set='{basis_set}',
+                       disp={disp},
+                       solv={solv},
+                       atom_list={atom_list},
+                       calc_extra={calc_extra},
+                       scf_option={scf_option})
+client = SocketClient(unixsocket='{host}')
+client.run(atoms, use_stress=True)
+
+"""
+    # join the strings
+    in_str = in_str_1 + in_str_2
+
+    # Write the file
+    with open(out_file, "w") as f:
+        f.write(in_str)
 
 
 def prep_driver(f_driver, driver_dict):
@@ -147,6 +240,10 @@ def prep_driver(f_driver, driver_dict):
         # If the driver is an ASE-NWChem driver, write the driver file
         write_nwchem_driver(**driver_dict)
         return "python3 run-ase-nwchem.py"
+    elif "ase-orca" in f_driver:
+        # If the driver is an ASE-ORCA driver, write the driver file
+        write_orca_driver(**driver_dict)
+        return "python3 run-ase-orca.py"
     else:
         # If not a recognized driver, raise an error
         raise ValueError(f"Driver {f_driver} is not recognized.")
