@@ -48,9 +48,9 @@ def run_ipi(server,
 def ipi_prep_optimise(directory,
                       atoms,
                       outfile="min",
-                      f_driver="ase-mace",
+                      driver="ase-mace",
                       total_steps=1000,
-                      f_deut=False,
+                      deut=False,
                       optimizer="cg",
                       tol_energy=5.0e-6,
                       tol_force=5.0e-6,
@@ -93,10 +93,10 @@ def ipi_prep_optimise(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=f_deut)
+    update_mass(root, atoms, deut=deut)
 
     # Change the driver ff
-    update_driver(root, atoms, f_driver)
+    update_driver(root, atoms, driver)
 
     # Change the title
     update_title(root, outfile)
@@ -119,10 +119,10 @@ def ipi_run_optimise(directory,
                      atoms,
                      server="i-pi input.xml",
                      outfile="min",
-                     f_driver="ase-mace",
+                     driver="ase-mace",
                      driver_dict=None,
                      total_steps=1000,
-                     f_deut=False,
+                     deut=False,
                      optimizer="cg",
                      tol_energy=5.0e-6,
                      tol_force=5.0e-6,
@@ -130,18 +130,17 @@ def ipi_run_optimise(directory,
     # Prepare the minimization xml file
     if driver_dict is None:
         driver_dict = {}
-    ipi_prep_optimise(directory,
-                      atoms,
+    ipi_prep_optimise(directory, atoms,
                       outfile=outfile,
-                      f_driver=f_driver,
+                      driver=driver,
                       total_steps=total_steps,
-                      f_deut=f_deut,
+                      deut=deut,
                       optimizer=optimizer,
                       tol_energy=tol_energy,
                       tol_force=tol_force,
                       tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(f_driver, driver_dict)
+    driver = prep_driver(driver, driver_dict)
 
     # Run the minimization
     print(f"Running the minimization with the driver: {driver}", flush=True)
@@ -153,9 +152,9 @@ def ipi_run_optimise(directory,
 def ipi_prep_phonons(directory,
                      atoms,
                      outfile="phonon",
-                     f_driver="ase-mace",
+                     driver="ase-mace",
                      total_steps=1000,
-                     f_deut=False):
+                     deut=False):
     # Prepare the phonon xml file
     pho_str = """
     <simulation mode="static" verbosity="low">
@@ -192,10 +191,10 @@ def ipi_prep_phonons(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=f_deut)
+    update_mass(root, atoms, deut=deut)
 
     # Change the driver ff
-    update_driver(root, atoms, f_driver)
+    update_driver(root, atoms, driver)
 
     # Change the title
     update_title(root, outfile)
@@ -213,10 +212,10 @@ def ipi_run_phonons(directory,
                     min_file_path,
                     server="i-pi input.xml",
                     outfile="phonon",
-                    f_driver="ase-mace",
+                    driver="ase-mace",
                     driver_dict=None,
                     total_steps=1000,
-                    f_deut=False):
+                    deut=False):
     if driver_dict is None:
         driver_dict = {}
     # Get the directory and the file name
@@ -224,14 +223,13 @@ def ipi_run_phonons(directory,
     # Prepare the phonon xyz file
     copy_xyz(get_final_xyz(dir_react_min, sub=f"{outfile_min}*"), directory)
     # Prepare the phonon xml file
-    ipi_prep_phonons(directory,
-                     atoms,
+    ipi_prep_phonons(directory, atoms,
                      outfile=outfile,
-                     f_driver=f_driver,
+                     driver=driver,
                      total_steps=total_steps,
-                     f_deut=f_deut)
+                     deut=deut)
     # Prepare the driver
-    driver = prep_driver(f_driver, driver_dict)
+    driver = prep_driver(driver, driver_dict)
     # Run the phonons
     run_ipi(server, driver, outfile + ".out", cwd=directory)
 
@@ -239,9 +237,9 @@ def ipi_run_phonons(directory,
 def ipi_prep_ts(directory,
                 atoms,
                 outfile="ts",
-                f_driver="ase-mace",
+                driver="ase-mace",
                 total_steps=1000,
-                f_deut=False,
+                deut=False,
                 tol_energy=5.0e-6,
                 tol_force=5.0e-6,
                 tol_position=1.0e-6):
@@ -289,10 +287,10 @@ def ipi_prep_ts(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=f_deut)
+    update_mass(root, atoms, deut=deut)
 
     # Change the driver ff
-    update_driver(root, atoms, f_driver)
+    update_driver(root, atoms, driver)
 
     # Change the title
     update_title(root, outfile)
@@ -312,10 +310,10 @@ def ipi_run_ts(directory,
                atoms,
                server="i-pi input.xml",
                outfile="ts",
-               f_driver="ase-mace",
+               driver="ase-mace",
                driver_dict=None,
                total_steps=1000,
-               f_deut=False,
+               deut=False,
                tol_energy=5.0e-6,
                tol_force=5.0e-6,
                tol_position=1.0e-6
@@ -325,17 +323,16 @@ def ipi_run_ts(directory,
     # Read the transition state and write it to the ts directory
     write_xyz(ase.io.read(f"ts.xyz", "-1"), os.path.join(directory, "init.xyz"))
     # Prepare the ts xml file
-    ipi_prep_ts(directory,
-                atoms,
+    ipi_prep_ts(directory, atoms,
                 outfile=outfile,
-                f_driver=f_driver,
+                driver=driver,
                 total_steps=total_steps,
-                f_deut=f_deut,
+                deut=deut,
                 tol_energy=tol_energy,
                 tol_force=tol_force,
                 tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(f_driver, driver_dict)
+    driver = prep_driver(driver, driver_dict)
     # Run the ts
     run_ipi(server, driver, outfile + ".out", cwd=directory)
 
@@ -343,9 +340,9 @@ def ipi_run_ts(directory,
 def ipi_prep_inst(directory,
                   atoms,
                   outfile="inst",
-                  f_driver="ase-mace",
+                  driver="ase-mace",
                   total_steps=1000,
-                  f_deut=False,
+                  deut=False,
                   n_beads=4,
                   temperature=300.0,
                   tol_energy=5.0e-6,
@@ -407,10 +404,10 @@ def ipi_prep_inst(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=f_deut)
+    update_mass(root, atoms, deut=deut)
 
     # Change the driver ff
-    update_driver(root, atoms, f_driver)
+    update_driver(root, atoms, driver)
 
     # Change the title
     update_title(root, outfile)
@@ -442,10 +439,10 @@ def ipi_run_inst(directory,
                  directory_ts,
                  server="i-pi input.xml",
                  outfile="inst",
-                 f_driver="ase-mace",
+                 driver="ase-mace",
                  driver_dict=None,
                  total_steps=1000,
-                 f_deut=False,
+                 deut=False,
                  n_beads=4,
                  temperature=300.0,
                  tol_energy=5.0e-6,
@@ -457,19 +454,18 @@ def ipi_run_inst(directory,
     copy_xyz(get_final_xyz(directory_ts), directory)
     copy_hess(get_final_hess(directory_ts), directory)
     # Prepare the instanton calculation
-    ipi_prep_inst(directory,
-                  atoms,
+    ipi_prep_inst(directory, atoms,
                   outfile=outfile,
-                  f_driver=f_driver,
+                  driver=driver,
                   total_steps=total_steps,
-                  f_deut=f_deut,
+                  deut=deut,
                   n_beads=n_beads,
                   temperature=temperature,
                   tol_energy=tol_energy,
                   tol_force=tol_force,
                   tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(f_driver, driver_dict)
+    driver = prep_driver(driver, driver_dict)
     # Run the instanton
     run_ipi(server, driver, outfile + ".out", cwd=directory)
     return None
