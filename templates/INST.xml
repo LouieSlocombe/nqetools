@@ -3,8 +3,8 @@
         <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
     </output>
     <total_steps>20</total_steps>
-    <ffsocket name="cbe" mode="unix">
-        <address>localhost</address>
+    <ffsocket name='driver' mode='unix' pbc='False'>
+        <address>driver</address>
     </ffsocket>
     <system>
         <initialize nbeads='4'>
@@ -12,14 +12,11 @@
             <cell mode="abc" units='angstrom'>[100 100 100]</cell>
         </initialize>
         <forces>
-            <force forcefield="cbe"></force>
+            <force forcefield='driver'></force>
         </forces>
         <ensemble>
             <temperature units="kelvin">300</temperature>
         </ensemble>
-        <normal_modes>
-            <open_paths>[0, 1, 2, 3, 4, 5]</open_paths>
-        </normal_modes>
         <motion mode='instanton'>
             <instanton mode='rate'>
                 <alt_out>10</alt_out>

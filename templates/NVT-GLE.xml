@@ -1,6 +1,6 @@
 <!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
 <simulation verbosity='low'>
-    <output prefix='simulation'>
+    <output prefix='nvt-gle'>
         <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
             kinetic_md{electronvolt}, potential{electronvolt}, pressure_md{megapascal} ]
         </properties>

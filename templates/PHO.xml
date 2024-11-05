@@ -4,8 +4,8 @@
         <trajectory stride="1" filename="pos" cell_units='angstrom' format="xyz">x_centroid{angstrom}</trajectory>
     </output>
     <total_steps>400</total_steps>
-    <ffsocket name="cbe" mode="unix">
-        <address>localhost</address>
+    <ffsocket name='driver' mode='unix' pbc='False'>
+        <address>driver</address>
     </ffsocket>
     <system>
         <initialize nbeads='1'>
@@ -13,7 +13,7 @@
             <cell mode="abc" units='angstrom'>[100 100 100]</cell>
         </initialize>
         <forces>
-            <force forcefield="cbe"></force>
+            <force forcefield='driver'></force>
         </forces>
         <motion mode="vibrations">
             <vibrations mode="fd">
