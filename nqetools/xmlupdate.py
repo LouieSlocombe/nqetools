@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-from tools import has_pbc
+from .tools import has_pbc
 
 
 def get_masses(atoms, f_deut=False, m_d=2.0141):
@@ -135,7 +135,11 @@ def update_temperature(root, temperature):
     Returns:
     None
     """
+    # update the temperature in the ensemble section
     for child in root.iterfind('.//ensemble/temperature'):
+        child.text = str(temperature)
+    # update the temperature in the velocity section
+    for child in root.iterfind('.//initialize/velocities'):
         child.text = str(temperature)
     return None
 

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import constants
+from .postproc import instanton_postproc
 
 
 def correlate(x, y, xbar=None, ybar=None, normalize=True):
@@ -101,7 +102,6 @@ def kappa_core(
 
 
 def calc_kappa(ts_path, instanton_path, temperature, n_beads):
-    from nqetools.postproc import instanton_postproc
     Q_trn_TS, Q_rot_TS, Q_vib_TS, Beta_times_V = instanton_postproc(ts_path,
                                                                     case="TS",
                                                                     temperature=temperature,
