@@ -1,9 +1,9 @@
 def write_mace_driver(
-        model_type="off",
-        out_file="run-ase.py",
+        out_file="run-ase-mace.py",
         in_file="init.xyz",
         host="driver",
         model="small",
+        model_type="off",
         device="cpu",
         default_dtype="float32"):
     """
@@ -37,6 +37,92 @@ client.run(atoms, use_stress=True)
     return None
 
 
+def write_cp2k_driver():
+    """
+    """
+    return None
+
+
+def write_nwchem_driver(
+        in_file="init.xyz",
+        out_file="run-ase-nwchem.py",
+        charge=0,
+        xc="B3LYP",
+        multi=1,
+        basis_set="6-31G**",
+        disp=None,
+        solv=None,
+        host="driver"):
+    in_str = f"""
+from ase.calculators.nwchem import NWChem
+from ase.io import read
+from ase.calculators.socketio import SocketClient
+
+def get_nwchem_calculator(charge=0,
+                          xc='B3LYP',
+                          multi=1,
+                          basis_set='6-31G**',
+                          disp=None,
+                          solv=None):
+    tmp = dict(label='calc/nwchem', charge=charge, basis=basis_set)
+
+    if xc.upper() == 'CAM-B3LYP':
+        tmp['dft'] = dict(
+            maxiter=2000,
+            iterations=1000,
+            grid='fine nodisk',
+            direct=' ',
+            noio=' ',
+            xc='xcamb88 1.00 lyp 0.81 vwn_5 0.19 hfexch 1.00',
+            cam='0.33 cam_alpha 0.19 cam_beta 0.46',
+            mult=multi
+        )
+    else:
+        tmp['dft'] = dict(
+            maxiter=2000,
+            iterations=1000,
+            grid='fine nodisk',
+            direct=' ',
+            noio=' ',
+            xc=xc.upper(),
+            mult=multi
+        )
+
+    if disp:
+        if disp.upper() == 'XDM':
+            tmp['dft']['xdm '] = 'a1 0.6224 a2 1.7068'
+        elif disp.upper() == 'D3':
+            tmp['dft']['disp'] = 'vdw 3'
+
+    if solv:
+        if solv.upper() == 'WATER':
+            tmp['cosmo'] = dict(do_cosmo_smd=True, solvent='water')
+        elif solv.upper() == 'PROTEIN':
+            tmp['cosmo'] = dict(do_cosmo_smd=True, dielec=8.0)
+
+    return NWChem(**tmp)
+    
+atoms = read('{in_file}', 0)
+atoms.calc = get_nwchem_calculator(charge={charge}, 
+                                   xc={xc}, 
+                                   multi={multi}, 
+                                   basis_set={basis_set}, 
+                                   disp={disp}, 
+                                   solv={solv})
+client = SocketClient(unixsocket='{host}')
+client.run(atoms, use_stress=True)
+
+    """
+    # Write the file
+    with open(out_file, "w") as f:
+        f.write(in_str)
+    return None
+
+
+def write_qchem_driver():
+    return None
+
+
 def prep_driver(f_driver, driver_dict):
     """
     Prepares the driver command based on the specified driver type.
@@ -54,8 +140,13 @@ def prep_driver(f_driver, driver_dict):
     if f_driver == "cbe":
         return "i-pi-driver -m ch4hcbe -u"
     elif "ase-mace" in f_driver:
+        # If the driver is an ASE-MACE driver, write the driver file
         write_mace_driver(**driver_dict)
-        return "python3 run-ase.py"
+        return "python3 run-ase-mace.py"
+    elif "ase-nwchem" in f_driver:
+        # If the driver is an ASE-NWChem driver, write the driver file
+        write_nwchem_driver(**driver_dict)
+        return "python3 run-ase-nwchem.py"
     else:
         # If not a recognized driver, raise an error
         raise ValueError(f"Driver {f_driver} is not recognized.")
