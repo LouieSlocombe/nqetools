@@ -20,6 +20,7 @@ setup(
         'numpy',
         'matplotlib',
         'ase',
+        'sella',
         'scipy',
         'ipi',
     ],
