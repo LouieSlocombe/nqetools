@@ -56,38 +56,8 @@ def ipi_prep_optimise(directory,
                       tol_force=5.0e-6,
                       tol_position=1.0e-6):
     # Prepare the minimization xml file
-    min_str = """
-    <simulation mode="static" verbosity="low">
-        <output prefix='min'>
-            <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
-            <trajectory stride="1" filename="pos" cell_units='angstrom' format="xyz">x_centroid{angstrom}</trajectory>
-        </output>
-        <total_steps>400</total_steps>
-        <ffsocket name="cbe" mode="unix">
-            <address>localhost</address>
-        </ffsocket>
-        <system>
-            <initialize nbeads='1'>
-                <file mode='xyz' units='angstrom'> init.xyz </file>
-                <cell mode="abc" units='angstrom'>[100 100 100]</cell>
-            </initialize>
-            <forces>
-                <force forcefield="cbe"></force>
-            </forces>
-            <motion mode="minimize">
-                <optimizer mode="sd">
-                    <tolerances>
-                        <energy>5e-5</energy>
-                        <force>5e-5</force>
-                        <position>5e-5</position>
-                    </tolerances>
-                </optimizer>
-            </motion>
-        </system>
-    </simulation>
-    """
-    # Parse the string
-    root = ET.fromstring(min_str)
+    tree = ET.parse(os.path.abspath("../templates/MIN.xml"))
+    root = tree.getroot()
 
     # Fix the cell
     update_cell(root, atoms)
@@ -156,36 +126,8 @@ def ipi_prep_phonons(directory,
                      total_steps=1000,
                      deut=False):
     # Prepare the phonon xml file
-    pho_str = """
-    <simulation mode="static" verbosity="low">
-        <output prefix='phonon'>
-            <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
-            <trajectory stride="1" filename="pos" cell_units='angstrom' format="xyz">x_centroid{angstrom}</trajectory>
-        </output>
-        <total_steps>400</total_steps>
-        <ffsocket name="cbe" mode="unix">
-            <address>localhost</address>
-        </ffsocket>
-        <system>
-            <initialize nbeads='1'>
-                <file mode='xyz' units='angstrom'> init.xyz </file>
-                <cell mode="abc" units='angstrom'>[100 100 100]</cell>
-            </initialize>
-            <forces>
-                <force forcefield="cbe"></force>
-            </forces>
-            <motion mode="vibrations">
-                <vibrations mode="fd">
-                    <pos_shift>0.01</pos_shift>
-                    <prefix>phonons</prefix>
-                    <asr>poly</asr>
-                </vibrations>
-            </motion>
-        </system>
-    </simulation>
-    """
-    # Parse the string
-    root = ET.fromstring(pho_str)
+    tree = ET.parse(os.path.abspath("../templates/PHO.xml"))
+    root = tree.getroot()
 
     # Fix the cell
     update_cell(root, atoms)
@@ -244,44 +186,8 @@ def ipi_prep_ts(directory,
                 tol_force=5.0e-6,
                 tol_position=1.0e-6):
     # Prepare the transition state search xml file
-    ts_str = """
-    <simulation mode="static" verbosity="low">
-        <output prefix='ts'>
-            <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
-            <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>positions{angstrom}</trajectory>
-        </output>
-        <total_steps>20</total_steps>
-        <ffsocket name="cbe" mode="unix">
-            <address>localhost</address>
-        </ffsocket>
-        <system>
-            <initialize nbeads='1'>
-                <file mode='xyz' units='angstrom'> init.xyz </file>
-                <cell mode="abc" units='angstrom'>[100 100 100]</cell>
-            </initialize>
-            <forces>
-                <force forcefield="cbe"></force>
-            </forces>
-            <motion mode='instanton'>
-                <instanton mode='rate'>
-                    <tolerances>
-                        <energy>5e-6</energy>
-                        <force>5e-6</force>
-                        <position>1e-3</position>
-                    </tolerances>
-                    <alt_out>-1</alt_out>
-                    <hessian_update>powell</hessian_update>
-                    <hessian_asr>poly</hessian_asr>
-                    <hessian_init>true</hessian_init>
-                    <hessian_final>true</hessian_final>
-                    <biggest_step>0.3</biggest_step>
-                </instanton>
-            </motion>
-        </system>
-    </simulation>
-    """
-    # Parse the string
-    root = ET.fromstring(ts_str)
+    tree = ET.parse(os.path.abspath("../templates/TS.xml"))
+    root = tree.getroot()
 
     # fix the cell
     update_cell(root, atoms)
@@ -353,52 +259,8 @@ def ipi_prep_inst(directory,
     n_doft = 3 * n_atoms
 
     # Prepare the instanton calculation
-    inst_str = """
-    <simulation mode="static" verbosity="low">
-        <output prefix='inst'>
-            <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
-        </output>
-        <total_steps>20</total_steps>
-        <ffsocket name="cbe" mode="unix">
-            <address>localhost</address>
-        </ffsocket>
-        <system>
-            <initialize nbeads='4'>
-                <file mode='xyz' units='angstrom'> init.xyz </file>
-                <cell mode="abc" units='angstrom'>[100 100 100]</cell>
-            </initialize>
-            <forces>
-                <force forcefield="cbe"></force>
-            </forces>
-            <ensemble>
-                <temperature units="kelvin">300</temperature>
-            </ensemble>
-            <normal_modes>
-                <open_paths>[0, 1, 2, 3, 4, 5]</open_paths>
-            </normal_modes>
-            <motion mode='instanton'>
-                <instanton mode='rate'>
-                    <alt_out>10</alt_out>
-                    <tolerances>
-                        <energy>5e-6</energy>
-                        <force>5e-6</force>
-                        <position>1e-3</position>
-                    </tolerances>
-                    <delta>0.1</delta>
-                    <opt>nichols</opt>
-                    <hessian_update>powell</hessian_update>
-                    <hessian_asr>poly</hessian_asr>
-                    <hessian_final>true</hessian_final>
-                    <biggest_step>0.3</biggest_step>
-                    <hessian mode='file' shape='(18, 18)'>hessian.dat</hessian>
-                </instanton>
-            </motion>
-        </system>
-    </simulation>
-    """
-
-    # Parse the string
-    root = ET.fromstring(inst_str)
+    tree = ET.parse(os.path.abspath("../templates/INST.xml"))
+    root = tree.getroot()
 
     # Fix the cell
     update_cell(root, atoms)
