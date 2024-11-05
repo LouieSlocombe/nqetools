@@ -7,10 +7,10 @@ import ase.io
 
 from nqetools.driver import prep_driver
 from nqetools.io import write_xml, copy_xyz, get_final_xyz, copy_hess, get_final_hess, write_xyz
+from nqetools.tools import rm_ipi_tmp
 from nqetools.xml import update_cell, update_mass, update_driver, update_title, \
     update_total_steps, update_optimizer, update_tol, update_nbeads, update_hessian, \
     update_open_paths, update_temperature
-from nqetools.tools import rm_ipi_tmp
 
 
 def run_ipi(server,
@@ -120,6 +120,7 @@ def ipi_run_optimise(directory,
                      server="i-pi input.xml",
                      outfile="min",
                      f_driver="ase-mace",
+                     driver_dict=None,
                      total_steps=1000,
                      f_deut=False,
                      optimizer="cg",
@@ -127,6 +128,8 @@ def ipi_run_optimise(directory,
                      tol_force=5.0e-6,
                      tol_position=1.0e-6):
     # Prepare the minimization xml file
+    if driver_dict is None:
+        driver_dict = {}
     ipi_prep_optimise(directory,
                       atoms,
                       outfile=outfile,
@@ -138,7 +141,7 @@ def ipi_run_optimise(directory,
                       tol_force=tol_force,
                       tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(f_driver)
+    driver = prep_driver(f_driver, driver_dict)
 
     # Run the minimization
     print(f"Running the minimization with the driver: {driver}", flush=True)
@@ -211,8 +214,11 @@ def ipi_run_phonons(directory,
                     server="i-pi input.xml",
                     outfile="phonon",
                     f_driver="ase-mace",
+                    driver_dict=None,
                     total_steps=1000,
                     f_deut=False):
+    if driver_dict is None:
+        driver_dict = {}
     # Get the directory and the file name
     dir_react_min, outfile_min = os.path.split(min_file_path)
     # Prepare the phonon xyz file
@@ -225,7 +231,7 @@ def ipi_run_phonons(directory,
                      total_steps=total_steps,
                      f_deut=f_deut)
     # Prepare the driver
-    driver = prep_driver(f_driver)
+    driver = prep_driver(f_driver, driver_dict)
     # Run the phonons
     run_ipi(server, driver, outfile + ".out", cwd=directory)
 
@@ -233,7 +239,7 @@ def ipi_run_phonons(directory,
 def ipi_prep_ts(directory,
                 atoms,
                 outfile="ts",
-                f_driver="ase",
+                f_driver="ase-mace",
                 total_steps=1000,
                 f_deut=False,
                 tol_energy=5.0e-6,
@@ -307,12 +313,15 @@ def ipi_run_ts(directory,
                server="i-pi input.xml",
                outfile="ts",
                f_driver="ase-mace",
+               driver_dict=None,
                total_steps=1000,
                f_deut=False,
                tol_energy=5.0e-6,
                tol_force=5.0e-6,
                tol_position=1.0e-6
                ):
+    if driver_dict is None:
+        driver_dict = {}
     # Read the transition state and write it to the ts directory
     write_xyz(ase.io.read(f"ts.xyz", "-1"), os.path.join(directory, "init.xyz"))
     # Prepare the ts xml file
@@ -326,7 +335,7 @@ def ipi_run_ts(directory,
                 tol_force=tol_force,
                 tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(f_driver)
+    driver = prep_driver(f_driver, driver_dict)
     # Run the ts
     run_ipi(server, driver, outfile + ".out", cwd=directory)
 
@@ -334,7 +343,7 @@ def ipi_run_ts(directory,
 def ipi_prep_inst(directory,
                   atoms,
                   outfile="inst",
-                  f_driver="ase",
+                  f_driver="ase-mace",
                   total_steps=1000,
                   f_deut=False,
                   n_beads=4,
@@ -434,6 +443,7 @@ def ipi_run_inst(directory,
                  server="i-pi input.xml",
                  outfile="inst",
                  f_driver="ase-mace",
+                 driver_dict=None,
                  total_steps=1000,
                  f_deut=False,
                  n_beads=4,
@@ -441,6 +451,8 @@ def ipi_run_inst(directory,
                  tol_energy=5.0e-6,
                  tol_force=5.0e-6,
                  tol_position=1.0e-6):
+    if driver_dict is None:
+        driver_dict = {}
     # Copy the files from the ts calculation
     copy_xyz(get_final_xyz(directory_ts), directory)
     copy_hess(get_final_hess(directory_ts), directory)
@@ -457,7 +469,7 @@ def ipi_run_inst(directory,
                   tol_force=tol_force,
                   tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(f_driver)
+    driver = prep_driver(f_driver, driver_dict)
     # Run the instanton
     run_ipi(server, driver, outfile + ".out", cwd=directory)
     return None
