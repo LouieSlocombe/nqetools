@@ -1,0 +1,26 @@
+<simulation mode="static" verbosity="low">
+    <output prefix='phonon'>
+        <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
+        <trajectory stride="1" filename="pos" cell_units='angstrom' format="xyz">x_centroid{angstrom}</trajectory>
+    </output>
+    <total_steps>400</total_steps>
+    <ffsocket name="cbe" mode="unix">
+        <address>localhost</address>
+    </ffsocket>
+    <system>
+        <initialize nbeads='1'>
+            <file mode='xyz' units='angstrom'>init.xyz</file>
+            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
+        </initialize>
+        <forces>
+            <force forcefield="cbe"></force>
+        </forces>
+        <motion mode="vibrations">
+            <vibrations mode="fd">
+                <pos_shift>0.01</pos_shift>
+                <prefix>phonons</prefix>
+                <asr>poly</asr>
+            </vibrations>
+        </motion>
+    </system>
+</simulation>
