@@ -36,6 +36,7 @@ def rm_ipi_tmp(tmp=r"/tmp/ipi_localhost"):
             pass
     return None
 
+
 def has_pbc(atoms):
     """
     Checks if an ASE atoms object has periodic boundary conditions (PBC).
@@ -47,6 +48,7 @@ def has_pbc(atoms):
     bool: True if the atoms object has PBC, False otherwise.
     """
     return any(atoms.pbc)
+
 
 # Conversion factor from Bohr to Angstrom
 bohr_to_angstrom = physical_constants["Bohr radius"][0] * 1e10

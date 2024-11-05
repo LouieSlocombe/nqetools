@@ -1,8 +1,6 @@
 import numpy as np
 from scipy import constants
 
-from nqetools.postproc import instanton_postproc
-
 
 def correlate(x, y, xbar=None, ybar=None, normalize=True):
     """ Computes the correlation function of two quantities.
@@ -50,6 +48,27 @@ def temp_cross(omega):
     return beta_2k(2. * np.pi / (omega * cm2hartree))
 
 
+def calculate_nbeads(omega_max, temperature):
+    """
+    Calculate the number of beads where nbeads > (hbar * omega_max) / (kB * T).
+
+    Parameters:
+    omega_max (float): Maximum frequency in inverse centimeters (cm^-1).
+    T (float): Temperature in Kelvin (K).
+
+    Returns:
+    int: Number of beads.
+    """
+    cm2hartree = 1. / (constants.physical_constants['hartree-inverse meter relationship'][0] / 100)
+    boltzmann_au = constants.physical_constants['Boltzmann constant in eV/K'][0] * \
+                   constants.physical_constants['electron volt-hartree relationship'][0]
+    # Convert omega_max to atomic units
+    omega_max = omega_max * cm2hartree
+    # nbeads > (hbar * omega_max) / (kB * T)
+    nbeads = (1.0 * omega_max) / (boltzmann_au * temperature)
+    return int(nbeads)
+
+
 def kappa_core(
         Q_trn_TS,
         Q_rot_TS,
@@ -82,6 +101,7 @@ def kappa_core(
 
 
 def calc_kappa(ts_path, instanton_path, temperature, n_beads):
+    from nqetools.postproc import instanton_postproc
     Q_trn_TS, Q_rot_TS, Q_vib_TS, Beta_times_V = instanton_postproc(ts_path,
                                                                     case="TS",
                                                                     temperature=temperature,
