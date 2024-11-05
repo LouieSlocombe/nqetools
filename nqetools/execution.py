@@ -96,7 +96,7 @@ def ipi_prep_optimise(directory,
     update_mass(root, atoms, deut=f_deut)
 
     # Change the driver ff
-    update_driver(root, f_driver)
+    update_driver(root, atoms, f_driver)
 
     # Change the title
     update_title(root, outfile)
@@ -195,7 +195,7 @@ def ipi_prep_phonons(directory,
     update_mass(root, atoms, deut=f_deut)
 
     # Change the driver ff
-    update_driver(root, f_driver)
+    update_driver(root, atoms, f_driver)
 
     # Change the title
     update_title(root, outfile)
@@ -292,7 +292,7 @@ def ipi_prep_ts(directory,
     update_mass(root, atoms, deut=f_deut)
 
     # Change the driver ff
-    update_driver(root, f_driver)
+    update_driver(root, atoms, f_driver)
 
     # Change the title
     update_title(root, outfile)
@@ -410,7 +410,7 @@ def ipi_prep_inst(directory,
     update_mass(root, atoms, deut=f_deut)
 
     # Change the driver ff
-    update_driver(root, f_driver)
+    update_driver(root, atoms, f_driver)
 
     # Change the title
     update_title(root, outfile)
@@ -566,7 +566,7 @@ def ipi_run_inst(directory,
 #     ipi_in_update_mass(root, atoms, deut=f_deut)
 #
 #     # Change the driver ff
-#     ipi_in_update_driver(root, f_driver)
+#     ipi_in_update_driver(root, atoms, f_driver)
 #
 #     # Change the title
 #     ipi_in_update_title(root, outfile)

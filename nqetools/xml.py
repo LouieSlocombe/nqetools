@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+from tools import has_pbc
 
 
 def get_masses(atoms, f_deut=False, m_d=2.0141):
@@ -64,20 +65,22 @@ def update_cell(root, atoms):
     return None
 
 
-def update_driver(root, f_driver):
+def update_driver(root, atoms, f_driver):
     """
-    Updates the XML tree to configure the driver settings if the specified driver is 'ase-mace'.
+    Updates the XML tree with driver information based on the specified driver type.
 
     Parameters:
     root (Element): The root element of the XML tree.
-    f_driver (str): The name of the driver to configure. If it is 'ase-mace', the function updates the XML tree accordingly.
+    atoms (object): An object representing the atoms, which must have periodic boundary conditions (PBC).
+    f_driver (str): The type of driver to use. If "ase-mace", updates the XML with MACE driver information.
 
     Returns:
     None
     """
     if f_driver == "ase-mace":
+        f_pbcs = has_pbc(atoms)
         for rank in root.iter('ffsocket'):
-            rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': 'False'})
+            rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
             for child in rank:
                 if child.tag == "address":
                     child.text = "driver"
