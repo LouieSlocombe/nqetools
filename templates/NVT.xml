@@ -1,10 +1,10 @@
 <!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
-<simulation verbosity='high'>
+<simulation verbosity='low'>
     <output prefix='simulation'>
         <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
             kinetic_md{electronvolt}, potential{electronvolt}, pressure_md{megapascal} ]
         </properties>
-        <trajectory filename='pos' stride='200' format='ase'>positions</trajectory>
+        <trajectory filename='pos' stride='200' format='xyz'>positions</trajectory>
         <checkpoint stride='2000'/>
     </output>
     <total_steps>20000</total_steps>
@@ -16,7 +16,8 @@
     </ffsocket>
     <system>
         <initialize nbeads='1'>
-            <file mode='ase'>init.xyz</file>
+            <file mode='xyz' units='angstrom'>init.xyz</file>
+            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
             <velocities mode='thermal' units='kelvin'>300</velocities>
         </initialize>
         <forces>

@@ -1,10 +1,10 @@
 <!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
-<simulation verbosity='high'>
+<simulation verbosity='low'>
     <output prefix='simulation'>
         <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
             kinetic_cv{electronvolt}, potential{electronvolt}, pressure_cv{megapascal} ]
         </properties>
-        <trajectory filename='pos' stride='200' format='ase'>positions</trajectory>
+        <trajectory filename='pos' stride='200' format='xyz'>positions</trajectory>
         <checkpoint stride='2000'/>
     </output>
     <total_steps>20000</total_steps>
@@ -15,10 +15,9 @@
         <address>driver</address>
     </ffsocket>
     <system>
-        <!-- A good rule of thumb for is nbeads > (hbar omega_max) / (kB T) where omega_max is the highest physical frequency in the system -->
-        <!-- For water omega_max ~ 3800 invcm this number is ~ 18 at 300 K. So a safe choice is 32 replicas  -->
         <initialize nbeads='32'>
-            <file mode='ase'>init.xyz</file>
+            <file mode='xyz' units='angstrom'>init.xyz</file>
+            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
             <velocities mode='thermal' units='kelvin'>300</velocities>
         </initialize>
         <forces>

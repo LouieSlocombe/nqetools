@@ -1,10 +1,10 @@
 <!-- https://github.com/i-pi/pimd-mooc/blob/main/3-advanced-pimd.ipynb -->
-<simulation verbosity='medium'>
+<simulation verbosity='low'>
     <output prefix='simulation'>
         <properties filename='out' stride='100'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
             kinetic_md{electronvolt}, potential{electronvolt}, pressure_md{megapascal} ]
         </properties>
-        <trajectory filename='pos' stride='100'>positions</trajectory>
+        <trajectory filename='pos' stride='100' format='xyz'>positions</trajectory>
         <checkpoint stride='100'/>
     </output>
     <total_steps>100000</total_steps>
@@ -16,7 +16,8 @@
     </ffsocket>
     <system>
         <initialize nbeads='1'>
-            <file mode='ase'>init.xyz</file>
+            <file mode='xyz' units='angstrom'>init.xyz</file>
+            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
             <velocities mode='thermal' units='kelvin'>300</velocities>
         </initialize>
         <forces>
