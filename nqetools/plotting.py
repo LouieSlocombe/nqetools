@@ -138,6 +138,7 @@ def plot_energy_sep(xyz_a, xyz_b):
     plt.show()
     return None
 
+
 def n_plot(xlab, ylab, xs=14, ys=14):
     plt.minorticks_on()
     plt.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
