@@ -137,3 +137,13 @@ def plot_energy_sep(xyz_a, xyz_b):
     ax.set_xlabel(r"$\Delta C_\mathrm{H}$")
     plt.show()
     return None
+
+def n_plot(xlab, ylab, xs=14, ys=14):
+    plt.minorticks_on()
+    plt.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
+    plt.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
+    plt.tick_params(axis='both', which='both', top=True, right=True)
+    plt.xlabel(xlab, fontsize=xs)
+    plt.ylabel(ylab, fontsize=ys)
+    plt.tight_layout()
+    return None
