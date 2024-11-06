@@ -24,6 +24,7 @@ from ase.visualize import view
 from scipy.interpolate import CubicSpline
 from sella import IRC
 from sella import Sella
+from ase.vibrations import Vibrations
 
 def get_fmax(atoms):
     return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
@@ -186,3 +187,17 @@ def optimise_irc():
     sella_irc_f = IRC(ts_image_refined, trajectory=irc_f_traj, dx=dx)
     sella_irc_f.run(fmax=f_max_path, steps=steps, direction='forward')
     return None
+
+def get_vibrations(atoms, calc):
+    # Set the calculator
+    atoms.calc = calc
+    # Get the vibrational frequencies
+    vib = Vibrations(atoms)
+    # Make sure the folder is clean
+    vib.clean()
+    vib.run()
+    vib.summary()
+    freqs = vib.get_frequencies()
+    # Clean the folder
+    vib.clean()
+    return freqs
