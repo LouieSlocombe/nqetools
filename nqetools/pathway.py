@@ -1,9 +1,9 @@
-import  copy
+import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
-from ase.io import  read
-from ase.neb import   NEB
+from ase.io import read
+from ase.neb import NEB
 from ase.optimize import BFGS
 from ase.visualize import view
 
@@ -26,8 +26,10 @@ from sella import IRC
 from sella import Sella
 from ase.vibrations import Vibrations
 
+
 def get_fmax(atoms):
     return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
+
 
 def get_neb_path(images):
     """
@@ -131,8 +133,8 @@ def optimise_reactant_product(reactant, product, calc,
     product = read(product_opti, index=-1)
     return reactant, product
 
-def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=True, k=2.0):
 
+def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=True, k=2.0):
     # Construct the NEB images
     neb_images = [reactant]
     for ii in range(n_images - 2):
@@ -151,17 +153,25 @@ def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=Tru
     neb.interpolate("idpp")
     return None
 
+
 def optimise_neb(neb, fmax=0.01, steps=1000, ts_traj='ts.traj', n_images=5):
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
     # Read the trajectory of the last images
     return read(ts_traj, index=f"-{n_images}:")
+
 
 def get_ts_image(neb_images):
     # Find the image with the highest energy
     index = np.argmax([image.get_potential_energy() for image in neb_images])
     return neb_images[index]
 
-def optimise_ts(ts_image, calc, fmax=0.01, steps=1000, sella_traj='sella.traj'):
+
+def optimise_ts(ts_image, calc,
+                fmax=0.01,
+                steps=1000,
+                eta=1e-4,
+                gamma=0.1,
+                sella_traj='sella.traj'):
     print('Running Sella TS search', flush=True)
     ts_image.calc = calc
 
@@ -170,23 +180,52 @@ def optimise_ts(ts_image, calc, fmax=0.01, steps=1000, sella_traj='sella.traj'):
     print('Initial max force: {:.3} eV/A'.format(get_fmax(ts_image)), flush=True)
 
     # Run Sella TS search
-    sella_ts = Sella(ts_image, trajectory=sella_traj)
+    sella_ts = Sella(ts_image, 
+                     trajectory=sella_traj,
+                     eta=eta,
+                     gamma=gamma)
     sella_ts.run(fmax=fmax, steps=steps)
 
     # Read the trajectory
     ts_image_refined = read(sella_traj, index=-1)
     return ts_image_refined
 
-def optimise_irc():
-    # Read the trajectory
-    ts_image_refined = read(sella_traj, index=-1)
-    ts_image_refined.calc = calc
 
-    # Run Sella IRC
+def optimise_irc(ts_image, calc,
+                 fmax=0.01,
+                 steps=1000,
+                 dx=0.1,
+                 eta=1e-4,
+                 gamma=0.1,
+                 keep_going=True,
+                 irc_f_traj='irc_f.traj',
+                 irc_r_traj='irc_r.traj'):
+    # Read the trajectory
+    ts_image.calc = calc
+
     print("Running IRC forward", flush=True)
-    sella_irc_f = IRC(ts_image_refined, trajectory=irc_f_traj, dx=dx)
-    sella_irc_f.run(fmax=f_max_path, steps=steps, direction='forward')
+    sella_irc_f = IRC(ts_image,
+                      trajectory=irc_f_traj,
+                      dx=dx,
+                      eta=eta,
+                      gamma=gamma,
+                      keep_going=keep_going)
+    sella_irc_f.run(fmax=fmax,
+                    steps=steps,
+                    direction='forward')
+
+    print("Running IRC reverse", flush=True)
+    sella_irc_r = IRC(ts_image,
+                      trajectory=irc_r_traj,
+                      dx=dx,
+                      eta=eta,
+                      gamma=gamma,
+                      keep_going=keep_going)
+    sella_irc_r.run(fmax=fmax,
+                    steps=steps,
+                    direction='reverse')
     return None
+
 
 def get_vibrations(atoms, calc):
     # Set the calculator
