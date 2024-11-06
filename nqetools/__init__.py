@@ -54,4 +54,16 @@ from .xmlparse import (update_mass,
                        update_tol,
                        update_open_paths)
 
+from .pathway import (get_fmax,
+                      get_neb_path,
+                      stitch_path,
+                      resample_path,
+                      optimise_reactant_product,
+                      prepare_neb,
+                      optimise_neb,
+                      get_ts_image,
+                      optimise_ts,
+                      optimise_irc,
+                      get_vibrations)
+
 __version__ = "0.0.01"
