@@ -1,30 +1,14 @@
 import copy
+import time
 
-import matplotlib.pyplot as plt
 import numpy as np
 from ase.io import read
 from ase.neb import NEB
 from ase.optimize import BFGS
-from ase.visualize import view
-
-import copy
-import os
-import sys
-import time
-
-import matplotlib.pyplot as plt
-import numpy as np
-from ase.calculators.nwchem import NWChem
-from ase.calculators.orca import ORCA
-from ase.calculators.orca import OrcaProfile
-from ase.io import read, write
-from ase.neb import NEB
-from ase.optimize import BFGS
-from ase.visualize import view
+from ase.vibrations import Vibrations
 from scipy.interpolate import CubicSpline
 from sella import IRC
 from sella import Sella
-from ase.vibrations import Vibrations
 
 
 def get_fmax(atoms):
@@ -180,7 +164,7 @@ def optimise_ts(ts_image, calc,
     print('Initial max force: {:.3} eV/A'.format(get_fmax(ts_image)), flush=True)
 
     # Run Sella TS search
-    sella_ts = Sella(ts_image, 
+    sella_ts = Sella(ts_image,
                      trajectory=sella_traj,
                      eta=eta,
                      gamma=gamma)
