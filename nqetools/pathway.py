@@ -25,6 +25,9 @@ from scipy.interpolate import CubicSpline
 from sella import IRC
 from sella import Sella
 
+def get_fmax(atoms):
+    return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
+
 def get_neb_path(images):
     """
     Calculate the path length between each image in a Nudged Elastic Band (NEB) calculation.
@@ -103,3 +106,83 @@ def resample_path(path, N_resample):
     irc_resampled.append(path[-1])  # Ensure the last image is the same
 
     return irc_resampled
+
+
+def optimise_reactant_product(reactant, product, calc,
+                              fmax=0.01,
+                              steps=1000,
+                              reactant_opti='reactant_opti.traj',
+                              product_opti='product_opti.traj'):
+    reactant.calc = calc
+    print('Optimizing reactant...', flush=True)
+    t0 = time.time()
+    BFGS(reactant, trajectory=reactant_opti).run(fmax=fmax, steps=steps)
+    t1 = time.time()
+    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
+    reactant = read(reactant_opti, index=-1)
+
+    product.calc = calc
+    print('Optimizing product...', flush=True)
+    t0 = time.time()
+    BFGS(product, trajectory=product_opti).run(fmax=fmax, steps=steps)
+    t1 = time.time()
+    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
+    product = read(product_opti, index=-1)
+    return reactant, product
+
+def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=True, k=2.0):
+
+    # Construct the NEB images
+    neb_images = [reactant]
+    for ii in range(n_images - 2):
+        neb_images.append(reactant.copy())
+    neb_images.append(product)
+
+    # Attach the calculator to the images
+    for image in neb_images:
+        image.calc = copy.copy(calc)
+        image.get_potential_energy()
+
+    # create the NEB object
+    neb = NEB(neb_images, climb=climb, remove_rotation_and_translation=rm_ro_trans, k=k)
+    # interpolate the images
+    neb.interpolate()
+    neb.interpolate("idpp")
+    return None
+
+def optimise_neb(neb, fmax=0.01, steps=1000, ts_traj='ts.traj', n_images=5):
+    BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
+    # Read the trajectory of the last images
+    return read(ts_traj, index=f"-{n_images}:")
+
+def get_ts_image(neb_images):
+    # Find the image with the highest energy
+    index = np.argmax([image.get_potential_energy() for image in neb_images])
+    return neb_images[index]
+
+def optimise_ts(ts_image, calc, fmax=0.01, steps=1000, sella_traj='sella.traj'):
+    print('Running Sella TS search', flush=True)
+    ts_image.calc = calc
+
+    # Get the initial forces
+    print('Initial energy: {:.3} eV'.format(ts_image.get_potential_energy()), flush=True)
+    print('Initial max force: {:.3} eV/A'.format(get_fmax(ts_image)), flush=True)
+
+    # Run Sella TS search
+    sella_ts = Sella(ts_image, trajectory=sella_traj)
+    sella_ts.run(fmax=fmax, steps=steps)
+
+    # Read the trajectory
+    ts_image_refined = read(sella_traj, index=-1)
+    return ts_image_refined
+
+def optimise_irc():
+    # Read the trajectory
+    ts_image_refined = read(sella_traj, index=-1)
+    ts_image_refined.calc = calc
+
+    # Run Sella IRC
+    print("Running IRC forward", flush=True)
+    sella_irc_f = IRC(ts_image_refined, trajectory=irc_f_traj, dx=dx)
+    sella_irc_f.run(fmax=f_max_path, steps=steps, direction='forward')
+    return None
