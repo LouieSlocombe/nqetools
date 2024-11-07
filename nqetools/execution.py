@@ -5,10 +5,10 @@ import xml.etree.ElementTree as ET
 
 import ase.io
 
-from nqetools.driver import prep_driver
-from nqetools.io import write_xml, copy_xyz, get_final_xyz, copy_hess, get_final_hess, write_xyz
-from nqetools.tools import rm_ipi_tmp
-from nqetools.xmlparse import update_cell, update_mass, update_driver, update_title, \
+from .driver import prep_driver
+from .io import write_xml, copy_xyz, get_final_xyz, copy_hess, get_final_hess, write_xyz
+from .tools import rm_ipi_tmp
+from .xmlparse import update_cell, update_mass, update_driver, update_title, \
     update_total_steps, update_optimizer, update_tol, update_nbeads, update_hessian, \
     update_open_paths, update_temperature
 
