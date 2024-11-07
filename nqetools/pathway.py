@@ -96,7 +96,10 @@ def resample_path(path, N_resample):
     return irc_resampled
 
 
-def optimise_geom(atoms, calc, fmax=0.01, steps=1000, opti_traj='opti.traj'):
+def optimise_geom(atoms, calc,
+                  fmax=0.01,
+                  steps=1000,
+                  opti_traj='opti.traj'):
     atoms = atoms.copy()
     atoms.calc = calc
     t0 = time.time()
@@ -107,26 +110,23 @@ def optimise_geom(atoms, calc, fmax=0.01, steps=1000, opti_traj='opti.traj'):
     os.remove(opti_traj)
     return atoms
 
+
 def optimise_reactant_product(reactant, product, calc,
                               fmax=0.01,
                               steps=1000,
                               reactant_opti='reactant_opti.traj',
                               product_opti='product_opti.traj'):
-    reactant.calc = calc
     print('Optimizing reactant...', flush=True)
-    t0 = time.time()
-    BFGS(reactant, trajectory=reactant_opti).run(fmax=fmax, steps=steps)
-    t1 = time.time()
-    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
-    reactant = read(reactant_opti, index=-1)
+    reactant = optimise_geom(reactant, calc,
+                             fmax=fmax,
+                             steps=steps,
+                             opti_traj=reactant_opti)
 
-    product.calc = calc
     print('Optimizing product...', flush=True)
-    t0 = time.time()
-    BFGS(product, trajectory=product_opti).run(fmax=fmax, steps=steps)
-    t1 = time.time()
-    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
-    product = read(product_opti, index=-1)
+    product = optimise_geom(product, calc,
+                            fmax=fmax,
+                            steps=steps,
+                            opti_traj=product_opti)
     return reactant, product
 
 
@@ -143,7 +143,10 @@ def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=Tru
         image.get_potential_energy()
 
     # create the NEB object
-    neb = NEB(neb_images, climb=climb, remove_rotation_and_translation=rm_ro_trans, k=k)
+    neb = NEB(neb_images,
+              climb=climb,
+              remove_rotation_and_translation=rm_ro_trans,
+              k=k)
     # interpolate the images
     neb.interpolate()
     neb.interpolate("idpp")
@@ -154,11 +157,16 @@ def optimise_neb(neb, fmax=0.01, steps=1000, ts_traj='ts.traj', n_images=5):
     t0 = time.time()
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
     t1 = time.time()
+    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
     # Read the trajectory of the last images
     return read(ts_traj, index=f"-{n_images}:")
 
 
-def get_ts_image(neb_images):
+def get_ts_image(neb_images, calc):
+    # Attach the calculator to the images
+    for image in neb_images:
+        image.calc = copy.copy(calc)
+
     # Find the image with the highest energy
     index = np.argmax([image.get_potential_energy() for image in neb_images])
     return neb_images[index]
