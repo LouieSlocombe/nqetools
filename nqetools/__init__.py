@@ -34,7 +34,8 @@ from .plotting import (plot_time_energy,
                        plot_energy_contour_series,
                        plot_energy_contour_compare,
                        plot_energy_sep,
-                       n_plot)
+                       n_plot,
+                       plot_neb)
 
 from .postproc import (instanton_postproc)
 

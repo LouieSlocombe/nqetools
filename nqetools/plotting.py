@@ -1,7 +1,10 @@
+import copy
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-from nqetools.calcs import moving_average
+from .calcs import moving_average
+from .pathway import get_neb_path
 
 
 def plot_time_energy(output_data):
@@ -148,3 +151,18 @@ def n_plot(xlab, ylab, xs=14, ys=14):
     plt.ylabel(ylab, fontsize=ys)
     plt.tight_layout()
     return None
+
+
+def plot_neb(images, calc):
+    # Attach the calculator to the images
+    for image in images:
+        image.calc = copy.copy(calc)
+    # Get the energy
+    energies = [i.get_potential_energy() for i in images]
+    # shift the graph
+    energies -= min(energies)
+    # Get the path
+    path = get_neb_path(images)
+    plt.plot(path, energies)
+    n_plot("Path A", "Energy eV")
+    plt.show()
