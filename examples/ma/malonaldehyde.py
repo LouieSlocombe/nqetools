@@ -6,14 +6,13 @@ import numpy as np
 from ase import Atoms
 from ase.build import molecule
 # import mace off
-from mace.calculators import mace_off
+from mace.calculators import mace_off, mace_anicc
 from ase.optimize import BFGS
 
 from ase.io import read, write
 
-
 import nqetools as nqe
-from nqetools import get_ts_image
+from nqetools import get_ts_image, get_neb_path
 
 
 def add_hydrogen_halfway(atoms, index1, index2):
@@ -40,6 +39,7 @@ def add_hydrogen_halfway(atoms, index1, index2):
     atoms += Atoms('H', positions=[midpoint])
 
     return atoms
+
 
 def add_hydrogen_at_distance(atoms, index1, index2, distance):
     """
@@ -85,6 +85,7 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
     Returns:
     Atoms: The updated Atoms object with the swapped bonding configuration.
     """
+    atoms = atoms.copy()
     # Get the positions of the donor, hydrogen, and acceptor atoms
     donor_pos = atoms.positions[donor_index]
     hydrogen_pos = atoms.positions[hydrogen_index]
@@ -100,19 +101,20 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
 
     return atoms
 
-atoms = read("malonaldehyde.traj")
-view(atoms)
-exit()
-
 
 fmax = 0.01
-calc = mace_off(model="large", )
-#
+n_images = 7
+calc = mace_off(model="large")
+
 # atoms = pubchem_atoms_search(smiles="C(C=O)C=O")
-# reactant = add_hydrogen_at_distance(atoms, 0, 1, 1.0)
-# product = add_hydrogen_at_distance(atoms, 1, 0, 1.0)
-# # view(reactant)
-# # view(product)
+atoms = read("malonaldehyde.traj")
+# delete the hydrogen atom
+del atoms[-1]
+atoms = nqe.optimise_geom(atoms, calc, fmax=fmax)
+
+# product = swap_bonding_configuration(reactant,0, 9,1)
+reactant = add_hydrogen_at_distance(atoms, 0, 1, 1.0)
+product = add_hydrogen_at_distance(atoms, 1, 0, 1.0)
 
 reactant = nqe.optimise_geom(reactant, calc, fmax=fmax)
 view(reactant)
@@ -120,11 +122,13 @@ view(reactant)
 product = nqe.optimise_geom(product, calc, fmax=fmax)
 view(product)
 
-neb = nqe.prepare_neb(reactant, product, calc, n_images=5)
+neb = nqe.prepare_neb(reactant, product, calc, n_images=n_images)
 view(neb.images)
 
-ts_path = nqe.optimise_neb(neb, fmax=fmax)
+ts_path = nqe.optimise_neb(neb, fmax=fmax, n_images=n_images)
 view(ts_path)
 
-ts_image = nqe.get_ts_image(ts_path,calc)
+ts_image = nqe.get_ts_image(ts_path, calc)
 view(ts_image)
+
+nqe.plot_neb(ts_path, calc)
