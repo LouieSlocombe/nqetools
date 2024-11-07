@@ -158,7 +158,7 @@ def plot_neb(images, calc):
     for image in images:
         image.calc = copy.copy(calc)
     # Get the energy
-    energies = [i.get_potential_energy() for i in images]
+    energies = np.array([i.get_potential_energy() for i in images])
     # shift the graph
     energies -= min(energies)
     # Get the path

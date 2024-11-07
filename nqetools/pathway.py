@@ -1,5 +1,5 @@
-import os
 import copy
+import os
 import time
 
 import numpy as np
@@ -130,7 +130,11 @@ def optimise_reactant_product(reactant, product, calc,
     return reactant, product
 
 
-def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=True, k=2.0):
+def prepare_neb(reactant, product, calc,
+                n_images=5,
+                climb=True,
+                rm_ro_trans=True,
+                k=2.0):
     # Construct the NEB images
     neb_images = [reactant]
     for ii in range(n_images - 2):
@@ -153,7 +157,11 @@ def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=Tru
     return neb
 
 
-def optimise_neb(neb, fmax=0.01, steps=1000, ts_traj='ts.traj', n_images=5):
+def optimise_neb(neb,
+                 fmax=0.01,
+                 steps=1000,
+                 ts_traj='ts.traj',
+                 n_images=5):
     t0 = time.time()
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
     t1 = time.time()
