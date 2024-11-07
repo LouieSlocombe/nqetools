@@ -1,9 +1,10 @@
+import os
 import copy
 import time
 
 import numpy as np
 from ase.io import read
-from ase.neb import NEB
+from ase.mep import NEB
 from ase.optimize import BFGS
 from ase.vibrations import Vibrations
 from scipy.interpolate import CubicSpline
@@ -95,6 +96,17 @@ def resample_path(path, N_resample):
     return irc_resampled
 
 
+def optimise_geom(atoms, calc, fmax=0.01, steps=1000, opti_traj='opti.traj'):
+    atoms = atoms.copy()
+    atoms.calc = calc
+    t0 = time.time()
+    BFGS(atoms, trajectory=opti_traj).run(fmax=fmax, steps=steps)
+    t1 = time.time()
+    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
+    atoms = read(opti_traj, index=-1)
+    os.remove(opti_traj)
+    return atoms
+
 def optimise_reactant_product(reactant, product, calc,
                               fmax=0.01,
                               steps=1000,
@@ -135,11 +147,13 @@ def prepare_neb(reactant, product, calc, n_images=5, climb=True, rm_ro_trans=Tru
     # interpolate the images
     neb.interpolate()
     neb.interpolate("idpp")
-    return None
+    return neb
 
 
 def optimise_neb(neb, fmax=0.01, steps=1000, ts_traj='ts.traj', n_images=5):
+    t0 = time.time()
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
+    t1 = time.time()
     # Read the trajectory of the last images
     return read(ts_traj, index=f"-{n_images}:")
 
