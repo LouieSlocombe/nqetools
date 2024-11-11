@@ -5,18 +5,15 @@ from .calcs import (correlate,
                     temp_cross,
                     calculate_nbeads,
                     calc_kappa)
-
 from .driver import (write_mace_driver,
                      write_nwchem_driver,
                      write_orca_driver,
                      prep_driver)
-
 from .execution import (run_ipi,
                         run_optimise,
                         ipi_run_phonons,
                         run_ts,
                         run_inst)
-
 from .io import (read_ipi_xyz,
                  read_ipi_output,
                  write_xml,
@@ -28,33 +25,6 @@ from .io import (read_ipi_xyz,
                  get_final_hess,
                  copy_xyz,
                  copy_hess)
-
-from .plotting import (plot_time_energy,
-                       plot_time_temperature,
-                       plot_energy_contour_series,
-                       plot_energy_contour_compare,
-                       plot_energy_sep,
-                       n_plot,
-                       plot_neb)
-
-from .postproc import (instanton_postproc)
-
-from .tools import (add_ipi_paths,
-                    rm_ipi_tmp,
-                    has_pbc)
-
-from .xmlparse import (update_mass,
-                       update_cell,
-                       update_driver,
-                       update_nbeads,
-                       update_hessian,
-                       update_temperature,
-                       update_title,
-                       update_total_steps,
-                       update_optimizer,
-                       update_tol,
-                       update_open_paths)
-
 from .pathway import (get_fmax,
                       get_neb_path,
                       stitch_path,
@@ -67,5 +37,31 @@ from .pathway import (get_fmax,
                       optimise_ts,
                       optimise_irc,
                       get_vibrations)
+from .plotting import (plot_time_energy,
+                       plot_time_temperature,
+                       plot_energy_contour_series,
+                       plot_energy_contour_compare,
+                       plot_energy_sep,
+                       n_plot,
+                       plot_neb)
+from .postproc import (instanton_postproc)
+from .tools import (add_ipi_paths,
+                    rm_ipi_tmp,
+                    has_pbc,
+                    add_hydrogen_halfway,
+                    add_hydrogen_at_distance,
+                    swap_bonding_configuration,
+                    )
+from .xmlparse import (update_mass,
+                       update_cell,
+                       update_driver,
+                       update_nbeads,
+                       update_hessian,
+                       update_temperature,
+                       update_title,
+                       update_total_steps,
+                       update_optimizer,
+                       update_tol,
+                       update_open_paths)
 
 __version__ = "0.0.01"
