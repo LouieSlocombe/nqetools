@@ -55,6 +55,18 @@ def has_pbc(atoms):
     return any(atoms.pbc)
 
 
+def remove_pbc(atoms):
+    """
+    Removes the periodic boundary conditions from an ASE atoms object.
+    This is important for calculations involving isolated molecules where
+    periodicity (like in crystals) is not desired. It ensures that the system
+    is treated as an isolated entity without interactions from periodic images.
+    """
+    atoms.set_cell([0, 0, 0])  # Setting the cell size to zero
+    atoms.set_pbc([0, 0, 0])  # Turning off periodic boundary conditions
+    return None
+
+
 def add_hydrogen_halfway(atoms, index1, index2):
     """
     Add a hydrogen atom halfway between two atoms in an Atoms object.
