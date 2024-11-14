@@ -166,3 +166,16 @@ def plot_neb(images, calc):
     plt.plot(path, energies)
     n_plot("Path A", "Energy eV")
     plt.show()
+
+
+def plot_sella(images):
+    # Get the energy
+    energies = np.array([i.get_potential_energy() for i in images])
+    # shift the graph
+    energies -= min(energies)
+    # Get the path
+    path = get_neb_path(images)
+    plt.plot(path, energies, 'o-', c='k', lw=2, label='IRC')
+    n_plot("Path A", "Energy eV")
+    plt.show()
+    return None

@@ -1,12 +1,12 @@
 import os
 import sys
+import time
 
 import numpy as np
 from ase import Atoms
+from ase.build import minimize_rotation_and_translation
+from ase.test.fio.vasp.test_vasp_out import atoms
 from scipy.constants import physical_constants
-
-
-# import mace off
 
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
@@ -152,6 +152,32 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
     atoms.positions[hydrogen_index] = new_hydrogen_pos
 
     return atoms
+
+
+def time_force_call(atoms, calc, n_reps=3):
+    times = np.zeros(n_reps, dtype=float)
+    t0 = time.time()
+    for i in range(n_reps):
+        tmp = atoms.copy()
+        tmp.calc = calc
+        tmp.get_forces()
+        times[i] = time.time() - t0
+        print('Time taken={:.3} s'.format(times[i]), flush=True)
+    print('Average time taken={:.3} s std={:.3}'.format(np.mean(times), np.std(times)), flush=True)
+
+
+def get_fmax(atoms):
+    return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
+
+
+def align_mols(atoms1, atoms2):
+    atoms1 = atoms1.copy()
+    atoms2 = atoms2.copy()
+    atoms1.center()
+    atoms2.center()
+    # Minimize the rotation and translation
+    minimize_rotation_and_translation(atoms1, atoms2)
+    return atoms1, atoms2
 
 
 # Conversion factor from Bohr to Angstrom
