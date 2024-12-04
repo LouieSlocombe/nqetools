@@ -13,6 +13,15 @@ from sella import Sella
 
 
 def get_fmax(atoms):
+    """
+    Calculate the maximum force on any atom in the given Atoms object.
+
+    Parameters:
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+
+    Returns:
+    float: The maximum force on any atom.
+    """
     return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
 
 
@@ -100,6 +109,19 @@ def optimise_geom(atoms, calc,
                   fmax=0.01,
                   steps=1000,
                   opti_traj='opti.traj'):
+    """
+    Optimize the geometry of the given atomic structure using the BFGS algorithm.
+
+    Parameters:
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure to be optimized.
+    calc (ase.Calculator): Calculator to be used for the optimization.
+    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    opti_traj (str, optional): Filename for saving the optimization trajectory. Default is 'opti.traj'.
+
+    Returns:
+    ase.Atoms: Optimized ASE Atoms object.
+    """
     atoms = atoms.copy()
     atoms.calc = calc
     t0 = time.time()
@@ -116,6 +138,21 @@ def optimise_reactant_product(reactant, product, calc,
                               steps=1000,
                               reactant_opti='reactant_opti.traj',
                               product_opti='product_opti.traj'):
+    """
+    Optimize the geometries of the reactant and product structures.
+
+    Parameters:
+    reactant (ase.Atoms): ASE Atoms object containing the reactant structure.
+    product (ase.Atoms): ASE Atoms object containing the product structure.
+    calc (ase.Calculator): Calculator to be used for the optimization.
+    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    reactant_opti (str, optional): Filename for saving the reactant optimization trajectory. Default is 'reactant_opti.traj'.
+    product_opti (str, optional): Filename for saving the product optimization trajectory. Default is 'product_opti.traj'.
+
+    Returns:
+    tuple: A tuple containing the optimized reactant and product ASE Atoms objects.
+    """
     print('Optimizing reactant...', flush=True)
     reactant = optimise_geom(reactant, calc,
                              fmax=fmax,
@@ -162,6 +199,19 @@ def optimise_neb(neb,
                  steps=1000,
                  ts_traj='ts.traj',
                  n_images=5):
+    """
+    Optimize the geometry of a Nudged Elastic Band (NEB) calculation using the BFGS algorithm.
+
+    Parameters:
+    neb (ase.neb.NEB): NEB object containing the images to be optimized.
+    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    ts_traj (str, optional): Filename for saving the transition state trajectory. Default is 'ts.traj'.
+    n_images (int, optional): Number of images in the NEB calculation. Default is 5.
+
+    Returns:
+    list: A list of ASE Atoms objects representing the optimized images.
+    """
     t0 = time.time()
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
     t1 = time.time()
@@ -171,6 +221,16 @@ def optimise_neb(neb,
 
 
 def get_ts_image(neb_images, calc):
+    """
+    Find the transition state (TS) image with the highest energy from a list of NEB images.
+
+    Parameters:
+    neb_images (list): A list of ASE Atoms objects representing the NEB images.
+    calc (ase.Calculator): Calculator to be used for the energy calculations.
+
+    Returns:
+    ase.Atoms: The NEB image with the highest energy.
+    """
     # Attach the calculator to the images
     for image in neb_images:
         image.calc = copy.copy(calc)
@@ -186,6 +246,21 @@ def optimise_ts(ts_image, calc,
                 eta=1e-4,
                 gamma=0.1,
                 sella_traj='sella.traj'):
+    """
+    Optimize the transition state (TS) image using the Sella algorithm.
+
+    Parameters:
+    ts_image (ase.Atoms): ASE Atoms object representing the transition state image.
+    calc (ase.Calculator): Calculator to be used for the optimization.
+    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    eta (float, optional): Step size parameter for the Sella algorithm. Default is 1e-4.
+    gamma (float, optional): Damping parameter for the Sella algorithm. Default is 0.1.
+    sella_traj (str, optional): Filename for saving the Sella optimization trajectory. Default is 'sella.traj'.
+
+    Returns:
+    ase.Atoms: Optimized ASE Atoms object representing the refined transition state image.
+    """
     print('Running Sella TS search', flush=True)
     ts_image.calc = calc
 
@@ -214,6 +289,24 @@ def optimise_irc(ts_image, calc,
                  keep_going=True,
                  irc_f_traj='irc_f.traj',
                  irc_r_traj='irc_r.traj'):
+    """
+    Optimize the Intrinsic Reaction Coordinate (IRC) path using the Sella algorithm.
+
+    Parameters:
+    ts_image (ase.Atoms): ASE Atoms object representing the transition state image.
+    calc (ase.Calculator): Calculator to be used for the optimization.
+    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    dx (float, optional): Step size parameter for the IRC algorithm. Default is 0.1.
+    eta (float, optional): Step size parameter for the Sella algorithm. Default is 1e-4.
+    gamma (float, optional): Damping parameter for the Sella algorithm. Default is 0.1.
+    keep_going (bool, optional): If True, continue the optimization until convergence. Default is True.
+    irc_f_traj (str, optional): Filename for saving the forward IRC trajectory. Default is 'irc_f.traj'.
+    irc_r_traj (str, optional): Filename for saving the reverse IRC trajectory. Default is 'irc_r.traj'.
+
+    Returns:
+    None
+    """
     # Read the trajectory
     ts_image.calc = calc
 
@@ -242,6 +335,16 @@ def optimise_irc(ts_image, calc,
 
 
 def get_vibrations(atoms, calc):
+    """
+    Calculate the vibrational frequencies of the given atomic structure.
+
+    Parameters:
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+    calc (ase.Calculator): Calculator to be used for the vibrational frequency calculations.
+
+    Returns:
+    numpy.ndarray: An array of vibrational frequencies.
+    """
     # Set the calculator
     atoms.calc = calc
     # Get the vibrational frequencies
