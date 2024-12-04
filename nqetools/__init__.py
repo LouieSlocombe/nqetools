@@ -64,4 +64,4 @@ from .xmlparse import (update_mass,
                        update_tol,
                        update_open_paths)
 
-__version__ = "0.0.01"
+__version__ = "0.1.0"

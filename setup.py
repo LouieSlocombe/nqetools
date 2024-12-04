@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='nqetools',
-    version='0.0.0',
+    version='0.1.0',
     author='Louie Slocombe',
     author_email='louies@hotmail.co.uk',
     description='A centralised set of tools for doing nuclear quantum calculations.',
