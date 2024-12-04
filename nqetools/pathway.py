@@ -12,19 +12,6 @@ from sella import IRC
 from sella import Sella
 
 
-def get_fmax(atoms):
-    """
-    Calculate the maximum force on any atom in the given Atoms object.
-
-    Parameters:
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-
-    Returns:
-    float: The maximum force on any atom.
-    """
-    return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
-
-
 def get_neb_path(images):
     """
     Calculate the path length between each image in a Nudged Elastic Band (NEB) calculation.

@@ -155,6 +155,17 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
 
 
 def time_force_call(atoms, calc, n_reps=3):
+    """
+    Measure the time taken to calculate forces on an atomic structure multiple times.
+
+    Parameters:
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+    calc (ase.Calculator): Calculator to be used for the force calculations.
+    n_reps (int, optional): Number of repetitions for the force calculation. Default is 3.
+
+    Returns:
+    None
+    """
     times = np.zeros(n_reps, dtype=float)
     t0 = time.time()
     for i in range(n_reps):
@@ -167,10 +178,29 @@ def time_force_call(atoms, calc, n_reps=3):
 
 
 def get_fmax(atoms):
+    """
+    Calculate the maximum force on any atom in the given Atoms object.
+
+    Parameters:
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+
+    Returns:
+    float: The maximum force on any atom.
+    """
     return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
 
 
 def align_mols(atoms1, atoms2):
+    """
+    Align two molecular structures by minimizing their rotational and translational differences.
+
+    Parameters:
+    atoms1 (ase.Atoms): The first ASE Atoms object.
+    atoms2 (ase.Atoms): The second ASE Atoms object.
+
+    Returns:
+    tuple: A tuple containing the aligned ASE Atoms objects (atoms1, atoms2).
+    """
     atoms1 = atoms1.copy()
     atoms2 = atoms2.copy()
     atoms1.center()
