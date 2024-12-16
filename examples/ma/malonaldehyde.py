@@ -14,9 +14,6 @@ from ase.io import read, write
 import nqetools as nqe
 from nqetools import get_ts_image, get_neb_path
 
-
-
-
 fmax = 0.05
 n_images = 5
 # calc = mace_off(model="large")
@@ -32,8 +29,8 @@ del atoms[5]
 atoms = nqe.optimise_geom(atoms, calc, fmax=fmax)
 
 # product = swap_bonding_configuration(reactant,0, 9,1)
-reactant = add_hydrogen_at_distance(atoms, 0, 1, 1.0)
-product = add_hydrogen_at_distance(atoms, 1, 0, 1.0)
+reactant = nqe.add_hydrogen_at_distance(atoms, 0, 1, 1.0)
+product = nqe.add_hydrogen_at_distance(atoms, 1, 0, 1.0)
 
 reactant = nqe.optimise_geom(reactant, calc, fmax=fmax)
 view(reactant)
@@ -51,5 +48,5 @@ view(ts_image)
 
 nqe.plot_neb(ts_path, calc)
 
-vib = nqe.get_vibrations(ts_image,calc)
-print(vib,flush=True)
+vib = nqe.get_vibrations(ts_image, calc)
+print(vib, flush=True)
