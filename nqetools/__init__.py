@@ -43,7 +43,7 @@ from .plotting import (plot_time_energy,
                        plot_energy_sep,
                        n_plot,
                        plot_neb)
-from .postproc import (instanton_postproc)
+from .post_proc import (instanton_postproc)
 from .tools import (add_ipi_paths,
                     rm_ipi_tmp,
                     has_pbc,
@@ -52,16 +52,16 @@ from .tools import (add_ipi_paths,
                     swap_bonding_configuration,
                     get_fmax,
                     )
-from .xmlparse import (update_mass,
-                       update_cell,
-                       update_driver,
-                       update_nbeads,
-                       update_hessian,
-                       update_temperature,
-                       update_title,
-                       update_total_steps,
-                       update_optimizer,
-                       update_tol,
-                       update_open_paths)
+from .xml_parse import (update_mass,
+                        update_cell,
+                        update_driver,
+                        update_nbeads,
+                        update_hessian,
+                        update_temperature,
+                        update_title,
+                        update_total_steps,
+                        update_optimizer,
+                        update_tol,
+                        update_open_paths)
 
 __version__ = "0.1.0"

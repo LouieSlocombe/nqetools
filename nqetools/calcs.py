@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import constants
 
-from .postproc import instanton_postproc
+from .post_proc import instanton_postproc
 
 
 def correlate(x, y, xbar=None, ybar=None, normalize=True):
