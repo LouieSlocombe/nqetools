@@ -3,15 +3,17 @@ import os
 from ase.calculators.nwchem import NWChem
 from ase.calculators.orca import ORCA
 from ase.calculators.orca import OrcaProfile
+
 from .qchem_mod import QChem
 
-def nwchem_calc(task=None,
-                charge=0,
-                xc="B3LYP",
-                multiplicity=1,
-                basis_set="6-311++G**",
-                disp=None,
-                solv=None):
+
+def nwchem_calc_preset(task=None,
+                       charge=0,
+                       xc="B3LYP",
+                       multiplicity=1,
+                       basis_set="6-311++G**",
+                       disp=None,
+                       solv=None):
     # Init the nwchem dictionary
     tmp = dict(charge=charge, basis=basis_set)
     # Make the standard dft block
@@ -53,19 +55,19 @@ def nwchem_calc(task=None,
     return NWChem(**tmp)
 
 
-def orca_calc(orca_path=None,
-              calc_type="DFT",
-              xc="B3LYP",
-              charge=0,
-              multiplicity=1,
-              basis_set="6-31+G(d,p)",
-              nprocs=1,
-              f_solv=True,
-              f_disp=True,
-              atom_list=None,
-              calc_extra=None,
-              scf_option=None
-              ):
+def orca_calc_preset(orca_path=None,
+                     calc_type="DFT",
+                     xc="B3LYP",
+                     charge=0,
+                     multiplicity=1,
+                     basis_set="6-31+G(d,p)",
+                     nprocs=1,
+                     f_solv=True,
+                     f_disp=True,
+                     atom_list=None,
+                     calc_extra=None,
+                     scf_option=None
+                     ):
     """
     Function to set up and return an ORCA calculator object.
 

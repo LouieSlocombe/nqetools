@@ -74,4 +74,11 @@ from .xml_parse import (update_mass,
                         update_tol,
                         update_open_paths)
 
+from .qchem_mod import (QChem)
+
+from .calculators import (nwchem_calc_preset,
+                          orca_calc_preset,
+                          qchem_calc_preset,
+                          )
+
 __version__ = "0.1.0"
