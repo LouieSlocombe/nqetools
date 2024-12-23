@@ -241,7 +241,7 @@ def plot_sella(images):
     return None
 
 
-def plot_atoms(atoms):
+def show_atoms(atoms):
     """
     Plot the atomic structure using matplotlib.
 
@@ -251,6 +251,12 @@ def plot_atoms(atoms):
     Returns:
     None
     """
-    fig, ax = plt.subplots()
-    plot_atoms(atoms, ax)  # rotation=('90x, 90y, 90z')
-    plt.show()
+    if isinstance(atoms, list):
+        fig, ax = plt.subplots()
+        for atom in atoms:
+            plot_atoms(atom, ax)
+        plt.show()
+    else:
+        fig, ax = plt.subplots()
+        plot_atoms(atoms, ax)
+        plt.show()
