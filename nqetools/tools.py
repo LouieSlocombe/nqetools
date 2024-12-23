@@ -210,5 +210,52 @@ def align_mols(atoms1, atoms2):
     return atoms1, atoms2
 
 
+def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
+    """
+    Rotate the given Atoms object so that its principal axis with the largest
+    moment of inertia is aligned along the specified axis ('x', 'y', or 'z').
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The Atoms object to be aligned.
+    axis : str, optional
+        The Cartesian axis to align to, one of 'x', 'y', or 'z'. Default is 'z'.
+
+    Returns
+    -------
+    aligned_atoms : ase.Atoms
+        The rotated (aligned) Atoms object.
+    """
+
+    # Map axis strings to direction vectors
+    directions = {
+        'x': np.array([1.0, 0.0, 0.0]),
+        'y': np.array([0.0, 1.0, 0.0]),
+        'z': np.array([0.0, 0.0, 1.0]),
+    }
+
+    # Validate the requested axis
+    if axis not in directions:
+        raise ValueError("axis must be one of 'x', 'y', or 'z'")
+
+    # Ensure the Atoms object is centered
+    atoms = atoms.copy()
+    atoms.center()
+
+    # Compute principal axes
+    # evalues are sorted ascending, so evecs[2] is the axis with the largest eigenvalue
+    evalues, evecs = atoms.get_moments_of_inertia(vectors=True)
+
+    # This is the principal axis with the largest moment of inertia
+    principal_axis = evecs[2]
+
+    # Rotate the Atoms so that 'principal_axis' aligns with the chosen axis
+    target_vector = directions[axis]
+    atoms.rotate(principal_axis, target_vector, center='COM')
+
+    return atoms
+
+
 # Conversion factor from Bohr to Angstrom
 bohr_to_angstrom = physical_constants["Bohr radius"][0] * 1e10
