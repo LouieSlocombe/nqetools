@@ -2,6 +2,7 @@ import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
+from ase.visualize.plot import plot_atoms
 
 from .calcs import moving_average
 from .pathway import get_neb_path
@@ -143,6 +144,18 @@ def plot_energy_sep(xyz_a, xyz_b):
 
 
 def n_plot(xlab, ylab, xs=14, ys=14):
+    """
+    Add labels and formatting to a plot.
+
+    Parameters:
+    xlab (str): Label for the x-axis.
+    ylab (str): Label for the y-axis.
+    xs (int, optional): Font size for the x-axis label. Default is 14.
+    ys (int, optional): Font size for the y-axis label. Default is 14.
+
+    Returns:
+    None
+    """
     plt.minorticks_on()
     plt.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
     plt.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
@@ -153,13 +166,48 @@ def n_plot(xlab, ylab, xs=14, ys=14):
     return None
 
 
+def ax_plot(fig, ax, xlab, ylab, xs=14, ys=14):
+    """
+    Configure and style the plot with specified labels and tick parameters for a given axis.
+
+    Args:
+        fig (matplotlib.figure.Figure): The figure object containing the plot.
+        ax (matplotlib.axes.Axes): The axes object to be styled.
+        xlab (str): The label for the x-axis.
+        ylab (str): The label for the y-axis.
+        xs (int, optional): Font size for the x-axis label. Default is 14.
+        ys (int, optional): Font size for the y-axis label. Default is 14.
+
+    Returns:
+        None
+    """
+    ax.minorticks_on()
+    ax.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
+    ax.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
+    ax.tick_params(axis='both', which='both', top=True, right=True)
+    ax.set_xlabel(xlab, fontsize=xs)
+    ax.set_ylabel(ylab, fontsize=ys)
+    fig.tight_layout()
+    return None
+
+
 def plot_neb(images, calc):
+    """
+    Plot the Nudged Elastic Band (NEB) path for a series of images.
+
+    Parameters:
+    images (list of ase.Atoms): List of ASE Atoms objects representing the images along the NEB path.
+    calc (ase.Calculator): Calculator to be used for the energy calculations.
+
+    Returns:
+    None
+    """
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
     # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
-    # shift the graph
+    # Shift the graph
     energies -= min(energies)
     # Get the path
     path = get_neb_path(images)
@@ -169,13 +217,40 @@ def plot_neb(images, calc):
 
 
 def plot_sella(images):
+    """
+    Plot the energy profile along the NEB path for a series of images using the Sella method.
+
+    Parameters:
+    images (list of ase.Atoms): List of ASE Atoms objects representing the images along the NEB path.
+
+    Returns:
+    None
+    """
     # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
-    # shift the graph
+    # Shift the graph so the minimum energy is zero
     energies -= min(energies)
     # Get the path
     path = get_neb_path(images)
+    # Plot the energy profile
     plt.plot(path, energies, 'o-', c='k', lw=2, label='IRC')
+    # Add labels and formatting
     n_plot("Path A", "Energy eV")
+    # Display the plot
     plt.show()
     return None
+
+
+def plot_atoms(atoms):
+    """
+    Plot the atomic structure using matplotlib.
+
+    Parameters:
+    atoms (ase.Atoms): ASE Atoms object representing the atomic structure.
+
+    Returns:
+    None
+    """
+    fig, ax = plt.subplots()
+    plot_atoms(atoms, ax)  # rotation=('90x, 90y, 90z')
+    plt.show()
