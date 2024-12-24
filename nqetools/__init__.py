@@ -60,6 +60,8 @@ from .tools import (add_ipi_paths,
                     add_hydrogen_at_distance,
                     swap_bonding_configuration,
                     get_fmax,
+                    move_atom_halfway,
+                    optimise_atom_halfway,
                     )
 
 from .xml_parse import (update_mass,

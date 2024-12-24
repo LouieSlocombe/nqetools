@@ -8,6 +8,11 @@ from ase.build import minimize_rotation_and_translation
 from ase.test.fio.vasp.test_vasp_out import atoms
 from scipy.constants import physical_constants
 
+import numpy as np
+from ase import Atoms
+from ase.constraints import FixAtoms
+from ase.optimize import BFGS
+
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
     """
@@ -116,6 +121,44 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
 
     # Move the atom to the midpoint
     atoms.positions[atom_index] = midpoint
+
+    return atoms
+
+
+def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc, fmax=0.05):
+    """
+    Move an atom to be halfway between two target atoms, fix the positions of the three atoms,
+    perform a geometry optimization, and return the final result without any constraints.
+
+    Parameters:
+    atoms (Atoms): The ASE Atoms object.
+    atom_index (int): The index of the atom to move.
+    target_index1 (int): The index of the first target atom.
+    target_index2 (int): The index of the second target atom.
+    calc (Calculator): The calculator to be used for the optimization.
+    fmax (float): The maximum force criterion for the optimization. Default is 0.05 eV/Å.
+
+    Returns:
+    Atoms: The optimized Atoms object without any constraints.
+    """
+    # Move the atom to be halfway between the two target atoms
+    atoms = move_atom_halfway(atoms, atom_index, target_index1, target_index2)
+
+    # Fix the positions of the three atoms
+    constraint = FixAtoms(indices=[atom_index, target_index1, target_index2])
+    atoms.set_constraint(constraint)
+
+    # Set the calculator
+    atoms.set_calculator(calc)
+
+    # Perform the geometry optimization
+    BFGS(atoms).run(fmax=fmax)
+
+    # Get the final configuration
+    atoms = atoms[-1]
+
+    # Remove the constraints
+    atoms.set_constraint()
 
     return atoms
 
