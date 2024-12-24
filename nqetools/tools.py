@@ -93,6 +93,33 @@ def add_hydrogen_halfway(atoms, index1, index2):
     return atoms
 
 
+def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
+    """
+    Move an atom to be halfway between two target atoms in an Atoms object.
+
+    Parameters:
+    atoms (Atoms): The ASE Atoms object.
+    atom_index (int): The index of the atom to move.
+    target_index1 (int): The index of the first target atom.
+    target_index2 (int): The index of the second target atom.
+
+    Returns:
+    Atoms: The updated Atoms object with the atom moved.
+    """
+    atoms = atoms.copy()
+    # Get the positions of the target atoms
+    pos1 = atoms.positions[target_index1]
+    pos2 = atoms.positions[target_index2]
+
+    # Calculate the midpoint
+    midpoint = (pos1 + pos2) / 2.0
+
+    # Move the atom to the midpoint
+    atoms.positions[atom_index] = midpoint
+
+    return atoms
+
+
 def add_hydrogen_at_distance(atoms, index1, index2, distance):
     """
     Add a hydrogen atom at a specified distance from one atom along the line between two atoms in an Atoms object.
