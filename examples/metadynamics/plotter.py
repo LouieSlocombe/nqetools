@@ -1,8 +1,8 @@
-import matplotlib.pyplot as plt
-import cmocean.cm as cmo
-import numpy as np
 import subprocess
 
+import cmocean.cm as cmo
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Reconstruct the free energy from HILLS using the plumed tool "sum_hills" :
 p = subprocess.Popen("plumed sum_hills --hills HILLS --outfile fes.dat" +
