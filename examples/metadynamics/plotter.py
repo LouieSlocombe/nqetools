@@ -1,7 +1,6 @@
 import subprocess
-
-import cmocean.cm as cmo
 import matplotlib.pyplot as plt
+# from matplotlib import colormaps
 import numpy as np
 
 # Reconstruct the free energy from HILLS using the plumed tool "sum_hills" :
@@ -12,15 +11,15 @@ p.wait()
 
 # Import free energy and reshape with the number of bins defined in the
 # reconstruction process.
-scm = np.loadtxt('fes.dat', usecols=0).reshape(201, 201)
-tcm = np.loadtxt('fes.dat', usecols=1).reshape(201, 201)
-fes = np.loadtxt('fes.dat', usecols=2).reshape(201, 201)
+scm = np.loadtxt('fes.dat', usecols=0).reshape(301, 301)
+tcm = np.loadtxt('fes.dat', usecols=1).reshape(301, 301)
+fes = np.loadtxt('fes.dat', usecols=2).reshape(301, 301)
 
 # Plot
 fig, ax = plt.subplots(figsize=(10, 9))
 
 # Plot free energy surface
-im = ax.contourf(scm, tcm, fes, 10, cmap=cmo.tempo_r)
+im = ax.contourf(scm, tcm, fes, 10)#, cmap=colormaps['Blues_r'])
 cp = ax.contour(scm, tcm, fes, 10,
                 linestyles='-', colors='darkgray', linewidths=1.2)
 
@@ -34,4 +33,5 @@ cbar.set_label(label=r'FES[$\epsilon$]', fontsize=40)
 cbar.ax.tick_params(labelsize=32)
 
 plt.tight_layout()
-plt.show()
+plt.savefig('fes.png', dpi=300)
+#plt.show()
