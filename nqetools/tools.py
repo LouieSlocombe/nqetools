@@ -5,13 +5,10 @@ import time
 import numpy as np
 from ase import Atoms
 from ase.build import minimize_rotation_and_translation
-from ase.test.fio.vasp.test_vasp_out import atoms
-from scipy.constants import physical_constants
-
-import numpy as np
-from ase import Atoms
 from ase.constraints import FixAtoms
 from ase.optimize import BFGS
+from ase.test.fio.vasp.test_vasp_out import atoms
+from scipy.constants import physical_constants
 
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
