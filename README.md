@@ -1,20 +1,34 @@
-# nqetools
-A package to help run NQE calculations based on `https://github.com/i-pi/i-pi`.
+# NQE tools
+A package to help run NQE (nuclear quantum effects) calculations based on [i-pi](https://github.com/i-pi/i-pi).
 
-# Requirements
-Make sure to load your conda environment and upgrade conda `conda update conda --all` and pip `pip install --upgrade pip`. I would install them in this order:
-- numpy `conda install numpy`
-- matplotlib `conda install matplotlib`
-- ase `pip install ase`
-- sella `pip install sella`
-- ipi `pip install ipi`
+# Install instructions
+Make sure to load your conda environment and upgrade conda/pip.
+- `conda create -n ipi_env`
+- `conda activate ipi_env`
+- `conda update conda --all`
+- `pip install --upgrade pip`
+- Get basic requirements `conda install numpy matplotlib`
 
-# MACE
-There are two options to use Mace, but the torch option seems best. For model eval and training:
+## MACE
+Mace has two options, but the torch option seems best. For model eval and training:
 - Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`.
-- It might look something like this `conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia`.
-- mace-torch `pip install mace-torch`.
+- It might look like this: `conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia`.
+- Selecting mace-torch: `pip install mace-torch`.
 
-# Install one line
-- Conda one line `conda install numpy matplotlib pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia`
-- Pip one line `pip install ase sella ipi mace-torch`
+## ASE, Sella, I-PI
+- Pip one line `pip install ase sella ipi`
+
+## PLUMED
+We don't need to build from source. We can use the conda-forge packages.
+- `conda install -c conda-forge plumed py-plumed`
+- You can check if plumed is installed if this returns the plumed path
+```
+import plumed
+plumed.Plumed()
+```
+- Now the kernel environmental variable should added to the .bashrc `PLUMED_KERNEL=/home/louie/anaconda3/envs/ipi_env/lib/libplumedKernel.so`.
+
+# Resources
+https://atomistic-cookbook.org/index.html
+https://github.com/i-pi/piqm2023-tutorial
+https://github.com/i-pi/tutorials-schools
