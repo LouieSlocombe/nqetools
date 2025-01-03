@@ -1,7 +1,28 @@
 import subprocess
 import matplotlib.pyplot as plt
-# from matplotlib import colormaps
+from matplotlib import colormaps
 import numpy as np
+
+
+# Import free energy and reshape with the number of bins defined in the
+# reconstruction process.
+scm = np.loadtxt('COLVAR', usecols=1)
+tcm = np.loadtxt('COLVAR', usecols=2)
+
+# Plot
+fig, ax = plt.subplots(figsize=(10, 9))
+
+# Plot free energy surface
+plt.plot(scm, tcm, 'o')
+# Plot parameters
+ax.set_xlabel('SCM', fontsize=40)
+ax.set_ylabel('TCM', fontsize=40)
+ax.tick_params(axis='y', labelsize=25)
+ax.tick_params(axis='x', labelsize=25)
+
+plt.tight_layout()
+plt.show()
+
 
 # Reconstruct the free energy from HILLS using the plumed tool "sum_hills" :
 p = subprocess.Popen("plumed sum_hills --hills HILLS --outfile fes.dat" +
@@ -19,7 +40,7 @@ fes = np.loadtxt('fes.dat', usecols=2).reshape(301, 301)
 fig, ax = plt.subplots(figsize=(10, 9))
 
 # Plot free energy surface
-im = ax.contourf(scm, tcm, fes, 10)#, cmap=colormaps['Blues_r'])
+im = ax.contourf(scm, tcm, fes, 10, cmap=colormaps['Blues_r'])
 cp = ax.contour(scm, tcm, fes, 10,
                 linestyles='-', colors='darkgray', linewidths=1.2)
 
