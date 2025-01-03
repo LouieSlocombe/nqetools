@@ -52,6 +52,9 @@ https://github.com/i-pi/piqm2023-tutorial
 
 https://github.com/i-pi/tutorials-schools
 
+https://github.com/Sucerquia/ASE-PLUMED_tutorial/tree/master
+
+https://github.com/water-ice-group/plumed_tutorial_mace
 
 # Tools
 https://github.com/lab-cosmo/chemiscope
