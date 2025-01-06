@@ -55,4 +55,4 @@ cbar.ax.tick_params(labelsize=32)
 
 plt.tight_layout()
 plt.savefig('fes.png', dpi=300)
-#plt.show()
+plt.show()
