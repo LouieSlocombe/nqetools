@@ -11,14 +11,19 @@ conda activate ipi_env
 ```
 Make sure to upgrade conda and pip.
 ```
+conda install anaconda::pip
 conda update conda --all
-pip install --upgrade pip
 ```
 
 Install the basic requirements.
 ```
-conda install numpy matplotlib
-pip install ase sella ipi
+conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anaconda::pytest conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes anaconda::sympy
+```
+
+## ASE
+Avoid conda, install conda-forge::sella and conda-forge::ase as it is old.
+```
+pip install ase sella
 ```
 
 ## MACE
@@ -27,25 +32,43 @@ Follow the instructions here. Using conda is probably better `https://pytorch.or
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
 ```
-Selecting mace-torch:
+It is worth ensuring the pytorch backend can use the GPU from here. This should return True.
+```
+import torch
+torch.cuda.is_available()
+```
+Next install mace. Selecting mace-torch:
 ```
 pip install mace-torch
 ```
 
 ## PLUMED
-We don't need to build from source. We can use the conda-forge packages.
+We don't need to build from source. We can use the conda-forge packages. Install a pre-compiled PLUMED binary using the following command
 ```
-conda install -c conda-forge plumed py-plumed
+conda install -c conda-forge plumed
 ```
+Similarly, the python wrappers can be installed with
+```
+conda install -c conda-forge py-plumed
+```
+
 You can check if plumed is installed if this returns the plumed path
 ```
 import plumed
 plumed.Plumed()
 ```
-Now the kernel environmental variable should added to the .bashrc.
+Optional? Now the kernel environmental variable should added to the .bashrc.
 ```
 PLUMED_KERNEL=/home/louie/anaconda3/envs/ipi_env/lib/libplumedKernel.so
 ```
+
+## I-PI
+Conda is preferred to not mess up the ecosystem.
+```
+conda install conda-forge::i-pi
+```
+
+
 
 # Resources
 https://atomistic-cookbook.org/index.html
