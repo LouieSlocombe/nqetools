@@ -4,7 +4,9 @@ A package to help run NQE (nuclear quantum effects) calculations based on [i-pi]
 # Install instructions
 I suggest you work from a fresh environment to prevent issues! 
 ```
-conda create -n ipi_env
+conda create -n ipi_env python=3.12
+```
+```
 conda activate ipi_env
 ```
 Make sure to upgrade conda and pip.
