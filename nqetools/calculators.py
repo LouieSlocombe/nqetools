@@ -14,6 +14,21 @@ def nwchem_calc_preset(task=None,
                        basis_set="6-311++G**",
                        disp=None,
                        solv=None):
+    """
+    Set up and return an NWChem calculator object with the specified settings.
+
+    Parameters:
+    task (str, optional): Specific task for the calculation (e.g., "freq" for frequency calculations). Default is None.
+    charge (int, optional): Charge of the molecule. Default is 0.
+    xc (str, optional): Exchange-correlation functional to use. Default is "B3LYP".
+    multiplicity (int, optional): Multiplicity of the molecule. Default is 1.
+    basis_set (str, optional): Basis set to use. Default is "6-311++G**".
+    disp (str, optional): Dispersion correction method to use ("XDM" or "D3"). Default is None.
+    solv (str, optional): Solvent model to use ("WATER" or "PROTEIN"). Default is None.
+
+    Returns:
+    NWChem: An NWChem calculator object with the specified settings.
+    """
     # Init the nwchem dictionary
     tmp = dict(charge=charge, basis=basis_set)
     # Make the standard dft block
@@ -66,23 +81,23 @@ def orca_calc_preset(orca_path=None,
                      f_disp=True,
                      atom_list=None,
                      calc_extra=None,
-                     scf_option=None
-                     ):
+                     scf_option=None):
     """
-    Function to set up and return an ORCA calculator object.
+    Set up and return an ORCA calculator object with the specified settings.
 
     Parameters:
-    calc_type (str): The type of calculation to perform. Default is "DFT".
-    xc_f (str): The exchange-correlation functional to use. Default is "B3LYP".
-    charge (int): The charge of the molecule. Default is 0.
-    mult (int): The multiplicity of the molecule. Default is 1.
-    basis_set (str): The basis set to use. Default is "6-31+G(d,p)".
-    nprocs (int): The number of processors to use. Default is 1.
-    f_solv (bool): Whether to use a solvent model. Default is True.
-    f_disp (bool): Whether to include dispersion corrections. Default is True.
-    atom_list (list): List of atoms for QM/MM calculations. Default is None.
-    calc_extra (str): Additional calculation options. Default is None.
-    scf_option (str): Additional SCF options. Default is None.
+    orca_path (str, optional): Path to the ORCA executable. Default is None.
+    calc_type (str, optional): The type of calculation to perform. Default is "DFT".
+    xc (str, optional): The exchange-correlation functional to use. Default is "B3LYP".
+    charge (int, optional): The charge of the molecule. Default is 0.
+    multiplicity (int, optional): The multiplicity of the molecule. Default is 1.
+    basis_set (str, optional): The basis set to use. Default is "6-31+G(d,p)".
+    nprocs (int, optional): The number of processors to use. Default is 1.
+    f_solv (bool or str, optional): Whether to use a solvent model. If True, uses "WATER". Default is True.
+    f_disp (bool or str, optional): Whether to include dispersion corrections. If True, uses "D4". Default is True.
+    atom_list (list, optional): List of atoms for QM/MM calculations. Default is None.
+    calc_extra (str, optional): Additional calculation options. Default is None.
+    scf_option (str, optional): Additional SCF options. Default is None.
 
     Returns:
     ORCA: An ORCA calculator object with the specified settings.
