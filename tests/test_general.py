@@ -1,7 +1,9 @@
-import nqetools as nqe
-import ase.build
 import time
+
+import ase.build
 from mace.calculators import mace_anicc
+
+import nqetools as nqe
 
 """
 Test the exe functions for simple cases
@@ -38,7 +40,7 @@ def test_orca_calc():
     pass
 
 
-def test_mace_annic():
+def test_mace_calc():
     # build the molecule
     atoms = ase.build.molecule('H2O')
     calc = mace_anicc()
@@ -49,4 +51,32 @@ def test_mace_annic():
     energy = atoms.get_potential_energy()
     t2 = time.time()
     print(f"Energy: {energy} Time: {t2 - t1}")
+    pass
+
+
+def test_mace_driver():
+    pass
+
+
+def test_orca_driver():
+    pass
+
+
+def test_exe_optimise():
+    pass
+
+
+def test_exe_md():
+    pass
+
+
+def test_exe_phonons():
+    pass
+
+
+def test_exe_ts():
+    pass
+
+
+def test_inst():
     pass
