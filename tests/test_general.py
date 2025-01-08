@@ -24,11 +24,12 @@ def test_calculate_nbeads():
 
 
 def test_orca_calc():
-    orca_path = '/home/louie/orca_6_0_1/orca'
+    print(flush=True)
+    print("Testing ORCA calculator", flush=True)
 
     # build the molecule
     atoms = ase.build.molecule('H2O')
-    calc = nqe.orca_calc_preset(orca_path=orca_path, nprocs=1)
+    calc = nqe.orca_calc_preset()
 
     # set the calculator
     atoms.calc = calc
@@ -36,7 +37,7 @@ def test_orca_calc():
     t1 = time.time()
     energy = atoms.get_potential_energy()
     t2 = time.time()
-    print(f"Energy: {energy} Time: {t2 - t1}")
+    print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
     pass
 
 

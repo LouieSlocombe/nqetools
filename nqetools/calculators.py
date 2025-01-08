@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 from ase.calculators.nwchem import NWChem
 from ase.calculators.orca import ORCA
@@ -71,101 +72,85 @@ def nwchem_calc_preset(task=None,
 
 
 def orca_calc_preset(orca_path=None,
-                     calc_type="DFT",
-                     xc="B3LYP",
+                     directory=None,
+                     calc_type='DFT',
+                     xc='B3LYP',
                      charge=0,
                      multiplicity=1,
-                     basis_set="6-31+G(d,p)",
+                     basis_set='6-31+G(d,p)',
                      nprocs=1,
                      f_solv=True,
                      f_disp=True,
                      atom_list=None,
                      calc_extra=None,
                      scf_option=None):
-    """
-    Set up and return an ORCA calculator object with the specified settings.
-
-    Parameters:
-    orca_path (str, optional): Path to the ORCA executable. Default is None.
-    calc_type (str, optional): The type of calculation to perform. Default is "DFT".
-    xc (str, optional): The exchange-correlation functional to use. Default is "B3LYP".
-    charge (int, optional): The charge of the molecule. Default is 0.
-    multiplicity (int, optional): The multiplicity of the molecule. Default is 1.
-    basis_set (str, optional): The basis set to use. Default is "6-31+G(d,p)".
-    nprocs (int, optional): The number of processors to use. Default is 1.
-    f_solv (bool or str, optional): Whether to use a solvent model. If True, uses "WATER". Default is True.
-    f_disp (bool or str, optional): Whether to include dispersion corrections. If True, uses "D4". Default is True.
-    atom_list (list, optional): List of atoms for QM/MM calculations. Default is None.
-    calc_extra (str, optional): Additional calculation options. Default is None.
-    scf_option (str, optional): Additional SCF options. Default is None.
-
-    Returns:
-    ORCA: An ORCA calculator object with the specified settings.
-    """
     if orca_path is None:
         # try and read the path from the environment
-        orca_path = os.environ.get("ORCA_PATH")
+        orca_path = os.environ.get('ORCA_PATH')
+    if directory is None:
+        directory = os.path.join(tempfile.mkdtemp(), 'orca')
 
     profile = OrcaProfile(command=orca_path)
 
     if nprocs > 1:
-        inpt_procs = "%pal nprocs {} end".format(nprocs)
+        inpt_procs = '%pal nprocs {} end'.format(nprocs)
     else:
-        inpt_procs = ""
+        inpt_procs = ''
 
     if f_solv is not None and f_solv is not False:
         if f_solv:
-            f_solv = "WATER"
-        inpt_solv = """
+            f_solv = 'WATER'
+        inpt_solv = '''
         %CPCM SMD TRUE
             SMDSOLVENT "{}"
-        END""".format(f_solv)
+        END'''.format(f_solv)
     else:
-        inpt_solv = ""
+        inpt_solv = ''
 
     if f_disp is None or f_disp is False:
-        inpt_disp = ""
+        inpt_disp = ''
     else:
         if f_disp:
-            f_disp = "D4"
+            f_disp = 'D4'
         inpt_disp = f_disp
 
-    if atom_list is not None:
-        inpt_xtb = """
+    if atom_list is not None and calc_type == 'QM/XTB2':
+        inpt_xtb = '''
         %QMMM QMATOMS {{}} END END
-        """.format(str(atom_list).strip("[").strip("]"))
+        '''.format(str(atom_list).strip('[').strip(']'))
+    else:
+        inpt_xtb = ''
 
     inpt_blocks = inpt_procs + inpt_solv
 
-    if calc_type == "DFT":
-        inpt_simple = "{} {} {}".format(xc, inpt_disp, basis_set)
-    elif calc_type == "MP2":
-        inpt_simple = "DLPNO-{} {} {}/C".format(calc_type, basis_set, basis_set)
-    elif calc_type == "CCSD":
-        inpt_simple = "DLPNO-{}(T) {} {}/C".format(calc_type, basis_set, basis_set)
-    elif calc_type == "QM/XTB2":
-        inpt_simple = "{} {} {} {}".format(calc_type, xc, inpt_disp, basis_set)
+    if calc_type == 'DFT':
+        inpt_simple = '{} {} {}'.format(xc, inpt_disp, basis_set)
+    elif calc_type == 'MP2':
+        inpt_simple = 'DLPNO-{} {} {}/C'.format(calc_type, basis_set, basis_set)
+    elif calc_type == 'CCSD':
+        inpt_simple = 'DLPNO-{}(T) {} {}/C'.format(calc_type, basis_set, basis_set)
+    elif calc_type == 'QM/XTB2':
+        inpt_simple = '{} {} {} {}'.format(calc_type, xc, inpt_disp, basis_set)
         inpt_blocks = inpt_procs + inpt_solv + inpt_xtb
     else:
-        inpt_simple = "{} {}".format(calc_type, basis_set)
+        inpt_simple = '{} {}'.format(calc_type, basis_set)
 
     # Add the scf option
     if scf_option is not None:
-        inpt_simple += " " + scf_option
+        inpt_simple += ' ' + scf_option
 
     # Add the extra options
     if calc_extra is not None:
-        inpt_simple += " " + calc_extra
+        inpt_simple += ' ' + calc_extra
 
     calc = ORCA(
         profile=profile,
         charge=charge,
         mult=multiplicity,
-        directory='data',
+        directory=directory,
         orcasimpleinput=inpt_simple,
         orcablocks=inpt_blocks
     )
-    calc._label = "check"
     return calc
 
 
