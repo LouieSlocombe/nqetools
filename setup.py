@@ -23,6 +23,8 @@ setup(
         'sella',
         'scipy',
         'ipi',
+        'mace-torch',
+        'plumed',
     ],
     extras_require={
         'dev': [
