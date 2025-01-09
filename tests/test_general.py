@@ -42,6 +42,8 @@ def test_orca_calc():
 
 
 def test_mace_calc():
+    print(flush=True)
+    print("Testing MACE calculator", flush=True)
     # build the molecule
     atoms = ase.build.molecule('H2O')
     calc = mace_anicc()
