@@ -228,3 +228,59 @@ def qchem_calc_preset(charge=0,
         return QChem(solv_extra=solv_extra, **inpt_dict)
     else:
         return QChem(**inpt_dict)
+
+
+orca_preset_dft_cheap = {
+    'calc_type': 'DFT',
+    'xc': 'BLYP',
+    'basis_set': '6-31+G(d,p)',
+    'f_disp': False,
+    'f_solv': False,
+    'atom_list': None,
+    'calc_extra': None,
+    'scf_option': None
+}
+
+orca_preset_dft_gold = {
+    'calc_type': 'DFT',
+    'xc': 'B3LYP',
+    'basis_set': 'DEF2-SVP',
+    'f_disp': True,
+    'f_solv': True,
+    'atom_list': None,
+    'calc_extra': None,
+    'scf_option': None
+}
+
+orca_preset_xtb = {
+    'calc_type': 'XTB2',
+    'xc': '',
+    'basis_set': '',
+    'f_disp': False,
+    'f_solv': False,
+    'atom_list': None,
+    'calc_extra': None,
+    'scf_option': None
+}
+
+orca_preset_mp2_gold = {
+    'calc_type': 'MP2',
+    'xc': '',
+    'basis_set': 'DEF2-TZVPP',
+    'f_disp': False,
+    'f_solv': True,
+    'atom_list': None,
+    'calc_extra': None,
+    'scf_option': None
+}
+
+orca_preset_ccsd_gold = {
+    'calc_type': 'CCSD(T)',
+    'xc': '',
+    'basis_set': 'DEF2-TZVPP',
+    'f_disp': False,
+    'f_solv': True,
+    'atom_list': None,
+    'calc_extra': None,
+    'scf_option': None
+}

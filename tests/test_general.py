@@ -41,6 +41,46 @@ def test_orca_calc():
     pass
 
 
+def test_orca_presets():
+    print(flush=True)
+
+    # create a dictionary of presets arguments
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_cheap)
+    atoms = ase.build.molecule('H2O')
+    atoms.calc = calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy}")
+
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_gold)
+    atoms = ase.build.molecule('H2O')
+    atoms.calc = calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy}")
+
+    # xtb calculation
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_xtb)
+    atoms = ase.build.molecule('H2O')
+    atoms.calc = calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy}")
+
+    # MP2 calculation
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_mp2_gold)
+    atoms = ase.build.molecule('H2O')
+    atoms.calc = calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy}")
+
+    # CCSD(T) calculation
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_ccsd_gold)
+    atoms = ase.build.molecule('H2O')
+    atoms.calc = calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy}")
+
+    pass
+
+
 def test_mace_calc():
     print(flush=True)
     print("Testing MACE calculator", flush=True)

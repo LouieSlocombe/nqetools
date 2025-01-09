@@ -81,6 +81,11 @@ from .qchem_mod import (QChem)
 from .calculators import (nwchem_calc_preset,
                           orca_calc_preset,
                           qchem_calc_preset,
+                          orca_preset_dft_cheap,
+                          orca_preset_dft_gold,
+                          orca_preset_xtb,
+                          orca_preset_mp2_gold,
+                          orca_preset_ccsd_gold,
                           )
 
 __version__ = "0.1.0"
