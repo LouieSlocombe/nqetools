@@ -63,6 +63,12 @@ def remove_pbc(atoms):
     This is important for calculations involving isolated molecules where
     periodicity (like in crystals) is not desired. It ensures that the system
     is treated as an isolated entity without interactions from periodic images.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE atoms object from which to remove periodic boundary conditions.
+
+    Returns:
+    None
     """
     atoms.set_cell([0, 0, 0])  # Setting the cell size to zero
     atoms.set_pbc([0, 0, 0])  # Turning off periodic boundary conditions

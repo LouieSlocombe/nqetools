@@ -159,6 +159,21 @@ def prepare_neb(reactant, product, calc,
                 climb=True,
                 rm_ro_trans=True,
                 k=2.0):
+    """
+    Prepare the Nudged Elastic Band (NEB) calculation by constructing and interpolating the NEB images.
+
+    Parameters:
+    reactant (ase.Atoms): ASE Atoms object representing the reactant structure.
+    product (ase.Atoms): ASE Atoms object representing the product structure.
+    calc (ase.Calculator): Calculator to be used for the NEB calculation.
+    n_images (int, optional): Number of images in the NEB calculation. Default is 5.
+    climb (bool, optional): If True, use the climbing image method. Default is True.
+    rm_ro_trans (bool, optional): If True, remove rotation and translation during the NEB calculation. Default is True.
+    k (float, optional): Spring constant for the NEB calculation. Default is 2.0 eV/Å².
+
+    Returns:
+    ase.neb.NEB: NEB object containing the prepared NEB images.
+    """
     # Construct the NEB images
     neb_images = [reactant]
     for ii in range(n_images - 2):
@@ -170,12 +185,12 @@ def prepare_neb(reactant, product, calc,
         image.calc = copy.copy(calc)
         image.get_potential_energy()
 
-    # create the NEB object
+    # Create the NEB object
     neb = NEB(neb_images,
               climb=climb,
               remove_rotation_and_translation=rm_ro_trans,
               k=k)
-    # interpolate the images
+    # Interpolate the images
     neb.interpolate()
     neb.interpolate("idpp")
     return neb

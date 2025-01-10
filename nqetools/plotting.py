@@ -9,6 +9,15 @@ from .pathway import get_neb_path
 
 
 def plot_time_energy(output_data):
+    """
+    Plot the potential and ensemble bias energy over time.
+
+    Parameters:
+    output_data (dict): Dictionary containing the time, potential, and ensemble bias energy data.
+
+    Returns:
+    None
+    """
     # convert time to ps and energy to eV
     time_conv = 2.4188843e-05
     energy_conv = 27.211386
@@ -34,6 +43,15 @@ def plot_time_energy(output_data):
 
 
 def plot_time_temperature(output_data):
+    """
+    Plot the temperature over time for different components.
+
+    Parameters:
+    output_data (dict): Dictionary containing the time and temperature data for different components.
+
+    Returns:
+    None
+    """
     # convert time to ps
     time_conv = 2.4188843e-05
     time = time_conv * output_data["time"]
@@ -64,6 +82,17 @@ def plot_time_temperature(output_data):
 
 
 def plot_energy_contour_series(xyz_1, xyz_2, xyz_3):
+    """
+    Plot a series of energy contour plots for three sets of data.
+
+    Parameters:
+    xyz_1 (tuple): Data for the first contour plot.
+    xyz_2 (tuple): Data for the second contour plot.
+    xyz_3 (tuple): Data for the third contour plot.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(
         1, 3, figsize=(8, 3), sharex=True, sharey=True, constrained_layout=True
     )
@@ -87,6 +116,16 @@ def plot_energy_contour_series(xyz_1, xyz_2, xyz_3):
 
 
 def plot_energy_contour_compare(xyz_a, xyz_b):
+    """
+    Plot a comparison of energy contour plots for two sets of data.
+
+    Parameters:
+    xyz_a (tuple): Data for the first contour plot.
+    xyz_b (tuple): Data for the second contour plot.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(
         1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
     )
@@ -107,6 +146,16 @@ def plot_energy_contour_compare(xyz_a, xyz_b):
 
 
 def plot_energy_sep(xyz_a, xyz_b):
+    """
+    Plot the energy separation for two sets of data.
+
+    Parameters:
+    xyz_a (numpy.ndarray): Data for the first plot.
+    xyz_b (numpy.ndarray): Data for the second plot.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(
         1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
     )
