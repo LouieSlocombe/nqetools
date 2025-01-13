@@ -152,8 +152,15 @@ def run_optimise(directory,
     # Prepare the minimization xml file
     if driver_dict is None:
         driver_dict = {}
-    prep_optimise(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
-                  optimizer=optimizer, tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position)
+    prep_optimise(directory, atoms,
+                  outfile=outfile,
+                  driver=driver,
+                  total_steps=total_steps,
+                  deut=deut,
+                  optimizer=optimizer,
+                  tol_energy=tol_energy,
+                  tol_force=tol_force,
+                  tol_position=tol_position)
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
 
@@ -241,7 +248,11 @@ def ipi_run_phonons(directory,
     # Prepare the phonon xyz file
     copy_xyz(get_final_xyz(dir_react_min, sub=f"{outfile_min}*"), directory)
     # Prepare the phonon xml file
-    prep_phonons(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut)
+    prep_phonons(directory, atoms,
+                 outfile=outfile,
+                 driver=driver,
+                 total_steps=total_steps,
+                 deut=deut)
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
     # Run the phonons
@@ -336,8 +347,14 @@ def run_ts(directory,
     # Read the transition state and write it to the ts directory
     write_xyz(ase.io.read(f"ts.xyz", "-1"), os.path.join(directory, "init.xyz"))
     # Prepare the ts xml file
-    prep_ts(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut, tol_energy=tol_energy,
-            tol_force=tol_force, tol_position=tol_position)
+    prep_ts(directory, atoms,
+            outfile=outfile,
+            driver=driver,
+            total_steps=total_steps,
+            deut=deut,
+            tol_energy=tol_energy,
+            tol_force=tol_force,
+            tol_position=tol_position)
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
     # Run the ts
@@ -458,8 +475,16 @@ def run_inst(directory,
     copy_xyz(get_final_xyz(directory_ts), directory)
     copy_hess(get_final_hess(directory_ts), directory)
     # Prepare the instanton calculation
-    prep_inst(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut, n_beads=n_beads,
-              temperature=temperature, tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position)
+    prep_inst(directory, atoms,
+              outfile=outfile,
+              driver=driver,
+              total_steps=total_steps,
+              deut=deut,
+              n_beads=n_beads,
+              temperature=temperature,
+              tol_energy=tol_energy,
+              tol_force=tol_force,
+              tol_position=tol_position)
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
     # Run the instanton
