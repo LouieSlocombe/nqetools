@@ -62,6 +62,7 @@ from .tools import (add_ipi_paths,
                     get_fmax,
                     move_atom_halfway,
                     optimise_atom_halfway,
+                    round_sf,
                     )
 
 from .xml_parse import (update_mass,

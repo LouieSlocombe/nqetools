@@ -330,5 +330,22 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     return atoms
 
 
+def round_sf(value, sig_figs):
+    """
+    Round a float to a specified number of significant figures using NumPy.
+
+    Parameters:
+    value (float): The number to be rounded.
+    sig_figs (int): The number of significant figures to round to.
+
+    Returns:
+    float: The rounded number.
+    """
+    if value == 0:
+        return 0
+    else:
+        return np.round(value, sig_figs - int(np.floor(np.log10(abs(value)))) - 1)
+
+
 # Conversion factor from Bohr to Angstrom
 bohr_to_angstrom = physical_constants["Bohr radius"][0] * 1e10
