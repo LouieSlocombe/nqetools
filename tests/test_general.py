@@ -1,8 +1,9 @@
 import time
+import os
 
 import ase.build
 from mace.calculators import mace_anicc
-
+from ase.io import write,read
 import nqetools as nqe
 
 """
@@ -98,6 +99,15 @@ def test_mace_calc():
 
 
 def test_mace_driver():
+    print(flush=True)
+    print("Testing MACE calculator", flush=True)
+    # build the molecule
+    atoms = ase.build.molecule('H2O')
+    ase.io.write("init.xyz", atoms)
+    directory = os.getcwd()
+    nqe.run_optimise(directory, atoms, driver='ase-mace')
+
+
     pass
 
 

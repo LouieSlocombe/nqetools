@@ -1,5 +1,5 @@
 from .tools import round_sf
-from .conversions import (A_to_nm,eV_to_kJpermol, eVperA2_to_kJpermolpernm2)
+from .conversions import (A_to_nm, eV_to_kJpermol, eVperA2_to_kJpermolpernm2)
 
 
 # General
@@ -55,10 +55,6 @@ def write_plumed_input_coordination(atoms,
 
     # eV/Å² to 1 kJ/(mol·nm²)
     kappa = round_sf(kappa * eVperA2_to_kJpermolpernm2)
-    kappa = round_sf(kappa * eVperA2_to_kJpermolpernm2)
-    print(f"kappa: {kappa}")
-
-    print(f"inverse kappa {250 / (eVperA2_to_kJpermolpernm2)}")
 
     # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)

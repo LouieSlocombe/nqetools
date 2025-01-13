@@ -10,15 +10,14 @@ if __name__ == "__main__":
     atoms = read("h5o2+.xyz", "-1")
 
     # view(atoms)
-
+    # Prepare the plumed input file
     impt = nqe.write_plumed_input_coordination(atoms)
     # write the input file
     with open("plumed.dat", "w") as f:
         f.write(impt)
 
-
     # create a dictionary of presets arguments
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_cheap,charge=1)
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_cheap, charge=1)
     atoms.calc = calc
     t0 = time.time()
     energy = atoms.get_potential_energy()

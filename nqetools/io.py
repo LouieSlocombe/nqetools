@@ -9,7 +9,7 @@ import ase.io
 import numpy as np
 from ipi.utils.io import read_file
 
-from .tools import bohr_to_angstrom
+from .conversions import bohr_to_angstrom
 
 
 def read_ipi_xyz(filename):
