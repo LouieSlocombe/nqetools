@@ -72,12 +72,12 @@ def update_driver(root, atoms, f_driver):
     Parameters:
     root (Element): The root element of the XML tree.
     atoms (object): An object representing the atoms, which must have periodic boundary conditions (PBC).
-    f_driver (str): The type of driver to use. If "ase-mace", updates the XML with MACE driver information.
+    f_driver (str): The type of driver to use.
 
     Returns:
     None
     """
-    if f_driver == "ase-mace":
+    if f_driver in ["ase-mace", "ase-nwchem","ase-orca"]:
         f_pbcs = has_pbc(atoms)
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
