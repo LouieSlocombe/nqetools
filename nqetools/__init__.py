@@ -89,6 +89,15 @@ from .calculators import (nwchem_calc_preset,
                           orca_preset_ccsd_gold,
                           )
 
+from .conversions import (bohr_to_angstrom,
+                          A_to_nm,
+                          eV_to_J,
+                          J_to_kJ,
+                          avo_num,
+                          eV_to_kJpermol,
+                          eVperA2_to_kJpermolpernm2,
+                          )
+
 from .plumed import (write_plumed_input,
                      write_plumed_input_coordination)
 
