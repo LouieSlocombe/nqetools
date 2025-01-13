@@ -260,7 +260,7 @@ def prep_driver(f_driver, driver_dict):
     Prepares the driver command based on the specified driver type.
 
     Parameters:
-    f_driver (str): The type of driver to prepare. Can be "cbe" or contain "ase-mace".
+    f_driver (str): The type of driver to prepare.
     driver_dict (dict): A dictionary of parameters to pass to the `write_mace_driver` function if the driver type is "ase-mace".
 
     Returns:
@@ -271,6 +271,8 @@ def prep_driver(f_driver, driver_dict):
     """
     if f_driver == "cbe":
         return "i-pi-driver -m ch4hcbe -u"
+    if f_driver == "zundel":
+        return "i-pi-driver -u -a zundel -m zundel"
     elif "ase-mace" in f_driver:
         # If the driver is an ASE-MACE driver, write the driver file
         write_mace_driver(**driver_dict)

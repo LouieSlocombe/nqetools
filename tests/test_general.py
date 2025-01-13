@@ -106,8 +106,6 @@ def test_mace_driver():
     ase.io.write("init.xyz", atoms)
     directory = os.getcwd()
     nqe.run_optimise(directory, atoms, driver='ase-mace')
-
-
     pass
 
 
