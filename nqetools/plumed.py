@@ -1,5 +1,6 @@
 from scipy.constants import physical_constants
 
+from .tools import round_sf
 
 # General
 def write_plumed_input(temperature=300, sigma=[0.005, 0.05], ):
@@ -39,7 +40,7 @@ def write_plumed_input_coordination(atoms,
                                     kappa=0.026,
                                     pace=10,
                                     stride=10,
-                                    height=0.17,
+                                    height=0.041,
                                     biasfactor=10,
                                     ):
     # https://www.plumed.org/doc-master/user-doc/html/_d_i_s_t_a_n_c_e_s.html
@@ -60,13 +61,13 @@ def write_plumed_input_coordination(atoms,
     d_upper = d_upper / A_to_nm
 
     # eV/Å² to 1 kJ/(mol·nm²)
-    kappa *= eV_to_J * J_to_kJ * avogadro_number * A_to_nm ** 2
+    kappa = round_sf(kappa * eV_to_J * J_to_kJ * avogadro_number * A_to_nm ** 2)
     print(f"kappa: {kappa}")
 
     print(f"inverse kappa {250 / (eV_to_J * J_to_kJ * avogadro_number * A_to_nm ** 2)}")
 
     # convert the height from eV to kJ/mol
-    height *= eV_to_J * J_to_kJ * avogadro_number
+    height = round_sf(height * eV_to_J * J_to_kJ * avogadro_number)
 
     # Fix the indexing as it starts from 1
     idx_atom1 += 1
@@ -75,7 +76,7 @@ def write_plumed_input_coordination(atoms,
     # Indexing starts from 1
     idx_group = f"{max([idx_atom1, idx_atom2]) + 1}-{len(atoms) + 1}"
 
-    d_low_line = f"RATIONAL R_0={d_low}"
+    d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
     # default units are LENGTH=nm ENERGY=kJ/mol TIME=ps
     impt = f"""

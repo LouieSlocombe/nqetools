@@ -330,7 +330,7 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     return atoms
 
 
-def round_sf(value, sig_figs):
+def round_sf(value, sig_figs=3):
     """
     Round a float to a specified number of significant figures using NumPy.
 
