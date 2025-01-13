@@ -1,6 +1,6 @@
-from scipy.constants import physical_constants
-
 from .tools import round_sf
+from .conversions import (A_to_nm,eV_to_kJpermol, eVperA2_to_kJpermolpernm2)
+
 
 # General
 def write_plumed_input(temperature=300, sigma=[0.005, 0.05], ):
@@ -46,28 +46,22 @@ def write_plumed_input_coordination(atoms,
     # https://www.plumed.org/doc-master/user-doc/html/_d_i_s_t_a_n_c_e_s.html
     # https://www.plumed.org/doc-v2.9/user-doc/html/_u_p_p_e_r__w_a_l_l_s.html
 
-    # Direct calculation of conversion constants
-    avogadro_number = physical_constants["Avogadro constant"][0]  # mol^-1
-    eV_to_J = physical_constants["electron volt-joule relationship"][0]  # 1 eV = this many joules
-    J_to_kJ = 1e-3  # 1 J = 0.001 kJ
-
-    A_to_nm = 10  # Å to nm
-
     if sigma is None:
         sigma = [0.005, 0.05]
 
     # Convert d_low and d_upper from A to nm
-    d_low = d_low / A_to_nm
-    d_upper = d_upper / A_to_nm
+    d_low = d_low * A_to_nm
+    d_upper = d_upper * A_to_nm
 
     # eV/Å² to 1 kJ/(mol·nm²)
-    kappa = round_sf(kappa * eV_to_J * J_to_kJ * avogadro_number * A_to_nm ** 2)
+    kappa = round_sf(kappa * eVperA2_to_kJpermolpernm2)
+    kappa = round_sf(kappa * eVperA2_to_kJpermolpernm2)
     print(f"kappa: {kappa}")
 
-    print(f"inverse kappa {250 / (eV_to_J * J_to_kJ * avogadro_number * A_to_nm ** 2)}")
+    print(f"inverse kappa {250 / (eVperA2_to_kJpermolpernm2)}")
 
     # convert the height from eV to kJ/mol
-    height = round_sf(height * eV_to_J * J_to_kJ * avogadro_number)
+    height = round_sf(height * eV_to_kJpermol)
 
     # Fix the indexing as it starts from 1
     idx_atom1 += 1
@@ -95,17 +89,33 @@ FLUSH STRIDE=1
 
 
 # Just distance
-def write_plumed_input_distance():
+def write_plumed_input_distance(atoms,
+                                idx_atom1=0,
+                                idx_atom2=1,
+                                temperature=300,
+                                barrier=0.5,
+                                d_upper=4.0,
+                                kappa=0.026,
+                                pace=10,
+                                stride=10,
+                                ):
     # https://www.plumed-nest.org/eggs/24/021/
     # https://www.plumed-nest.org/eggs/24/021/data/molecular-dynamics/ion-pairing/caco3-batches/1/plumed.dat.html
-    tmp = """
-    d: DISTANCE ATOMS=1,2 
+    # https://www.plumed-nest.org/eggs/24/035/data/notebooks/1_exploration/N2_flooding_inputs/plumed-fresh.dat.html
+    # Fix the indexing as it starts from 1
+    idx_atom1 += 1
+    idx_atom2 += 1
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
 
-    opes: OPES_METAD ARG=d PACE=500 BARRIER=50 TEMP=330
+    impt = f"""
+d: DISTANCE ATOMS={idx_atom1},{idx_atom2} 
 
-    uwall: UPPER_WALLS ARG=d AT=0.9 KAPPA=1000.0
+opes: OPES_METAD ARG=d PACE={pace} BARRIER={barrier} TEMP={temperature}
 
-    PRINT ARG STRIDE=100 FILE=COLVAR
+uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
+
+PRINT ARG STRIDE={stride} FILE=COLVAR
     """
 
-    return None
+    return impt

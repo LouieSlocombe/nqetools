@@ -8,7 +8,6 @@ from ase.build import minimize_rotation_and_translation
 from ase.constraints import FixAtoms
 from ase.optimize import BFGS
 from ase.test.fio.vasp.test_vasp_out import atoms
-from scipy.constants import physical_constants
 
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
@@ -345,7 +344,3 @@ def round_sf(value, sig_figs=3):
         return 0
     else:
         return np.round(value, sig_figs - int(np.floor(np.log10(abs(value)))) - 1)
-
-
-# Conversion factor from Bohr to Angstrom
-bohr_to_angstrom = physical_constants["Bohr radius"][0] * 1e10
