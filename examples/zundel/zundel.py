@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # load the zundel molecule
     atoms = read("h5o2+.xyz", "-1")
 
-    view(atoms)
+    # view(atoms)
 
     impt = nqe.write_plumed_input_coordination(atoms)
     # write the input file
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
 
     # create a dictionary of presets arguments
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_cheap,charge=0)
+    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_cheap,charge=1)
     atoms.calc = calc
     t0 = time.time()
     energy = atoms.get_potential_energy()

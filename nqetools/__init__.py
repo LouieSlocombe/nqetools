@@ -88,6 +88,7 @@ from .calculators import (nwchem_calc_preset,
                           orca_preset_ccsd_gold,
                           )
 
-from .plumed import (write_plumed_input)
+from .plumed import (write_plumed_input,
+                     write_plumed_input_coordination)
 
 __version__ = "0.1.0"
