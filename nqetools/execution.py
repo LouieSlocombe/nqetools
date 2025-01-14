@@ -13,35 +13,20 @@ from .xml_parse import update_cell, update_mass, update_driver, update_title, \
     update_open_paths, update_temperature
 
 
-def run_ipi(server,
+def run_ipi(directory,
+            server,
             driver,
             outfile,
             n=1,
             t_sleep=5.0,
-            cwd=None):
-    """
-    Runs the i-PI server and driver processes for a given simulation.
-
-    Parameters:
-    server (str): Command to start the i-PI server.
-    driver (str): Command to start the driver process.
-    outfile (str): Output file name to check if the simulation has already been run.
-    n (int, optional): Number of driver processes to start. Default is 1.
-    t_sleep (float, optional): Time to wait for the i-PI server to start in seconds. Default is 5.0.
-    cwd (str, optional): Directory to change to before running the simulation. Default is None.
-
-    Returns:
-    None
-    """
-    # Change to the working directory
+            ):
+    # Get the current directory
     dir_base = os.getcwd()
-    if cwd is not None:
-        os.chdir(cwd)
+    # Change to the working directory
+    os.chdir(directory)
     # Remove the tmp file if it exists
     rm_ipi_tmp()
     # Start the i-PI server and the driver processes
-    ipi_proc = None
-    driver_proc = None
     if not os.path.exists(outfile):
         # Don't rerun if the outputs already exist
         ipi_proc = subprocess.Popen(server.split())
@@ -49,6 +34,8 @@ def run_ipi(server,
         time.sleep(t_sleep)
         # Start the driver processes
         driver_proc = [subprocess.Popen(driver.split()) for _ in range(n)]
+    else:
+        raise FileExistsError(f"Output file {outfile} already exists. Skipping the run.")
     # Wait for all the simulations to finish
     if ipi_proc is not None:
         ipi_proc.wait()
@@ -166,7 +153,7 @@ def run_optimise(directory,
 
     # Run the minimization
     print(f"Running the minimization with the driver: {driver}", flush=True)
-    run_ipi(server, driver, outfile + ".out", cwd=directory)
+    run_ipi(directory, server, driver, outfile + ".out")
 
     return None
 
@@ -256,7 +243,7 @@ def ipi_run_phonons(directory,
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
     # Run the phonons
-    run_ipi(server, driver, outfile + ".out", cwd=directory)
+    run_ipi(directory, server, driver, outfile + ".out")
 
 
 def prep_ts(directory,
@@ -358,7 +345,7 @@ def run_ts(directory,
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
     # Run the ts
-    run_ipi(server, driver, outfile + ".out", cwd=directory)
+    run_ipi(directory, server, driver, outfile + ".out")
 
 
 def prep_inst(directory,
@@ -488,7 +475,7 @@ def run_inst(directory,
     # Prepare the driver
     driver = prep_driver(driver, driver_dict)
     # Run the instanton
-    run_ipi(server, driver, outfile + ".out", cwd=directory)
+    run_ipi(directory, server, driver, outfile + ".out")
     return None
 
 # def inst_rerun():
