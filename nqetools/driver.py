@@ -233,13 +233,13 @@ def orca_calc_preset(orca_path=None,
     in_str_2 = f"""
     
 atoms = read('{in_file}', 0)
-atoms.calc = orca_calc(calc_type='{calc_type}',
+atoms.calc = orca_calc_preset(calc_type='{calc_type}',
                        xc='{xc}',
                        charge={charge},
-                       multi={multi},
+                       multiplicity={multi},
                        basis_set='{basis_set}',
-                       disp={disp},
-                       solv={solv},
+                       f_disp={disp},
+                       f_solv={solv},
                        atom_list={atom_list},
                        calc_extra={calc_extra},
                        scf_option={scf_option})
