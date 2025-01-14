@@ -1,4 +1,8 @@
+import os
+
+
 def write_mace_driver(
+        directory,
         out_file="run-ase-mace.py",
         in_file="init.xyz",
         host="driver",
@@ -32,7 +36,7 @@ client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=True)
     """
     # Write the file
-    with open(out_file, "w") as f:
+    with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
     return None
 
@@ -42,6 +46,7 @@ def write_cp2k_driver():
 
 
 def write_nwchem_driver(
+        directory,
         in_file="init.xyz",
         out_file="run-ase-nwchem.py",
         charge=0,
@@ -115,7 +120,7 @@ client.run(atoms, use_stress=True)
 
     """
     # Write the file
-    with open(out_file, "w") as f:
+    with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
     return None
 
@@ -125,6 +130,7 @@ def write_qchem_driver():
 
 
 def write_orca_driver(
+        directory,
         in_file="init.xyz",
         out_file="run-ase-orca.py",
         charge=0,
@@ -251,39 +257,26 @@ client.run(atoms, use_stress=True)
     in_str = in_str_1 + in_str_2
 
     # Write the file
-    with open(out_file, "w") as f:
+    with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
 
 
-def prep_driver(f_driver, driver_dict):
-    """
-    Prepares the driver command based on the specified driver type.
-
-    Parameters:
-    f_driver (str): The type of driver to prepare.
-    driver_dict (dict): A dictionary of parameters to pass to the `write_mace_driver` function if the driver type is "ase-mace".
-
-    Returns:
-    str: The command to run the specified driver.
-
-    Raises:
-    ValueError: If the driver type is not recognized.
-    """
+def prep_driver(directory, f_driver, driver_dict):
     if f_driver == "cbe":
         return "i-pi-driver -m ch4hcbe -u"
-    if f_driver == "zundel":
+    elif f_driver == "zundel":
         return "i-pi-driver -u -a zundel -m zundel"
     elif "ase-mace" in f_driver:
         # If the driver is an ASE-MACE driver, write the driver file
-        write_mace_driver(**driver_dict)
+        write_mace_driver(directory, **driver_dict)
         return "python3 run-ase-mace.py"
     elif "ase-nwchem" in f_driver:
         # If the driver is an ASE-NWChem driver, write the driver file
-        write_nwchem_driver(**driver_dict)
+        write_nwchem_driver(directory, **driver_dict)
         return "python3 run-ase-nwchem.py"
     elif "ase-orca" in f_driver:
         # If the driver is an ASE-ORCA driver, write the driver file
-        write_orca_driver(**driver_dict)
+        write_orca_driver(directory, **driver_dict)
         return "python3 run-ase-orca.py"
     else:
         # If not a recognized driver, raise an error

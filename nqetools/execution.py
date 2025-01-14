@@ -18,8 +18,21 @@ def run_ipi(directory,
             driver,
             outfile,
             n=1,
-            t_sleep=5.0,
-            ):
+            t_sleep=5.0):
+    """
+    Runs the i-PI server and driver processes for a simulation.
+
+    Parameters:
+    directory (str): Directory where the simulation will be run.
+    server (str): Command to start the i-PI server.
+    driver (str): Command to start the driver processes.
+    outfile (str): Output file name to check if the simulation has already been run.
+    n (int, optional): Number of driver processes to start. Default is 1.
+    t_sleep (float, optional): Time to wait for the i-PI server to start. Default is 5.0 seconds.
+
+    Returns:
+    None
+    """
     # Get the current directory
     dir_base = os.getcwd()
     # Change to the working directory
@@ -149,7 +162,7 @@ def run_optimise(directory,
                   tol_force=tol_force,
                   tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(driver, driver_dict)
+    driver = prep_driver(directory, driver, driver_dict)
 
     # Run the minimization
     print(f"Running the minimization with the driver: {driver}", flush=True)
@@ -241,7 +254,7 @@ def ipi_run_phonons(directory,
                  total_steps=total_steps,
                  deut=deut)
     # Prepare the driver
-    driver = prep_driver(driver, driver_dict)
+    driver = prep_driver(directory, driver, driver_dict)
     # Run the phonons
     run_ipi(directory, server, driver, outfile + ".out")
 
@@ -343,7 +356,7 @@ def run_ts(directory,
             tol_force=tol_force,
             tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(driver, driver_dict)
+    driver = prep_driver(directory, driver, driver_dict)
     # Run the ts
     run_ipi(directory, server, driver, outfile + ".out")
 
@@ -473,7 +486,7 @@ def run_inst(directory,
               tol_force=tol_force,
               tol_position=tol_position)
     # Prepare the driver
-    driver = prep_driver(driver, driver_dict)
+    driver = prep_driver(directory, driver, driver_dict)
     # Run the instanton
     run_ipi(directory, server, driver, outfile + ".out")
     return None
