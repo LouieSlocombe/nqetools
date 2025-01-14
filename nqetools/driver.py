@@ -262,6 +262,20 @@ client.run(atoms, use_stress=True)
 
 
 def prep_driver(directory, f_driver, driver_dict):
+    """
+    Prepares the driver command based on the specified driver type and writes the necessary driver file.
+
+    Parameters:
+    directory (str): The directory where the driver file will be written.
+    f_driver (str): The type of driver to prepare. Recognized values are "cbe", "zundel", "ase-mace", "ase-nwchem", and "ase-orca".
+    driver_dict (dict): A dictionary of parameters to pass to the driver writing functions.
+
+    Returns:
+    str: The command to run the prepared driver.
+
+    Raises:
+    ValueError: If the specified driver type is not recognized.
+    """
     if f_driver == "cbe":
         return "i-pi-driver -m ch4hcbe -u"
     elif f_driver == "zundel":
