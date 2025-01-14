@@ -2,8 +2,8 @@ import time
 import os
 
 import ase.build
-from mace.calculators import mace_anicc
-from ase.io import write,read
+from mace.calculators import mace_anicc, mace_off
+from ase.io import write, read
 import nqetools as nqe
 
 """
@@ -88,6 +88,7 @@ def test_mace_calc():
     # build the molecule
     atoms = ase.build.molecule('H2O')
     calc = mace_anicc()
+    #calc = mace_off(model="small", device="cpu", default_dtype="float32")
     # set the calculator
     atoms.calc = calc
     # run the calculation
@@ -110,6 +111,13 @@ def test_mace_driver():
 
 
 def test_orca_driver():
+    print(flush=True)
+    print("Testing ORCA driver", flush=True)
+    # build the molecule
+    atoms = ase.build.molecule('H2O')
+    ase.io.write("init.xyz", atoms)
+    directory = os.getcwd()
+    nqe.run_optimise(directory, atoms, driver='ase-orca')
     pass
 
 
