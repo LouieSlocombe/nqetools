@@ -113,7 +113,7 @@ def prep_optimise(directory,
     update_tol(root, tol_energy, tol_force, tol_position)
 
     # Write the file
-    write_xml(root, f'{directory}input.xml')
+    write_xml(root, os.path.join(directory, 'input.xml'))
     return None
 
 
