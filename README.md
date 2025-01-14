@@ -17,7 +17,7 @@ conda update conda --all
 
 Install the basic requirements.
 ```
-conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anaconda::pytest conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes anaconda::sympy
+conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anaconda::pytest conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes anaconda::sympy -y
 ```
 
 ## ASE
@@ -30,7 +30,7 @@ pip install ase sella
 Mace has two options, but the torch option seems best. For model eval and training:
 Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`. It might look like this:
 ```
-conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
 ```
 It is worth ensuring the pytorch backend can use the GPU from here. This should return True.
 ```
@@ -45,11 +45,11 @@ pip install mace-torch
 ## PLUMED
 We don't need to build from source. We can use the conda-forge packages. Install a pre-compiled PLUMED binary using the following command
 ```
-conda install -c conda-forge plumed
+conda install -c conda-forge plumed -y
 ```
 Similarly, the python wrappers can be installed with
 ```
-conda install -c conda-forge py-plumed
+conda install -c conda-forge py-plumed -y
 ```
 
 You can check if plumed is installed if this returns the plumed path
@@ -65,7 +65,7 @@ PLUMED_KERNEL=/home/louie/anaconda3/envs/ipi_env/lib/libplumedKernel.so
 ## I-PI
 Conda is preferred to not mess up the ecosystem.
 ```
-conda install conda-forge::i-pi
+conda install conda-forge::i-pi -y
 ```
 
 
