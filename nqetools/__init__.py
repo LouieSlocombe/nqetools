@@ -75,7 +75,8 @@ from .xml_parse import (update_mass,
                         update_total_steps,
                         update_optimizer,
                         update_tol,
-                        update_open_paths)
+                        update_open_paths,
+                        update_timestep,)
 
 from .qchem_mod import (QChem)
 

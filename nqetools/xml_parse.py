@@ -77,7 +77,7 @@ def update_driver(root, atoms, f_driver):
     Returns:
     None
     """
-    if f_driver in ["ase-mace", "ase-nwchem","ase-orca"]:
+    if f_driver in ["ase-mace", "ase-nwchem", "ase-orca"]:
         f_pbcs = has_pbc(atoms)
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
@@ -235,4 +235,20 @@ def update_open_paths(root, n_atoms):
     open_paths = list(range(n_atoms))
     for child in root.iterfind('.//normal_modes/open_paths'):
         child.text = str(open_paths)
+    return None
+
+
+def update_timestep(root, timestep):
+    """
+    Updates the timestep element in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    timestep (float): The timestep value to set.
+
+    Returns:
+    None
+    """
+    for child in root.iterfind('.//motion/dynamics/timestep'):
+        child.text = str(timestep)
     return None
