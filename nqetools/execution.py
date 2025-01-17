@@ -88,7 +88,7 @@ def prep_md(directory,
     None
     """
     # Prepare the MD simulation XML file
-    tree = ET.parse(os.path.abspath(f"../templates/{md_type.upper()}.xml"))
+    tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
     root = tree.getroot()
 
     # Fix the cell
@@ -195,7 +195,7 @@ def prep_optimise(directory,
     None
     """
     # Prepare the minimization xml file
-    tree = ET.parse(os.path.abspath("../templates/MIN.xml"))
+    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/MIN.xml")))
     root = tree.getroot()
 
     # Fix the cell
@@ -299,7 +299,7 @@ def prep_phonons(directory,
     None
     """
     # Prepare the phonon xml file
-    tree = ET.parse(os.path.abspath("../templates/PHO.xml"))
+    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/PHO.xml")))
     root = tree.getroot()
 
     # Fix the cell
@@ -393,7 +393,7 @@ def prep_ts(directory,
     None
     """
     # Prepare the transition state search xml file
-    tree = ET.parse(os.path.abspath("../templates/TS.xml"))
+    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/TS.xml")))
     root = tree.getroot()
 
     # Fix the cell
@@ -503,7 +503,7 @@ def prep_inst(directory,
     n_doft = 3 * n_atoms
 
     # Prepare the instanton calculation
-    tree = ET.parse(os.path.abspath("../templates/INST.xml"))
+    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/INST.xml")))
     root = tree.getroot()
 
     # Fix the cell
