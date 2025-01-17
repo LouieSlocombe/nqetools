@@ -26,6 +26,7 @@ def test_temperature():
     # Check that the temperature is set
     assert count_matching_words(str(ET.tostring(root)), str(temperature)) == 2
 
+
 def test_timestep():
     root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
     # Set the timestep

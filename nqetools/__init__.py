@@ -12,8 +12,9 @@ from .driver import (write_mace_driver,
                      prep_driver)
 
 from .execution import (run_ipi,
+                        run_md,
                         run_optimise,
-                        ipi_run_phonons,
+                        run_phonons,
                         run_ts,
                         run_inst)
 
@@ -76,7 +77,7 @@ from .xml_parse import (update_mass,
                         update_optimizer,
                         update_tol,
                         update_open_paths,
-                        update_timestep,)
+                        update_timestep, )
 
 from .qchem_mod import (QChem)
 

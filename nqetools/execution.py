@@ -1,16 +1,18 @@
 import os
 import subprocess
 import time
-import xml.etree.ElementTree as ET
 
 import ase.io
 
 from .driver import prep_driver
-from .io import write_xml, copy_xyz, get_final_xyz, copy_hess, get_final_hess, write_xyz
+from .io import (write_xml,
+                 copy_xyz,
+                 get_final_xyz,
+                 copy_hess,
+                 get_final_hess,
+                 write_xyz)
 from .tools import rm_ipi_tmp
-from .xml_parse import update_cell, update_mass, update_driver, update_title, \
-    update_total_steps, update_optimizer, update_tol, update_nbeads, update_hessian, \
-    update_open_paths, update_temperature
+from .xml_parse import *
 
 
 def run_ipi(directory,
@@ -56,6 +58,111 @@ def run_ipi(directory,
             process.wait()
     # Move back to the original directory
     os.chdir(dir_base)
+    return None
+
+
+def prep_md(directory,
+            atoms,
+            outfile="md",
+            driver="ase-mace",
+            total_steps=1000,
+            deut=False,
+            temperature=300.0,
+            timestep=1.0e-3,
+            md_type="NVT"):
+    """
+    Prepares the MD simulation XML file.
+
+    Parameters:
+    directory (str): Directory where the XML file will be saved.
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+    outfile (str, optional): Output file name. Default is "md".
+    driver (str, optional): Driver to be used for the MD simulation. Default is "ase-mace".
+    total_steps (int, optional): Total number of steps for the MD simulation. Default is 1000.
+    deut (bool, optional): Whether to use deuterium masses. Default is False.
+    temperature (float, optional): Temperature for the MD simulation in Kelvin. Default is 300.0.
+    timestep (float, optional): Timestep for the MD simulation in picoseconds. Default is 1.0e-3.
+    md_type (str, optional): Type of MD simulation (e.g., "NVT", "NPT"). Default is "NVT".
+
+    Returns:
+    None
+    """
+    # Prepare the MD simulation XML file
+    tree = ET.parse(os.path.abspath(f"../templates/{md_type.upper()}.xml"))
+    root = tree.getroot()
+
+    # Fix the cell
+    update_cell(root, atoms)
+
+    # Fix the masses
+    update_mass(root, atoms, deut=deut)
+
+    # Change the driver ff
+    update_driver(root, atoms, driver)
+
+    # Change the title
+    update_title(root, outfile)
+
+    # Update the total_steps
+    update_total_steps(root, total_steps)
+
+    # Update the temperature
+    update_temperature(root, temperature)
+
+    # Update the timestep
+    update_timestep(root, timestep)
+
+    # Write the file
+    write_xml(root, os.path.join(directory, 'input.xml'))
+    return None
+
+
+def run_md(directory,
+           atoms,
+           server="i-pi input.xml",
+           outfile="md",
+           driver="ase-mace",
+           driver_dict=None,
+           total_steps=1000,
+           deut=False,
+           temperature=300.0,
+           timestep=1.0e-3,
+           md_type="NVT"):
+    """
+    Runs the MD simulation by preparing the necessary XML file and executing the i-PI server and driver.
+
+    Parameters:
+    directory (str): Directory where the XML file will be saved and the simulation will be run.
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+    server (str, optional): Command to start the i-PI server. Default is "i-pi input.xml".
+    outfile (str, optional): Output file name. Default is "md".
+    driver (str, optional): Driver to be used for the MD simulation. Default is "ase-mace".
+    driver_dict (dict, optional): Dictionary of driver parameters. Default is None.
+    total_steps (int, optional): Total number of steps for the MD simulation. Default is 1000.
+    deut (bool, optional): Whether to use deuterium masses. Default is False.
+    temperature (float, optional): Temperature for the MD simulation in Kelvin. Default is 300.0.
+    timestep (float, optional): Timestep for the MD simulation in picoseconds. Default is 1.0e-3.
+    md_type (str, optional): Type of MD simulation (e.g., "NVT", "NPT"). Default is "NVT".
+
+    Returns:
+    None
+    """
+    if driver_dict is None:
+        driver_dict = {}
+    # Prepare the MD xml file
+    prep_md(directory, atoms,
+            outfile=outfile,
+            driver=driver,
+            total_steps=total_steps,
+            deut=deut,
+            temperature=temperature,
+            timestep=timestep,
+            md_type=md_type)
+    # Prepare the driver
+    driver = prep_driver(directory, driver, driver_dict)
+    # Run the MD
+    print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
+    run_ipi(directory, server, driver, outfile + ".out")
     return None
 
 
@@ -215,15 +322,15 @@ def prep_phonons(directory,
     return None
 
 
-def ipi_run_phonons(directory,
-                    atoms,
-                    min_file_path,
-                    server="i-pi input.xml",
-                    outfile="phonon",
-                    driver="ase-mace",
-                    driver_dict=None,
-                    total_steps=1000,
-                    deut=False):
+def run_phonons(directory,
+                atoms,
+                min_file_path,
+                server="i-pi input.xml",
+                outfile="phonon",
+                driver="ase-mace",
+                driver_dict=None,
+                total_steps=1000,
+                deut=False):
     """
     Runs the phonon calculation by preparing the necessary XML file and executing the i-PI server and driver.
 
