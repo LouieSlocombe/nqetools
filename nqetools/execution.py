@@ -149,6 +149,13 @@ def run_md(directory,
     """
     if driver_dict is None:
         driver_dict = {}
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, "init.xyz"))
+
     # Prepare the MD xml file
     prep_md(directory, atoms,
             outfile=outfile,
@@ -259,6 +266,13 @@ def run_optimise(directory,
     # Prepare the minimization xml file
     if driver_dict is None:
         driver_dict = {}
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, "init.xyz"))
+
     prep_optimise(directory, atoms,
                   outfile=outfile,
                   driver=driver,
@@ -350,6 +364,13 @@ def run_phonons(directory,
     """
     if driver_dict is None:
         driver_dict = {}
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, "init.xyz"))
+
     # Get the directory and the file name
     dir_react_min, outfile_min = os.path.split(min_file_path)
     # Prepare the phonon xyz file
@@ -578,6 +599,10 @@ def run_inst(directory,
     """
     if driver_dict is None:
         driver_dict = {}
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
     # Copy the files from the ts calculation
     copy_xyz(get_final_xyz(directory_ts), directory)
     copy_hess(get_final_hess(directory_ts), directory)

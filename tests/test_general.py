@@ -88,7 +88,7 @@ def test_mace_calc():
     # build the molecule
     atoms = ase.build.molecule('H2O')
     calc = mace_anicc()
-    #calc = mace_off(model="small", device="cpu", default_dtype="float32")
+    # calc = mace_off(model="small", device="cpu", default_dtype="float32")
     # set the calculator
     atoms.calc = calc
     # run the calculation
@@ -108,9 +108,6 @@ def test_mace_driver():
 
     # make a directory to store everything
     directory = "mace_opti"
-    os.makedirs(directory, exist_ok=True)
-    # write the input file
-    ase.io.write(os.path.join(directory, "init.xyz"), atoms)
     nqe.run_optimise(directory, atoms, driver='ase-mace')
     pass
 
@@ -123,14 +120,7 @@ def test_orca_driver():
     atoms.center(vacuum=5.0)
     # make a directory to store everything
     directory = "orca_opti"
-    os.makedirs(directory, exist_ok=True)
-    # write the input file
-    ase.io.write(os.path.join(directory, "init.xyz"), atoms)
     nqe.run_optimise(directory, atoms, driver='ase-orca')
-    pass
-
-
-def test_exe_optimise():
     pass
 
 
