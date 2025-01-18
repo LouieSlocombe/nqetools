@@ -252,3 +252,19 @@ def update_timestep(root, timestep):
     for child in root.iterfind('.//motion/dynamics/timestep'):
         child.text = str(timestep)
     return None
+
+
+def update_stride(root, stride):
+    """
+    Updates all instances of the stride element in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    stride (float): The new stride value to set.
+
+    Returns:
+    None
+    """
+    for child in root.iterfind('.//stride'):
+        child.text = str(stride)
+    return None
