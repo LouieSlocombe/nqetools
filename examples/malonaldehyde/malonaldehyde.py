@@ -1,11 +1,6 @@
 import os
 
-from ase.data.pubchem import pubchem_atoms_search
 from ase.visualize import view
-import numpy as np
-from ase import Atoms
-from ase.build import molecule
-# import mace off
 from mace.calculators import mace_off, mace_anicc
 from ase.optimize import BFGS
 
