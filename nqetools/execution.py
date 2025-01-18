@@ -288,8 +288,9 @@ def run_optimise(directory,
     # Run the minimization
     print(f"Running the minimization with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
-
-    return None
+    # Load the final structure
+    atoms_out = ase.io.read(os.path.join(directory, f"{outfile}.pos.xyz"), index=":")
+    return atoms_out
 
 
 def prep_phonons(directory,

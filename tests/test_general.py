@@ -5,6 +5,7 @@ import ase.build
 from mace.calculators import mace_anicc, mace_off
 from ase.io import write, read
 import nqetools as nqe
+from ase.visualize import view
 
 """
 Test the exe functions for simple cases
@@ -106,9 +107,9 @@ def test_mace_driver():
     atoms = ase.build.molecule('H2O')
     atoms.center(vacuum=5.0)
 
-    # make a directory to store everything
+    # Make a directory to store everything
     directory = "mace_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-mace')
+    atoms_out = nqe.run_optimise(directory, atoms, driver='ase-mace')
     pass
 
 
@@ -125,6 +126,15 @@ def test_orca_driver():
 
 
 def test_exe_md():
+    print(flush=True)
+    print("Testing MACE md calculator", flush=True)
+    # build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
+
+    # Make a directory to store everything
+    directory = "mace_opti"
+    atoms_out = nqe.run_optimise(directory, atoms, driver='ase-mace')
     pass
 
 
