@@ -147,6 +147,8 @@ def run_md(directory,
     Returns:
     None
     """
+    md_type = md_type.upper()
+    # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
     if driver_dict is None:
         driver_dict = {}
 
