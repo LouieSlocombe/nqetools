@@ -133,8 +133,8 @@ def test_exe_md():
     atoms.center(vacuum=5.0)
 
     # Make a directory to store everything
-    directory = "mace_opti"
-    atoms_out = nqe.run_optimise(directory, atoms, driver='ase-mace')
+    directory = "mace_md"
+    atoms_out = nqe.run_md(directory, atoms, driver='ase-mace')
     pass
 
 
