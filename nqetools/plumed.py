@@ -29,7 +29,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return impt
+    return ['q', 'mtd.bias']
 
 
 def write_plumed_coord(atoms,
@@ -89,7 +89,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return impt
+    return ['d', 'c1.lessthan', 'c2.lessthan', 'dc', 'mtd.bias']
 
 
 # Just distance
@@ -118,9 +118,7 @@ def write_plumed_dist(directory=None,
 
     impt = f"""
 d: DISTANCE ATOMS={idx_atom1},{idx_atom2} 
-
 opes: OPES_METAD ARG=d PACE={pace} BARRIER={barrier} TEMP={temperature}
-
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
 PRINT ARG STRIDE={stride} FILE=COLVAR
@@ -128,4 +126,4 @@ PRINT ARG STRIDE={stride} FILE=COLVAR
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return impt
+    return ['d', 'opes.bias']
