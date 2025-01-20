@@ -268,3 +268,66 @@ def update_stride(root, stride):
     for child in root.iterfind('.//stride'):
         child.text = str(stride)
     return None
+
+
+def add_ffplumed_section(root, name="plumed", file_mode="xyz", file_name="init.xyz", plumed_dat="plumed/plumed.dat"):
+    """
+    Adds a section for ffplumed to the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    name (str, optional): The name attribute for the ffplumed section. Default is "plumed".
+    file_mode (str, optional): The mode attribute for the file element. Default is "xyz".
+    file_name (str, optional): The file name for the file element. Default is "init.xyz".
+    plumed_dat (str, optional): The text for the plumeddat element. Default is "plumed/plumed.dat".
+
+    Returns:
+    None
+    """
+    ffplumed = ET.Element('ffplumed', {'name': name})
+    file_element = ET.SubElement(ffplumed, 'file', {'mode': file_mode})
+    file_element.text = file_name
+    plumed_dat_element = ET.SubElement(ffplumed, 'plumeddat')
+    plumed_dat_element.text = plumed_dat
+    root.append(ffplumed)
+    return None
+
+
+def add_bias_section(root, forcefield="plumed", nbeads="1"):
+    """
+    Adds a bias section under the ensemble tag in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    forcefield (str, optional): The forcefield attribute for the force element. Default is "plumed".
+    nbeads (str, optional): The nbeads attribute for the force element. Default is "1".
+
+    Returns:
+    None
+    """
+    bias = ET.Element('bias')
+    force_element = ET.SubElement(bias, 'force', {'forcefield': forcefield, 'nbeads': nbeads})
+    for ensemble in root.iter('ensemble'):
+        ensemble.append(bias)
+    return None
+
+
+def add_smotion_section(root, mode="metad", metaff="[ plumed ]"):
+    """
+    Adds a smotion section under the simulation tag in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    mode (str, optional): The mode attribute for the smotion element. Default is "metad".
+    metaff (str, optional): The text for the metaff element. Default is "[ plumed ]".
+
+    Returns:
+    None
+    """
+    smotion = ET.Element('smotion', {'mode': mode})
+    metad = ET.SubElement(smotion, 'metad')
+    metaff_element = ET.SubElement(metad, 'metaff')
+    metaff_element.text = metaff
+    for simulation in root.iter('simulation'):
+        simulation.append(smotion)
+    return None
