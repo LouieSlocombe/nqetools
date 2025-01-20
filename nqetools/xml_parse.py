@@ -371,3 +371,69 @@ def add_plumed(root, file_name="init.xyz", plumed_dat="plumed.dat"):
     # Add the smotion section
     add_plumed_smotion_section(root)
     return None
+
+
+def add_trajectory(root, plumed_extras, stride=10):
+    trajectory = ET.Element('trajectory', {
+        'stride': str(stride),
+        'filename': 'colvar',
+        'bead': '0',
+        'extra_type': ','.join(plumed_extras)
+    })
+    for output in root.iter('output'):
+        output.append(trajectory)
+    return None
+
+
+def add_plumed_ff_section_extras(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+    # Get the ffplumed section
+    ffplumed = ET.Element('ffplumed', {'name': 'plumed'})
+    # Add the file element
+    file_element = ET.SubElement(ffplumed, 'file', {'mode': 'xyz'})
+    file_element.text = file_name
+    # Add the plumeddat element
+    plumed_dat_element = ET.SubElement(ffplumed, 'plumeddat')
+    plumed_dat_element.text = plumed_dat
+    # Add the plumed_extras element
+    if plumed_extras is not None:
+        plumed_plumed_extras_element = ET.SubElement(ffplumed, 'plumed_extras')
+        plumed_plumed_extras_element.text = '[' + ' '.join(plumed_extras) + ']'
+
+    for ffsocket in root.iter('ffsocket'):
+        parent = find_parent(root, ffsocket)
+        if parent is not None:
+            index = list(parent).index(ffsocket)
+            parent.insert(index + 1, ffplumed)
+    return None
+
+
+def add_plumed_bias_section_extras(root, nbeads=1):
+    bias = ET.Element('bias')
+    ET.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
+    for ensemble in root.iter('ensemble'):
+        for temperature in ensemble.iter('temperature'):
+            index = list(ensemble).index(temperature)
+            ensemble.insert(index + 1, bias)
+    return None
+
+
+def add_plumed_smotion_section_extras(root):
+    smotion = ET.Element('smotion', {'mode': 'metad'})
+    metad = ET.SubElement(smotion, 'metad')
+    metaff_element = ET.SubElement(metad, 'metaff')
+    metaff_element.text = '[ plumed ]'
+    for simulation in root.iter('simulation'):
+        simulation.append(smotion)
+    return None
+
+
+def add_plumed_extras(root, plumed_extras, file_name="init.xyz", plumed_dat="plumed.dat"):
+    # Update the trajectory file with plumed_extras
+    add_trajectory(root, plumed_extras)
+    # Update the plumed file
+    add_plumed_ff_section_extras(root, file_name=file_name, plumed_dat=plumed_dat)
+    # Add the bias section
+    add_plumed_bias_section_extras(root, nbeads=1)
+    # Add the smotion section
+    add_plumed_smotion_section_extras(root)
+    return None
