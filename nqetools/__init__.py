@@ -79,9 +79,9 @@ from .xml_parse import (update_mass,
                         update_open_paths,
                         update_timestep,
                         update_stride,
-                        add_plumed,
-                        add_trajectory_plumed,
                         add_trajectory_centroid,
+                        add_plumed,
+                        add_trajectory_plumed_extras,
                         )
 
 from .qchem_mod import (QChem)
