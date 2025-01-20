@@ -355,6 +355,18 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
 
 
 def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+    """
+    Adds a PLUMED force field section to the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    plumed_extras (list of str, optional): A list of extra types to include in the PLUMED section. Default is None.
+    file_name (str, optional): The name of the file to use in the PLUMED section. Default is "init.xyz".
+    plumed_dat (str, optional): The name of the PLUMED data file to use. Default is "plumed.dat".
+
+    Returns:
+    None
+    """
     # Get the ffplumed section
     ffplumed = ET.Element('ffplumed', {'name': 'plumed'})
 
@@ -371,6 +383,7 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
         plumed_plumed_extras_element = ET.SubElement(ffplumed, 'plumed_extras')
         plumed_plumed_extras_element.text = '[' + ' '.join(plumed_extras) + ']'
 
+    # Insert the ffplumed section after the ffsocket element
     for ffsocket in root.iter('ffsocket'):
         parent = find_parent(root, ffsocket)
         if parent is not None:
@@ -380,9 +393,21 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
 
 
 def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
+    """
+    Adds a bias section to the XML tree under the ensemble tag.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    plumed_extras (list of str, optional): A list of extra types to include in the interpolate_extras element. Default is None.
+    nbeads (int, optional): The number of beads to set in the force element. Default is 1.
+
+    Returns:
+    None
+    """
     # Get the bias section
     bias = ET.Element('bias')
 
+    # Create the force sub-element with the specified attributes
     force = ET.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
     if plumed_extras is not None:
         # Add the plumed_extras element
@@ -398,6 +423,18 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
 
 
 def add_plumed(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+    """
+    Adds PLUMED-related sections to the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    plumed_extras (list of str, optional): A list of extra types to include in the PLUMED sections. Default is None.
+    file_name (str, optional): The name of the file to use in the PLUMED sections. Default is "init.xyz".
+    plumed_dat (str, optional): The name of the PLUMED data file to use. Default is "plumed.dat".
+
+    Returns:
+    None
+    """
     # Update the plumed file
     add_plumed_ff_section(root,
                           plumed_extras=plumed_extras,
