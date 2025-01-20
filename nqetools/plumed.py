@@ -15,7 +15,7 @@ def write_plumed_pos(directory=None,
                      temperature=300,
                      stride=10):
     if directory is None:
-        os.getcwd()
+        directory = os.getcwd()
 
     # Update the index as it starts from 1
     idx_atom += 1
@@ -47,7 +47,7 @@ def write_plumed_coord(atoms,
                        biasfactor=10,
                        ):
     if directory is None:
-        os.getcwd()
+        directory = os.getcwd()
 
     # https://www.plumed.org/doc-master/user-doc/html/_d_i_s_t_a_n_c_e_s.html
     # https://www.plumed.org/doc-v2.9/user-doc/html/_u_p_p_e_r__w_a_l_l_s.html
@@ -104,7 +104,7 @@ def write_plumed_dist(directory=None,
                       stride=10,
                       ):
     if directory is None:
-        os.getcwd()
+        directory = os.getcwd()
 
     # https://www.plumed-nest.org/eggs/24/021/
     # https://www.plumed-nest.org/eggs/24/021/data/molecular-dynamics/ion-pairing/caco3-batches/1/plumed.dat.html
