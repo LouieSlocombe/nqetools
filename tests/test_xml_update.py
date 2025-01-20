@@ -1,7 +1,8 @@
 import os
-import nqetools as nqe
-import xml.etree.ElementTree as ET
 import re
+import xml.etree.ElementTree as ET
+
+import nqetools as nqe
 
 
 def vis_xml(root):
@@ -80,7 +81,40 @@ def test_add_trajectory_centroid():
     assert count_matching_words(str(ET.tostring(root)), "centroid") == 1
 
 
+def test_add_trajectory_plumed_extras():
+    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    # Update the plumed extras
+    nqe.add_trajectory_plumed_extras(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the plumed extras have been added to the xml
+    assert count_matching_words(str(ET.tostring(root)), "extras_bias") == 1
+
+
+def test_add_plumed_bias_section():
+    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    # Update the plumed file
+    nqe.add_plumed_bias_section(root, plumed_extras=["doo", "dc", "mtd.bias"])
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    assert count_matching_words(str(ET.tostring(root)), "interpolate_extras") == 2
+    assert count_matching_words(str(ET.tostring(root)), "doo") == 1
+
+
+def test_add_plumed_ff_section():
+    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    # Update the plumed file
+    nqe.add_plumed_ff_section(root, plumed_extras=["doo", "dc", "mtd.bias"])
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    assert count_matching_words(str(ET.tostring(root)), "plumed_extras") == 2
+    assert count_matching_words(str(ET.tostring(root)), "doo") == 1
 
 
 def test_plumed():
@@ -99,31 +133,3 @@ def test_plumed():
 
     # Check that smotion has been added to the xml
     assert count_matching_words(str(ET.tostring(root)), "smotion") == 2
-
-def test_add_trajectory_plumed_extras():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
-    # Update the plumed extras
-    nqe.add_trajectory_plumed_extras(root, plumed_extras=["doo", "dc", "mtd.bias"])
-
-    # Write to file for visual inspection
-    vis_xml(root)
-
-    # Check that the plumed extras have been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "extras_bias") == 1
-
-def test_add_plumed_bias_section_extras():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
-    # Update the plumed file
-    nqe.add_plumed_bias_section_extras(root, plumed_extras=["doo", "dc", "mtd.bias"])
-
-    # Write to file for visual inspection
-    vis_xml(root)
-
-    # # Check that ffplumed is in the xml
-    # assert count_matching_words(str(ET.tostring(root)), "ffplumed") == 2
-    #
-    # # Check that bias has been added to the xml
-    # assert count_matching_words(str(ET.tostring(root)), "bias") == 2
-    #
-    # # Check that smotion has been added to the xml
-    # assert count_matching_words(str(ET.tostring(root)), "smotion") == 2
