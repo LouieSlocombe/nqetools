@@ -373,7 +373,19 @@ def add_plumed(root, file_name="init.xyz", plumed_dat="plumed.dat"):
     return None
 
 
-def add_trajectory(root, plumed_extras, stride=10):
+def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{angstrom}"):
+    trajectory = ET.Element('trajectory', {
+        'stride': str(stride),
+        'filename': filename,
+        'format': 'xyz'
+    })
+    trajectory.text = text
+    for output in root.iter('output'):
+        output.append(trajectory)
+    return None
+
+
+def add_trajectory_plumed(root, plumed_extras, stride=10):
     trajectory = ET.Element('trajectory', {
         'stride': str(stride),
         'filename': 'colvar',
@@ -429,7 +441,7 @@ def add_plumed_smotion_section_extras(root):
 
 def add_plumed_extras(root, plumed_extras, file_name="init.xyz", plumed_dat="plumed.dat"):
     # Update the trajectory file with plumed_extras
-    add_trajectory(root, plumed_extras)
+    add_trajectory_plumed(root, plumed_extras)
     # Update the plumed file
     add_plumed_ff_section_extras(root, file_name=file_name, plumed_dat=plumed_dat)
     # Add the bias section

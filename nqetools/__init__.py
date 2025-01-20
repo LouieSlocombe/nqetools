@@ -80,6 +80,8 @@ from .xml_parse import (update_mass,
                         update_timestep,
                         update_stride,
                         add_plumed,
+                        add_trajectory_plumed,
+                        add_trajectory_centroid,
                         )
 
 from .qchem_mod import (QChem)
