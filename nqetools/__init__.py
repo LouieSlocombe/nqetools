@@ -82,6 +82,7 @@ from .xml_parse import (update_mass,
                         add_trajectory_centroid,
                         add_plumed,
                         add_trajectory_plumed_extras,
+                        add_plumed_bias_section_extras,
                         )
 
 from .qchem_mod import (QChem)

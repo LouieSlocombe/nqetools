@@ -287,52 +287,6 @@ def find_parent(root, child):
     return None
 
 
-def add_plumed_ff_section(root, file_name="init.xyz", plumed_dat="plumed.dat"):
-    """
-    Adds a ffplumed section after the ffsocket tag in the XML tree.
-
-    Parameters:
-    root (Element): The root element of the XML tree.
-    file_name (str, optional): The file name for the file element. Default is "init.xyz".
-    plumed_dat (str, optional): The text for the plumeddat element. Default is "plumed.dat".
-
-    Returns:
-    None
-    """
-    ffplumed = ET.Element('ffplumed', {'name': 'plumed'})
-    file_element = ET.SubElement(ffplumed, 'file', {'mode': 'xyz'})
-    file_element.text = file_name
-    plumed_dat_element = ET.SubElement(ffplumed, 'plumeddat')
-    plumed_dat_element.text = plumed_dat
-
-    for ffsocket in root.iter('ffsocket'):
-        parent = find_parent(root, ffsocket)
-        if parent is not None:
-            index = list(parent).index(ffsocket)
-            parent.insert(index + 1, ffplumed)
-    return None
-
-
-def add_plumed_bias_section(root, nbeads=1):
-    """
-    Adds a bias section under the ensemble tag in the XML tree, after the temperature tag.
-
-    Parameters:
-    root (Element): The root element of the XML tree.
-    nbeads (int, optional): The nbeads attribute for the force element. Default is 1.
-
-    Returns:
-    None
-    """
-    bias = ET.Element('bias')
-    ET.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
-    for ensemble in root.iter('ensemble'):
-        for temperature in ensemble.iter('temperature'):
-            index = list(ensemble).index(temperature)
-            ensemble.insert(index + 1, bias)
-    return None
-
-
 def add_plumed_smotion_section(root):
     """
     Adds a smotion section under the simulation tag in the XML tree.
@@ -349,27 +303,6 @@ def add_plumed_smotion_section(root):
     metaff_element.text = '[ plumed ]'
     for simulation in root.iter('simulation'):
         simulation.append(smotion)
-    return None
-
-
-def add_plumed(root, file_name="init.xyz", plumed_dat="plumed.dat"):
-    """
-    Adds ffplumed, bias, and smotion sections to the XML tree.
-
-    Parameters:
-    root (Element): The root element of the XML tree.
-    file_name (str, optional): The file name for the file element in the ffplumed section. Default is "init.xyz".
-    plumed_dat (str, optional): The text for the plumeddat element in the ffplumed section. Default is "plumed.dat".
-
-    Returns:
-    None
-    """
-    # Update the plumed file
-    add_plumed_ff_section(root, file_name=file_name, plumed_dat=plumed_dat)
-    # Add the bias section
-    add_plumed_bias_section(root, nbeads=1)
-    # Add the smotion section
-    add_plumed_smotion_section(root)
     return None
 
 
@@ -421,15 +354,18 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
     return None
 
 
-def add_plumed_ff_section_extras(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
     # Get the ffplumed section
     ffplumed = ET.Element('ffplumed', {'name': 'plumed'})
+
     # Add the file element
     file_element = ET.SubElement(ffplumed, 'file', {'mode': 'xyz'})
     file_element.text = file_name
+
     # Add the plumeddat element
     plumed_dat_element = ET.SubElement(ffplumed, 'plumeddat')
     plumed_dat_element.text = plumed_dat
+
     # Add the plumed_extras element
     if plumed_extras is not None:
         plumed_plumed_extras_element = ET.SubElement(ffplumed, 'plumed_extras')
@@ -443,9 +379,17 @@ def add_plumed_ff_section_extras(root, plumed_extras=None, file_name="init.xyz",
     return None
 
 
-def add_plumed_bias_section_extras(root, nbeads=1):
+def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
+    # Get the bias section
     bias = ET.Element('bias')
-    ET.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
+
+    force = ET.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
+    if plumed_extras is not None:
+        # Add the plumed_extras element
+        plumed_extras_element = ET.SubElement(force, 'interpolate_extras')
+        plumed_extras_element.text = '[' + ','.join(plumed_extras) + ']'
+
+    # Properly insert the bias section
     for ensemble in root.iter('ensemble'):
         for temperature in ensemble.iter('temperature'):
             index = list(ensemble).index(temperature)
@@ -453,23 +397,16 @@ def add_plumed_bias_section_extras(root, nbeads=1):
     return None
 
 
-def add_plumed_smotion_section_extras(root):
-    smotion = ET.Element('smotion', {'mode': 'metad'})
-    metad = ET.SubElement(smotion, 'metad')
-    metaff_element = ET.SubElement(metad, 'metaff')
-    metaff_element.text = '[ plumed ]'
-    for simulation in root.iter('simulation'):
-        simulation.append(smotion)
-    return None
-
-
-def add_plumed_extras(root, plumed_extras, file_name="init.xyz", plumed_dat="plumed.dat"):
-    # Update the trajectory file with plumed_extras
-    add_trajectory_plumed(root, plumed_extras)
+def add_plumed(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
     # Update the plumed file
-    add_plumed_ff_section_extras(root, file_name=file_name, plumed_dat=plumed_dat)
+    add_plumed_ff_section(root,
+                          plumed_extras=plumed_extras,
+                          file_name=file_name,
+                          plumed_dat=plumed_dat)
     # Add the bias section
-    add_plumed_bias_section_extras(root, nbeads=1)
+    add_plumed_bias_section(root,
+                            plumed_extras=plumed_extras,
+                            nbeads=1)
     # Add the smotion section
-    add_plumed_smotion_section_extras(root)
+    add_plumed_smotion_section(root)
     return None
