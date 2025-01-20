@@ -271,6 +271,16 @@ def update_stride(root, stride):
 
 
 def find_parent(root, child):
+    """
+    Finds the parent element of a given child element in an XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    child (Element): The child element for which to find the parent.
+
+    Returns:
+    Element: The parent element of the given child, or None if no parent is found.
+    """
     for parent in root.iter():
         if child in parent:
             return parent
@@ -278,6 +288,17 @@ def find_parent(root, child):
 
 
 def add_plumed_ff_section(root, file_name="init.xyz", plumed_dat="plumed.dat"):
+    """
+    Adds a ffplumed section after the ffsocket tag in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    file_name (str, optional): The file name for the file element. Default is "init.xyz".
+    plumed_dat (str, optional): The text for the plumeddat element. Default is "plumed.dat".
+
+    Returns:
+    None
+    """
     ffplumed = ET.Element('ffplumed', {'name': 'plumed'})
     file_element = ET.SubElement(ffplumed, 'file', {'mode': 'xyz'})
     file_element.text = file_name
@@ -293,6 +314,16 @@ def add_plumed_ff_section(root, file_name="init.xyz", plumed_dat="plumed.dat"):
 
 
 def add_plumed_bias_section(root, nbeads=1):
+    """
+    Adds a bias section under the ensemble tag in the XML tree, after the temperature tag.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    nbeads (int, optional): The nbeads attribute for the force element. Default is 1.
+
+    Returns:
+    None
+    """
     bias = ET.Element('bias')
     ET.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
     for ensemble in root.iter('ensemble'):
@@ -303,6 +334,15 @@ def add_plumed_bias_section(root, nbeads=1):
 
 
 def add_plumed_smotion_section(root):
+    """
+    Adds a smotion section under the simulation tag in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+
+    Returns:
+    None
+    """
     smotion = ET.Element('smotion', {'mode': 'metad'})
     metad = ET.SubElement(smotion, 'metad')
     metaff_element = ET.SubElement(metad, 'metaff')
@@ -313,6 +353,17 @@ def add_plumed_smotion_section(root):
 
 
 def add_plumed(root, file_name="init.xyz", plumed_dat="plumed.dat"):
+    """
+    Adds ffplumed, bias, and smotion sections to the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    file_name (str, optional): The file name for the file element in the ffplumed section. Default is "init.xyz".
+    plumed_dat (str, optional): The text for the plumeddat element in the ffplumed section. Default is "plumed.dat".
+
+    Returns:
+    None
+    """
     # Update the plumed file
     add_plumed_ff_section(root, file_name=file_name, plumed_dat=plumed_dat)
     # Add the bias section
