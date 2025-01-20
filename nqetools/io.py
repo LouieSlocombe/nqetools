@@ -90,7 +90,9 @@ def write_xml(root, file):
     None
     """
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    ET.ElementTree(root).write(file)
+    tree = ET.ElementTree(root)
+    ET.indent(tree.getroot(), space="\t", level=0)
+    tree.write(file)
     return None
 
 
