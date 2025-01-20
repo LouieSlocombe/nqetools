@@ -67,6 +67,17 @@ def test_timestep():
     # Check that the timestep is set
     assert count_matching_words(str(ET.tostring(root)), str(timestep)) == 1
 
+def test_add_trajectory_centroid():
+    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    # Update the centroid trajectory
+    nqe.add_trajectory_centroid(root)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the centroid trajectory has been added to the xml
+    assert count_matching_words(str(ET.tostring(root)), "centroid") == 1
+
 
 def test_plumed():
     root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
