@@ -103,7 +103,8 @@ from .conversions import (bohr_to_angstrom,
                           eVperA2_to_kJpermolpernm2,
                           )
 
-from .plumed import (write_plumed_input,
-                     write_plumed_input_coordination)
+from .plumed import (write_plumed_pos,
+                     write_plumed_coord,
+                     write_plumed_dist)
 
 __version__ = "0.1.0"
