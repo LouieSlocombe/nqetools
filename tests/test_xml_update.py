@@ -5,10 +5,29 @@ import re
 
 
 def vis_xml(root):
+    """
+    Writes the XML tree to a file named 'input.xml' in the current working directory.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+
+    Returns:
+    None
+    """
     nqe.write_xml(root, os.path.join(os.getcwd(), 'input.xml'))
 
 
 def count_matching_words(input_string, target_word):
+    """
+    Counts the number of occurrences of a target word in an input string.
+
+    Parameters:
+    input_string (str): The string in which to search for the target word.
+    target_word (str): The word to search for in the input string.
+
+    Returns:
+    int: The number of times the target word appears in the input string.
+    """
     pattern = re.escape(target_word)
     return len(re.findall(pattern, input_string))
 
@@ -27,6 +46,10 @@ def test_temperature():
     temperature = -999
     # Update the temperature
     nqe.update_temperature(root, temperature)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
     # Check that the temperature is set
     assert count_matching_words(str(ET.tostring(root)), str(temperature)) == 2
 
@@ -37,6 +60,9 @@ def test_timestep():
     timestep = 0.002
     # Update the timestep
     nqe.update_timestep(root, timestep)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
 
     # Check that the timestep is set
     assert count_matching_words(str(ET.tostring(root)), str(timestep)) == 1
