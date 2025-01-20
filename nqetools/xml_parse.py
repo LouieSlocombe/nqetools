@@ -398,13 +398,24 @@ def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{a
 
 
 def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
+    """
+    Adds a <trajectory> element to the <output> tag in the XML tree with specified plumed extras.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    plumed_extras (list of str): A list of extra types to include in the trajectory element.
+    stride (int, optional): The stride attribute for the trajectory element. Default is 10.
+
+    Returns:
+    None
+    """
     trajectory = ET.Element('trajectory', {
         'stride': str(stride),
         'filename': 'colvar',
         'bead': '0',
         'extra_type': ','.join(plumed_extras)
-    }, text='extras_bias')
-
+    })
+    trajectory.text = 'extras_bias'
     for output in root.iter('output'):
         output.append(trajectory)
     return None
