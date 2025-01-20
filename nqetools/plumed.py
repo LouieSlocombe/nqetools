@@ -11,7 +11,7 @@ def write_plumed_pos(directory=None,
                      pace=20,
                      sigma=0.01,
                      height=1.0,
-                     biasfactor=2.5,
+                     bias=2.5,
                      temperature=300,
                      stride=10):
     if directory is None:
@@ -21,7 +21,7 @@ def write_plumed_pos(directory=None,
     idx_atom += 1
     impt = f"""
 q: POSITION ATOM={idx_atom}
-mtd: METAD ARG=q.x,q.y,q.z PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={biasfactor} TEMP={temperature}
+mtd: METAD ARG=q.x,q.y,q.z PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
 PRINT ARG=q.*,mtd.* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -44,7 +44,7 @@ def write_plumed_coord(atoms,
                        pace=10,
                        stride=10,
                        height=0.041,
-                       biasfactor=10,
+                       bias=10,
                        ):
     if directory is None:
         directory = os.getcwd()
@@ -80,7 +80,7 @@ d: DISTANCE ATOMS={idx_atom1},{idx_atom2}
 c1: DISTANCES GROUPA={idx_atom1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 c2: DISTANCES GROUPA={idx_atom2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
-mtd:   METAD ARG=d,dc PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={biasfactor} TEMP={temperature}
+mtd:   METAD ARG=d,dc PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
 PRINT ARG=d,c1.*,c2.*,dc,mtd.*,uwall.* STRIDE={stride} FILE=COLVAR
