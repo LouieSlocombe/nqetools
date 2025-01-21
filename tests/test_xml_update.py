@@ -33,6 +33,22 @@ def count_matching_words(input_string, target_word):
     return len(re.findall(pattern, input_string))
 
 
+def test_properties():
+    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    # Set the properties
+    properties = ["-99", "-98", "-97"]
+    # Update the properties
+    nqe.update_properties(root, properties)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the properties are set
+    assert count_matching_words(str(ET.tostring(root)), "-99") == 1
+    assert count_matching_words(str(ET.tostring(root)), "-98") == 1
+    assert count_matching_words(str(ET.tostring(root)), "-97") == 1
+
+
 def test_temperature():
     root = ET.parse(os.path.abspath("../templates/INST.xml")).getroot()
     # Set the temperature

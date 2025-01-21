@@ -2,6 +2,22 @@ import xml.etree.ElementTree as ET
 from .tools import has_pbc
 
 
+def update_properties(root, prop_list):
+    """
+    Updates the XML tree with properties from a given list.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    prop_list (list of str): A list of properties to update in the XML tree.
+
+    Returns:
+    None
+    """
+    for properties in root.iter('properties'):
+        properties.text = '[' + ','.join(prop_list) + ']'
+    return None
+
+
 def get_masses(atoms, f_deut=False, m_d=2.0141):
     """
     Retrieves the masses of atoms, optionally using deuterium masses for hydrogen atoms.

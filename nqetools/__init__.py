@@ -85,7 +85,8 @@ from .tools import (add_ipi_paths,
                     round_sf,
                     )
 
-from .xml_parse import (update_mass,
+from .xml_parse import (update_properties,
+                        update_mass,
                         update_cell,
                         update_driver,
                         update_nbeads,
