@@ -11,9 +11,9 @@ from .io import (write_xml,
                  copy_hess,
                  get_final_hess,
                  write_xyz)
+from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
-from .plumed import prep_plumed
 
 
 def run_ipi(directory,
@@ -157,6 +157,66 @@ def run_md(directory,
     return atoms_out
 
 
+def prep_plumed_xml(directory,
+                    atoms,
+                    outfile="md",
+                    driver="ase-mace",
+                    total_steps=1000,
+                    deut=False,
+                    temperature=300.0,
+                    timestep=1.0e-3,
+                    md_type="NVT",
+                    stride=10,
+                    checkpoint_stride=1000,
+                    n_beads=1,
+                    plumed_extras=None):
+    # Prepare the MD simulation XML file
+    tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
+    root = tree.getroot()
+
+    # Fix the cell
+    update_cell(root, atoms)
+
+    # Fix the masses
+    update_mass(root, atoms, deut=deut)
+
+    # Change the driver ff
+    update_driver(root, atoms, driver)
+
+    # Change the title
+    update_title(root, outfile)
+
+    # Update the total_steps
+    update_total_steps(root, total_steps)
+
+    # Update the temperature
+    update_temperature(root, temperature)
+
+    # Update the timestep
+    update_timestep(root, timestep)
+
+    # If the md_type has PIMD update
+    if 'PIMD' in md_type:
+        # Add in the centroid
+        add_trajectory_centroid(root)
+
+        # Update the number of beads
+        update_nbeads(root, n_beads)
+
+    # Add the plumed input file
+    add_plumed_xml(root, plumed_extras=plumed_extras)
+
+    # Update the stride
+    update_stride(root, stride)
+
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
+    # Write the file
+    write_xml(root, os.path.join(directory, 'input.xml'))
+    return None
+
+
 def run_plumed_md(directory,
                   atoms,
                   server="i-pi input.xml",
@@ -187,15 +247,25 @@ def run_plumed_md(directory,
     prep_plumed('pos', tmp_args)
 
     # Prepare the MD xml file
-    prep_md_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
-                temperature=temperature, timestep=timestep, md_type=md_type, stride=stride,
-                checkpoint_stride=checkpoint_stride, n_beads=n_beads)
+    prep_plumed_xml(directory, atoms,
+                    outfile=outfile,
+                    driver=driver,
+                    total_steps=total_steps,
+                    deut=deut,
+                    temperature=temperature,
+                    timestep=timestep,
+                    md_type=md_type,
+                    stride=stride,
+                    checkpoint_stride=checkpoint_stride,
+                    n_beads=n_beads)
 
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
+
     # Run the MD
-    print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
+    print(f"Running plumed MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
+
     # Load the structure
     atoms_out = ase.io.read(os.path.join(directory, f"{outfile}.pos_0.xyz"), index=":")
     return atoms_out

@@ -28,6 +28,7 @@ from .driver import (write_mace_driver,
                      prep_driver)
 from .execution import (run_ipi,
                         run_md,
+                        run_plumed_md,
                         run_optimise,
                         run_phonons,
                         run_ts,
