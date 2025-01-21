@@ -12,5 +12,5 @@ def test_plumed():
 
     # Make a directory to store everything
     directory = "mace_md"
-    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT")
+    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT-PIMD", n_beads=8)
     pass

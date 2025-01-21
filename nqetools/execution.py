@@ -269,7 +269,7 @@ def run_plumed_md(directory,
 
     # Run the MD
     print(f"Running plumed MD ({md_type}) with the driver: {driver}", flush=True)
-    run_ipi(directory, server, driver, outfile + ".out")
+    run_ipi(directory, server, driver, outfile + ".out", n=n_beads)
 
     # Load the structure
     atoms_out = ase.io.read(os.path.join(directory, f"{outfile}.pos_0.xyz"), index=":")
