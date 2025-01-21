@@ -70,7 +70,8 @@ def prep_md(directory,
             temperature=300.0,
             timestep=1.0e-3,
             md_type="NVT",
-            stride=10):
+            stride=10,
+            n_beads=1):
     # Prepare the MD simulation XML file
     tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
     root = tree.getroot()
@@ -101,6 +102,9 @@ def prep_md(directory,
         # Add in the centroid
         add_trajectory_centroid(root)
 
+        # Update the number of beads
+        update_nbeads(root, n_beads)
+
     # Update the stride
     update_stride(root, stride)
 
@@ -120,7 +124,8 @@ def run_md(directory,
            temperature=300.0,
            timestep=1.0e-3,
            md_type="NVT",
-           stride=10):
+           stride=10,
+           n_beads=1):
     md_type = md_type.upper()
     # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
     if driver_dict is None:
@@ -141,7 +146,8 @@ def run_md(directory,
             temperature=temperature,
             timestep=timestep,
             md_type=md_type,
-            stride=stride)
+            stride=stride,
+            n_beads=n_beads)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the MD

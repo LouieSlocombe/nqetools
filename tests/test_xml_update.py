@@ -69,6 +69,24 @@ def test_timestep():
     assert count_matching_words(str(ET.tostring(root)), str(timestep)) == 1
 
 
+def test_nbeads():
+    root = ET.parse(os.path.abspath("../templates/NVT-PIMD.xml")).getroot()
+
+    # Update the plumed file
+    nqe.add_plumed(root)
+
+    # Set the number of beads
+    nbeads = -99
+    # Update the number of beads
+    nqe.update_nbeads(root, nbeads)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the number of beads is set
+    assert count_matching_words(str(ET.tostring(root)), str(nbeads)) == 1
+
+
 def test_add_trajectory_centroid():
     root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
     # Update the centroid trajectory
