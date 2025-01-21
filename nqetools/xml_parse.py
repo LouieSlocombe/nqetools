@@ -270,6 +270,22 @@ def update_stride(root, stride):
     return None
 
 
+def update_checkpoint_stride(root, stride):
+    """
+    Updates the stride attribute of the checkpoint elements within the output tags in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    stride (int): The new stride value to set for the checkpoint elements.
+
+    Returns:
+    None
+    """
+    for output in root.iter('output'):
+        for checkpoint in output.iter('checkpoint'):
+            checkpoint.set('stride', str(stride))
+
+
 def find_parent(root, child):
     """
     Finds the parent element of a given child element in an XML tree.

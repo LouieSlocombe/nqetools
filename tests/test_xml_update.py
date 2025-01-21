@@ -87,6 +87,20 @@ def test_nbeads():
     assert count_matching_words(str(ET.tostring(root)), str(nbeads)) == 1
 
 
+def test_checkpoint_stride():
+    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    # Set the checkpoint stride
+    checkpoint_stride = -99
+    # Update the checkpoint stride
+    nqe.update_checkpoint_stride(root, checkpoint_stride)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the checkpoint stride is set
+    assert count_matching_words(str(ET.tostring(root)), str(checkpoint_stride)) == 1
+
+
 def test_add_trajectory_centroid():
     root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
     # Update the centroid trajectory
