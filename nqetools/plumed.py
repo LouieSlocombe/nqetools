@@ -5,6 +5,17 @@ from .conversions import (A_to_nm,
                           eVperA2_to_kJpermolpernm2)
 from .tools import round_sf
 
+def prep_plumed(plumed_type, args):
+    if plumed_type == 'pos':
+        return write_plumed_pos(**args)
+    elif plumed_type == 'coord':
+        return write_plumed_coord(**args)
+    elif plumed_type == 'dist':
+        return write_plumed_dist(**args)
+    else:
+        raise ValueError(f'Unknown plumed type: {plumed_type}')
+
+
 
 def write_plumed_pos(directory=None,
                      idx_atom=0,

@@ -65,7 +65,8 @@ from .plotting import (plot_time_energy,
                        plot_neb,
                        show_atoms)
 
-from .plumed import (write_plumed_pos,
+from .plumed import (prep_plumed,
+                     write_plumed_pos,
                      write_plumed_coord,
                      write_plumed_dist)
 
