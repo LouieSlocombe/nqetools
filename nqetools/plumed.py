@@ -32,7 +32,7 @@ def write_plumed_pos(directory=None,
     idx_atom += 1
     impt = f"""
 q: POSITION ATOM={idx_atom}
-mtd: METAD ARG=q.x,q.y,q.z PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
+mtd: METAD ARG=q.x,q.y,q.z PACE={pace} SIGMA={sigma},{sigma},{sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
 PRINT ARG=q.*,mtd.* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1

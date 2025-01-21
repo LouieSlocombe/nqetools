@@ -243,7 +243,7 @@ def run_plumed_md(directory,
     write_xyz(atoms, os.path.join(directory, "init.xyz"))
 
     # Prepare the plumed input file
-    tmp_args = {'directory': directory, 'atoms': atoms, 'temperature': temperature}
+    tmp_args = {'directory': directory, 'temperature': temperature}
     prep_plumed('pos', tmp_args)
 
     # Prepare the MD xml file
