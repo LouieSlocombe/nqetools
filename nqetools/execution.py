@@ -71,6 +71,7 @@ def prep_md(directory,
             timestep=1.0e-3,
             md_type="NVT",
             stride=10,
+            checkpoint_stride=1000,
             n_beads=1):
     # Prepare the MD simulation XML file
     tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
@@ -108,6 +109,9 @@ def prep_md(directory,
     # Update the stride
     update_stride(root, stride)
 
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
     # Write the file
     write_xml(root, os.path.join(directory, 'input.xml'))
     return None
@@ -125,6 +129,7 @@ def run_md(directory,
            timestep=1.0e-3,
            md_type="NVT",
            stride=10,
+           checkpoint_stride=1000,
            n_beads=1):
     md_type = md_type.upper()
     # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
@@ -147,6 +152,7 @@ def run_md(directory,
             timestep=timestep,
             md_type=md_type,
             stride=stride,
+            checkpoint_stride=checkpoint_stride,
             n_beads=n_beads)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
@@ -167,25 +173,9 @@ def prep_optimise(directory,
                   optimizer="cg",
                   tol_energy=5.0e-6,
                   tol_force=5.0e-6,
-                  tol_position=1.0e-6):
-    """
-    Prepares the minimization XML file for an optimization run.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    outfile (str, optional): Output file name. Default is "min".
-    driver (str, optional): Driver to be used for the optimization. Default is "ase-mace".
-    total_steps (int, optional): Total number of optimization steps. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-    optimizer (str, optional): Optimizer to be used. Default is "cg".
-    tol_energy (float, optional): Energy tolerance for the optimization. Default is 5.0e-6.
-    tol_force (float, optional): Force tolerance for the optimization. Default is 5.0e-6.
-    tol_position (float, optional): Position tolerance for the optimization. Default is 1.0e-6.
-
-    Returns:
-    None
-    """
+                  tol_position=1.0e-6,
+                  stride=1,
+                  checkpoint_stride=10):
     # Prepare the minimization xml file
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/MIN.xml")))
     root = tree.getroot()
@@ -211,6 +201,12 @@ def prep_optimise(directory,
     # Update the tolerances
     update_tol(root, tol_energy, tol_force, tol_position)
 
+    # Update the stride
+    update_stride(root, stride)
+
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
     # Write the file
     write_xml(root, os.path.join(directory, 'input.xml'))
     return None
@@ -227,27 +223,9 @@ def run_optimise(directory,
                  optimizer="cg",
                  tol_energy=5.0e-6,
                  tol_force=5.0e-6,
-                 tol_position=1.0e-6):
-    """
-    Runs the optimization process by preparing the necessary XML file and executing the i-PI server and driver.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved and the simulation will be run.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    server (str, optional): Command to start the i-PI server. Default is "i-pi input.xml".
-    outfile (str, optional): Output file name. Default is "min".
-    driver (str, optional): Driver to be used for the optimization. Default is "ase-mace".
-    driver_dict (dict, optional): Dictionary of driver parameters. Default is None.
-    total_steps (int, optional): Total number of optimization steps. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-    optimizer (str, optional): Optimizer to be used. Default is "cg".
-    tol_energy (float, optional): Energy tolerance for the optimization. Default is 5.0e-6.
-    tol_force (float, optional): Force tolerance for the optimization. Default is 5.0e-6.
-    tol_position (float, optional): Position tolerance for the optimization. Default is 1.0e-6.
-
-    Returns:
-    None
-    """
+                 tol_position=1.0e-6,
+                 stride=1,
+                 checkpoint_stride=1000):
     # Prepare the minimization xml file
     if driver_dict is None:
         driver_dict = {}
@@ -266,7 +244,9 @@ def run_optimise(directory,
                   optimizer=optimizer,
                   tol_energy=tol_energy,
                   tol_force=tol_force,
-                  tol_position=tol_position)
+                  tol_position=tol_position,
+                  stride=stride,
+                  checkpoint_stride=checkpoint_stride)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
 
@@ -283,21 +263,9 @@ def prep_phonons(directory,
                  outfile="phonon",
                  driver="ase-mace",
                  total_steps=1000,
-                 deut=False):
-    """
-    Prepares the phonon XML file for a phonon calculation.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    outfile (str, optional): Output file name. Default is "phonon".
-    driver (str, optional): Driver to be used for the phonon calculation. Default is "ase-mace".
-    total_steps (int, optional): Total number of steps for the phonon calculation. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-
-    Returns:
-    None
-    """
+                 deut=False,
+                 stride=1,
+                 checkpoint_stride=1000):
     # Prepare the phonon xml file
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/PHO.xml")))
     root = tree.getroot()
@@ -317,6 +285,12 @@ def prep_phonons(directory,
     # Update the total_steps
     update_total_steps(root, total_steps)
 
+    # Update the stride
+    update_stride(root, stride)
+
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
     # Write the file
     write_xml(root, f'{directory}input.xml')
     return None
@@ -330,24 +304,9 @@ def run_phonons(directory,
                 driver="ase-mace",
                 driver_dict=None,
                 total_steps=1000,
-                deut=False):
-    """
-    Runs the phonon calculation by preparing the necessary XML file and executing the i-PI server and driver.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved and the simulation will be run.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    min_file_path (str): Path to the minimized structure file.
-    server (str, optional): Command to start the i-PI server. Default is "i-pi input.xml".
-    outfile (str, optional): Output file name. Default is "phonon".
-    driver (str, optional): Driver to be used for the phonon calculation. Default is "ase-mace".
-    driver_dict (dict, optional): Dictionary of driver parameters. Default is None.
-    total_steps (int, optional): Total number of steps for the phonon calculation. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-
-    Returns:
-    None
-    """
+                deut=False,
+                stride=1,
+                checkpoint_stride=1000):
     if driver_dict is None:
         driver_dict = {}
 
@@ -366,7 +325,9 @@ def run_phonons(directory,
                  outfile=outfile,
                  driver=driver,
                  total_steps=total_steps,
-                 deut=deut)
+                 deut=deut,
+                 stride=stride,
+                 checkpoint_stride=checkpoint_stride)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the phonons
@@ -381,24 +342,9 @@ def prep_ts(directory,
             deut=False,
             tol_energy=5.0e-6,
             tol_force=5.0e-6,
-            tol_position=1.0e-6):
-    """
-    Prepares the transition state search XML file for a transition state calculation.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    outfile (str, optional): Output file name. Default is "ts".
-    driver (str, optional): Driver to be used for the transition state calculation. Default is "ase-mace".
-    total_steps (int, optional): Total number of steps for the transition state calculation. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-    tol_energy (float, optional): Energy tolerance for the transition state calculation. Default is 5.0e-6.
-    tol_force (float, optional): Force tolerance for the transition state calculation. Default is 5.0e-6.
-    tol_position (float, optional): Position tolerance for the transition state calculation. Default is 1.0e-6.
-
-    Returns:
-    None
-    """
+            tol_position=1.0e-6,
+            stride=1,
+            checkpoint_stride=1000):
     # Prepare the transition state search xml file
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/TS.xml")))
     root = tree.getroot()
@@ -421,6 +367,12 @@ def prep_ts(directory,
     # Update the tolerances
     update_tol(root, tol_energy, tol_force, tol_position)
 
+    # Update the stride
+    update_stride(root, stride)
+
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
     # Write the file
     write_xml(root, f'{directory}input.xml')
     return None
@@ -436,26 +388,9 @@ def run_ts(directory,
            deut=False,
            tol_energy=5.0e-6,
            tol_force=5.0e-6,
-           tol_position=1.0e-6):
-    """
-    Runs the transition state calculation by preparing the necessary XML file and executing the i-PI server and driver.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved and the simulation will be run.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    server (str, optional): Command to start the i-PI server. Default is "i-pi input.xml".
-    outfile (str, optional): Output file name. Default is "ts".
-    driver (str, optional): Driver to be used for the transition state calculation. Default is "ase-mace".
-    driver_dict (dict, optional): Dictionary of driver parameters. Default is None.
-    total_steps (int, optional): Total number of steps for the transition state calculation. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-    tol_energy (float, optional): Energy tolerance for the transition state calculation. Default is 5.0e-6.
-    tol_force (float, optional): Force tolerance for the transition state calculation. Default is 5.0e-6.
-    tol_position (float, optional): Position tolerance for the transition state calculation. Default is 1.0e-6.
-
-    Returns:
-    None
-    """
+           tol_position=1.0e-6,
+           stride=1,
+           checkpoint_stride=1000):
     if driver_dict is None:
         driver_dict = {}
     # Read the transition state and write it to the ts directory
@@ -468,7 +403,9 @@ def run_ts(directory,
             deut=deut,
             tol_energy=tol_energy,
             tol_force=tol_force,
-            tol_position=tol_position)
+            tol_position=tol_position,
+            stride=stride,
+            checkpoint_stride=checkpoint_stride)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the ts
@@ -485,26 +422,9 @@ def prep_inst(directory,
               temperature=300.0,
               tol_energy=5.0e-6,
               tol_force=5.0e-6,
-              tol_position=1.0e-6):
-    """
-    Prepares the instanton calculation XML file.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    outfile (str, optional): Output file name. Default is "inst".
-    driver (str, optional): Driver to be used for the instanton calculation. Default is "ase-mace".
-    total_steps (int, optional): Total number of steps for the instanton calculation. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-    n_beads (int, optional): Number of beads for the instanton calculation. Default is 4.
-    temperature (float, optional): Temperature for the instanton calculation in Kelvin. Default is 300.0.
-    tol_energy (float, optional): Energy tolerance for the instanton calculation. Default is 5.0e-6.
-    tol_force (float, optional): Force tolerance for the instanton calculation. Default is 5.0e-6.
-    tol_position (float, optional): Position tolerance for the instanton calculation. Default is 1.0e-6.
-
-    Returns:
-    None
-    """
+              tol_position=1.0e-6,
+              stride=1,
+              checkpoint_stride=1000):
     n_atoms = len(atoms)
     n_dof = 3 * n_atoms - 6
     n_doft = 3 * n_atoms
@@ -543,6 +463,12 @@ def prep_inst(directory,
     # Update the tolerances
     update_tol(root, tol_energy, tol_force, tol_position)
 
+    # Update the stride
+    update_stride(root, stride)
+
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
     # Write the file
     write_xml(root, f'{directory}input.xml')
 
@@ -560,29 +486,9 @@ def run_inst(directory,
              temperature=300.0,
              tol_energy=5.0e-6,
              tol_force=5.0e-6,
-             tol_position=1.0e-6):
-    """
-    Runs the instanton calculation by preparing the necessary XML file and executing the i-PI server and driver.
-
-    Parameters:
-    directory (str): Directory where the XML file will be saved and the simulation will be run.
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    directory_ts (str): Directory containing the transition state calculation files.
-    server (str, optional): Command to start the i-PI server. Default is "i-pi input.xml".
-    outfile (str, optional): Output file name. Default is "inst".
-    driver (str, optional): Driver to be used for the instanton calculation. Default is "ase-mace".
-    driver_dict (dict, optional): Dictionary of driver parameters. Default is None.
-    total_steps (int, optional): Total number of steps for the instanton calculation. Default is 1000.
-    deut (bool, optional): Whether to use deuterium masses. Default is False.
-    n_beads (int, optional): Number of beads for the instanton calculation. Default is 4.
-    temperature (float, optional): Temperature for the instanton calculation in Kelvin. Default is 300.0.
-    tol_energy (float, optional): Energy tolerance for the instanton calculation. Default is 5.0e-6.
-    tol_force (float, optional): Force tolerance for the instanton calculation. Default is 5.0e-6.
-    tol_position (float, optional): Position tolerance for the instanton calculation. Default is 1.0e-6.
-
-    Returns:
-    None
-    """
+             tol_position=1.0e-6,
+             stride=1,
+             checkpoint_stride=1000):
     if driver_dict is None:
         driver_dict = {}
 
@@ -602,7 +508,9 @@ def run_inst(directory,
               temperature=temperature,
               tol_energy=tol_energy,
               tol_force=tol_force,
-              tol_position=tol_position)
+              tol_position=tol_position,
+              stride=stride,
+              checkpoint_stride=checkpoint_stride)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the instanton
