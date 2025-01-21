@@ -230,9 +230,14 @@ def run_plumed_md(directory,
                   md_type="NVT",
                   stride=10,
                   checkpoint_stride=1000,
-                  n_beads=1):
+                  n_beads=1,
+                  plumed_type="pos",
+                  plumed_dict=None,
+                  plumed_extras=None):
+    if plumed_dict is None:
+        plumed_dict = {'directory': directory, 'temperature': temperature}
+
     md_type = md_type.upper()
-    # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
     if driver_dict is None:
         driver_dict = {}
 
@@ -243,8 +248,7 @@ def run_plumed_md(directory,
     write_xyz(atoms, os.path.join(directory, "init.xyz"))
 
     # Prepare the plumed input file
-    tmp_args = {'directory': directory, 'temperature': temperature}
-    prep_plumed('pos', tmp_args)
+    prep_plumed(plumed_type, atoms, plumed_dict)
 
     # Prepare the MD xml file
     prep_plumed_xml(directory, atoms,
@@ -257,7 +261,8 @@ def run_plumed_md(directory,
                     md_type=md_type,
                     stride=stride,
                     checkpoint_stride=checkpoint_stride,
-                    n_beads=n_beads)
+                    n_beads=n_beads,
+                    plumed_extras=plumed_extras)
 
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)

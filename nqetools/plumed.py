@@ -5,19 +5,20 @@ from .conversions import (A_to_nm,
                           eVperA2_to_kJpermolpernm2)
 from .tools import round_sf
 
-def prep_plumed(plumed_type, args):
+
+def prep_plumed(plumed_type, atoms, args):
     if plumed_type == 'pos':
-        return write_plumed_pos(**args)
+        return write_plumed_pos(atoms, **args)
     elif plumed_type == 'coord':
-        return write_plumed_coord(**args)
+        return write_plumed_coord(atoms, **args)
     elif plumed_type == 'dist':
-        return write_plumed_dist(**args)
+        return write_plumed_dist(atoms, **args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
 
-
-def write_plumed_pos(directory=None,
+def write_plumed_pos(atoms,
+                     directory=None,
                      idx_atom=0,
                      pace=20,
                      sigma=0.01,
@@ -104,7 +105,8 @@ FLUSH STRIDE=1
 
 
 # Just distance
-def write_plumed_dist(directory=None,
+def write_plumed_dist(atoms,
+                      directory=None,
                       idx_atom1=0,
                       idx_atom2=1,
                       temperature=300,
