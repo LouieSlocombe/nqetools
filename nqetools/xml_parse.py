@@ -454,7 +454,7 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
     return None
 
 
-def add_plumed(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
     """
     Adds PLUMED-related sections to the XML tree.
 
