@@ -11,6 +11,8 @@ from scipy.interpolate import CubicSpline
 from sella import IRC
 from sella import Sella
 
+from .tools import get_fmax
+
 
 def get_neb_path(images):
     """
