@@ -88,6 +88,7 @@ from .tools import (add_ipi_paths,
                     )
 
 from .xml_parse import (update_properties,
+                        append_properties,
                         update_mass,
                         update_cell,
                         update_driver,

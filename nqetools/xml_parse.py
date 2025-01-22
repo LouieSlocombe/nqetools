@@ -18,6 +18,29 @@ def update_properties(root, prop_list):
     return None
 
 
+def append_properties(root, prop_list):
+    """
+    Loads the current list of properties in the given root and appends a new input prop_list.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    prop_list (list of str): A list of properties to append to the existing properties in the XML tree.
+
+    Returns:
+    None
+    """
+    updated_props = []
+    for properties in root.iter('properties'):
+        # Load current properties
+        current_props = properties.text.split(',')
+        current_props = [prop.strip().strip('[').strip(']').strip('\n').strip() for prop in current_props]
+        # Append new properties
+        updated_props = current_props + prop_list
+        # Update the properties text
+        properties.text = '[' + ','.join(updated_props) + ']'
+    return None
+
+
 def get_masses(atoms, f_deut=False, m_d=2.0141):
     """
     Retrieves the masses of atoms, optionally using deuterium masses for hydrogen atoms.
