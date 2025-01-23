@@ -16,7 +16,9 @@ def prep_plumed(plumed_type, atoms, args):
     elif plumed_type == 'coord-opes':
         return write_plumed_opes_coord(atoms, **args)
     elif plumed_type == 'dist-mtd':
-        return write_plumed_dist(atoms, **args)
+        return write_plumed_mtd_dist(**args)
+    elif plumed_type == 'dist-opes':
+        return write_plumed_opes_dist(**args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
@@ -191,44 +193,6 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc', 'opes.bias']
-
-
-# Just distance
-def write_plumed_mtd_dist(atoms,
-                          directory=None,
-                          idx_atom1=0,
-                          idx_atom2=1,
-                          temperature=300,
-                          barrier=0.5,
-                          d_upper=4.0,
-                          kappa=0.026,
-                          pace=10,
-                          stride=10,
-                          ):
-    if directory is None:
-        directory = os.getcwd()
-
-    # https://www.plumed-nest.org/eggs/24/021/
-    # https://www.plumed-nest.org/eggs/24/021/data/molecular-dynamics/ion-pairing/caco3-batches/1/plumed.dat.html
-    # https://www.plumed-nest.org/eggs/24/035/data/notebooks/1_exploration/N2_flooding_inputs/plumed-fresh.dat.html
-
-    # Fix the indexing as it starts from 1
-    idx_atom1 += 1
-    idx_atom2 += 1
-    # Convert the barrier from eV to kJ/mol
-    barrier = round_sf(barrier * eV_to_kJpermol)
-
-    impt = f"""
-d: DISTANCE ATOMS={idx_atom1},{idx_atom2} 
-opes: OPES_METAD ARG=d PACE={pace} BARRIER={barrier} TEMP={temperature}
-uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
-
-PRINT ARG STRIDE={stride} FILE=COLVAR
-    """
-    # Write the input file
-    with open(os.path.join(directory, "plumed.dat"), "w") as f:
-        f.write(impt)
-    return ['d', 'opes.bias']
 
 
 def write_plumed_mtd_dist(directory=None,
