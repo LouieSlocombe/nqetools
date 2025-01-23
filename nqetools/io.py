@@ -4,7 +4,8 @@ import re
 import shutil
 import xml.etree.ElementTree as ET
 
-import ase.io
+import importlib.util
+
 import ase.io
 import numpy as np
 from ipi.utils.io import read_file
@@ -235,3 +236,19 @@ def copy_hess(file_in, new_dir, file_out="hessian.dat"):
     os.makedirs(new_dir, exist_ok=True)
     copy_and_rename_file(file_in, new_dir, file_out)
     return None
+
+
+def find_nqetools_path():
+    """
+    Finds the path of the nqetools package.
+
+    Returns:
+    str: The directory path where the nqetools package is located.
+
+    Raises:
+    ImportError: If the nqetools package is not found.
+    """
+    spec = importlib.util.find_spec('nqetools')
+    if not spec:
+        raise ImportError("nqetools package not found")
+    return os.path.dirname(spec.origin)
