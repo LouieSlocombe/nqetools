@@ -73,10 +73,14 @@ def prep_md_xml(directory,
                 md_type="NVT",
                 stride=10,
                 checkpoint_stride=1000,
-                n_beads=1):
+                n_beads=1,
+                properties=None):
     # Prepare the MD simulation XML file
     tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
     root = tree.getroot()
+
+    # Add in the properties to be tracked
+    append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -131,7 +135,8 @@ def run_md(directory,
            md_type="NVT",
            stride=10,
            checkpoint_stride=1000,
-           n_beads=1):
+           n_beads=1,
+           properties=None):
     md_type = md_type.upper()
     # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
     if driver_dict is None:
@@ -144,9 +149,18 @@ def run_md(directory,
     write_xyz(atoms, os.path.join(directory, "init.xyz"))
 
     # Prepare the MD xml file
-    prep_md_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
-                temperature=temperature, timestep=timestep, md_type=md_type, stride=stride,
-                checkpoint_stride=checkpoint_stride, n_beads=n_beads)
+    prep_md_xml(directory, atoms,
+                outfile=outfile,
+                driver=driver,
+                total_steps=total_steps,
+                deut=deut,
+                temperature=temperature,
+                timestep=timestep,
+                md_type=md_type,
+                stride=stride,
+                checkpoint_stride=checkpoint_stride,
+                n_beads=n_beads,
+                properties=properties)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the MD
@@ -169,10 +183,17 @@ def prep_plumed_xml(directory,
                     stride=10,
                     checkpoint_stride=1000,
                     n_beads=1,
-                    plumed_extras=None):
+                    plumed_extras=None,
+                    properties=None):
     # Prepare the MD simulation XML file
     tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
     root = tree.getroot()
+
+    # Add in the bias to the properties to be tracked
+    append_properties(root, ['bias'])
+    # If properties is not None, add them to the properties to be tracked
+    if properties is not None:
+        append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -233,7 +254,8 @@ def run_plumed_md(directory,
                   n_beads=1,
                   plumed_type="pos",
                   plumed_dict=None,
-                  plumed_extras=None):
+                  plumed_extras=None,
+                  properties=None):
     if plumed_dict is None:
         plumed_dict = {'directory': directory, 'temperature': temperature}
 
@@ -262,7 +284,8 @@ def run_plumed_md(directory,
                     stride=stride,
                     checkpoint_stride=checkpoint_stride,
                     n_beads=n_beads,
-                    plumed_extras=plumed_extras)
+                    plumed_extras=plumed_extras,
+                    properties=properties)
 
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
@@ -287,10 +310,14 @@ def prep_optimise_xml(directory,
                       tol_force=5.0e-6,
                       tol_position=1.0e-6,
                       stride=1,
-                      checkpoint_stride=10):
+                      checkpoint_stride=10,
+                      properties=None):
     # Prepare the minimization xml file
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/MIN.xml")))
     root = tree.getroot()
+
+    # Add in the properties to be tracked
+    append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -337,7 +364,8 @@ def run_optimise(directory,
                  tol_force=5.0e-6,
                  tol_position=1.0e-6,
                  stride=1,
-                 checkpoint_stride=1000):
+                 checkpoint_stride=1000,
+                 properties=None):
     # Prepare the minimization xml file
     if driver_dict is None:
         driver_dict = {}
@@ -348,9 +376,18 @@ def run_optimise(directory,
     # Set the initial structure
     write_xyz(atoms, os.path.join(directory, "init.xyz"))
 
-    prep_optimise_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
-                      optimizer=optimizer, tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position,
-                      stride=stride, checkpoint_stride=checkpoint_stride)
+    prep_optimise_xml(directory, atoms,
+                      outfile=outfile,
+                      driver=driver,
+                      total_steps=total_steps,
+                      deut=deut,
+                      optimizer=optimizer,
+                      tol_energy=tol_energy,
+                      tol_force=tol_force,
+                      tol_position=tol_position,
+                      stride=stride,
+                      checkpoint_stride=checkpoint_stride,
+                      properties=properties)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
 
@@ -369,10 +406,14 @@ def prep_phonons_xml(directory,
                      total_steps=1000,
                      deut=False,
                      stride=1,
-                     checkpoint_stride=1000):
+                     checkpoint_stride=1000,
+                     properties=None):
     # Prepare the phonon xml file
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/PHO.xml")))
     root = tree.getroot()
+
+    # Add in the properties to be tracked
+    append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -410,7 +451,8 @@ def run_phonons(directory,
                 total_steps=1000,
                 deut=False,
                 stride=1,
-                checkpoint_stride=1000):
+                checkpoint_stride=1000,
+                properties=None):
     if driver_dict is None:
         driver_dict = {}
 
@@ -425,8 +467,14 @@ def run_phonons(directory,
     # Prepare the phonon xyz file
     copy_xyz(get_final_xyz(dir_react_min, sub=f"{outfile_min}*"), directory)
     # Prepare the phonon xml file
-    prep_phonons_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
-                     stride=stride, checkpoint_stride=checkpoint_stride)
+    prep_phonons_xml(directory, atoms,
+                     outfile=outfile,
+                     driver=driver,
+                     total_steps=total_steps,
+                     deut=deut,
+                     stride=stride,
+                     checkpoint_stride=checkpoint_stride,
+                     properties=properties)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the phonons
@@ -443,10 +491,14 @@ def prep_ts_xml(directory,
                 tol_force=5.0e-6,
                 tol_position=1.0e-6,
                 stride=1,
-                checkpoint_stride=1000):
+                checkpoint_stride=1000,
+                properties=None):
     # Prepare the transition state search xml file
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/TS.xml")))
     root = tree.getroot()
+
+    # Add in the properties to be tracked
+    append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -489,15 +541,24 @@ def run_ts(directory,
            tol_force=5.0e-6,
            tol_position=1.0e-6,
            stride=1,
-           checkpoint_stride=1000):
+           checkpoint_stride=1000,
+           properties=None):
     if driver_dict is None:
         driver_dict = {}
     # Read the transition state and write it to the ts directory
     write_xyz(ase.io.read(f"ts.xyz", "-1"), os.path.join(directory, "init.xyz"))
     # Prepare the ts xml file
-    prep_ts_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
-                tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position, stride=stride,
-                checkpoint_stride=checkpoint_stride)
+    prep_ts_xml(directory, atoms,
+                outfile=outfile,
+                driver=driver,
+                total_steps=total_steps,
+                deut=deut,
+                tol_energy=tol_energy,
+                tol_force=tol_force,
+                tol_position=tol_position,
+                stride=stride,
+                checkpoint_stride=checkpoint_stride,
+                properties=properties)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the ts
@@ -516,7 +577,8 @@ def prep_inst_xml(directory,
                   tol_force=5.0e-6,
                   tol_position=1.0e-6,
                   stride=1,
-                  checkpoint_stride=1000):
+                  checkpoint_stride=1000,
+                  properties=None):
     n_atoms = len(atoms)
     n_dof = 3 * n_atoms - 6
     n_doft = 3 * n_atoms
@@ -524,6 +586,9 @@ def prep_inst_xml(directory,
     # Prepare the instanton calculation
     tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/INST.xml")))
     root = tree.getroot()
+
+    # Add in the properties to be tracked
+    append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -580,7 +645,8 @@ def run_inst(directory,
              tol_force=5.0e-6,
              tol_position=1.0e-6,
              stride=1,
-             checkpoint_stride=1000):
+             checkpoint_stride=1000,
+             properties=None):
     if driver_dict is None:
         driver_dict = {}
 
@@ -590,12 +656,25 @@ def run_inst(directory,
     # Copy the files from the ts calculation
     copy_xyz(get_final_xyz(directory_ts), directory)
     copy_hess(get_final_hess(directory_ts), directory)
+
     # Prepare the instanton calculation
-    prep_inst_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut, n_beads=n_beads,
-                  temperature=temperature, tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position,
-                  stride=stride, checkpoint_stride=checkpoint_stride)
+    prep_inst_xml(directory, atoms,
+                  outfile=outfile,
+                  driver=driver,
+                  total_steps=total_steps,
+                  deut=deut,
+                  n_beads=n_beads,
+                  temperature=temperature,
+                  tol_energy=tol_energy,
+                  tol_force=tol_force,
+                  tol_position=tol_position,
+                  stride=stride,
+                  checkpoint_stride=checkpoint_stride,
+                  properties=properties)
+
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
+
     # Run the instanton
     run_ipi(directory, server, driver, outfile + ".out")
     return None
