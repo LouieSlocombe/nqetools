@@ -84,8 +84,8 @@ FLUSH STRIDE=1
 
 def write_plumed_mtd_coord(atoms,
                            directory=None,
-                           idx_atom1=0,
-                           idx_atom2=1,
+                           idx1=0,
+                           idx2=1,
                            temperature=300,
                            sigma=None,
                            d_low=1.4,
@@ -113,18 +113,18 @@ def write_plumed_mtd_coord(atoms,
     height = round_sf(height * eV_to_kJpermol)
 
     # Fix the indexing as it starts from 1
-    idx_atom1 += 1
-    idx_atom2 += 1
+    idx1 += 1
+    idx2 += 1
 
     # Indexing starts from 1
-    idx_group = f"{max([idx_atom1, idx_atom2]) + 1}-{len(atoms) + 1}"
+    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms) + 1}"
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
     impt = f"""
-d: DISTANCE ATOMS={idx_atom1},{idx_atom2} 
-c1: DISTANCES GROUPA={idx_atom1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
-c2: DISTANCES GROUPA={idx_atom2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+d: DISTANCE ATOMS={idx1},{idx2} 
+c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 mtd:   METAD ARG=d,dc PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
@@ -140,8 +140,8 @@ FLUSH STRIDE=1
 
 def write_plumed_opes_coord(atoms,
                             directory=None,
-                            idx_atom1=0,
-                            idx_atom2=1,
+                            idx1=0,
+                            idx2=1,
                             temperature=300,
                             d_low=1.4,
                             d_upper=4.0,
@@ -164,17 +164,17 @@ def write_plumed_opes_coord(atoms,
     barrier = round_sf(barrier * eV_to_kJpermol)
 
     # Fix the indexing as it starts from 1
-    idx_atom1 += 1
-    idx_atom2 += 1
+    idx1 += 1
+    idx2 += 1
     # Indexing starts from 1
-    idx_group = f"{max([idx_atom1, idx_atom2]) + 1}-{len(atoms) + 1}"
+    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms) + 1}"
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
     impt = f"""
-d: DISTANCE ATOMS={idx_atom1},{idx_atom2} 
-c1: DISTANCES GROUPA={idx_atom1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
-c2: DISTANCES GROUPA={idx_atom2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+d: DISTANCE ATOMS={idx1},{idx2} 
+c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 opes: OPES_METAD ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
@@ -192,6 +192,7 @@ def write_plumed_mtd_dist(directory=None,
                           idx1=0,
                           idx2=1,
                           idx3=2,
+                          idx4=3,
                           temperature=300,
                           sigma=None,
                           pace=10,
@@ -212,10 +213,11 @@ def write_plumed_mtd_dist(directory=None,
     idx1 += 1
     idx2 += 1
     idx3 += 1
+    idx4 += 1
 
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
-d2: DISTANCE ATOMS={idx2},{idx3}
+d2: DISTANCE ATOMS={idx3},{idx4}
 mtd: METAD ARG=d1,d2 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
 PRINT ARG=d1,d2,mtd.* STRIDE={stride} FILE=COLVAR
@@ -231,6 +233,7 @@ def write_plumed_opes_dist(directory=None,
                            idx1=0,
                            idx2=1,
                            idx3=2,
+                           idx4=3,
                            temperature=300,
                            pace=10,
                            stride=10,
@@ -246,10 +249,11 @@ def write_plumed_opes_dist(directory=None,
     idx1 += 1
     idx2 += 1
     idx3 += 1
+    idx4 += 1
 
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
-d2: DISTANCE ATOMS={idx2},{idx3}
+d2: DISTANCE ATOMS={idx3},{idx4}
 opes: OPES_METAD ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature}
 
 PRINT ARG=d1,d2,opes.* STRIDE={stride} FILE=COLVAR
