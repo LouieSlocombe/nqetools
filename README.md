@@ -62,6 +62,21 @@ Optional? Now the kernel environmental variable should added to the .bashrc.
 PLUMED_KERNEL=/home/louie/anaconda3/envs/ipi_env/lib/libplumedKernel.so
 ```
 
+### Manual compilation
+Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_installation.html`.
+
+- Download from `https://github.com/plumed/plumed2/releases`.
+- Extract `tar -xvzf plumed-2.9.3.tgz`
+- Change into directory `cd plumed-2.9.3`
+- Configure `./configure --prefix=$HOME/opt`
+- Configure `./configure --enable-modules=opes`
+- `make -j 4`
+- `make install`
+- The kernel environmental variable must added to the .bashrc.
+```
+export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
+```
+
 ## I-PI
 Conda is preferred to not mess up the ecosystem.
 ```
