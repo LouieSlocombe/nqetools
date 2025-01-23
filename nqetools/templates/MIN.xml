@@ -16,7 +16,7 @@
             <force forcefield='driver'></force>
         </forces>
         <motion mode="minimize">
-            <optimizer mode="sd">
+            <optimizer mode="lbfgs">
                 <tolerances>
                     <energy>5e-5</energy>
                     <force>5e-5</force>
