@@ -190,7 +190,7 @@ def prep_plumed_xml(directory,
     root = tree.getroot()
 
     # Add in the bias to the properties to be tracked
-    append_properties(root, ['bias'])
+    append_properties(root, ['ensemble_bias'])
     # If properties is not None, add them to the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
@@ -252,7 +252,7 @@ def run_plumed_md(directory,
                   stride=10,
                   checkpoint_stride=1000,
                   n_beads=1,
-                  plumed_type="pos",
+                  plumed_type="pos-mtd",
                   plumed_dict=None,
                   plumed_extras=None,
                   properties=None):
