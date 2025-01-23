@@ -231,11 +231,10 @@ PRINT ARG STRIDE={stride} FILE=COLVAR
     return ['d', 'opes.bias']
 
 
-def write_plumed_mtd_dist(atoms,
-                          directory=None,
-                          idx_atom1=0,
-                          idx_atom2=1,
-                          idx_atom3=2,
+def write_plumed_mtd_dist(directory=None,
+                          idx1=0,
+                          idx2=1,
+                          idx3=2,
                           temperature=300,
                           sigma=None,
                           d_low=1.4,
@@ -256,7 +255,6 @@ def write_plumed_mtd_dist(atoms,
         sigma = [0.005, 0.05]
 
     # Convert d_low and d_upper from A to nm
-    d_low = d_low * A_to_nm
     d_upper = d_upper * A_to_nm
 
     # eV/Å² to 1 kJ/(mol·nm²)
@@ -266,19 +264,14 @@ def write_plumed_mtd_dist(atoms,
     height = round_sf(height * eV_to_kJpermol)
 
     # Fix the indexing as it starts from 1
-    idx_atom1 += 1
-    idx_atom2 += 1
-
-    # Indexing starts from 1
-    idx_group = f"{max([idx_atom1, idx_atom2]) + 1}-{len(atoms) + 1}"
-
-    d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
+    idx1 += 1
+    idx2 += 1
 
     # default units are LENGTH=nm ENERGY=kJ/mol TIME=ps
     impt = f"""
-d: DISTANCE ATOMS={idx_atom1},{idx_atom2}
-d: DISTANCE ATOMS={idx_atom1},{idx_atom2}  
-mtd:   METAD ARG=d PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
+d1: DISTANCE ATOMS={idx1},{idx2}
+d2: DISTANCE ATOMS={idx2},{idx3}  
+mtd:   METAD ARG=d1,d2 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
 PRINT ARG=d,c1.*,c2.*,dc,mtd.*,uwall.* STRIDE={stride} FILE=COLVAR
