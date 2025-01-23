@@ -45,7 +45,7 @@ def write_plumed_mtd_pos(directory=None,
 q: POSITION ATOM={idx_atom}
 mtd: METAD ARG=q.x,q.y,q.z PACE={pace} SIGMA={sigma},{sigma},{sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
-PRINT ARG=q.*,mtd.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
@@ -73,7 +73,7 @@ def write_plumed_opes_pos(directory=None,
 q: POSITION ATOM={idx_atom}
 opes: OPES_METAD ARG=q.x,q.y,q.z PACE={pace} BARRIER={barrier} TEMP={temperature}
 
-PRINT ARG=q.*,opes.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
@@ -129,7 +129,7 @@ dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 mtd:   METAD ARG=d,dc PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
-PRINT ARG=d,c1.*,c2.*,dc,mtd.*,uwall.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
@@ -179,7 +179,7 @@ dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 opes: OPES_METAD ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
-PRINT ARG=d,c1.*,c2.*,dc,mtd.*,uwall.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
@@ -220,7 +220,7 @@ d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx3},{idx4}
 mtd: METAD ARG=d1,d2 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
-PRINT ARG=d1,d2,mtd.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
@@ -256,13 +256,14 @@ d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx3},{idx4}
 opes: OPES_METAD ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature}
 
-PRINT ARG=d1,d2,opes.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'opes.bias']
+
 
 def write_opes_simple(directory=None, temperature=300):
     if directory is None:
