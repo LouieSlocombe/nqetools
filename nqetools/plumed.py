@@ -7,17 +7,17 @@ from .tools import round_sf
 
 
 def prep_plumed(plumed_type, atoms, args):
-    if plumed_type == 'pos-mtd':
+    if plumed_type == 'mtd-pos':
         return write_plumed_mtd_pos(**args)
-    elif plumed_type == 'pos-opes':
+    elif plumed_type == 'opes-pos':
         return write_plumed_opes_pos(**args)
-    elif plumed_type == 'coord-mtd':
+    elif plumed_type == 'mtd-coord':
         return write_plumed_mtd_coord(atoms, **args)
-    elif plumed_type == 'coord-opes':
+    elif plumed_type == 'opes-coord':
         return write_plumed_opes_coord(atoms, **args)
-    elif plumed_type == 'dist-mtd':
+    elif plumed_type == 'mtd-dist':
         return write_plumed_mtd_dist(**args)
-    elif plumed_type == 'dist-opes':
+    elif plumed_type == 'opes-dist':
         return write_plumed_opes_dist(**args)
     elif plumed_type == 'opes':
         return write_opes_simple(**args)
@@ -71,7 +71,7 @@ def write_plumed_opes_pos(directory=None,
 
     impt = f"""
 q: POSITION ATOM={idx_atom}
-opes: OPES_METAD ARG=q PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=q.x,q.y,q.z PACE={pace} BARRIER={barrier} TEMP={temperature}
 
 PRINT ARG=q.*,opes.* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
