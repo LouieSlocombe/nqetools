@@ -68,7 +68,7 @@ from .plotting import (plot_time_energy,
 
 from .plumed import (prep_plumed,
                      write_plumed_pos,
-                     write_plumed_coord,
+                     write_plumed_mtd_coord,
                      write_plumed_dist)
 
 from .post_proc import (instanton_postproc)
