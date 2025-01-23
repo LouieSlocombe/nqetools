@@ -19,6 +19,8 @@ def prep_plumed(plumed_type, atoms, args):
         return write_plumed_mtd_dist(**args)
     elif plumed_type == 'dist-opes':
         return write_plumed_opes_dist(**args)
+    elif plumed_type == 'opes':
+        return write_opes_simple(**args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
@@ -69,15 +71,15 @@ def write_plumed_opes_pos(directory=None,
 
     impt = f"""
 q: POSITION ATOM={idx_atom}
-opes: OPES_METAD ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=q PACE={pace} BARRIER={barrier} TEMP={temperature}
 
-PRINT ARG=q.*,mtd.* STRIDE={stride} FILE=COLVAR
+PRINT ARG=q.*,opes.* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['q', 'mtd.bias']
+    return ['q', 'opes.bias']
 
 
 def write_plumed_mtd_coord(atoms,
@@ -257,3 +259,16 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'opes.bias']
+
+def write_opes_simple(directory=None, temperature=300):
+    if directory is None:
+        directory = os.getcwd()
+    impt = f"""
+cv: DISTANCE ATOMS=1,2 
+opes: OPES_METAD ARG=cv PACE=200 BARRIER=40 TEMP={temperature}
+PRINT STRIDE=200 FILE=COLVAR ARG=* 
+"""
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['cv']
