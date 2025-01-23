@@ -15,12 +15,14 @@ def prep_plumed(plumed_type, atoms, args):
         return write_plumed_mtd_coord(atoms, **args)
     elif plumed_type == 'opes-coord':
         return write_plumed_opes_coord(atoms, **args)
+    elif plumed_type == 'mtd-dists':
+        return write_plumed_mtd_dists(**args)
+    elif plumed_type == 'opes-dists':
+        return write_plumed_opes_dists(**args)
     elif plumed_type == 'mtd-dist':
         return write_plumed_mtd_dist(**args)
     elif plumed_type == 'opes-dist':
         return write_plumed_opes_dist(**args)
-    elif plumed_type == 'opes':
-        return write_opes_simple(**args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
@@ -188,18 +190,18 @@ FLUSH STRIDE=1
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc', 'opes.bias']
 
 
-def write_plumed_mtd_dist(directory=None,
-                          idx1=0,
-                          idx2=1,
-                          idx3=2,
-                          idx4=3,
-                          temperature=300,
-                          sigma=None,
-                          pace=10,
-                          stride=10,
-                          height=0.041,
-                          bias=10,
-                          ):
+def write_plumed_mtd_dists(directory=None,
+                           idx1=0,
+                           idx2=1,
+                           idx3=2,
+                           idx4=3,
+                           temperature=300,
+                           sigma=None,
+                           pace=10,
+                           stride=10,
+                           height=0.041,
+                           bias=10,
+                           ):
     if directory is None:
         directory = os.getcwd()
 
@@ -229,16 +231,16 @@ FLUSH STRIDE=1
     return ['d1', 'd2', 'mtd.bias']
 
 
-def write_plumed_opes_dist(directory=None,
-                           idx1=0,
-                           idx2=1,
-                           idx3=2,
-                           idx4=3,
-                           temperature=300,
-                           pace=10,
-                           stride=10,
-                           barrier=0.041,
-                           ):
+def write_plumed_opes_dists(directory=None,
+                            idx1=0,
+                            idx2=1,
+                            idx3=2,
+                            idx4=3,
+                            temperature=300,
+                            pace=10,
+                            stride=10,
+                            barrier=0.041,
+                            ):
     if directory is None:
         directory = os.getcwd()
 
@@ -265,15 +267,65 @@ FLUSH STRIDE=1
     return ['d1', 'd2', 'opes.bias']
 
 
-def write_opes_simple(directory=None, temperature=300):
+def write_plumed_mtd_dist(directory=None,
+                          idx1=0,
+                          idx2=1,
+                          temperature=300,
+                          sigma=0.05,
+                          pace=10,
+                          stride=10,
+                          height=0.041,
+                          bias=10,
+                          ):
     if directory is None:
         directory = os.getcwd()
+
+    # Convert the height from eV to kJ/mol
+    height = round_sf(height * eV_to_kJpermol)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+
     impt = f"""
-cv: DISTANCE ATOMS=1,2 
-opes: OPES_METAD ARG=cv PACE=200 BARRIER=40 TEMP={temperature}
-PRINT STRIDE=200 FILE=COLVAR ARG=* 
-"""
+d1: DISTANCE ATOMS={idx1},{idx2}
+mtd: METAD ARG=d1 PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['cv']
+    return ['d1', 'mtd.bias']
+
+
+def write_plumed_opes_dist(directory=None,
+                           idx1=0,
+                           idx2=1,
+                           temperature=300,
+                           pace=10,
+                           stride=10,
+                           barrier=0.041,
+                           ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+
+    impt = f"""
+d1: DISTANCE ATOMS={idx1},{idx2}
+opes: OPES_METAD ARG=d1 PACE={pace} BARRIER={barrier} TEMP={temperature}
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['d1', 'opes.bias']

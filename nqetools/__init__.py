@@ -75,8 +75,8 @@ from .plumed import (prep_plumed,
                      write_plumed_opes_pos,
                      write_plumed_mtd_coord,
                      write_plumed_opes_coord,
-                     write_plumed_mtd_dist,
-                     write_plumed_opes_dist)
+                     write_plumed_mtd_dists,
+                     write_plumed_opes_dists)
 
 from .post_proc import (instanton_postproc)
 
