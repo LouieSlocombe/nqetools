@@ -10,7 +10,8 @@ from .io import (write_xml,
                  get_final_xyz,
                  copy_hess,
                  get_final_hess,
-                 write_xyz)
+                 write_xyz,
+                 find_nqetools_path)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
@@ -80,7 +81,8 @@ def prep_md_xml(directory,
     root = tree.getroot()
 
     # Add in the properties to be tracked
-    append_properties(root, properties)
+    if properties is not None:
+        append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -313,11 +315,12 @@ def prep_optimise_xml(directory,
                       checkpoint_stride=10,
                       properties=None):
     # Prepare the minimization xml file
-    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/MIN.xml")))
+    tree = ET.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
-    append_properties(root, properties)
+    if properties is not None:
+        append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -413,7 +416,8 @@ def prep_phonons_xml(directory,
     root = tree.getroot()
 
     # Add in the properties to be tracked
-    append_properties(root, properties)
+    if properties is not None:
+        append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -498,7 +502,8 @@ def prep_ts_xml(directory,
     root = tree.getroot()
 
     # Add in the properties to be tracked
-    append_properties(root, properties)
+    if properties is not None:
+        append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -588,7 +593,8 @@ def prep_inst_xml(directory,
     root = tree.getroot()
 
     # Add in the properties to be tracked
-    append_properties(root, properties)
+    if properties is not None:
+        append_properties(root, properties)
 
     # Fix the cell
     update_cell(root, atoms)
