@@ -86,7 +86,7 @@ def prep_md_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=deut)
+    update_mass(root, atoms, f_deut=deut)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -199,7 +199,7 @@ def prep_plumed_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=deut)
+    update_mass(root, atoms, f_deut=deut)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -323,7 +323,7 @@ def prep_optimise_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=deut)
+    update_mass(root, atoms, f_deut=deut)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -419,7 +419,7 @@ def prep_phonons_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=deut)
+    update_mass(root, atoms, f_deut=deut)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -504,7 +504,7 @@ def prep_ts_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=deut)
+    update_mass(root, atoms, f_deut=deut)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -594,7 +594,7 @@ def prep_inst_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, deut=deut)
+    update_mass(root, atoms, f_deut=deut)
 
     # Change the driver ff
     update_driver(root, atoms, driver)

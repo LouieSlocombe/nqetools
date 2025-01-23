@@ -62,21 +62,21 @@ def get_masses(atoms, f_deut=False, m_d=2.0141):
     return [str(m) for m in masses]
 
 
-def update_mass(root, atoms, deut=False, m_d=2.0141):
+def update_mass(root, atoms, f_deut=False, m_d=2.0141):
     """
     Updates the XML tree with the masses of atoms, optionally using deuterium masses for hydrogen atoms.
 
     Parameters:
     root (Element): The root element of the XML tree.
     atoms (object): An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
-    deut (bool, optional): Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
-    m_d (float, optional): The mass of deuterium to use if `deut` is True. Default is 2.0141.
+    f_deut (bool, optional): Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
+    m_d (float, optional): The mass of deuterium to use if `f_deut` is True. Default is 2.0141.
 
     Returns:
     list of str: A list of masses as strings.
     """
-    masses = get_masses(atoms, deut, m_d)
-    if deut:
+    masses = get_masses(atoms, f_deut, m_d)
+    if f_deut:
         masses_element = ET.Element('masses', {'mode': 'manual', 'units': 'ase'})
         masses_element.text = "[" + ", ".join(masses) + "]"
         for rank in root.iter('initialize'):
