@@ -11,7 +11,8 @@ from .io import (write_xml,
                  copy_hess,
                  get_final_hess,
                  write_xyz,
-                 find_nqetools_path)
+                 find_nqetools_path,
+                 read_ipi_xyz)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
@@ -70,7 +71,7 @@ def prep_md_xml(directory,
                 total_steps=1000,
                 deut=False,
                 temperature=300.0,
-                timestep=1.0e-3,
+                timestep=1,
                 md_type="NVT",
                 stride=10,
                 checkpoint_stride=1000,
@@ -133,7 +134,7 @@ def run_md(directory,
            total_steps=1000,
            deut=False,
            temperature=300.0,
-           timestep=1.0e-3,
+           timestep=1,
            md_type="NVT",
            stride=10,
            checkpoint_stride=1000,
@@ -169,7 +170,7 @@ def run_md(directory,
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
     # Load the structure
-    atoms_out = ase.io.read(os.path.join(directory, f"{outfile}.pos_0.xyz"), index=":")
+    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     return atoms_out
 
 
@@ -180,7 +181,7 @@ def prep_plumed_xml(directory,
                     total_steps=1000,
                     deut=False,
                     temperature=300.0,
-                    timestep=1.0e-3,
+                    timestep=1.0,
                     md_type="NVT",
                     stride=10,
                     checkpoint_stride=1000,
@@ -249,7 +250,7 @@ def run_plumed_md(directory,
                   total_steps=1000,
                   deut=False,
                   temperature=300.0,
-                  timestep=1.0e-3,
+                  timestep=1.0,
                   md_type="NVT",
                   stride=10,
                   checkpoint_stride=1000,
@@ -301,7 +302,7 @@ def run_plumed_md(directory,
     run_ipi(directory, server, driver, outfile + ".out", n=n_beads)
 
     # Load the structure
-    atoms_out = ase.io.read(os.path.join(directory, f"{outfile}.pos_0.xyz"), index=":")
+    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     return atoms_out
 
 
@@ -402,7 +403,7 @@ def run_optimise(directory,
     print(f"Running the minimization with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
     # Load the structure
-    atoms_out = ase.io.read(os.path.join(directory, f"{outfile}.pos.xyz"), index=":")
+    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos.xyz"))
     return atoms_out
 
 
