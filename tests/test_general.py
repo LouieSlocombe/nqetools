@@ -100,6 +100,22 @@ def test_mace_calc():
     pass
 
 
+def test_nwchem_calc():
+    print(flush=True)
+    print("Testing NWChem calculator", flush=True)
+    # build the molecule
+    atoms = ase.build.molecule('H2O')
+    calc = nqe.nwchem_calc_preset()
+    # set the calculator
+    atoms.calc = calc
+    # run the calculation
+    t1 = time.time()
+    energy = atoms.get_potential_energy()
+    t2 = time.time()
+    print(f"Energy: {energy} Time: {t2 - t1}")
+    pass
+
+
 def test_mace_driver():
     print(flush=True)
     print("Testing MACE calculator", flush=True)
