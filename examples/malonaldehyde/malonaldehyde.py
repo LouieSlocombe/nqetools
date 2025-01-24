@@ -1,3 +1,4 @@
+import importlib.util
 import os
 
 from ase.visualize import view
@@ -7,41 +8,68 @@ from ase.optimize import BFGS
 from ase.io import read, write
 
 import nqetools as nqe
-from nqetools import get_ts_image, get_neb_path
+import matplotlib.pyplot as plt
+
+plt.rcParams['axes.linewidth'] = 2.0
+f_neb = False
+f_vib = False
 
 fmax = 0.05
 n_images = 5
-# calc = mace_off(model="large")
-calc = mace_anicc()
+calc = mace_off(model="small")
+barrier = 0.2
+temperature = 300.0
 
-# atoms = pubchem_atoms_search(smiles="C(C=O)C=O")
 atoms = read("malonaldehyde.traj")
 # delete the hydrogen atom
 del atoms[-1]
-
 del atoms[5]
-
 atoms = nqe.optimise_geom(atoms, calc, fmax=fmax)
 
 # product = swap_bonding_configuration(reactant,0, 9,1)
 reactant = nqe.add_hydrogen_at_distance(atoms, 0, 1, 1.0)
 product = nqe.add_hydrogen_at_distance(atoms, 1, 0, 1.0)
 
-reactant = nqe.optimise_geom(reactant, calc, fmax=fmax)
-view(reactant)
+# reactant = nqe.optimise_geom(reactant, calc, fmax=fmax)
+# view(reactant)
 
-product = nqe.optimise_geom(product, calc, fmax=fmax)
-view(product)
+# product = nqe.optimise_geom(product, calc, fmax=fmax)
+# view(product)
 
-neb = nqe.prepare_neb(reactant, product, calc, n_images=n_images)
+if f_neb:
+    neb = nqe.prepare_neb(reactant, product, calc, n_images=n_images)
+    ts_path = nqe.optimise_neb(neb, fmax=fmax, n_images=n_images)
+    view(ts_path)
+    nqe.plot_neb(ts_path, calc)
+    ts_image = nqe.get_ts_image(ts_path, calc)
+    view(ts_image)
 
-ts_path = nqe.optimise_neb(neb, fmax=fmax, n_images=n_images)
-view(ts_path)
+    if f_vib:
+        vib = nqe.get_vibrations(ts_image, calc)
+        print(vib, flush=True)
 
-ts_image = nqe.get_ts_image(ts_path, calc)
-view(ts_image)
+# Minimise the reactant using ipi
+# Make a directory to store everything
+directory = "opti"
+nqe.remove_directory(directory)
+atoms_out = nqe.run_optimise(directory, reactant, driver='ase-mace')
+view(atoms_out)
+atoms = atoms_out[-1]
 
-nqe.plot_neb(ts_path, calc)
+# Conduct short MD simulation
+# Run the metadynamics simulation
+directory = "mtd"
+# If the directory exists, remove it
+nqe.remove_directory(directory)
+nqe.run_plumed_md(directory,
+                  atoms,
+                  driver='ase-mace',
+                  md_type="NVT",
+                  plumed_type="mtd-dist",
+                  temperature=temperature,
+                  plumed_dict={"idx1": 1, "idx1": 8, "height": barrier})
 
-vib = nqe.get_vibrations(ts_image, calc)
-print(vib, flush=True)
+# Analyse the results
+
+# Run the OPES simulation
+# Analyse the results
