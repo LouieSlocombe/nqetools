@@ -137,8 +137,8 @@ def write_orca_driver(
         xc="B3LYP",
         multi=1,
         basis_set="6-31G**",
-        disp=None,
-        solv=None,
+        disp=False,
+        solv=False,
         calc_type='DFT',
         atom_list=None,
         calc_extra=None,
@@ -239,6 +239,7 @@ def orca_calc_preset(orca_path=None,
     in_str_2 = f"""
     
 atoms = read('{in_file}', 0)
+atoms.set_pbc(False)
 atoms.calc = orca_calc_preset(calc_type='{calc_type}',
                        xc='{xc}',
                        charge={charge},
