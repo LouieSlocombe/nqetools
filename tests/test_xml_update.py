@@ -114,7 +114,7 @@ def test_update_stride():
     vis_xml(root)
 
     # # Check that the stride is set
-    # assert count_matching_words(str(ET.tostring(root)), str(stride)) == 1
+    assert count_matching_words(str(ET.tostring(root)), str(stride)) == 2
 
 
 def test_nbeads():
