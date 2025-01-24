@@ -18,43 +18,37 @@ def nwchem_calc_preset(directory=None,
                        solv=None):
     if directory is None:
         directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
-    # Init the nwchem dictionary
-    tmp = dict(label=directory, charge=charge, basis=basis_set)
-    # Make the standard dft block
-    tmp["dft"] = dict(maxiter=2000,
-                      iterations=1000,
-                      grid="fine nodisk",
-                      print="medium",
-                      direct=" ",
-                      noio=" ",
-                      xc=str(xc).upper(),
-                      mult=multiplicity)
-    if disp is not None:
+
+    tmp = {
+        'label': directory,
+        'charge': charge,
+        'basis': basis_set,
+        'dft': {
+            'maxiter': 2000,
+            'iterations': 1000,
+            'grid': "fine nodisk",
+            'print': "medium",
+            'direct': " ",
+            'noio': " ",
+            'xc': xc.upper(),
+            'mult': multiplicity
+        }
+    }
+
+    if disp:
         if disp.upper() == "XDM":
-            # https://nwchemgit.github.io/Density-Functional-Theory-for-Molecules.html#xdm-exchange-hole-dipole-moment-dispersion-model
-            val = tmp.get("dft")  # Key the key value
-            val["xdm "] = "a1 0.6224 a2 1.7068"  # modify the value
-            tmp["dft"] = val  # Put it back
-
+            tmp['dft']['xdm '] = "a1 0.6224 a2 1.7068"
         elif disp.upper() == "D3":
-            # https://nwchemgit.github.io/Density-Functional-Theory-for-Molecules.html#disp-empirical-long-range-contribution-vdw
-            val = tmp.get("dft")  # Key the key value
-            val["disp"] = "vdw 3"  # modify the value
-            tmp["dft"] = val  # Put it back
+            tmp['dft']['disp'] = "vdw 3"
 
-    if solv is not None:
+    if solv:
         if solv.upper() == "WATER":
-            # https://nwchemgit.github.io/COSMO-Solvation-Model.html
-            tmp["cosmo"] = dict(do_cosmo_smd=True, solvent='water')
+            tmp['cosmo'] = {'do_cosmo_smd': True, 'solvent': 'water'}
+        elif solv.upper() == "PROTEIN":
+            tmp['cosmo'] = {'do_cosmo_smd': True, 'dielec': 8.0}
 
-        if solv.upper() == "PROTEIN":
-            # https://nwchemgit.github.io/COSMO-Solvation-Model.html
-            tmp["cosmo"] = dict(do_cosmo_smd=True, dielec=8.0)
-
-    # Add the task if specified, this is for frequency calculations
-    # https://nwchemgit.github.io/Vibration.html#an-example-input-deck
-    if task is not None:
-        tmp["task"] = task
+    if task:
+        tmp['task'] = task
 
     return NWChem(**tmp)
 
