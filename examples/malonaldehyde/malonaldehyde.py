@@ -22,7 +22,6 @@ temperature = 300.0
 
 atoms = read("malonaldehyde.traj")
 atoms.center(vacuum=5.0)
-view(atoms)
 
 # delete the hydrogen atom
 del atoms[-1]
@@ -56,7 +55,7 @@ if f_neb:
 directory = "opti"
 nqe.remove_directory(directory)
 atoms_out = nqe.run_optimise(directory, reactant, driver='ase-mace')
-view(atoms_out)
+# view(atoms_out)
 atoms = atoms_out[-1]
 
 # Conduct short MD simulation
@@ -64,13 +63,31 @@ atoms = atoms_out[-1]
 directory = "mtd"
 # If the directory exists, remove it
 nqe.remove_directory(directory)
+# atoms_out = nqe.run_plumed_md(directory,
+#                               atoms,
+#                               driver='ase-mace',
+#                               md_type="NVT",
+#                               plumed_type="mtd-diff1",
+#                               temperature=temperature,
+#                               plumed_dict={"idx1": 1,
+#                                            "idx2": 8,
+#                                            "idx3": 0,
+#                                            "height": barrier * 0.001,
+#                                            "bias": 1,
+#                                            "sigma": 0.1,
+#                                            "pace": 500})
+
 atoms_out = nqe.run_plumed_md(directory,
-                  atoms,
-                  driver='ase-mace',
-                  md_type="NVT",
-                  plumed_type="mtd-dist",
-                  temperature=temperature,
-                  plumed_dict={"idx1": 1, "idx2": 8, "height": barrier})
+                              atoms,
+                              driver='ase-mace',
+                              md_type="NVT-GLE",
+                              plumed_type="opes-diff1",
+                              temperature=temperature,
+                              plumed_dict={"idx1": 1,
+                                           "idx2": 8,
+                                           "idx3": 0,
+                                           "barrier": barrier,
+                                           "pace": 500})
 view(atoms_out)
 # Analyse the results
 
