@@ -260,6 +260,11 @@ def run_plumed_md(directory,
                   properties=None):
     if plumed_dict is None:
         plumed_dict = {'directory': directory, 'temperature': temperature}
+    else:
+        # Add the directory and temperature to the plumed dictionary
+        plumed_dict['directory'] = directory
+        plumed_dict['temperature'] = temperature
+
 
     md_type = md_type.upper()
     if driver_dict is None:
