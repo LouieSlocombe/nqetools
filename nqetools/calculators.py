@@ -8,30 +8,18 @@ from ase.calculators.orca import OrcaProfile
 from .qchem_mod import QChem
 
 
-def nwchem_calc_preset(task=None,
+def nwchem_calc_preset(directory=None,
+                       task=None,
                        charge=0,
                        xc="B3LYP",
                        multiplicity=1,
                        basis_set="6-311++G**",
                        disp=None,
                        solv=None):
-    """
-    Set up and return an NWChem calculator object with the specified settings.
-
-    Parameters:
-    task (str, optional): Specific task for the calculation (e.g., "freq" for frequency calculations). Default is None.
-    charge (int, optional): Charge of the molecule. Default is 0.
-    xc (str, optional): Exchange-correlation functional to use. Default is "B3LYP".
-    multiplicity (int, optional): Multiplicity of the molecule. Default is 1.
-    basis_set (str, optional): Basis set to use. Default is "6-311++G**".
-    disp (str, optional): Dispersion correction method to use ("XDM" or "D3"). Default is None.
-    solv (str, optional): Solvent model to use ("WATER" or "PROTEIN"). Default is None.
-
-    Returns:
-    NWChem: An NWChem calculator object with the specified settings.
-    """
+    if directory is None:
+        directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
     # Init the nwchem dictionary
-    tmp = dict(charge=charge, basis=basis_set)
+    tmp = dict(label=directory, charge=charge, basis=basis_set)
     # Make the standard dft block
     tmp["dft"] = dict(maxiter=2000,
                       iterations=1000,
