@@ -67,41 +67,41 @@ from ase.calculators.socketio import SocketClient
 def nwchem_calc_preset(directory=None,
                        task=None,
                        charge=0,
-                       xc="B3LYP",
+                       xc='B3LYP',
                        multiplicity=1,
-                       basis_set="6-311++G**",
+                       basis_set='6-311++G**',
                        disp=None,
                        solv=None):
     if directory is None:
         directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
 
-    tmp = {
-    'label': directory,
-        'charge': charge,
-        'basis': basis_set,
-        'dft': {
-    'maxiter': 2000,
-            'iterations': 1000,
-            'grid': "fine nodisk",
-            'print': "medium",
-            'direct': " ",
-            'noio': " ",
-            'xc': xc.upper(),
-            'mult': multiplicity
-        }
-    }
+    tmp = dict(
+        label=directory,
+        charge=charge,
+        basis=basis_set,
+        dft=dict(
+            maxiter=2000,
+            iterations=1000,
+            grid='fine nodisk',
+            print='medium',
+            direct=' ',
+            noio=' ',
+            xc=xc.upper(),
+            mult=multiplicity
+        )
+    )
 
     if disp:
-        if disp.upper() == "XDM":
-            tmp['dft']['xdm '] = "a1 0.6224 a2 1.7068"
-        elif disp.upper() == "D3":
-            tmp['dft']['disp'] = "vdw 3"
+        if disp.upper() == 'XDM':
+            tmp['dft']['xdm '] = 'a1 0.6224 a2 1.7068'
+        elif disp.upper() == 'D3':
+            tmp['dft']['disp'] = 'vdw 3'
 
     if solv:
-        if solv.upper() == "WATER":
-            tmp['cosmo'] = {'do_cosmo_smd': True, 'solvent': 'water'}
-        elif solv.upper() == "PROTEIN":
-            tmp['cosmo'] = {'do_cosmo_smd': True, 'dielec': 8.0}
+        if solv.upper() == 'WATER':
+            tmp['cosmo'] = dict(do_cosmo_smd=True, solvent='water')
+        elif solv.upper() == 'PROTEIN':
+            tmp['cosmo'] = dict(do_cosmo_smd=True, dielec=8.0)
 
     if task:
         tmp['task'] = task
@@ -110,9 +110,9 @@ def nwchem_calc_preset(directory=None,
     
 atoms = read('{in_file}', 0)
 atoms.calc = nwchem_calc_preset(charge={charge}, 
-                         xc={xc}, 
+                         xc='{xc}', 
                          multi={multi},
-                         basis_set={basis_set},
+                         basis_set='{basis_set}',
                          disp={disp},
                          solv={solv})
 client = SocketClient(unixsocket='{host}')
