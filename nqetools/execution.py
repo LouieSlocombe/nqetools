@@ -77,7 +77,7 @@ def prep_md_xml(directory,
                 n_beads=1,
                 properties=None):
     # Prepare the MD simulation XML file
-    tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
+    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -188,7 +188,7 @@ def prep_plumed_xml(directory,
                     plumed_extras=None,
                     properties=None):
     # Prepare the MD simulation XML file
-    tree = ET.parse(os.path.expanduser(os.path.abspath(f"../templates/{md_type.upper()}.xml")))
+    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
     root = tree.getroot()
 
     # Add in the bias to the properties to be tracked
@@ -264,7 +264,6 @@ def run_plumed_md(directory,
         # Add the directory and temperature to the plumed dictionary
         plumed_dict['directory'] = directory
         plumed_dict['temperature'] = temperature
-
 
     md_type = md_type.upper()
     if driver_dict is None:
@@ -417,7 +416,7 @@ def prep_phonons_xml(directory,
                      checkpoint_stride=1000,
                      properties=None):
     # Prepare the phonon xml file
-    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/PHO.xml")))
+    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/PHO.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -503,7 +502,7 @@ def prep_ts_xml(directory,
                 checkpoint_stride=1000,
                 properties=None):
     # Prepare the transition state search xml file
-    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/TS.xml")))
+    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/TS.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -594,7 +593,7 @@ def prep_inst_xml(directory,
     n_doft = 3 * n_atoms
 
     # Prepare the instanton calculation
-    tree = ET.parse(os.path.expanduser(os.path.abspath("../templates/INST.xml")))
+    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/INST.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
