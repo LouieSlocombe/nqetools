@@ -4,6 +4,8 @@ import xml.etree.ElementTree as ET
 
 import nqetools as nqe
 
+base_dir = nqe.find_nqetools_path()
+
 
 def vis_xml(root):
     """
@@ -34,7 +36,7 @@ def count_matching_words(input_string, target_word):
 
 
 def test_update_properties():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the properties
     properties = ["-99", "-98", "-97"]
     # Update the properties
@@ -50,7 +52,7 @@ def test_update_properties():
 
 
 def test_append_properties():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the properties
     properties = ["-99", "-98", "-97"]
     # Update the properties
@@ -66,7 +68,7 @@ def test_append_properties():
 
 
 def test_temperature():
-    root = ET.parse(os.path.abspath("../templates/INST.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the temperature
     temperature = -999
     # Update the temperature
@@ -88,7 +90,7 @@ def test_temperature():
 
 
 def test_timestep():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the timestep
     timestep = 0.002
     # Update the timestep
@@ -101,8 +103,22 @@ def test_timestep():
     assert count_matching_words(str(ET.tostring(root)), str(timestep)) == 1
 
 
+def test_update_stride():
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    # Set the stride
+    stride = -99
+    # Update the stride
+    nqe.update_stride(root, stride)
+
+    # Write to file for visual inspection
+    vis_xml(root)
+
+    # # Check that the stride is set
+    # assert count_matching_words(str(ET.tostring(root)), str(stride)) == 1
+
+
 def test_nbeads():
-    root = ET.parse(os.path.abspath("../templates/NVT-PIMD.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVT-PIMD.xml")).getroot()
 
     # Update the plumed file
     nqe.add_plumed_xml(root)
@@ -120,7 +136,7 @@ def test_nbeads():
 
 
 def test_checkpoint_stride():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the checkpoint stride
     checkpoint_stride = -99
     # Update the checkpoint stride
@@ -134,7 +150,7 @@ def test_checkpoint_stride():
 
 
 def test_add_trajectory_centroid():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the centroid trajectory
     nqe.add_trajectory_centroid(root)
 
@@ -146,7 +162,7 @@ def test_add_trajectory_centroid():
 
 
 def test_add_trajectory_plumed_extras():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed extras
     nqe.add_trajectory_plumed_extras(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
@@ -158,7 +174,7 @@ def test_add_trajectory_plumed_extras():
 
 
 def test_add_plumed_bias_section():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed file
     nqe.add_plumed_bias_section(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
@@ -170,7 +186,7 @@ def test_add_plumed_bias_section():
 
 
 def test_add_plumed_ff_section():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed file
     nqe.add_plumed_ff_section(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
@@ -182,7 +198,7 @@ def test_add_plumed_ff_section():
 
 
 def test_plumed():
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed file
     nqe.add_plumed_xml(root)
 
