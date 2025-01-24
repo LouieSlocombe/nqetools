@@ -1,8 +1,9 @@
 import os
 import re
 import xml.etree.ElementTree as ET
-
+import ase.build
 import nqetools as nqe
+from ase.visualize import view
 
 base_dir = nqe.find_nqetools_path()
 
@@ -33,6 +34,32 @@ def count_matching_words(input_string, target_word):
     """
     pattern = re.escape(target_word)
     return len(re.findall(pattern, input_string))
+
+
+def test_update_cell():
+    # Set the cell
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=20.0)
+    cell_in = atoms.get_cell()
+    # check if the system has periodic boundary conditions
+    if nqe.has_pbc(atoms):
+        print("The system has periodic boundary conditions.")
+
+    directory = "opti"
+    nqe.remove_directory(directory)
+    atoms_out = nqe.run_optimise(directory, atoms, driver='ase-mace', total_steps=1)
+    atoms = atoms_out[-1]
+    if nqe.has_pbc(atoms):
+        print("The system has periodic boundary conditions.")
+
+    # turn off periodic boundary conditions
+    atoms.set_pbc(False)
+
+    cell_out = atoms.get_cell()
+    # Check that all the cell values are the same
+    print(cell_in)
+    print(cell_out)
+    assert all([all([(a - b) < 0.1 for a, b in zip(cell_in[i], cell_out[i])]) for i in range(3)])
 
 
 def test_update_properties():
