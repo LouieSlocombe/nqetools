@@ -141,6 +141,17 @@ def test_orca_driver():
     pass
 
 
+def test_nwchem_driver():
+    print(flush=True)
+    print("Testing NWChem driver", flush=True)
+    # build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
+    # make a directory to store everything
+    directory = "nwchem_opti"
+    nqe.run_optimise(directory, atoms, driver='ase-nwchem')
+    pass
+
 def test_exe_md():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
