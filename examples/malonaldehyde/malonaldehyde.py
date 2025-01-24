@@ -21,6 +21,9 @@ barrier = 0.2
 temperature = 300.0
 
 atoms = read("malonaldehyde.traj")
+atoms.center(vacuum=5.0)
+view(atoms)
+
 # delete the hydrogen atom
 del atoms[-1]
 del atoms[5]
@@ -61,14 +64,14 @@ atoms = atoms_out[-1]
 directory = "mtd"
 # If the directory exists, remove it
 nqe.remove_directory(directory)
-nqe.run_plumed_md(directory,
+atoms_out = nqe.run_plumed_md(directory,
                   atoms,
                   driver='ase-mace',
                   md_type="NVT",
                   plumed_type="mtd-dist",
                   temperature=temperature,
-                  plumed_dict={"idx1": 1, "idx1": 8, "height": barrier})
-
+                  plumed_dict={"idx1": 1, "idx2": 8, "height": barrier})
+view(atoms_out)
 # Analyse the results
 
 # Run the OPES simulation
