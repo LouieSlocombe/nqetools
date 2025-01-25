@@ -73,12 +73,14 @@ def nwchem_calc_preset(directory=None,
                        disp=None,
                        solv=None):
     if directory is None:
-        directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
+        #directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
+        directory = os.path.join(os.getcwd(), 'nwchem')
 
     tmp = dict(
         label=directory,
         charge=charge,
         basis=basis_set,
+        driver=dict(socket=dict(unix='{host}')),
         dft=dict(
             maxiter=2000,
             iterations=1000,
@@ -110,8 +112,9 @@ def nwchem_calc_preset(directory=None,
     
 atoms = read('{in_file}', 0)
 atoms.calc = nwchem_calc_preset(charge={charge}, 
-                         xc='{xc}', 
-                         multi={multi},
+                         xc='{xc}',
+                         task='optimize', 
+                         multiplicity={multi},
                          basis_set='{basis_set}',
                          disp={disp},
                          solv={solv})

@@ -149,8 +149,10 @@ def test_nwchem_driver():
     atoms.center(vacuum=5.0)
     # make a directory to store everything
     directory = "nwchem_opti"
+    nqe.remove_directory(directory)
     nqe.run_optimise(directory, atoms, driver='ase-nwchem')
     pass
+
 
 def test_exe_md():
     print(flush=True)
