@@ -15,16 +15,13 @@ if __name__ == "__main__":
     print("PIMD of water", flush=True)
     # build the molecule
     atoms = read("water_32.pdb")
+    # atoms = ase.build.molecule('H2O')
+    # atoms.center(vacuum=5.0)
 
+    # Make a directory to store everything
+    directory = "PIMD"
+    # Make sure the directory is empty
+    nqe.remove_directory(directory)
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT")#, xml_in="input_pimd.xml")
 
-
-    # calc = mace_anicc()
-    # calc = mace_off(model="small", device="cpu", default_dtype="float32")
-    # # set the calculator
-    # atoms.calc = calc
-    # # run the calculation
-    # t1 = time.time()
-    # energy = atoms.get_potential_energy()
-    # t2 = time.time()
-    # print(f"Energy: {energy} Time: {t2 - t1}")
 
