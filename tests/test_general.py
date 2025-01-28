@@ -197,10 +197,12 @@ def test_nwchem_socket():
                     task='optimize',
                     driver={'socket': {'unix': unixsocket}})
 
-    opt = BFGS(atoms, trajectory='opt.traj',
+    opt = BFGS(atoms,
+               trajectory='opt.traj',
                logfile='opt.log')
 
-    with SocketIOCalculator(nwchem, log=sys.stdout,
+    with SocketIOCalculator(nwchem,
+                            log=sys.stdout,
                             unixsocket=unixsocket) as calc:
         atoms.calc = calc
         opt.run(fmax=0.05)
