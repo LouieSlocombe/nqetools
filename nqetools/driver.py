@@ -42,6 +42,10 @@ client.run(atoms, use_stress=True)
 
 
 def write_cp2k_driver():
+    # which cp2k.ssmp
+    # /home/louie/anaconda3/envs/ipi_env/bin/cp2k.ssmp
+    # https://github.com/i-pi/i-pi/tree/main/examples/clients/cp2k/npt_classical
+
     raise ValueError(f"Driver cp2k is not recognized.")
 
 
@@ -119,7 +123,7 @@ atoms.calc = nwchem_calc_preset(charge={charge},
                          disp={disp},
                          solv={solv})
 client = SocketClient(unixsocket='{host}')
-client.run(atoms, use_stress=True)
+client.run(atoms, use_stress=False)
 
     """
     # Write the file
