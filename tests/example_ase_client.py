@@ -3,14 +3,16 @@ from ase.calculators.emt import EMT
 from ase.calculators.socketio import SocketClient
 from ase.io import read
 
+import nqetools as nqe
+
 # The atomic numbers are not transferred over the socket, so we have to
 # read the file
 atoms = read('initial.traj')
-unixsocket = 'ase_server_socket'
+unixsocket = 'driver'
 
 
 calc = EMT()
-
+# calc = nqe.orca_calc_preset()
 atoms.calc = calc
 
 client = SocketClient(unixsocket=unixsocket)

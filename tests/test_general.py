@@ -210,7 +210,7 @@ def test_nwchem_socket():
 def test_ase_server_socket():
     # https://wiki.fysik.dtu.dk/ase/ase/calculators/socketio/socketio.html#run-server-and-client-manually
 
-    unixsocket = 'ase_server_socket'
+    unixsocket = 'driver'
 
     atoms = molecule('H2O', vacuum=3.0)
     atoms.rattle(stdev=0.1)
