@@ -76,9 +76,13 @@ def prep_md_xml(directory,
                 stride=10,
                 checkpoint_stride=1000,
                 n_beads=1,
-                properties=None):
+                properties=None,
+                xml_in=None):
     # Prepare the MD simulation XML file
-    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -139,8 +143,8 @@ def run_md(directory,
            stride=10,
            checkpoint_stride=1000,
            n_beads=1,
-           properties=None):
-    md_type = md_type.upper()
+           properties=None,
+           xml_in=None):
     # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
     if driver_dict is None:
         driver_dict = {}
@@ -163,7 +167,8 @@ def run_md(directory,
                 stride=stride,
                 checkpoint_stride=checkpoint_stride,
                 n_beads=n_beads,
-                properties=properties)
+                properties=properties,
+                xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the MD
@@ -187,9 +192,13 @@ def prep_plumed_xml(directory,
                     checkpoint_stride=1000,
                     n_beads=1,
                     plumed_extras=None,
-                    properties=None):
+                    properties=None,
+                    xml_in=None):
     # Prepare the MD simulation XML file
-    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
     root = tree.getroot()
 
     # Add in the bias to the properties to be tracked
@@ -258,7 +267,9 @@ def run_plumed_md(directory,
                   plumed_type="pos-mtd",
                   plumed_dict=None,
                   plumed_extras=None,
-                  properties=None):
+                  properties=None,
+                  xml_in=None):
+    # Update the plumed dictionary
     if plumed_dict is None:
         plumed_dict = {'directory': directory, 'temperature': temperature}
     else:
@@ -266,7 +277,7 @@ def run_plumed_md(directory,
         plumed_dict['directory'] = directory
         plumed_dict['temperature'] = temperature
 
-    md_type = md_type.upper()
+    # Update the driver dictionary
     if driver_dict is None:
         driver_dict = {}
 
@@ -292,7 +303,8 @@ def run_plumed_md(directory,
                     checkpoint_stride=checkpoint_stride,
                     n_beads=n_beads,
                     plumed_extras=plumed_extras,
-                    properties=properties)
+                    properties=properties,
+                    xml_in=xml_in)
 
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
@@ -318,9 +330,13 @@ def prep_optimise_xml(directory,
                       tol_position=1.0e-4,
                       stride=1,
                       checkpoint_stride=10,
-                      properties=None):
+                      properties=None,
+                      xml_in=None):
     # Prepare the minimization xml file
-    tree = ET.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -373,7 +389,8 @@ def run_optimise(directory,
                  tol_position=1.0e-4,
                  stride=1,
                  checkpoint_stride=1000,
-                 properties=None):
+                 properties=None,
+                 xml_in=None):
     # Prepare the minimization xml file
     if driver_dict is None:
         driver_dict = {}
@@ -395,7 +412,8 @@ def run_optimise(directory,
                       tol_position=tol_position,
                       stride=stride,
                       checkpoint_stride=checkpoint_stride,
-                      properties=properties)
+                      properties=properties,
+                      xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
 
@@ -415,9 +433,13 @@ def prep_phonons_xml(directory,
                      deut=False,
                      stride=1,
                      checkpoint_stride=1000,
-                     properties=None):
+                     properties=None,
+                     xml_in=None):
     # Prepare the phonon xml file
-    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/PHO.xml"))
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/PHO.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -461,7 +483,8 @@ def run_phonons(directory,
                 deut=False,
                 stride=1,
                 checkpoint_stride=1000,
-                properties=None):
+                properties=None,
+                xml_in=None):
     if driver_dict is None:
         driver_dict = {}
 
@@ -483,7 +506,8 @@ def run_phonons(directory,
                      deut=deut,
                      stride=stride,
                      checkpoint_stride=checkpoint_stride,
-                     properties=properties)
+                     properties=properties,
+                     xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the phonons
@@ -501,9 +525,13 @@ def prep_ts_xml(directory,
                 tol_position=1.0e-6,
                 stride=1,
                 checkpoint_stride=1000,
-                properties=None):
+                properties=None,
+                xml_in=None):
     # Prepare the transition state search xml file
-    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/TS.xml"))
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/TS.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -552,7 +580,8 @@ def run_ts(directory,
            tol_position=1.0e-6,
            stride=1,
            checkpoint_stride=1000,
-           properties=None):
+           properties=None,
+           xml_in=None):
     if driver_dict is None:
         driver_dict = {}
     # Read the transition state and write it to the ts directory
@@ -568,7 +597,8 @@ def run_ts(directory,
                 tol_position=tol_position,
                 stride=stride,
                 checkpoint_stride=checkpoint_stride,
-                properties=properties)
+                properties=properties,
+                xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
     # Run the ts
@@ -588,13 +618,17 @@ def prep_inst_xml(directory,
                   tol_position=1.0e-6,
                   stride=1,
                   checkpoint_stride=1000,
-                  properties=None):
+                  properties=None,
+                  xml_in=None):
     n_atoms = len(atoms)
     n_dof = 3 * n_atoms - 6
     n_doft = 3 * n_atoms
 
     # Prepare the instanton calculation
-    tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/INST.xml"))
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/INST.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -657,7 +691,8 @@ def run_inst(directory,
              tol_position=1.0e-6,
              stride=1,
              checkpoint_stride=1000,
-             properties=None):
+             properties=None,
+             xml_in=None):
     if driver_dict is None:
         driver_dict = {}
 
@@ -681,7 +716,8 @@ def run_inst(directory,
                   tol_position=tol_position,
                   stride=stride,
                   checkpoint_stride=checkpoint_stride,
-                  properties=properties)
+                  properties=properties,
+                  xml_in=xml_in)
 
     # Prepare the driver
     driver = prep_driver(directory, driver, driver_dict)
