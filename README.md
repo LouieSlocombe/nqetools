@@ -17,7 +17,7 @@ conda update conda --all
 
 Install the basic requirements.
 ```
-conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anaconda::pytest conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes anaconda::sympy -y
+conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anaconda::pytest conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes anaconda::sympy conda-forge::pyfftw -y
 ```
 
 ## ASE
