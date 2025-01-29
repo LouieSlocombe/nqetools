@@ -25,6 +25,7 @@ setup(
         'ipi',
         'mace-torch',
         'plumed',
+        'pyfftw',
     ],
     extras_require={
         'dev': [
