@@ -344,3 +344,17 @@ def round_sf(value, sig_figs=3):
         return 0
     else:
         return np.round(value, sig_figs - int(np.floor(np.log10(abs(value)))) - 1)
+
+
+def get_file_extension(file_path):
+    """
+    Returns the file extension for the given file path.
+
+    Parameters:
+    file_path (str): The path to the file.
+
+    Returns:
+    str: The file extension.
+    """
+    _, file_extension = os.path.splitext(file_path)
+    return file_extension
