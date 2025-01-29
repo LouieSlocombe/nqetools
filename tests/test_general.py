@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from subprocess import Popen
@@ -5,12 +6,12 @@ from subprocess import Popen
 import ase.build
 from ase.build import molecule
 from ase.calculators.nwchem import NWChem
-from ase.calculators.socketio import SocketIOCalculator
 from ase.io import write
 from ase.optimize import BFGS
 from mace.calculators import mace_anicc
-
+from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
 import nqetools as nqe
+from ase.calculators.emt import EMT
 
 
 def test_calculate_nbeads():
@@ -228,3 +229,15 @@ def test_ase_server_socket():
         atoms.calc = calc
         opt.run(fmax=0.05)
     pass
+
+
+def test_py_socket():
+    atoms = molecule('H2O', vacuum=3.0)
+    atoms.rattle(stdev=0.1)
+
+    client = PySocketIOClient(EMT)
+    pid = os.getpid()
+    with SocketIOCalculator(launch_client=client,
+                            unixsocket=f'ase-python-{pid}') as atoms.calc:
+        with BFGS(atoms) as opt:
+            opt.run(fmax=0.1)
