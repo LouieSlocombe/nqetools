@@ -51,11 +51,12 @@ conda install conda-forge::ase -y
 ```
 Then install sella
 ```
+conda config --env --add channels conda-forge
 conda install conda-forge::sella -y
 ```
-Alternatively, but not suggested:
+Alternatively, if it is very slow. But, not suggested:
 ```
-pip install ase sella
+pip install sella
 ```
 
 ## MACE
@@ -74,17 +75,17 @@ It is worth ensuring the pytorch backend can use the GPU from here. This should 
 import torch
 torch.cuda.is_available()
 ```
-Next install mace. Selecting mace-torch:
+Next, install mace. Selecting mace-torch:
 ```
 pip install mace-torch
 ```
 
 ## PLUMED
-We don't need to build from source. We can use the conda-forge packages. Install a pre-compiled PLUMED binary using the following command
+We don't need to build from source. We can use the conda-forge packages. Install a pre-compiled PLUMED binary using the following command.
 ```
 conda install -c conda-forge plumed -y
 ```
-Similarly, the python wrappers can be installed with
+Similarly, the Python wrappers can be installed with
 ```
 conda install -c conda-forge py-plumed -y
 ```
@@ -93,7 +94,7 @@ You can check if plumed is installed if this returns the plumed path
 import plumed
 plumed.Plumed()
 ```
-Optional? Now the kernel environmental variable should added to the .bashrc.
+Optional? Now, the kernel environmental variable should added to the .bashrc.
 ```
 PLUMED_KERNEL=/home/louie/anaconda3/envs/ipi_env/lib/libplumedKernel.so
 ```
@@ -114,7 +115,7 @@ export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
 ```
 
 ## I-PI
-Conda is preferred to not mess up the ecosystem.
+Conda is preferred not to mess up the ecosystem.
 ```
 conda install conda-forge::i-pi -y
 ```
