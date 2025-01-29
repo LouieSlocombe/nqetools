@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+
 from .tools import has_pbc, get_file_extension
 
 
@@ -78,7 +79,7 @@ def update_mass(root, atoms, f_deut=False, m_d=2.0141):
     masses = get_masses(atoms, f_deut, m_d)
     if f_deut:
         masses_element = ET.Element('masses', {'mode': 'manual', 'units': 'ase'})
-        masses_element.text = "[" + ", ".join(masses) + "]"
+        masses_element.text = '[' + ', '.join(masses) + ']'
         for rank in root.iter('initialize'):
             rank.append(masses_element)
     return masses
@@ -119,9 +120,9 @@ def update_cell(root, atoms):
     cell_l = atoms.get_cell().lengths()
     for rank in root.iter('initialize'):
         for child in rank:
-            if child.tag == "cell":
+            if child.tag == 'cell':
                 child.attrib['units'] = 'angstrom'
-                child.text = f"[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]"
+                child.text = f'[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]'
     return None
 
 
@@ -142,12 +143,12 @@ def update_driver(root, atoms, f_driver):
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
             for child in rank:
-                if child.tag == "address":
-                    child.text = "driver"
+                if child.tag == 'address':
+                    child.text = 'driver'
         for rank in root.iter('forces'):
             for child in rank:
-                if child.tag == "force":
-                    child.attrib['forcefield'] = "driver"
+                if child.tag == 'force':
+                    child.attrib['forcefield'] = 'driver'
     return None
 
 
@@ -180,7 +181,7 @@ def update_hessian(root, n_doft, n_beads):
     None
     """
     for subchild in root.iterfind('.//motion/instanton/hessian'):
-        subchild.attrib['shape'] = f"({int(n_doft)}, {int(n_doft * n_beads)})"
+        subchild.attrib['shape'] = f'({int(n_doft)}, {int(n_doft * n_beads)})'
     return None
 
 
