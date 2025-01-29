@@ -108,7 +108,7 @@ def update_file(root, filename='init.xyz', units='angstrom'):
 
 def update_cell(root, atoms):
     """
-    Updates the XML tree with the cell dimensions of the atoms.
+    Updates the XML tree with the cell dimensions of the atoms. If no cell tag is present, it adds it.
 
     Parameters:
     root (Element): The root element of the XML tree.
@@ -119,10 +119,12 @@ def update_cell(root, atoms):
     """
     cell_l = atoms.get_cell().lengths()
     for rank in root.iter('initialize'):
-        for child in rank:
-            if child.tag == 'cell':
-                child.attrib['units'] = 'angstrom'
-                child.text = f'[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]'
+        cell_element = rank.find('cell')
+        if cell_element is None:
+            cell_element = ET.SubElement(rank, 'cell')
+        cell_element.attrib['units'] = 'angstrom'
+        cell_element.attrib['mode'] = 'abc'
+        cell_element.text = f'[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]'
     return None
 
 
