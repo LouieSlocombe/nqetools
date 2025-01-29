@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-from .tools import has_pbc
+from .tools import has_pbc, get_file_extension
 
 
 def update_properties(root, prop_list):
@@ -82,6 +82,27 @@ def update_mass(root, atoms, f_deut=False, m_d=2.0141):
         for rank in root.iter('initialize'):
             rank.append(masses_element)
     return masses
+
+
+def update_file(root, filename='init.xyz', units='angstrom'):
+    """
+    Updates the 'file' element within 'initialize' elements in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    filename (str, optional): The new filename to set for the 'file' element. Default is 'init.xyz'.
+    units (str, optional): The units to set for the 'file' element. Default is 'angstrom'.
+
+    Returns:
+    None
+    """
+    for rank in root.iter('initialize'):
+        for child in rank:
+            if child.tag == "file":
+                child.text = filename
+                child.set('mode', get_file_extension(filename).replace('.', ''))
+                child.set('units', units)
+    return None
 
 
 def update_cell(root, atoms):

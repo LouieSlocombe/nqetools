@@ -36,6 +36,17 @@ def count_matching_words(input_string, target_word):
     return len(re.findall(pattern, input_string))
 
 
+def test_update_file():
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    nqe.update_file(root, "test.pdb")
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    assert count_matching_words(str(ET.tostring(root)), "test.pdb") == 1
+    assert count_matching_words(str(ET.tostring(root)), "pdb") == 2
+
+
 def test_update_cell():
     # Set the cell
     atoms = ase.build.molecule('H2O')
