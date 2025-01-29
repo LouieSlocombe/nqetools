@@ -11,7 +11,6 @@ conda activate ipi_env
 ```
 Make sure to upgrade conda and pip.
 ```
-conda install anaconda::pip
 conda update conda --all
 ```
 
