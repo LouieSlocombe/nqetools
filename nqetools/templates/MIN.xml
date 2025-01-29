@@ -1,7 +1,7 @@
-<simulation mode="static" verbosity="low">
+<simulation mode='static' verbosity='low'>
     <output prefix='min'>
         <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
-        <trajectory stride="1" filename="pos" cell_units='angstrom' format="xyz">x_centroid{angstrom}</trajectory>
+        <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>x_centroid{angstrom}</trajectory>
     </output>
     <total_steps>1000</total_steps>
     <ffsocket name='driver' mode='unix' pbc='False'>
@@ -10,13 +10,13 @@
     <system>
         <initialize nbeads='1'>
             <file mode='xyz' units='angstrom'>init.xyz</file>
-            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
+            <cell mode='abc' units='angstrom'>[100 100 100]</cell>
         </initialize>
         <forces>
             <force forcefield='driver'></force>
         </forces>
-        <motion mode="minimize">
-            <optimizer mode="lbfgs">
+        <motion mode='minimize'>
+            <optimizer mode='lbfgs'>
                 <tolerances>
                     <energy>5e-5</energy>
                     <force>5e-5</force>

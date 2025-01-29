@@ -1,4 +1,4 @@
-<simulation mode="static" verbosity="low">
+<simulation mode='static' verbosity='low'>
     <output prefix='ts'>
         <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
         <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>positions{angstrom}</trajectory>
@@ -10,7 +10,7 @@
     <system>
         <initialize nbeads='1'>
             <file mode='xyz' units='angstrom'>init.xyz</file>
-            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
+            <cell mode='abc' units='angstrom'>[100 100 100]</cell>
         </initialize>
         <forces>
             <force forcefield='driver'></force>

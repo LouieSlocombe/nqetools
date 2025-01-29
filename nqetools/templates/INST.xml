@@ -1,4 +1,4 @@
-<simulation mode="static" verbosity="low">
+<simulation mode='static' verbosity='low'>
     <output prefix='inst'>
         <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
     </output>
@@ -9,13 +9,13 @@
     <system>
         <initialize nbeads='4'>
             <file mode='xyz' units='angstrom'>init.xyz</file>
-            <cell mode="abc" units='angstrom'>[100 100 100]</cell>
+            <cell mode='abc' units='angstrom'>[100 100 100]</cell>
         </initialize>
         <forces>
             <force forcefield='driver'></force>
         </forces>
         <ensemble>
-            <temperature units="kelvin">300</temperature>
+            <temperature units='kelvin'>300</temperature>
         </ensemble>
         <motion mode='instanton'>
             <instanton mode='rate'>
