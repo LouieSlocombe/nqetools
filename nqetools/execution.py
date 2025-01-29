@@ -77,7 +77,8 @@ def prep_md_xml(directory,
                 checkpoint_stride=1000,
                 n_beads=1,
                 properties=None,
-                xml_in=None):
+                xml_in=None,
+                file_in="init.xyz"):
     # Prepare the MD simulation XML file
     if xml_in is not None:
         tree = ET.parse(xml_in)
@@ -88,6 +89,12 @@ def prep_md_xml(directory,
     # Add in the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -152,9 +159,6 @@ def run_md(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
-    # Set the initial structure
-    write_xyz(atoms, os.path.join(directory, "init.xyz"))
-
     # Prepare the MD xml file
     prep_md_xml(directory, atoms,
                 outfile=outfile,
@@ -193,7 +197,8 @@ def prep_plumed_xml(directory,
                     n_beads=1,
                     plumed_extras=None,
                     properties=None,
-                    xml_in=None):
+                    xml_in=None,
+                    file_in="init.xyz"):
     # Prepare the MD simulation XML file
     if xml_in is not None:
         tree = ET.parse(xml_in)
@@ -206,6 +211,12 @@ def prep_plumed_xml(directory,
     # If properties is not None, add them to the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -331,7 +342,8 @@ def prep_optimise_xml(directory,
                       stride=1,
                       checkpoint_stride=10,
                       properties=None,
-                      xml_in=None):
+                      xml_in=None,
+                      file_in="init.xyz"):
     # Prepare the minimization xml file
     if xml_in is not None:
         tree = ET.parse(xml_in)
@@ -342,6 +354,12 @@ def prep_optimise_xml(directory,
     # Add in the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -434,7 +452,8 @@ def prep_phonons_xml(directory,
                      stride=1,
                      checkpoint_stride=1000,
                      properties=None,
-                     xml_in=None):
+                     xml_in=None,
+                     file_in="init.xyz"):
     # Prepare the phonon xml file
     if xml_in is not None:
         tree = ET.parse(xml_in)
@@ -445,6 +464,12 @@ def prep_phonons_xml(directory,
     # Add in the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -526,7 +551,8 @@ def prep_ts_xml(directory,
                 stride=1,
                 checkpoint_stride=1000,
                 properties=None,
-                xml_in=None):
+                xml_in=None,
+                file_in="init.xyz"):
     # Prepare the transition state search xml file
     if xml_in is not None:
         tree = ET.parse(xml_in)
@@ -537,6 +563,12 @@ def prep_ts_xml(directory,
     # Add in the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
 
     # Fix the cell
     update_cell(root, atoms)
@@ -584,8 +616,6 @@ def run_ts(directory,
            xml_in=None):
     if driver_dict is None:
         driver_dict = {}
-    # Read the transition state and write it to the ts directory
-    write_xyz(ase.io.read(f"ts.xyz", "-1"), os.path.join(directory, "init.xyz"))
     # Prepare the ts xml file
     prep_ts_xml(directory, atoms,
                 outfile=outfile,
@@ -619,7 +649,8 @@ def prep_inst_xml(directory,
                   stride=1,
                   checkpoint_stride=1000,
                   properties=None,
-                  xml_in=None):
+                  xml_in=None,
+                  file_in="init.xyz"):
     n_atoms = len(atoms)
     n_dof = 3 * n_atoms - 6
     n_doft = 3 * n_atoms
@@ -634,6 +665,12 @@ def prep_inst_xml(directory,
     # Add in the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
 
     # Fix the cell
     update_cell(root, atoms)
