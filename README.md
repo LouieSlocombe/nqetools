@@ -81,23 +81,7 @@ pip install mace-torch
 ```
 
 ## PLUMED
-We don't need to build from source. We can use the conda-forge packages. Install a pre-compiled PLUMED binary using the following command.
-```
-conda install -c conda-forge plumed -y
-```
-Similarly, the Python wrappers can be installed with
-```
-conda install -c conda-forge py-plumed -y
-```
-You can check if plumed is installed if this returns the plumed path
-```
-import plumed
-plumed.Plumed()
-```
-Optional? Now, the kernel environmental variable should added to the .bashrc.
-```
-PLUMED_KERNEL=/home/louie/anaconda3/envs/ipi_env/lib/libplumedKernel.so
-```
+We need to build from source.
 
 ### Manual compilation
 Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_installation.html`.
@@ -113,13 +97,34 @@ Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_instal
 ```
 export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
 ```
+### Use conda
+But we can also use the conda-forge packages.
+```
+conda install -c conda-forge plumed -y
+```
+Similarly, the Python wrappers can be installed with
+```
+conda install -c conda-forge py-plumed -y
+```
+You can check if plumed is installed if this returns the plumed path
+```
+import plumed
+plumed.Plumed()
+```
+You should see something along the lines of
+
++++ Loading the PLUMED kernel runtime +++
+
++++ PLUMED_KERNEL="/home/louie/plumed-2.9.3/src/lib/libplumedKernel.so" +++
+
+<plumed.Plumed object at 0x7f83768e2a00>
+
 
 ## I-PI
 Conda is preferred not to mess up the ecosystem.
 ```
 conda install conda-forge::i-pi -y
 ```
-
 
 
 # Resources
