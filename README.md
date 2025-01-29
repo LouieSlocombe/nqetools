@@ -23,6 +23,10 @@ conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anac
 ## ASE
 Avoid conda, install conda-forge::sella and conda-forge::ase as it is old.
 ```
+conda install conda-forge::ase conda-forge::sella
+```
+
+```
 pip install ase sella
 ```
 
