@@ -295,9 +295,6 @@ def run_plumed_md(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
-    # Set the initial structure
-    write_xyz(atoms, os.path.join(directory, "init.xyz"))
-
     # Prepare the plumed input file
     prep_plumed(plumed_type, atoms, plumed_dict)
 
@@ -416,9 +413,6 @@ def run_optimise(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
-    # Set the initial structure
-    write_xyz(atoms, os.path.join(directory, "init.xyz"))
-
     prep_optimise_xml(directory, atoms,
                       outfile=outfile,
                       driver=driver,
@@ -515,9 +509,6 @@ def run_phonons(directory,
 
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
-
-    # Set the initial structure
-    write_xyz(atoms, os.path.join(directory, "init.xyz"))
 
     # Get the directory and the file name
     dir_react_min, outfile_min = os.path.split(min_file_path)
@@ -616,6 +607,10 @@ def run_ts(directory,
            xml_in=None):
     if driver_dict is None:
         driver_dict = {}
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
     # Prepare the ts xml file
     prep_ts_xml(directory, atoms,
                 outfile=outfile,
