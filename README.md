@@ -2,36 +2,70 @@
 A package to help run NQE (nuclear quantum effects) calculations based on [i-pi](https://github.com/i-pi/i-pi).
 
 # Install instructions
-I suggest you work from a fresh environment to prevent issues! 
+You must work from a fresh environment to prevent issues! 
 ```
 conda create -n ipi_env python=3.12
 ```
+Activate the env
 ```
 conda activate ipi_env
 ```
-Make sure to upgrade conda and pip.
+Add channels in this order
 ```
-conda update conda --all
+conda config --env --add channels conda-forge
+conda config --env --add channels pytorch
+conda config --env --add channels nvidia
+```
+Best to make them strict
+```
+conda config --set channel_priority true
+```
+To check your updated channel list, run:
+```
+conda config --show channels
+```
+
+Make sure to upgrade the conda env to force the channel priority
+```
+conda update conda --all -y
 ```
 
 Install the basic requirements.
 ```
-conda install conda-forge::numpy conda-forge::scipy conda-forge::matplotlib anaconda::pytest conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes anaconda::sympy conda-forge::pyfftw conda-forge::chemiscope -y
+conda install conda-forge::pytest conda-forge::numpy conda-forge::scipy conda-forge::matplotlib -y
+```
+More dependent packages.
+```
+conda install conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes conda-forge::sympy conda-forge::pyfftw conda-forge::chemiscope -y
+```
+Install jupyterlab
+```
+conda install conda-forge::jupyterlab -y
 ```
 
-## ASE
-Avoid conda, install conda-forge::sella and conda-forge::ase as it is old.
+## ASE and Sella
+Conda can be an older version, which is fine.
+Start with ase
 ```
-conda install conda-forge::ase conda-forge::sella
+conda install conda-forge::ase -y
 ```
-
+Then install sella
+```
+conda install conda-forge::sella -y
+```
+Alternatively, but not suggested:
 ```
 pip install ase sella
 ```
 
 ## MACE
 Mace has two options, but the torch option seems best. For model eval and training:
-Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`. It might look like this:
+Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`. 
+First, check what version of CUDA you have, for example, 12.4.
+```
+nvcc --version
+```
+Install pytorch. It might look like this:
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
 ```
@@ -54,7 +88,6 @@ Similarly, the python wrappers can be installed with
 ```
 conda install -c conda-forge py-plumed -y
 ```
-
 You can check if plumed is installed if this returns the plumed path
 ```
 import plumed
