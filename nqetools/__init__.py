@@ -116,6 +116,7 @@ from .xml_parse import (update_properties,
                         add_trajectory_plumed_extras,
                         add_plumed_ff_section,
                         add_plumed_bias_section,
-                        add_plumed_xml)
+                        add_plumed_xml,
+                        add_trajectory_file)
 
 __version__ = "0.1.0"
