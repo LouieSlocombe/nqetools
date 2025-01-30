@@ -251,3 +251,15 @@ def test_plumed():
 
     # Check that smotion has been added to the xml
     assert count_matching_words(str(ET.tostring(root)), "smotion") == 2
+
+
+def test_add_trajectory_file():
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    # Update the centroid trajectory
+    nqe.add_trajectory_file(root, filename="kin", stride=1, text='kinetic_cv')
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the centroid trajectory has been added to the xml
+    assert count_matching_words(str(ET.tostring(root)), "kinetic_cv") == 1
