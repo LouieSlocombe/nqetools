@@ -26,6 +26,7 @@ setup(
         'mace-torch',
         'plumed',
         'pyfftw',
+        'chemiscope',
     ],
     extras_require={
         'dev': [
