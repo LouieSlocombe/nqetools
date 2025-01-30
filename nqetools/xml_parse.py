@@ -318,6 +318,16 @@ def update_timestep(root, timestep):
 
 
 def update_stride(root, stride):
+    """
+    Updates the stride attribute for 'properties' and 'trajectory' elements in the XML tree.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    stride (int): The new stride value to set for the elements.
+
+    Returns:
+    None
+    """
     for element in root.iter():
         if element.tag in ['properties', 'trajectory']:
             element.set('stride', str(stride))
