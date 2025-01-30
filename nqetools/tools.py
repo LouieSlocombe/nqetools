@@ -25,12 +25,12 @@ def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
     return None
 
 
-def rm_ipi_tmp(tmp=r"/tmp/ipi_localhost"):
+def rm_ipi_tmp(tmp=r"/tmp/ipi_driver"):
     """
     Removes the i-PI temporary file if it exists.
 
     Parameters:
-    tmp (str, optional): The path to the temporary file. Default is "/tmp/ipi_localhost".
+    tmp (str, optional): The path to the temporary file.
 
     Returns:
     None

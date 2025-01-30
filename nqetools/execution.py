@@ -2,8 +2,6 @@ import os
 import subprocess
 import time
 
-import ase.io
-
 from .driver import prep_driver
 from .io import (write_xml,
                  copy_xyz,
