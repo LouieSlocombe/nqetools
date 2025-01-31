@@ -288,18 +288,20 @@ def prep_driver(directory, f_driver, driver_dict):
         return "i-pi-driver -m ch4hcbe -u"
     elif f_driver == "zundel":
         return "i-pi-driver -u -a zundel -m zundel"
-    elif "ase-mace" in f_driver:
+    elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
         write_mace_driver(directory, **driver_dict)
         return "python3 run-ase-mace.py"
-    elif "ase-nwchem" in f_driver:
+    elif f_driver == "ase-nwchem":
         # If the driver is an ASE-NWChem driver, write the driver file
         write_nwchem_driver(directory, **driver_dict)
         return "python3 run-ase-nwchem.py"
-    elif "ase-orca" in f_driver:
+    elif f_driver == "ase-orca":
         # If the driver is an ASE-ORCA driver, write the driver file
         write_orca_driver(directory, **driver_dict)
         return "python3 run-ase-orca.py"
+    elif f_driver == "nwchem":
+        return "nwchem nwchem.nw > nwchem.out"
     else:
         # If not a recognized driver, raise an error
         raise ValueError(f"Driver {f_driver} is not recognized.")
