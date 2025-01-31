@@ -1,4 +1,5 @@
 import os
+from .calculators import (nwchem_calc_preset)
 
 
 def write_ase_mace_driver(
@@ -129,6 +130,31 @@ client.run(atoms, use_stress=False)
     # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
+    return None
+
+
+def write_nwchem_driver(atoms,
+                        directory,
+                        task='optimize',
+                        charge=0,
+                        xc='B3LYP',
+                        multiplicity=1,
+                        basis_set='6-311++G**',
+                        disp=None,
+                        solv=None,
+                        host='driver'):
+    calc = nwchem_calc_preset(directory=directory,
+                              task=task,
+                              charge=charge,
+                              xc=xc,
+                              multiplicity=multiplicity,
+                              basis_set=basis_set,
+                              disp=disp,
+                              solv=solv,
+                              host=host)
+    calc.prefix = os.path.join(directory, 'nwchem')
+    # Write the input file
+    calc.write_input(atoms)
     return None
 
 
@@ -265,21 +291,7 @@ client.run(atoms, use_stress=True)
         f.write(in_str)
 
 
-def prep_driver(directory, f_driver, driver_dict):
-    """
-    Prepares the driver command based on the specified driver type and writes the necessary driver file.
-
-    Parameters:
-    directory (str): The directory where the driver file will be written.
-    f_driver (str): The type of driver to prepare. Recognized values are "cbe", "zundel", "ase-mace", "ase-nwchem", and "ase-orca".
-    driver_dict (dict): A dictionary of parameters to pass to the driver writing functions.
-
-    Returns:
-    str: The command to run the prepared driver.
-
-    Raises:
-    ValueError: If the specified driver type is not recognized.
-    """
+def prep_driver(atoms, directory, f_driver, driver_dict):
     if f_driver == "cbe":
         return "i-pi-driver -m ch4hcbe -u"
     elif f_driver == "zundel":
@@ -297,7 +309,8 @@ def prep_driver(directory, f_driver, driver_dict):
         write_ase_orca_driver(directory, **driver_dict)
         return "python3 run-ase-orca.py"
     elif f_driver == "nwchem":
-        return "nwchem nwchem.nw > nwchem.out"
+        write_nwchem_driver(atoms, directory, **driver_dict)
+        return "nwchem nwchem.nwi > nwchem.out"
     else:
         # If not a recognized driver, raise an error
         raise ValueError(f"Driver {f_driver} is not recognized.")
