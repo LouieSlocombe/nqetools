@@ -143,6 +143,25 @@ def write_nwchem_driver(atoms,
                         disp=None,
                         solv=None,
                         host='driver'):
+    """
+    Prepares and writes the input file for an NWChem calculation.
+
+    Parameters:
+    atoms (object): An ASE Atoms object representing the atomic structure.
+    directory (str): The directory to write the NWChem input file to.
+    task (str, optional): The NWChem task to perform
+    charge (int, optional): The charge of the system. Default is 0.
+    xc (str, optional): The exchange-correlation functional to use. Default is 'B3LYP'.
+    multiplicity (int, optional): The spin multiplicity of the system. Default is 1.
+    basis_set (str, optional): The basis set to use. Default is '6-311++G**'.
+    disp (str, optional): The dispersion correction to use. Default is None.
+    solv (str, optional): The solvation model to use. Default is None.
+    host (str, optional): The host for the SocketClient. Default is 'driver'.
+
+    Returns:
+    None
+    """
+    # Prepare the NWChem calculator
     calc = nwchem_calc_preset(directory=directory,
                               task=task,
                               charge=charge,
@@ -152,6 +171,7 @@ def write_nwchem_driver(atoms,
                               disp=disp,
                               solv=solv,
                               host=host)
+    # Set the correct pathing
     calc.prefix = os.path.join(directory, 'nwchem')
     # Write the input file
     calc.write_input(atoms)
