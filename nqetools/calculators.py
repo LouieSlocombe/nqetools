@@ -15,7 +15,8 @@ def nwchem_calc_preset(directory=None,
                        multiplicity=1,
                        basis_set='6-311++G**',
                        disp=None,
-                       solv=None):
+                       solv=None,
+                       host=None):
     if directory is None:
         directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
 
@@ -34,6 +35,8 @@ def nwchem_calc_preset(directory=None,
             mult=multiplicity
         )
     )
+    if host is not None:
+        tmp['driver'] = dict(socket=dict(unix=host))
 
     if disp:
         if disp.upper() == 'XDM':
