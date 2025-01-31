@@ -172,7 +172,7 @@ def run_md(directory,
                 properties=properties,
                 xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the MD
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
@@ -313,7 +313,7 @@ def run_plumed_md(directory,
                     xml_in=xml_in)
 
     # Prepare the driver
-    driver = prep_driver(directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_dict)
 
     # Run the MD
     print(f"Running plumed MD ({md_type}) with the driver: {driver}", flush=True)
@@ -425,7 +425,7 @@ def run_optimise(directory,
                       properties=properties,
                       xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_dict)
 
     # Run the minimization
     print(f"Running the minimization with the driver: {driver}", flush=True)
@@ -523,7 +523,7 @@ def run_phonons(directory,
                      properties=properties,
                      xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the phonons
     run_ipi(directory, server, driver, outfile + ".out")
 
@@ -623,7 +623,7 @@ def run_ts(directory,
                 properties=properties,
                 xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the ts
     run_ipi(directory, server, driver, outfile + ".out")
 
@@ -750,7 +750,7 @@ def run_inst(directory,
                   xml_in=xml_in)
 
     # Prepare the driver
-    driver = prep_driver(directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_dict)
 
     # Run the instanton
     run_ipi(directory, server, driver, outfile + ".out")
