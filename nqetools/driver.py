@@ -1,7 +1,7 @@
 import os
 
 
-def write_mace_driver(
+def write_ase_mace_driver(
         directory,
         out_file="run-ase-mace.py",
         in_file="init.xyz",
@@ -49,7 +49,7 @@ def write_cp2k_driver():
     raise ValueError(f"Driver cp2k is not recognized.")
 
 
-def write_nwchem_driver(
+def write_ase_nwchem_driver(
         directory,
         in_file="init.xyz",
         out_file="run-ase-nwchem.py",
@@ -132,11 +132,7 @@ client.run(atoms, use_stress=False)
     return None
 
 
-def write_qchem_driver():
-    raise ValueError(f"Driver qchem is not recognized.")
-
-
-def write_orca_driver(
+def write_ase_orca_driver(
         directory,
         in_file="init.xyz",
         out_file="run-ase-orca.py",
@@ -290,15 +286,15 @@ def prep_driver(directory, f_driver, driver_dict):
         return "i-pi-driver -u -a zundel -m zundel"
     elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
-        write_mace_driver(directory, **driver_dict)
+        write_ase_mace_driver(directory, **driver_dict)
         return "python3 run-ase-mace.py"
     elif f_driver == "ase-nwchem":
         # If the driver is an ASE-NWChem driver, write the driver file
-        write_nwchem_driver(directory, **driver_dict)
+        write_ase_nwchem_driver(directory, **driver_dict)
         return "python3 run-ase-nwchem.py"
     elif f_driver == "ase-orca":
         # If the driver is an ASE-ORCA driver, write the driver file
-        write_orca_driver(directory, **driver_dict)
+        write_ase_orca_driver(directory, **driver_dict)
         return "python3 run-ase-orca.py"
     elif f_driver == "nwchem":
         return "nwchem nwchem.nw > nwchem.out"
