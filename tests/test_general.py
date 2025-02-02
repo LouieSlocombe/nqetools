@@ -172,7 +172,7 @@ def test_nwchem_calc():
     atoms = ase.build.molecule('H2O')
 
     # Set up the NWChem calculator
-    calc = nqe.nwchem_calc_preset()
+    calc = nqe.nwchem_calc_preset(directory='nwchem_test')
 
     # Set the calculator
     atoms.calc = calc
