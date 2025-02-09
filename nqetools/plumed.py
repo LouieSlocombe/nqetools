@@ -405,3 +405,81 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'opes.bias']
+
+
+def plumed_input_dpt(
+        output_file: str,
+        h1_index: int,
+        a1_index: int,
+        a2_index: int,
+        h2_index: int,
+        b1_index: int,
+        b2_index: int,
+        r0: float = 1.5,
+        d_max: float = 2.5,
+        height: float = 0.2,
+        sigma: float = 0.1,
+        pace: int = 500,
+        bias_factor: float = 10.0,
+        temp: float = 300.0,
+        stride: int = 100,
+):
+    """
+    Writes a PLUMED input file for metadynamics to study double proton transfer.
+
+    Parameters:
+    -----------
+    output_file : str
+        Name of the output PLUMED input file.
+    h1_index : int
+        Index of the first proton (H1).
+    a1_index : int
+        Index of the first donor/acceptor atom for H1.
+    a2_index : int
+        Index of the second donor/acceptor atom for H1.
+    h2_index : int
+        Index of the second proton (H2).
+    b1_index : int
+        Index of the first donor/acceptor atom for H2.
+    b2_index : int
+        Index of the second donor/acceptor atom for H2.
+    r0 : float, optional
+        R_0 parameter for the switching function (default: 1.5).
+    d_max : float, optional
+        D_MAX parameter for the switching function (default: 2.5).
+    height : float, optional
+        Height of the Gaussian hills in metadynamics (default: 0.2).
+    sigma : float, optional
+        Width of the Gaussian hills in metadynamics (default: 0.1).
+    pace : int, optional
+        Frequency of Gaussian hill deposition (default: 500).
+    bias_factor : float, optional
+        Bias factor for well-tempered metadynamics (default: 10.0).
+    temp : float, optional
+        Temperature of the system in Kelvin (default: 300.0).
+    stride : int, optional
+        Frequency of writing output to the COLVAR file (default: 100).
+    """
+    plumed_input = f"""
+# Define the atoms involved in the proton transfer
+# H1: Proton 1, A1/A2: Donor/acceptor for H1
+# H2: Proton 2, B1/B2: Donor/acceptor for H2
+
+# Define coordination numbers for the two protons
+cn1: COORDINATIONNUMBER SPECIES={h1_index},{a1_index},{a2_index} SWITCH={{RATIONAL R_0={r0} D_MAX={d_max}}}
+cn2: COORDINATIONNUMBER SPECIES={h2_index},{b1_index},{b2_index} SWITCH={{RATIONAL R_0={r0} D_MAX={d_max}}}
+
+# Calculate the difference in coordination numbers
+diff_cn: COMBINE ARG=cn1,cn2 COEFFICIENTS=1,-1 PERIODIC=NO
+
+# Metadynamics setup
+metad: METAD ARG=diff_cn HEIGHT={height} SIGMA={sigma} PACE={pace} FILE=HILLS BIASFACTOR={bias_factor} TEMP={temp}
+
+# Print the collective variable and bias potential to a file
+PRINT ARG=diff_cn,metad.bias STRIDE={stride} FILE=COLVAR
+"""
+
+    with open(output_file, "w") as f:
+        f.write(plumed_input)
+
+    print(f"PLUMED input file written to {output_file}")
