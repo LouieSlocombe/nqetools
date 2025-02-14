@@ -126,6 +126,32 @@ Conda is preferred not to mess up the ecosystem.
 conda install conda-forge::i-pi -y
 ```
 
+## Driver installation
+
+### CP2k
+The exe will likely be cp2k.ssmp
+```
+conda install conda-forge::cp2k -y
+```
+
+### NWChem
+the exe will likely be nwchem
+```
+conda install conda-forge::nwchem -y
+```
+
+### DFTB+
+For DFTB+, the exe will likely be dftb+
+```
+conda install conda-forge::dftbplus -y
+```
+Set the DFTB_PREFIX environment variable to specify the location of parameter sets:
+```
+export DFTB_PREFIX=/path/to/your/parameter/sets
+```
+To make it permanent, you can add this line to your .bashrc or .bash_profile.
+You can get the parameters from https://www.dftb.org/parameters/download.html
+
 
 # Resources
 https://atomistic-cookbook.org/index.html
