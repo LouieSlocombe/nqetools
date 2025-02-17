@@ -94,7 +94,8 @@ from .tools import (add_ipi_paths,
                     optimise_atom_halfway,
                     round_sf,
                     get_file_extension,
-                    cluster_atoms,)
+                    cluster_atoms,
+                    move_clusters_to_distance,)
 
 from .xml_parse import (update_properties,
                         append_properties,

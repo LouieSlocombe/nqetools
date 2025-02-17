@@ -3,11 +3,11 @@ import sys
 import time
 
 import numpy as np
+from ase import Atoms
 from ase.build import minimize_rotation_and_translation
 from ase.constraints import FixAtoms
-from ase.optimize import BFGS
-from ase import Atoms
 from ase.neighborlist import NeighborList, natural_cutoffs
+from ase.optimize import BFGS
 
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
@@ -396,3 +396,49 @@ def cluster_atoms(atoms: Atoms) -> list[Atoms]:
         clusters_indices.append(cluster)
 
     return [atoms[indices] for indices in clusters_indices]
+
+
+def move_clusters_to_distance(cluster1: Atoms,
+                              cluster2: Atoms,
+                              index1: int,
+                              index2: int,
+                              target_distance: float) -> Atoms:
+    """
+    Moves two clusters of atoms along the vector connecting two target atoms
+    such that the target atoms are separated by a given distance.
+
+    Parameters:
+        cluster1 (Atoms): The first set of atoms.
+        cluster2 (Atoms): The second set of atoms.
+        index1 (int): Index of the reference atom in cluster1.
+        index2 (int): Index of the reference atom in cluster2.
+        target_distance (float): The desired final distance between the target atoms.
+
+    Returns:
+        Atoms: A new Atoms object containing both clusters, repositioned.
+    """
+    # Get the current positions of the target atoms
+    pos1 = cluster1.positions[index1]
+    pos2 = cluster2.positions[index2]
+
+    # Compute the vector from atom1 to atom2
+    vec = np.subtract(pos2, pos1)
+    current_distance = np.linalg.norm(vec)
+
+    if current_distance == 0:
+        raise ValueError("The selected atoms are at the same position; cannot determine a valid direction.")
+
+    # Normalize the vector
+    unit_vec = vec / current_distance
+
+    # Compute the shift needed to achieve the target distance
+    shift = (np.subtract(target_distance, current_distance)) / 2
+
+    # Move clusters in opposite directions along the vector
+    cluster1.positions -= shift * unit_vec  # Move cluster1 backward
+    cluster2.positions += shift * unit_vec  # Move cluster2 forward
+
+    # Combine the moved clusters into a single Atoms object
+    combined_atoms = cluster1 + cluster2
+
+    return combined_atoms
