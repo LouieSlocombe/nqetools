@@ -1,17 +1,4 @@
-import os
-import sys
-import time
-from subprocess import Popen
-
-import ase.build
-from ase.build import molecule
-from ase.calculators.nwchem import NWChem
-from ase.io import write
-from ase.optimize import BFGS
-from mace.calculators import mace_anicc, mace_off
-from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
 import nqetools as nqe
-from ase.calculators.emt import EMT
 from ase.build import molecule
 
 def test_cluster_atoms():

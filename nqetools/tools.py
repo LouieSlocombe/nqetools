@@ -362,53 +362,37 @@ def get_file_extension(file_path):
 
 def cluster_atoms(atoms: Atoms) -> list[Atoms]:
     """
-    Cluster atoms based on natural cutoff distances.
+    Clusters atoms based on their natural cutoffs.
 
-    This function computes the natural cutoff for each atom (typically based
-    on the covalent radii) and then builds a neighbor list. It uses a depth-first
-    search to identify connected clusters (i.e. groups of atoms that are bonded
-    according to their cutoff radii). Finally, it returns a list of Atoms objects,
-    one for each cluster found.
+    This function uses the NeighborList to determine clusters of atoms
+    based on their natural cutoffs. It iterates through each atom,
+    checking if it has been visited, and if not, it performs a depth-first
+    search to find all connected atoms, forming a cluster.
 
     Parameters:
-        atoms (Atoms): The ASE Atoms object to be clustered.
+    atoms (ase.Atoms): The ASE Atoms object to be clustered.
 
     Returns:
-        list[Atoms]: A list where each element is an ASE Atoms object corresponding
-                     to one connected cluster.
+    list[ase.Atoms]: A list of ASE Atoms objects, each representing a cluster.
     """
-    # Determine the natural cutoff radii for each atom.
     cutoffs = natural_cutoffs(atoms)
-
-    # Create the neighbor list. Setting bothways=True ensures that the neighbor
-    # relation is symmetric.
     nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
     nl.update(atoms)
 
-    n_atoms = len(atoms)
-    visited = [False] * n_atoms
+    visited = [False] * len(atoms)
     clusters_indices = []
 
-    # Loop over all atoms, grouping connected atoms into clusters.
-    for i in range(n_atoms):
+    for i in range(len(atoms)):
         if visited[i]:
             continue
-        cluster = []
-        stack = [i]
+        cluster, stack = [], [i]
         while stack:
             j = stack.pop()
-            if visited[j]:
-                continue
-            visited[j] = True
-            cluster.append(j)
-            # Get the indices of all neighbors for atom j.
-            indices, _ = nl.get_neighbors(j)
-            for neighbor in indices:
-                if not visited[neighbor]:
-                    stack.append(neighbor)
+            if not visited[j]:
+                visited[j] = True
+                cluster.append(j)
+                indices, _ = nl.get_neighbors(j)
+                stack.extend(neighbor for neighbor in indices if not visited[neighbor])
         clusters_indices.append(cluster)
 
-    # Create a list of Atoms objects, each corresponding to one cluster.
-    clusters = [atoms[indices] for indices in clusters_indices]
-    return clusters
-
+    return [atoms[indices] for indices in clusters_indices]
