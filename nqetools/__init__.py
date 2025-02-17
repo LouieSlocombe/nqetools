@@ -98,6 +98,7 @@ from .tools import (add_ipi_paths,
                     move_clusters_to_distance,
                     reindex_atoms_by_cluster,
                     move_com_to_origin,
+                    move_to_distances,
                     )
 
 from .xml_parse import (update_properties,

@@ -420,7 +420,7 @@ def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
     return joined_atoms
 
 
-def move_com_to_origin(atoms):
+def move_com_to_origin(atoms: Atoms) -> Atoms:
     """
     Moves a set of atoms so that its center of mass is at the origin.
 
@@ -479,3 +479,25 @@ def move_clusters_to_distance(cluster1: Atoms,
     combined_atoms = cluster1 + cluster2
 
     return combined_atoms
+
+
+def move_to_distances(atoms: Atoms,
+                      index1: int,
+                      index2: int,
+                      distances: list[float]) -> list[Atoms]:
+    # Split the atoms into two clusters
+    clusters = cluster_atoms(atoms)
+    if len(clusters) != 2:
+        raise ValueError("The input Atoms object must contain exactly two clusters.")
+
+    cluster1, cluster2 = clusters
+
+    index2 = index2 - len(cluster2)
+
+    # Move the clusters to the specified distances
+    moved_atoms_list = []
+    for distance in distances:
+        moved_atoms = move_clusters_to_distance(cluster1, cluster2, index1, index2, distance)
+        moved_atoms_list.append(moved_atoms)
+
+    return moved_atoms_list
