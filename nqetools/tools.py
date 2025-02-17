@@ -420,6 +420,21 @@ def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
     return joined_atoms
 
 
+def move_com_to_origin(atoms):
+    """
+    Moves a set of atoms so that its center of mass is at the origin.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE Atoms object.
+
+    Returns:
+    ase.Atoms: The modified Atoms object.
+    """
+    com = atoms.get_center_of_mass()
+    atoms.positions -= com
+    return atoms
+
+
 def move_clusters_to_distance(cluster1: Atoms,
                               cluster2: Atoms,
                               index1: int,

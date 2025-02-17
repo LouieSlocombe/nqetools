@@ -95,7 +95,10 @@ from .tools import (add_ipi_paths,
                     round_sf,
                     get_file_extension,
                     cluster_atoms,
-                    move_clusters_to_distance,)
+                    move_clusters_to_distance,
+                    reindex_atoms_by_cluster,
+                    move_com_to_origin,
+                    )
 
 from .xml_parse import (update_properties,
                         append_properties,
