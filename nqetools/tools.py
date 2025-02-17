@@ -398,6 +398,28 @@ def cluster_atoms(atoms: Atoms) -> list[Atoms]:
     return [atoms[indices] for indices in clusters_indices]
 
 
+def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
+    """
+    Reindex atoms by their clusters.
+
+    This function takes an ASE Atoms object, clusters the atoms using the
+    `cluster_atoms` function, and then rejoins the clusters into a single
+    Atoms object.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE Atoms object to be reindexed by clusters.
+
+    Returns:
+    ase.Atoms: A new ASE Atoms object with atoms reindexed by clusters.
+    """
+    clusters = cluster_atoms(atoms)
+    # Rejoin the clusters into a single Atoms object
+    joined_atoms = clusters[0]
+    for cluster in clusters[1:]:
+        joined_atoms += cluster
+    return joined_atoms
+
+
 def move_clusters_to_distance(cluster1: Atoms,
                               cluster2: Atoms,
                               index1: int,
