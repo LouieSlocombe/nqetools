@@ -93,7 +93,8 @@ from .tools import (add_ipi_paths,
                     move_atom_halfway,
                     optimise_atom_halfway,
                     round_sf,
-                    get_file_extension)
+                    get_file_extension,
+                    cluster_atoms,)
 
 from .xml_parse import (update_properties,
                         append_properties,

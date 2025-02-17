@@ -3,11 +3,11 @@ import sys
 import time
 
 import numpy as np
-from ase import Atoms
 from ase.build import minimize_rotation_and_translation
 from ase.constraints import FixAtoms
 from ase.optimize import BFGS
-from ase.test.fio.vasp.test_vasp_out import atoms
+from ase import Atoms
+from ase.neighborlist import NeighborList, natural_cutoffs
 
 
 def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
@@ -358,3 +358,57 @@ def get_file_extension(file_path):
     """
     _, file_extension = os.path.splitext(file_path)
     return file_extension
+
+
+def cluster_atoms(atoms: Atoms) -> list[Atoms]:
+    """
+    Cluster atoms based on natural cutoff distances.
+
+    This function computes the natural cutoff for each atom (typically based
+    on the covalent radii) and then builds a neighbor list. It uses a depth-first
+    search to identify connected clusters (i.e. groups of atoms that are bonded
+    according to their cutoff radii). Finally, it returns a list of Atoms objects,
+    one for each cluster found.
+
+    Parameters:
+        atoms (Atoms): The ASE Atoms object to be clustered.
+
+    Returns:
+        list[Atoms]: A list where each element is an ASE Atoms object corresponding
+                     to one connected cluster.
+    """
+    # Determine the natural cutoff radii for each atom.
+    cutoffs = natural_cutoffs(atoms)
+
+    # Create the neighbor list. Setting bothways=True ensures that the neighbor
+    # relation is symmetric.
+    nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
+    nl.update(atoms)
+
+    n_atoms = len(atoms)
+    visited = [False] * n_atoms
+    clusters_indices = []
+
+    # Loop over all atoms, grouping connected atoms into clusters.
+    for i in range(n_atoms):
+        if visited[i]:
+            continue
+        cluster = []
+        stack = [i]
+        while stack:
+            j = stack.pop()
+            if visited[j]:
+                continue
+            visited[j] = True
+            cluster.append(j)
+            # Get the indices of all neighbors for atom j.
+            indices, _ = nl.get_neighbors(j)
+            for neighbor in indices:
+                if not visited[neighbor]:
+                    stack.append(neighbor)
+        clusters_indices.append(cluster)
+
+    # Create a list of Atoms objects, each corresponding to one cluster.
+    clusters = [atoms[indices] for indices in clusters_indices]
+    return clusters
+
