@@ -246,13 +246,15 @@ def ax_plot(fig, ax, xlab, ylab, xs=14, ys=14):
     return None
 
 
-def plot_neb(images, calc):
+def plot_neb(images, calc, filename="neb", show=True):
     """
     Plot the Nudged Elastic Band (NEB) path for a series of images.
 
     Parameters:
     images (list of ase.Atoms): List of ASE Atoms objects representing the images along the NEB path.
     calc (ase.Calculator): Calculator to be used for the energy calculations.
+    filename (str, optional): The base name for the saved plot files. Default is "neb".
+    show (bool, optional): Whether to display the plot. Default is True.
 
     Returns:
     None
@@ -260,39 +262,74 @@ def plot_neb(images, calc):
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
+
     # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
+
     # Shift the graph
     energies -= min(energies)
+
     # Get the path
     path = get_neb_path(images)
-    plt.plot(path, energies)
-    n_plot("Path A", "Energy eV")
-    plt.show()
+
+    # Plot the energy profile
+    plt.plot(path, energies, 'o-', c='k', lw=2)
+
+    # Add labels and formatting
+    n_plot("Path, (Å)", "Energy, (eV)")
+
+    # Save the plot
+    plt.savefig(f"{filename}.png", dpi=600)
+    plt.savefig(f"{filename}.pdf")
+
+    # Display the plot
+    if show:
+        plt.show()
+    plt.close()
+    return None
 
 
-def plot_sella(images):
+def plot_sella(images, calc, filename="irc", show=True):
     """
     Plot the energy profile along the NEB path for a series of images using the Sella method.
 
     Parameters:
     images (list of ase.Atoms): List of ASE Atoms objects representing the images along the NEB path.
+    calc (ase.Calculator): Calculator to be used for the energy calculations.
+    filename (str, optional): The base name for the saved plot files. Default is "irc".
+    show (bool, optional): Whether to display the plot. Default is True.
 
     Returns:
     None
     """
+
+    # Attach the calculator to the images
+    for image in images:
+        image.calc = copy.copy(calc)
+
     # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
+
     # Shift the graph so the minimum energy is zero
     energies -= min(energies)
+
     # Get the path
     path = get_neb_path(images)
+
     # Plot the energy profile
-    plt.plot(path, energies, 'o-', c='k', lw=2, label='IRC')
+    plt.plot(path, energies, 'o-', c='k', lw=2)
+
     # Add labels and formatting
-    n_plot("Path A", "Energy eV")
+    n_plot("Path, (Å)", "Energy eV")
+
+    # Save the plot
+    plt.savefig(f"{filename}.png", dpi=600)
+    plt.savefig(f"{filename}.pdf")
+
     # Display the plot
-    plt.show()
+    if show:
+        plt.show()
+    plt.close()
     return None
 
 
