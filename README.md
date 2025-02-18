@@ -127,21 +127,29 @@ conda install conda-forge::i-pi -y
 ```
 
 ## Driver installation
-
-### CP2k
-The exe will likely be cp2k.ssmp
+We need to install the drivers for the codes we want to use.
+### I-PI drivers
+Make sure to install the drivers in the same env as i-pi and update the path as needed.
+```
+git clone https://github.com/i-pi/i-pi.git
+cd /home/louie/i-pi/drivers/f90
+make
+cp -r /home/louie/i-pi/drivers /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi
+```
+### CP2K
+The exe will likely be `cp2k.ssmp`
 ```
 conda install conda-forge::cp2k -y
 ```
 
 ### NWChem
-the exe will likely be nwchem
+he exe will likely be `nwchem`
 ```
 conda install conda-forge::nwchem -y
 ```
 
 ### DFTB+
-For DFTB+, the exe will likely be dftb+
+For DFTB+, the exe will likely be `dftb+`
 ```
 conda install conda-forge::dftbplus -y
 ```
