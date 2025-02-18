@@ -7,6 +7,8 @@ from ase.visualize.plot import plot_atoms
 from .calcs import moving_average
 from .pathway import get_neb_path
 
+# Setting plot aesthetics for better visibility
+plt.rcParams['axes.linewidth'] = 2.0
 
 def plot_time_energy(output_data):
     """
@@ -276,7 +278,7 @@ def plot_neb(images, calc, filename="neb", show=True):
     plt.plot(path, energies, 'o-', c='k', lw=2)
 
     # Add labels and formatting
-    n_plot("Path, (Å)", "Energy, (eV)")
+    n_plot("Path (Å)", "Energy (eV)")
 
     # Save the plot
     plt.savefig(f"{filename}.png", dpi=600)
@@ -320,7 +322,7 @@ def plot_sella(images, calc, filename="irc", show=True):
     plt.plot(path, energies, 'o-', c='k', lw=2)
 
     # Add labels and formatting
-    n_plot("Path, (Å)", "Energy eV")
+    n_plot("Path (Å)", "Energy (eV)")
 
     # Save the plot
     plt.savefig(f"{filename}.png", dpi=600)
