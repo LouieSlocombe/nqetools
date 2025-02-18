@@ -16,8 +16,6 @@ if __name__ == "__main__":
     # build the molecule
     atoms = read("water_32.pdb")
 
-
-
     # calc = mace_anicc()
     # calc = mace_off(model="small", device="cpu", default_dtype="float32")
     # # set the calculator
@@ -27,4 +25,3 @@ if __name__ == "__main__":
     # energy = atoms.get_potential_energy()
     # t2 = time.time()
     # print(f"Energy: {energy} Time: {t2 - t1}")
-

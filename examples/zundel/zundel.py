@@ -1,7 +1,6 @@
-from ase.io import read
-from ase.visualize import view
-from matplotlib import pyplot as plt
 import time
+
+from ase.io import read
 
 import nqetools as nqe
 

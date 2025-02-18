@@ -1,6 +1,7 @@
+from ase.io import read
 from ase.visualize import view
-from ase.io import read, write
 from mace.calculators import mace_off, mace_anicc
+
 import nqetools as nqe
 
 

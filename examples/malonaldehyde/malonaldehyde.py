@@ -1,14 +1,9 @@
-import importlib.util
-import os
-
+import matplotlib.pyplot as plt
+from ase.io import read
 from ase.visualize import view
-from mace.calculators import mace_off, mace_anicc
-from ase.optimize import BFGS
-
-from ase.io import read, write
+from mace.calculators import mace_off
 
 import nqetools as nqe
-import matplotlib.pyplot as plt
 
 plt.rcParams['axes.linewidth'] = 2.0
 f_neb = False
