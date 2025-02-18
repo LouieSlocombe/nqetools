@@ -1,10 +1,9 @@
 import glob
+import importlib.util
 import os
 import re
 import shutil
 import xml.etree.ElementTree as ET
-
-import importlib.util
 
 import ase.io
 import numpy as np

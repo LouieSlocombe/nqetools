@@ -5,13 +5,14 @@ from subprocess import Popen
 
 import ase.build
 from ase.build import molecule
+from ase.calculators.emt import EMT
 from ase.calculators.nwchem import NWChem
+from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
 from ase.io import write
 from ase.optimize import BFGS
 from mace.calculators import mace_anicc, mace_off
-from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
+
 import nqetools as nqe
-from ase.calculators.emt import EMT
 
 
 def test_calculate_nbeads():

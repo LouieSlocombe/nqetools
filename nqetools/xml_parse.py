@@ -530,26 +530,26 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
 
 
 def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
-        """
-        Adds a <trajectory> element to the <output> tag in the XML tree.
+    """
+    Adds a <trajectory> element to the <output> tag in the XML tree.
 
-        Parameters:
-        root (Element): The root element of the XML tree.
-        filename (str, optional): The filename attribute for the trajectory element. Default is 'pos'.
-        stride (int, optional): The stride attribute for the trajectory element. Default is 20.
-        text (str, optional): The text content for the trajectory element. Default is 'positions'.
+    Parameters:
+    root (Element): The root element of the XML tree.
+    filename (str, optional): The filename attribute for the trajectory element. Default is 'pos'.
+    stride (int, optional): The stride attribute for the trajectory element. Default is 20.
+    text (str, optional): The text content for the trajectory element. Default is 'positions'.
 
-        Returns:
-        None
-        """
-        # Create the new trajectory element
-        new_trajectory = ET.Element('trajectory', {'filename': filename, 'stride': str(stride)})
-        new_trajectory.text = text
+    Returns:
+    None
+    """
+    # Create the new trajectory element
+    new_trajectory = ET.Element('trajectory', {'filename': filename, 'stride': str(stride)})
+    new_trajectory.text = text
 
-        # Find the output element and append the new trajectory element
-        output_element = root.find(".//output")
-        if output_element is not None:
-            output_element.append(new_trajectory)
-        else:
-            raise ValueError("The output element was not found in the XML file.")
-        return None
+    # Find the output element and append the new trajectory element
+    output_element = root.find(".//output")
+    if output_element is not None:
+        output_element.append(new_trajectory)
+    else:
+        raise ValueError("The output element was not found in the XML file.")
+    return None
