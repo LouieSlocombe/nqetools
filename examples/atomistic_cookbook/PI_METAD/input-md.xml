@@ -1,4 +1,15 @@
 <simulation safe_stride='10' verbosity='medium'>
+    <output prefix="meta-md">
+        <trajectory stride="10" filename="pos" cell_units="angstrom">positions{angstrom}</trajectory>
+        <trajectory stride="10" filename="colvar" bead="0" extra_type="doo,dc,mtd.bias">extras_bias</trajectory>
+        <properties stride="10">[ step, time, conserved, temperature{kelvin}, kinetic_md, potential,
+            temperature{kelvin}(H), temperature{kelvin}(O), ensemble_bias ]
+        </properties>
+    </output>
+    <total_steps>5000</total_steps>
+    <prng>
+        <seed>18885</seed>
+    </prng>
     <ffsocket mode='unix' name='driver'>
         <latency>1.00000000e-04</latency>
         <address>zundel</address>
@@ -8,28 +19,16 @@
         <plumed_dat>data/plumed-md.dat</plumed_dat>
         <plumed_extras>[doo, co1.lessthan, co2.lessthan, dc, mtd.bias ]</plumed_extras>
     </ffplumed>
-    <total_steps>5000</total_steps>
-    <output prefix="meta-md">
-        <trajectory stride="10" filename="pos" cell_units="angstrom">positions{angstrom}</trajectory>
-        <trajectory stride="10" filename="colvar" bead="0" extra_type="doo,dc,mtd.bias">extras_bias</trajectory>
-        <properties stride="10">
-            [ step, time, conserved, temperature{kelvin}, kinetic_md,
-            potential, temperature{kelvin}(H), temperature{kelvin}(O), ensemble_bias ]
-        </properties>
-    </output>
-    <prng>
-        <seed>18885</seed>
-    </prng>
     <system>
-        <forces>
-            <force forcefield="driver"></force>
-        </forces>
         <initialize nbeads="1">
             <file mode="xyz">data/h5o2+.xyz</file>
             <cell>
                 [ 25.29166, 0, 0, 0, 25.29166, 0, 0, 0, 25.29166 ]
             </cell>
         </initialize>
+        <forces>
+            <force forcefield="driver"></force>
+        </forces>
         <ensemble>
             <temperature units="kelvin">300.0</temperature>
             <bias>
