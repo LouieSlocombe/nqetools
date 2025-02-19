@@ -478,8 +478,8 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
     file_element = ET.SubElement(ffplumed, 'file', {'mode': 'xyz'})
     file_element.text = file_name
 
-    # Add the plumeddat element
-    plumed_dat_element = ET.SubElement(ffplumed, 'plumeddat')
+    # Add the plumedplumed_datdat element
+    plumed_dat_element = ET.SubElement(ffplumed, 'plumed_dat')
     plumed_dat_element.text = plumed_dat
 
     # Add the plumed_extras element
