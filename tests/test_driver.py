@@ -1,6 +1,20 @@
 import ase.build
-
+from ase.io import read
 import nqetools as nqe
+from ase.visualize import view
+
+def test_zundel_driver():
+    print(flush=True)
+    print("Testing MACE calculator", flush=True)
+
+    # Build the molecule
+    atoms = read("../examples/zundel/h5o2+.xyz")
+    view(atoms)
+
+    # Make a directory to store everything
+    directory = "zundel_opti"
+    nqe.run_optimise(directory, atoms, driver='zundel')
+    pass
 
 
 def test_ase_mace_driver():
