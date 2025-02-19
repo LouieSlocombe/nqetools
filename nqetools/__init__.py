@@ -99,6 +99,7 @@ from .tools import (add_ipi_paths,
                     reindex_atoms_by_cluster,
                     move_com_to_origin,
                     move_to_distances,
+                    get_ipi_driver,
                     )
 
 from .xml_parse import (update_properties,

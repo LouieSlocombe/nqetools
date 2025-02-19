@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import ipi
 
 import numpy as np
 from ase import Atoms
@@ -24,6 +25,11 @@ def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
     os.environ['PATH'] += f":{base}/bin/"
     return None
 
+
+def get_ipi_driver():
+    tmp = ipi.__file__
+    tmp = tmp.split('__init__.py')[0]
+    return os.path.join(tmp, 'bin', 'i-pi-driver')
 
 def rm_ipi_tmp(tmp=r"/tmp/ipi_driver"):
     """
