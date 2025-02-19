@@ -281,3 +281,10 @@ def test_py_socket():
                             unixsocket=f'ase-python-{pid}') as atoms.calc:
         with BFGS(atoms) as opt:
             opt.run(fmax=0.1)
+
+
+def test_get_ipi_driver():
+    print(flush=True)
+    driver_path = nqe.get_ipi_driver()
+    ref_path = "/home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi/bin/i-pi-driver"
+    assert driver_path == ref_path
