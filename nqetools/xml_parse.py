@@ -140,8 +140,22 @@ def update_driver(root, atoms, f_driver):
     Returns:
     None
     """
-    if f_driver in ["ase-mace", "ase-nwchem", "ase-orca"]:
-        f_pbcs = has_pbc(atoms)
+    # Check if the driver is valid
+    assert f_driver in ["zundel", "cbe", "ase-mace", "ase-nwchem", "ase-orca", "nwchem"]
+    f_pbcs = has_pbc(atoms)
+    if f_driver == "zundel":
+        for rank in root.iter('ffsocket'):
+            rank.attrib.update({'name': 'driver', 'mode': 'unix'})
+            for child in rank:
+                if child.tag == 'address':
+                    child.text = 'zundel'
+    elif f_driver == "cbe":
+        for rank in root.iter('ffsocket'):
+            rank.attrib.update({'name': 'cbe', 'mode': 'unix'})
+            for child in rank:
+                if child.tag == 'address':
+                    child.text = 'localhost'
+    elif f_driver in ["ase-mace", "ase-nwchem", "ase-orca", "nwchem"]:
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
             for child in rank:
