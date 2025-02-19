@@ -136,6 +136,11 @@ cd /home/louie/i-pi/drivers/f90
 make
 cp -r /home/louie/i-pi/drivers /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi
 ```
+Need to add the bin
+```
+cp -r /home/louie/i-pi/bin /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi
+```
+
 ### CP2K
 The exe will likely be `cp2k.ssmp`
 ```
