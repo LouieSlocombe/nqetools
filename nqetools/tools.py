@@ -1,8 +1,9 @@
+import glob
 import os
 import sys
 import time
-import ipi
 
+import ipi
 import numpy as np
 from ase import Atoms
 from ase.build import minimize_rotation_and_translation
@@ -31,21 +32,27 @@ def get_ipi_driver():
     tmp = tmp.split('__init__.py')[0]
     return os.path.join(tmp, 'bin', 'i-pi-driver')
 
-def rm_ipi_tmp(tmp=r"/tmp/ipi_driver"):
+
+def rm_ipi_tmp(tmp_dir=r"/tmp"):
     """
-    Removes the i-PI temporary file if it exists.
+    Removes any file in the given directory that starts with 'ipi_'.
 
     Parameters:
-    tmp (str, optional): The path to the temporary file.
+    tmp_dir (str, optional): The directory to search for files. Default is '/tmp'.
 
     Returns:
     None
     """
-    if os.path.exists(tmp):
-        try:
-            os.remove(tmp)
-        except FileNotFoundError:
-            pass
+    # Search for files starting with 'ipi_'
+    files = glob.glob(os.path.join(tmp_dir, 'ipi_*'))
+
+    # Remove each file found
+    for file in files:
+        if os.path.exists(file):
+            try:
+                os.remove(file)
+            except FileNotFoundError:
+                pass
     return None
 
 
