@@ -1,5 +1,5 @@
 import os
-
+import ipi
 from .calculators import (nwchem_calc_preset)
 from .tools import get_ipi_driver
 
@@ -312,11 +312,19 @@ client.run(atoms, use_stress=True)
         f.write(in_str)
 
 
+def move_zundel_driver_pes_files(directory):
+        base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
+        files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']
+        for file in files:
+            os.system(f"cp {os.path.join(base, file)} {directory}")
+
+
 def prep_driver(atoms, directory, f_driver, driver_dict):
     driver_path = get_ipi_driver()
     if f_driver == "cbe":
         return f"{driver_path} -m ch4hcbe -u"
     elif f_driver == "zundel":
+        move_zundel_driver_pes_files(directory)
         return f"{driver_path} -u -a zundel -m zundel"
     elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
