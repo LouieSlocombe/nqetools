@@ -28,6 +28,15 @@ def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
 
 
 def get_ipi_driver():
+    """
+    Get the path to the i-pi-driver executable.
+
+    This function locates the i-pi-driver executable by finding the path
+    to the i-PI package and appending the relative path to the executable.
+
+    Returns:
+    str: The full path to the i-pi-driver executable.
+    """
     tmp = ipi.__file__
     tmp = tmp.split('__init__.py')[0]
     return os.path.join(tmp, 'bin', 'i-pi-driver')
