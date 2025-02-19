@@ -123,7 +123,7 @@ def write_plumed_mtd_coord(atoms,
     idx2 += 1
 
     # Indexing starts from 1
-    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms) + 1}"
+    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms)}"
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
@@ -173,7 +173,7 @@ def write_plumed_opes_coord(atoms,
     idx1 += 1
     idx2 += 1
     # Indexing starts from 1
-    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms) + 1}"
+    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms)}"
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
