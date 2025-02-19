@@ -1,20 +1,31 @@
 import ase.build
 from ase.io import read
 import nqetools as nqe
-from ase.visualize import view
 
 
 def test_zundel_driver():
     print(flush=True)
-    print("Testing MACE calculator", flush=True)
+    print("Testing zundel driver", flush=True)
 
-    # Build the molecule
+    # Read the molecule
     atoms = read("../examples/zundel/h5o2+.xyz")
 
     # Make a directory to store everything
     directory = "zundel_opti"
     nqe.run_optimise(directory, atoms, driver='zundel', total_steps=2)
     pass
+
+
+def test_cbe_driver():
+    print(flush=True)
+    print("Testing cbe driver", flush=True)
+
+    # Read the molecule
+    atoms = read("../examples/ch4hcbe/init.xyz")
+
+    # Make a directory to store everything
+    directory = "cbe_opti"
+    nqe.run_optimise(directory, atoms, driver='cbe', total_steps=2)
 
 
 def test_ase_mace_driver():
@@ -29,7 +40,7 @@ def test_ase_mace_driver():
         None
     """
     print(flush=True)
-    print("Testing MACE calculator", flush=True)
+    print("Testing MACE driver", flush=True)
 
     # Build the molecule
     atoms = ase.build.molecule('H2O')
