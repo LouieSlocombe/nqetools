@@ -3,17 +3,17 @@ from ase.io import read
 import nqetools as nqe
 from ase.visualize import view
 
+
 def test_zundel_driver():
     print(flush=True)
     print("Testing MACE calculator", flush=True)
 
     # Build the molecule
     atoms = read("../examples/zundel/h5o2+.xyz")
-    view(atoms)
 
     # Make a directory to store everything
     directory = "zundel_opti"
-    nqe.run_optimise(directory, atoms, driver='zundel')
+    nqe.run_optimise(directory, atoms, driver='zundel', total_steps=2)
     pass
 
 
@@ -61,7 +61,7 @@ def test_ase_orca_driver():
 
     # Make a directory to store everything
     directory = "orca_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-orca')
+    nqe.run_optimise(directory, atoms, driver='ase-orca', total_steps=2)
     pass
 
 
@@ -88,7 +88,7 @@ def test_ase_nwchem_driver():
     nqe.remove_directory(directory)
 
     # Run the optimization
-    nqe.run_optimise(directory, atoms, driver='ase-nwchem')
+    nqe.run_optimise(directory, atoms, driver='ase-nwchem', total_steps=2)
     pass
 
 
@@ -115,5 +115,5 @@ def test_nwchem_driver():
     nqe.remove_directory(directory)
 
     # Run the optimization
-    nqe.run_optimise(directory, atoms, driver='nwchem')
+    nqe.run_optimise(directory, atoms, driver='nwchem', total_steps=2)
     pass
