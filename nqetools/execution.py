@@ -273,9 +273,8 @@ def run_plumed_md(directory,
                   stride=10,
                   checkpoint_stride=1000,
                   n_beads=1,
-                  plumed_type="pos-mtd",
+                  plumed_type="mtd-pos",
                   plumed_dict=None,
-                  plumed_extras=None,
                   properties=None,
                   xml_in=None):
     # Update the plumed dictionary
@@ -294,7 +293,7 @@ def run_plumed_md(directory,
     os.makedirs(directory, exist_ok=True)
 
     # Prepare the plumed input file
-    prep_plumed(plumed_type, atoms, plumed_dict)
+    plumed_extras = prep_plumed(plumed_type, atoms, plumed_dict)
 
     # Prepare the MD xml file
     prep_plumed_xml(directory, atoms,
