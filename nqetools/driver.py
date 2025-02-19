@@ -1,7 +1,7 @@
 import os
 
 from .calculators import (nwchem_calc_preset)
-
+from .tools import get_ipi_driver
 
 def write_ase_mace_driver(
         directory,
@@ -313,10 +313,11 @@ client.run(atoms, use_stress=True)
 
 
 def prep_driver(atoms, directory, f_driver, driver_dict):
+    driver_path = get_ipi_driver()
     if f_driver == "cbe":
-        return "i-pi-driver -m ch4hcbe -u"
+        return f"{driver_path} -m ch4hcbe -u"
     elif f_driver == "zundel":
-        return "i-pi-driver -u -a zundel -m zundel"
+        return f"{driver_path} -u -a zundel -m zundel"
     elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
         write_ase_mace_driver(directory, **driver_dict)

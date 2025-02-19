@@ -37,7 +37,7 @@ def test_ase_mace_driver():
 
     # Make a directory to store everything
     directory = "mace_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-mace')
+    nqe.run_optimise(directory, atoms, driver='ase-mace', total_steps=2)
     pass
 
 

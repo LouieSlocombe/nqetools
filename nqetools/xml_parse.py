@@ -146,12 +146,14 @@ def update_driver(root, atoms, f_driver):
     if f_driver == "zundel":
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix'})
+            rank.attrib.pop('pbc', None)
             for child in rank:
                 if child.tag == 'address':
                     child.text = 'zundel'
     elif f_driver == "cbe":
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'cbe', 'mode': 'unix'})
+            rank.attrib.pop('pbc', None)
             for child in rank:
                 if child.tag == 'address':
                     child.text = 'localhost'
