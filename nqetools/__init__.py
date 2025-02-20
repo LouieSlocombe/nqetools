@@ -126,4 +126,6 @@ from .xml_parse import (update_properties,
                         add_plumed_xml,
                         add_trajectory_file)
 
+from .plumed_analysis import (plot_time_potential_bias, plot_time_temperature)
+
 __version__ = "0.1.0"

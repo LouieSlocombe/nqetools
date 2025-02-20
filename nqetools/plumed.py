@@ -106,7 +106,7 @@ def write_plumed_mtd_coord(atoms,
         directory = os.getcwd()
 
     if sigma is None:
-        sigma = [0.05, 0.05]
+        sigma = [0.005, 0.05]
 
     # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
