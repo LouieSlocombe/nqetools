@@ -580,3 +580,32 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
     else:
         raise ValueError("The output element was not found in the XML file.")
     return None
+
+
+def add_thermostat_section(root, xml_file_path):
+    """
+    Adds or updates the <thermostat> section from the specified XML file to the root element.
+
+    Parameters:
+    root (Element): The root element of the XML tree.
+    xml_file_path (str): The path to the XML file containing the <thermostat> section.
+
+    Returns:
+    None
+    """
+    # Parse the XML file
+    tree = ET.parse(xml_file_path)
+    new_thermostat_section = tree.find('.//thermostat')
+
+    if new_thermostat_section is not None:
+        # Find existing thermostat section in the root
+        existing_thermostat_section = root.find('.//thermostat')
+        if existing_thermostat_section is not None:
+            # Remove the existing thermostat section
+            parent = find_parent(root, existing_thermostat_section)
+            if parent is not None:
+                parent.remove(existing_thermostat_section)
+        # Append the new thermostat section to the root element
+        root.append(new_thermostat_section)
+    else:
+        raise ValueError("The <thermostat> section was not found in the XML file.")
