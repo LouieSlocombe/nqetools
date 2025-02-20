@@ -1,0 +1,32 @@
+<!--
+# Generated at http://cosmo-epfl.github.io/gle4md
+# Please cite:
+# M. Ceriotti, G. Bussi and M. Parrinello, J. Chem. Theory Comput. 6, 1170 (2010)
+# M. Ceriotti, G. Bussi and M. Parrinello, Phys. Rev. Lett. 102, 020601 (2009)
+# Smart-sampling GLE. Enforces efficient sampling, focussing the effort on the slowest mode
+# accessible by the simulation. Generated from the parameter file
+# library/smart/smart-0.5_6-2.a,
+# and shifted so that they are effective to sample optimally
+# a time scale of t_opt=0.5 picoseconds,
+# and do as well as possible upt to a cutoff frequency of
+# νmax=200 THz [6671 cm^-1]
+-->
+<thermostat mode='gle'>
+    <A shape='(7,7)'>
+        [ 1.638204705236e-3, 1.665701213305e-2, 3.315543668026e-3, 1.947397985068e-3, 5.683607589790e-4,
+        -6.353693728396e-5, -5.934020956419e-4,
+        -1.677971309268e-3, 4.811053949483e-2, -3.015744749696e-2, 5.179568480370e-3, 3.033567266724e-3,
+        -1.191766683713e-3, 8.396844699579e-4,
+        1.559742117281e-3, 3.015744749696e-2, 1.713807900244e-2, 1.200200179920e-2, 2.124058767755e-3,
+        2.187878295935e-3, -5.323151065952e-3,
+        -1.935356632309e-3, -5.179568480370e-3, -1.200200179920e-2, 5.360918673070e-5, -1.042938893948e-4,
+        8.462609821501e-4, -4.209789839487e-5,
+        -5.683994298331e-4, -3.033567266724e-3, -2.124058767755e-3, 1.042938893948e-4, 2.867807012707e-9,
+        -8.483148424898e-5, 1.582035782472e-4,
+        6.666416573786e-5, 1.191766683713e-3, -2.187878295935e-3, -8.462609821501e-4, 8.483148424898e-5,
+        4.771108936883e-8, -6.278510965738e-5,
+        5.935067578112e-4, -8.396844699579e-4, 5.323151065952e-3, 4.209789839487e-5, -1.582035782472e-4,
+        6.278510965738e-5, 4.865134519369e-11
+        ]
+    </A>
+</thermostat>
