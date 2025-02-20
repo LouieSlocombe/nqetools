@@ -485,7 +485,7 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
     # Add the plumed_extras element
     if plumed_extras is not None:
         plumed_plumed_extras_element = ET.SubElement(ffplumed, 'plumed_extras')
-        plumed_plumed_extras_element.text = '[' + ' '.join(plumed_extras) + ']'
+        plumed_plumed_extras_element.text = '[' + ','.join(plumed_extras) + ']'
 
     # Insert the ffplumed section after the ffsocket element
     for ffsocket in root.iter('ffsocket'):
