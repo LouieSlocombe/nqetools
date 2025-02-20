@@ -550,6 +550,9 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
                             nbeads=1)
     # Add the smotion section
     add_plumed_smotion_section(root)
+
+    # Add the trajectory element
+    add_trajectory_plumed_extras(root, plumed_extras)
     return None
 
 
