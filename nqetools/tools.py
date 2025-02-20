@@ -34,6 +34,8 @@ def get_ipi_driver():
     This function locates the i-pi-driver executable by finding the path
     to the i-PI package and appending the relative path to the executable.
 
+    should look something like this
+    /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi/bin/i-pi-driver
     Returns:
     str: The full path to the i-pi-driver executable.
     """
