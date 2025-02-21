@@ -12,7 +12,7 @@ from ase.neighborlist import NeighborList, natural_cutoffs
 from ase.optimize import BFGS
 
 
-def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
+def add_ipi_paths(base: str = None) -> None:
     """
     Adds i-PI paths to the system path and environment variables.
 
@@ -22,29 +22,28 @@ def add_ipi_paths(base=os.path.expanduser("~") + "/i-pi/"):
     Returns:
     None
     """
+    if base is None:
+        base = os.path.expanduser("~") + "/i-pi/"
     sys.path.append(base)
     os.environ['PATH'] += f":{base}/bin/"
     return None
 
 
-def get_ipi_driver():
+def get_ipi_driver() -> str:
     """
-    Get the path to the i-pi-driver executable.
+    Get the path to the i-PI driver executable.
 
-    This function locates the i-pi-driver executable by finding the path
+    This function locates the i-PI driver executable by finding the path
     to the i-PI package and appending the relative path to the executable.
 
-    should look something like this
-    /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi/bin/i-pi-driver
     Returns:
-    str: The full path to the i-pi-driver executable.
+    str: The full path to the i-PI driver executable.
     """
-    tmp = ipi.__file__
-    tmp = tmp.split('__init__.py')[0]
+    tmp = ipi.__file__.split('__init__.py')[0]
     return os.path.join(tmp, 'bin', 'i-pi-driver')
 
 
-def rm_ipi_tmp(tmp_dir=r"/tmp"):
+def rm_ipi_tmp(tmp_dir: str = "/tmp") -> None:
     """
     Removes any file in the given directory that starts with 'ipi_'.
 
@@ -67,7 +66,7 @@ def rm_ipi_tmp(tmp_dir=r"/tmp"):
     return None
 
 
-def has_pbc(atoms):
+def has_pbc(atoms: Atoms) -> bool:
     """
     Checks if an ASE atoms object has periodic boundary conditions (PBC).
 
@@ -80,7 +79,7 @@ def has_pbc(atoms):
     return any(atoms.pbc)
 
 
-def remove_pbc(atoms):
+def remove_pbc(atoms: Atoms) -> None:
     """
     Removes the periodic boundary conditions from an ASE atoms object.
     This is important for calculations involving isolated molecules where
