@@ -3,6 +3,7 @@ import ipi
 from .calculators import (nwchem_calc_preset)
 from .tools import get_ipi_driver
 
+
 def write_ase_mace_driver(
         directory,
         out_file="run-ase-mace.py",
@@ -313,13 +314,37 @@ client.run(atoms, use_stress=True)
 
 
 def move_zundel_driver_pes_files(directory):
-        base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
-        files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']
-        for file in files:
-            os.system(f"cp {os.path.join(base, file)} {directory}")
+    """
+    Copies the Zundel driver PES (Potential Energy Surface) files to the specified directory.
+
+    Parameters:
+    directory (str): The target directory where the PES files will be copied.
+
+    Returns:
+    None
+    """
+    # Determine the base directory where the PES files are located
+    base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
+    # List of PES files to be copied
+    files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']
+    # Copy each file from the base directory to the target directory
+    for file in files:
+        os.system(f"cp {os.path.join(base, file)} {directory}")
 
 
 def prep_driver(atoms, directory, f_driver, driver_dict):
+    """
+    Prepares the driver command based on the specified driver type and parameters.
+
+    Parameters:
+    atoms (object): An ASE Atoms object representing the atomic structure.
+    directory (str): The directory where driver files will be written.
+    f_driver (str): The type of driver to prepare. Must be one of ["cbe", "zundel", "ase-mace", "ase-nwchem", "ase-orca", "nwchem"].
+    driver_dict (dict): A dictionary of additional parameters specific to the driver type.
+
+    Returns:
+    str: The command to run the prepared driver.
+    """
     driver_path = get_ipi_driver()
     if f_driver == "cbe":
         return f"{driver_path} -m ch4hcbe -u"
