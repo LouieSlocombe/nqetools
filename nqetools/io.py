@@ -161,7 +161,7 @@ def list_files_with_pattern(directory, pattern):
     return glob.glob(os.path.join(directory, pattern))
 
 
-def get_final_xyz(dir, sub="*FINAL_*.xyz"):
+def get_final_xyz(directory, sub="*FINAL_*.xyz"):
     """
     Filters and returns the final XYZ file from a directory.
 
@@ -172,7 +172,7 @@ def get_final_xyz(dir, sub="*FINAL_*.xyz"):
     Returns:
     str: The path to the final XYZ file that matches the criteria.
     """
-    l = list_files_with_pattern(dir, sub)
+    l = list_files_with_pattern(directory, sub)
     # Only select files that end with xyz
     l_filt = [f for f in l if f.endswith(".xyz")]
     # Select the file that does not contain the string "forces"
@@ -182,7 +182,7 @@ def get_final_xyz(dir, sub="*FINAL_*.xyz"):
     return l_n0[0]
 
 
-def get_final_hess(dir, sub=f"*FINAL.hess*"):
+def get_final_hess(directory, sub=f"*FINAL.hess*"):
     """
     Retrieves the final Hessian file from a directory.
 
@@ -193,7 +193,7 @@ def get_final_hess(dir, sub=f"*FINAL.hess*"):
     Returns:
     str: The path to the final Hessian file that matches the criteria.
     """
-    return list_files_with_pattern(dir, sub)[0]
+    return list_files_with_pattern(directory, sub)[0]
 
 
 def copy_xyz(file_in, new_dir, file_out="init.xyz"):
