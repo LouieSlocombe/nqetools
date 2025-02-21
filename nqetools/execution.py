@@ -1,4 +1,3 @@
-import os
 import subprocess
 import time
 
@@ -9,7 +8,6 @@ from .io import (write_xml,
                  copy_hess,
                  get_final_hess,
                  write_xyz,
-                 find_nqetools_path,
                  read_ipi_xyz)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
@@ -70,6 +68,7 @@ def prep_md_xml(directory,
                 deut=False,
                 temperature=300.0,
                 timestep=1,
+                thermostat=None,
                 md_type="NVT",
                 stride=10,
                 checkpoint_stride=1000,
@@ -115,6 +114,10 @@ def prep_md_xml(directory,
     # Update the timestep
     update_timestep(root, timestep)
 
+    # Add the thermostat section
+    if thermostat is not None:
+        add_thermostat_section(root, thermostat=thermostat)
+
     # If the md_type has PIMD update
     if 'PIMD' in md_type:
         # Add in the centroid
@@ -144,13 +147,13 @@ def run_md(directory,
            deut=False,
            temperature=300.0,
            timestep=1,
+           thermostat=None,
            md_type="NVT",
            stride=10,
            checkpoint_stride=1000,
            n_beads=1,
            properties=None,
            xml_in=None):
-    # assert md_type in ["NVT", "NPT"], f"MD type {md_type} not supported"
     if driver_dict is None:
         driver_dict = {}
 
@@ -165,6 +168,7 @@ def run_md(directory,
                 deut=deut,
                 temperature=temperature,
                 timestep=timestep,
+                thermostat=thermostat,
                 md_type=md_type,
                 stride=stride,
                 checkpoint_stride=checkpoint_stride,
@@ -189,6 +193,7 @@ def prep_plumed_xml(directory,
                     deut=False,
                     temperature=300.0,
                     timestep=1.0,
+                    thermostat=None,
                     md_type="NVT",
                     stride=10,
                     checkpoint_stride=1000,
@@ -237,6 +242,10 @@ def prep_plumed_xml(directory,
     # Update the timestep
     update_timestep(root, timestep)
 
+    # Add the thermostat section
+    if thermostat is not None:
+        add_thermostat_section(root, thermostat=thermostat)
+
     # If the md_type has PIMD update
     if 'PIMD' in md_type:
         # Add in the centroid
@@ -269,6 +278,7 @@ def run_plumed_md(directory,
                   deut=False,
                   temperature=300.0,
                   timestep=1.0,
+                  thermostat=None,
                   md_type="NVT",
                   stride=10,
                   checkpoint_stride=1000,
@@ -303,6 +313,7 @@ def run_plumed_md(directory,
                     deut=deut,
                     temperature=temperature,
                     timestep=timestep,
+                    thermostat=thermostat,
                     md_type=md_type,
                     stride=stride,
                     checkpoint_stride=checkpoint_stride,
