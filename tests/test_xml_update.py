@@ -264,3 +264,14 @@ def test_add_trajectory_file():
 
     # Check that the centroid trajectory has been added to the xml
     assert count_matching_words(str(ET.tostring(root)), "kinetic_cv") == 1
+
+def test_add_thermostat_section():
+    root = ET.parse(os.path.join(base_dir, "templates/NVT.xml")).getroot()
+    # Update the thermostat section
+    nqe.add_thermostat_section(root)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the thermostat section has been added to the xml
+    assert count_matching_words(str(ET.tostring(root)), "thermostat") == 2
