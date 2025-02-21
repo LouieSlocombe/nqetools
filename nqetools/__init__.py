@@ -2,8 +2,8 @@ from .calcs import (correlate,
                     autocorrelate,
                     moving_average,
                     freq_from_eigvals,
-                    temp_cross,
-                    calculate_nbeads,
+                    calculate_temperature_crossover,
+                    calculate_good_nbeads,
                     calc_kappa)
 
 from .calculators import (nwchem_calc_preset,

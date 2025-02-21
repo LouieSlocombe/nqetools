@@ -15,9 +15,9 @@ from mace.calculators import mace_anicc, mace_off
 import nqetools as nqe
 
 
-def test_calculate_nbeads():
+def test_calculate_good_nbeads():
     """
-    Tests the calculate_nbeads function from the nqetools module.
+    Tests the calculate_good_nbeads function from the nqetools module.
 
     This function calculates the number of beads (replicas) needed for a
     path integral molecular dynamics (PIMD) simulation based on the
@@ -29,7 +29,7 @@ def test_calculate_nbeads():
     Asserts:
         The calculated number of beads is 18.
     """
-    n_beads = nqe.calculate_nbeads(3800.0, 300.0)
+    n_beads = nqe.calculate_good_nbeads(3800.0, 300.0)
     assert n_beads == 18
 
 

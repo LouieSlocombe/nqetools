@@ -4,7 +4,11 @@ from scipy import constants
 from .post_proc import instanton_postproc
 
 
-def correlate(x, y, xbar=None, ybar=None, normalize=True):
+def correlate(x: np.ndarray,
+              y: np.ndarray,
+              xbar: float = None,
+              ybar: float = None,
+              normalize: bool = True) -> np.ndarray:
     """
     Computes the correlation function of two quantities.
 
@@ -27,7 +31,9 @@ def correlate(x, y, xbar=None, ybar=None, normalize=True):
     return cf[len(x) // 2:] / (((x - xbar) * (y - ybar)).sum() if normalize else 1)
 
 
-def autocorrelate(x, xbar=None, normalize=True):
+def autocorrelate(x: np.ndarray,
+                  xbar: float = None,
+                  normalize: bool = True) -> np.ndarray:
     """
     Computes the autocorrelation function of a trajectory.
 
@@ -45,7 +51,7 @@ def autocorrelate(x, xbar=None, normalize=True):
     return acf[len(x) // 2:] / (((x - xbar) * (x - xbar)).sum() if normalize else 1)
 
 
-def moving_average(arr, window_size):
+def moving_average(arr: np.ndarray, window_size: int) -> np.ndarray:
     """
     Computes the moving average of a given array using a specified window size.
 
@@ -63,7 +69,7 @@ def moving_average(arr, window_size):
     return np.convolve(arr, window, mode="valid")
 
 
-def freq_from_eigvals(eigvals):
+def freq_from_eigvals(eigvals: np.ndarray) -> np.ndarray:
     """
     Converts eigenvalues to frequencies in inverse centimeters (cm^-1).
 
@@ -80,7 +86,7 @@ def freq_from_eigvals(eigvals):
     return freq_invcm
 
 
-def temp_cross(omega):
+def calculate_temperature_crossover(omega: float) -> float:
     """
     Calculates the temperature crossover value for a given frequency.
 
@@ -96,7 +102,7 @@ def temp_cross(omega):
     return 1. / (2 * np.pi / (omega * cm2hartree) * boltzmann_au)
 
 
-def calculate_nbeads(omega_max, temperature):
+def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
     """
     Calculate the number of beads where nbeads > (hbar * omega_max) / (kB * T).
 
