@@ -124,7 +124,8 @@ from .xml_parse import (update_properties,
                         add_plumed_ff_section,
                         add_plumed_bias_section,
                         add_plumed_xml,
-                        add_trajectory_file)
+                        add_trajectory_file,
+                        add_thermostat_section)
 
 from .plumed_analysis import (plot_time_potential_bias, plot_time_temperature)
 

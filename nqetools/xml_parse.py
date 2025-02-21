@@ -1,5 +1,7 @@
+import os
 import xml.etree.ElementTree as ET
 
+from .io import find_nqetools_path
 from .tools import has_pbc, get_file_extension
 
 
@@ -582,30 +584,33 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
     return None
 
 
-def add_thermostat_section(root, xml_file_path):
+def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path=None):
     """
-    Adds or updates the <thermostat> section from the specified XML file to the root element.
+    Adds or updates the <thermostat> section in the XML tree.
 
     Parameters:
     root (Element): The root element of the XML tree.
-    xml_file_path (str): The path to the XML file containing the <thermostat> section.
+    thermostat (str, optional): The name of the thermostat file (without extension) to use. Default is "smart_sampling_1ps_n6_w2".
+    xml_path (str, optional): The path to the directory containing the thermostat XML files. Default is None.
 
     Returns:
     None
     """
-    # Parse the XML file
-    tree = ET.parse(xml_file_path)
-    new_thermostat_section = tree.find('.//thermostat')
+    # Get the path to the thermostat XML files
+    if xml_path is None:
+        xml_path = os.path.join(find_nqetools_path(), "thermostats")
 
-    if new_thermostat_section is not None:
-        # Find existing thermostat section in the root
-        existing_thermostat_section = root.find('.//thermostat')
-        if existing_thermostat_section is not None:
-            # Remove the existing thermostat section
-            parent = find_parent(root, existing_thermostat_section)
-            if parent is not None:
-                parent.remove(existing_thermostat_section)
-        # Append the new thermostat section to the root element
-        root.append(new_thermostat_section)
-    else:
-        raise ValueError("The <thermostat> section was not found in the XML file.")
+    # Parse the XML file
+    tree = ET.parse(os.path.join(xml_path, thermostat + ".xml"))
+
+    # Remove existing thermostat section
+    for thermostat in root.iter('thermostat'):
+        parent = find_parent(root, thermostat)
+        if parent is not None:
+            parent.remove(thermostat)
+
+    # Add thermostat section to the root
+    for thermostat in tree.iter('thermostat'):
+        for rank in root.iter('dynamics'):
+            rank.append(thermostat)
+    return None
