@@ -275,3 +275,15 @@ def test_add_thermostat_section():
 
     # Check that the thermostat section has been added to the xml
     assert count_matching_words(str(ET.tostring(root)), "thermostat") == 2
+
+
+def test_update_dynamics_splitting():
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    # Update the dynamics splitting
+    nqe.update_dynamics_splitting(root, splitting="baoab")
+
+    # Write to file for visual inspection
+    vis_xml(root)
+
+    # Check that the dynamics splitting has been updated
+    assert count_matching_words(str(ET.tostring(root)), "baoab") == 1
