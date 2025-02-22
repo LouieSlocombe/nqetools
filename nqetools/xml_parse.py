@@ -626,3 +626,30 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
         for rank in root.iter('dynamics'):
             rank.append(thermostat)
     return None
+
+
+def update_dynamics_splitting(root: ET.Element, splitting: str = "baoab") -> None:
+    """
+    Updates the splitting attribute in the dynamics section of the XML tree.
+
+    Parameters:
+    root (ElementTree.Element): The root element of the XML tree.
+    splitting (str, optional): The new splitting value. Default is "baoab".
+                             Valid values are: ["baoab", "obabo", "bao"].
+
+    Returns:
+    None
+
+    Raises:
+    ValueError: If the dynamics element is not found or if splitting value is invalid.
+    """
+    valid_splits = ["obabo", "baoab"]
+    if splitting not in valid_splits:
+        raise ValueError(f"Invalid splitting value. Must be one of {valid_splits}")
+
+    dynamics = root.find(".//dynamics")
+    if dynamics is not None:
+        dynamics.set("splitting", splitting)
+    else:
+        raise ValueError("No dynamics element found in the XML tree.")
+    return None
