@@ -71,6 +71,7 @@ def prep_md_xml(directory,
                 thermostat=None,
                 md_type="NVT",
                 splitting="baoab",
+                fixcom=False,
                 stride=10,
                 checkpoint_stride=1000,
                 n_beads=1,
@@ -118,6 +119,9 @@ def prep_md_xml(directory,
     # Updating splitting
     update_dynamics_splitting(root, splitting)
 
+    # Update the fixcom
+    update_motion_fixcom(root, fixcom)
+
     # Add the thermostat section
     if thermostat is not None:
         add_thermostat_section(root, thermostat=thermostat)
@@ -154,6 +158,7 @@ def run_md(directory,
            thermostat=None,
            md_type="NVT",
            splitting="baoab",
+           fixcom=False,
            stride=10,
            checkpoint_stride=1000,
            n_beads=1,
@@ -176,6 +181,7 @@ def run_md(directory,
                 thermostat=thermostat,
                 md_type=md_type,
                 splitting=splitting,
+                fixcom=fixcom,
                 stride=stride,
                 checkpoint_stride=checkpoint_stride,
                 n_beads=n_beads,
@@ -202,6 +208,7 @@ def prep_plumed_xml(directory,
                     thermostat=None,
                     md_type="NVT",
                     splitting="baoab",
+                    fixcom=False,
                     stride=10,
                     checkpoint_stride=1000,
                     n_beads=1,
@@ -252,6 +259,9 @@ def prep_plumed_xml(directory,
     # Updating splitting
     update_dynamics_splitting(root, splitting)
 
+    # Update the fixcom
+    update_motion_fixcom(root, fixcom)
+
     # Add the thermostat section
     if thermostat is not None:
         add_thermostat_section(root, thermostat=thermostat)
@@ -291,6 +301,7 @@ def run_plumed_md(directory,
                   thermostat=None,
                   md_type="NVT",
                   splitting="baoab",
+                  fixcom=False,
                   stride=10,
                   checkpoint_stride=1000,
                   n_beads=1,
@@ -327,6 +338,7 @@ def run_plumed_md(directory,
                     thermostat=thermostat,
                     md_type=md_type,
                     splitting=splitting,
+                    fixcom=fixcom,
                     stride=stride,
                     checkpoint_stride=checkpoint_stride,
                     n_beads=n_beads,
