@@ -635,7 +635,7 @@ def update_dynamics_splitting(root: ET.Element, splitting: str = "baoab") -> Non
     Parameters:
     root (ElementTree.Element): The root element of the XML tree.
     splitting (str, optional): The new splitting value. Default is "baoab".
-                             Valid values are: ["baoab", "obabo", "bao"].
+                             Valid values are: ["baoab", "obabo"].
 
     Returns:
     None
