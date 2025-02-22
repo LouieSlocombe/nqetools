@@ -5,6 +5,19 @@ from .io import find_nqetools_path
 from .tools import has_pbc, get_file_extension
 
 
+def list_to_string(l):
+    """
+    Converts a list to a string with brackets and commas.
+
+    Parameters:
+    l (list): The list to convert to a string.
+
+    Returns:
+    str: The string representation of the list.
+    """
+    return '[' + ', '.join(l) + ']'
+
+
 def update_properties(root, prop_list):
     """
     Updates the XML tree with properties from a given list.
@@ -17,7 +30,7 @@ def update_properties(root, prop_list):
     None
     """
     for properties in root.iter('properties'):
-        properties.text = '[' + ','.join(prop_list) + ']'
+        properties.text = list_to_string(prop_list)
     return None
 
 
@@ -32,7 +45,6 @@ def append_properties(root, prop_list):
     Returns:
     None
     """
-    updated_props = []
     for properties in root.iter('properties'):
         # Load current properties
         current_props = properties.text.split(',')
@@ -40,7 +52,7 @@ def append_properties(root, prop_list):
         # Append new properties
         updated_props = current_props + prop_list
         # Update the properties text
-        properties.text = '[' + ','.join(updated_props) + ']'
+        properties.text = list_to_string(updated_props)
     return None
 
 
@@ -81,7 +93,7 @@ def update_mass(root, atoms, f_deut=False, m_d=2.0141):
     masses = get_masses(atoms, f_deut, m_d)
     if f_deut:
         masses_element = ET.Element('masses', {'mode': 'manual', 'units': 'ase'})
-        masses_element.text = '[' + ', '.join(masses) + ']'
+        masses_element.text = list_to_string(masses)
         for rank in root.iter('initialize'):
             rank.append(masses_element)
     return masses
@@ -518,7 +530,7 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
     if plumed_extras is not None:
         # Add the plumed_extras element
         plumed_extras_element = ET.SubElement(force, 'interpolate_extras')
-        plumed_extras_element.text = '[' + ','.join(plumed_extras) + ']'
+        plumed_extras_element.text = list_to_string(plumed_extras)
 
     # Properly insert the bias section
     for ensemble in root.iter('ensemble'):
