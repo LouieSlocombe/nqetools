@@ -572,7 +572,9 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
 
 def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
     """
-    Adds a <trajectory> element to the <output> tag in the XML tree.
+    Adds or updates a <trajectory> element in the <output> tag in the XML tree.
+    If a trajectory element with the same filename exists, updates it;
+    otherwise adds a new element.
 
     Parameters:
     root (Element): The root element of the XML tree.
@@ -582,17 +584,28 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
 
     Returns:
     None
-    """
-    # Create the new trajectory element
-    new_trajectory = ET.Element('trajectory', {'filename': filename, 'stride': str(stride)})
-    new_trajectory.text = text
 
-    # Find the output element and append the new trajectory element
+    Raises:
+    ValueError: If the output element is not found in the XML tree.
+    """
     output_element = root.find(".//output")
     if output_element is not None:
-        output_element.append(new_trajectory)
+        # Check for existing trajectory with same filename
+        existing_traj = output_element.find(f".//trajectory[@filename='{filename}']")
+        if existing_traj is not None:
+            # Update existing trajectory
+            existing_traj.set('stride', str(stride))
+            existing_traj.text = text
+        else:
+            # Create and append new trajectory element
+            new_trajectory = ET.Element('trajectory', {
+                'filename': filename,
+                'stride': str(stride)
+            })
+            new_trajectory.text = text
+            output_element.append(new_trajectory)
     else:
-        raise ValueError("The output element was not found in the XML file.")
+        raise ValueError("The output element was not found in the XML tree.")
     return None
 
 
