@@ -9,8 +9,6 @@ import ase.io
 import numpy as np
 from ipi.utils.io import read_file
 
-from .conversions import bohr_to_angstrom
-
 
 def read_ipi_xyz(filename):
     """
@@ -29,8 +27,8 @@ def read_ipi_xyz(filename):
         try:
             ret = read_file("xyz", file_handle)
             frames.append(ase.Atoms(ret["atoms"].names,
-                                    positions=ret["atoms"].q.reshape((-1, 3)) * bohr_to_angstrom,
-                                    cell=ret["cell"].h.T * bohr_to_angstrom, pbc=True))
+                                    positions=ret["atoms"].q.reshape((-1, 3)),
+                                    cell=ret["cell"].h.T, pbc=True))
         except EOFError:
             break
         except:
