@@ -653,3 +653,31 @@ def update_dynamics_splitting(root: ET.Element, splitting: str = "baoab") -> Non
     else:
         raise ValueError("No dynamics element found in the XML tree.")
     return None
+
+
+def update_motion_fixcom(root: ET.Element, fixcom: bool = False) -> None:
+    """
+    Updates the fixcom field in the motion section of the XML tree.
+
+    Parameters:
+    root (ElementTree.Element): The root element of the XML tree.
+    fixcom (bool, optional): Whether to fix the center of mass. Default is False.
+
+    Returns:
+    None
+
+    Raises:
+    ValueError: If the motion element is not found.
+    """
+    motion = root.find(".//motion")
+    if motion is not None:
+        # Find or create fixcom element
+        fixcom_elem = motion.find("fixcom")
+        if fixcom_elem is not None:
+            fixcom_elem.text = str(fixcom)
+        else:
+            fixcom_elem = ET.SubElement(motion, "fixcom")
+            fixcom_elem.text = str(fixcom)
+    else:
+        raise ValueError("No motion element found in the XML tree.")
+    return None

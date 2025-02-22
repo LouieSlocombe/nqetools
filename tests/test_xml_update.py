@@ -287,3 +287,14 @@ def test_update_dynamics_splitting():
 
     # Check that the dynamics splitting has been updated
     assert count_matching_words(str(ET.tostring(root)), "baoab") == 1
+
+def test_update_motion_fixcom():
+    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    # Update the motion fixcom
+    nqe.update_motion_fixcom(root, fixcom=True)
+
+    # Write to file for visual inspection
+    # vis_xml(root)
+
+    # Check that the motion fixcom has been updated
+    assert count_matching_words(str(ET.tostring(root)), "True") == 1
