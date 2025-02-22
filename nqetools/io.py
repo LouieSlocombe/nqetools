@@ -96,7 +96,7 @@ def write_xml(root, file):
     return None
 
 
-def write_xyz(atoms, file, vacuum=20.0):
+def write_xyz(atoms, file, vacuum=None):
     """
     Writes an ASE Atoms object to an XYZ file, ensuring the directory exists and centering the atoms with a specified vacuum.
 
@@ -108,7 +108,8 @@ def write_xyz(atoms, file, vacuum=20.0):
     Returns:
     ase.Atoms: The centered ASE Atoms object.
     """
-    atoms.center(vacuum=vacuum)
+    if vacuum is not None:
+        atoms.center(vacuum=vacuum)
     os.makedirs(os.path.dirname(file), exist_ok=True)
     ase.io.write(file, atoms)
     return atoms
