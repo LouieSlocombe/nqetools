@@ -1,7 +1,7 @@
 <simulation mode='static' verbosity='low'>
     <output prefix='min'>
         <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
-        <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>x_centroid{angstrom}</trajectory>
+        <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>positions{angstrom}</trajectory>
     </output>
     <total_steps>1000</total_steps>
     <ffsocket name='driver' mode='unix' pbc='False'>
