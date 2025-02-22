@@ -210,7 +210,7 @@ def prep_plumed_xml(directory,
     root = tree.getroot()
 
     # Add in the bias to the properties to be tracked
-    append_properties(root, ['ensemble_bias'])
+    append_properties(root, ['ensemble_bias{electronvolt}'])
     # If properties is not None, add them to the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
