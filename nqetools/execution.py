@@ -70,6 +70,7 @@ def prep_md_xml(directory,
                 timestep=1,
                 thermostat=None,
                 md_type="NVT",
+                splitting="baoab",
                 stride=10,
                 checkpoint_stride=1000,
                 n_beads=1,
@@ -114,6 +115,9 @@ def prep_md_xml(directory,
     # Update the timestep
     update_timestep(root, timestep)
 
+    # Updating splitting
+    update_dynamics_splitting(root, splitting)
+
     # Add the thermostat section
     if thermostat is not None:
         add_thermostat_section(root, thermostat=thermostat)
@@ -149,6 +153,7 @@ def run_md(directory,
            timestep=1,
            thermostat=None,
            md_type="NVT",
+           splitting="baoab",
            stride=10,
            checkpoint_stride=1000,
            n_beads=1,
@@ -170,6 +175,7 @@ def run_md(directory,
                 timestep=timestep,
                 thermostat=thermostat,
                 md_type=md_type,
+                splitting=splitting,
                 stride=stride,
                 checkpoint_stride=checkpoint_stride,
                 n_beads=n_beads,
@@ -195,6 +201,7 @@ def prep_plumed_xml(directory,
                     timestep=1.0,
                     thermostat=None,
                     md_type="NVT",
+                    splitting="baoab",
                     stride=10,
                     checkpoint_stride=1000,
                     n_beads=1,
@@ -242,6 +249,9 @@ def prep_plumed_xml(directory,
     # Update the timestep
     update_timestep(root, timestep)
 
+    # Updating splitting
+    update_dynamics_splitting(root, splitting)
+
     # Add the thermostat section
     if thermostat is not None:
         add_thermostat_section(root, thermostat=thermostat)
@@ -280,6 +290,7 @@ def run_plumed_md(directory,
                   timestep=1.0,
                   thermostat=None,
                   md_type="NVT",
+                  splitting="baoab",
                   stride=10,
                   checkpoint_stride=1000,
                   n_beads=1,
@@ -315,6 +326,7 @@ def run_plumed_md(directory,
                     timestep=timestep,
                     thermostat=thermostat,
                     md_type=md_type,
+                    splitting=splitting,
                     stride=stride,
                     checkpoint_stride=checkpoint_stride,
                     n_beads=n_beads,
