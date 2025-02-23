@@ -64,36 +64,30 @@ def plot_time_temperature(data, window_size=100):
     return None
 
 
-def plot_energy_contour_series(xyz_1, xyz_2, xyz_3):
+def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float]) -> None:
     """
-    Plot a series of energy contour plots for three sets of data.
+    Plot a series of energy contour plots from FES arrays.
 
     Parameters:
-    xyz_1 (tuple): Data for the first contour plot.
-    xyz_2 (tuple): Data for the second contour plot.
-    xyz_3 (tuple): Data for the third contour plot.
+    fes_arrays (list[np.ndarray]): List of FES arrays, each with shape (3, bins, bins).
+    times (list[float]): List of time points corresponding to each FES array.
 
     Returns:
     None
     """
     fig, ax = plt.subplots(
-        1, 3, figsize=(8, 3), sharex=True, sharey=True, constrained_layout=True
+        1, len(fes_arrays), figsize=(8, 3), sharex=True, sharey=True, constrained_layout=True
     )
 
-    cf_1 = ax[0].contourf(*xyz_1)
-    cf_2 = ax[1].contourf(*xyz_2)
-    cf_3 = ax[2].contourf(*xyz_3)
-    fig.colorbar(cf_3, ax=ax, orientation="vertical", label=r"$F$, eV")
-    # Set the y-axis label
+    contours = []
+    for i, xyz in enumerate(fes_arrays):
+        cf = ax[i].contourf(xyz[1], xyz[0], xyz[2])
+        contours.append(cf)
+        ax[i].set_xlabel(r"$d_\mathrm{OO}$ / Å")
+        ax[i].set_title(fr"$t={times[i]}$ ps")
+
     ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
-    # Set the x-axis label
-    ax[0].set_xlabel(r"$d_\mathrm{OO}$ / Å")
-    ax[1].set_xlabel(r"$d_\mathrm{OO}$ / Å")
-    ax[2].set_xlabel(r"$d_\mathrm{OO}$ / Å")
-    # Set the title of the plot
-    ax[0].set_title(r"$t=0.8$ ps")
-    ax[1].set_title(r"$t=2.5$ ps")
-    ax[2].set_title(r"$t=5.0$ ps")
+    fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$, eV")
     plt.show()
     return None
 

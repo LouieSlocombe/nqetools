@@ -103,6 +103,7 @@ from .tools import (add_ipi_paths,
                     move_com_to_origin,
                     move_to_distances,
                     get_ipi_driver,
+                    get_fes_times,
                     )
 
 from .xml_parse import (update_properties,

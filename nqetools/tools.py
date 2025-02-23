@@ -524,3 +524,29 @@ def move_to_distances(atoms: Atoms,
         moved_atoms_list.append(moved_atoms)
 
     return moved_atoms_list
+
+
+def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray]) -> list[float]:
+    """
+    Calculate time stamps for FES arrays based on simulation parameters.
+
+    Parameters:
+    timestep (float): Timestep in femtoseconds.
+    total_steps (int): Total number of simulation steps.
+    fes_arrays (list[np.ndarray]): List of FES arrays.
+
+    Returns:
+    list[float]: List of time points in picoseconds for each FES array.
+    """
+    n_arrays = len(fes_arrays)
+    if n_arrays == 0:
+        return []
+
+    # Total time in ps (convert fs to ps by dividing by 1000)
+    total_time = (timestep * total_steps) / 1000
+
+    # Calculate time points evenly spaced across the simulation
+    time_points = [i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
+                   for i in range(n_arrays)]
+
+    return time_points
