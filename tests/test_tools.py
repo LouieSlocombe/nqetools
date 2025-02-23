@@ -1,3 +1,4 @@
+import numpy as np
 from ase.build import molecule
 from ase.visualize import view
 
@@ -80,3 +81,12 @@ def test_move_to_distances():
     distance2 = moved_atoms[1].get_distance(index1, index2)
     assert round(distance1, 2) == distances[0]
     assert round(distance2, 2) == distances[1]
+
+
+def test_get_fes_times():
+    print(flush=True)
+    dt = 1.0
+    n_steps = 5000
+    fake_data = [np.array(0.0), np.array(1.0), np.array(2.0), np.array(3.0), np.array(4.0), np.array(5.0)]
+    val = nqe.get_fes_times(dt, n_steps, fake_data)
+    assert val == fake_data
