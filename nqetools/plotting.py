@@ -64,6 +64,35 @@ def plot_time_temperature(data, window_size=100):
     return None
 
 
+def plot_energy_conservation(data: dict) -> None:
+    """
+    Plot energy conservation (total energy) as a function of time.
+
+    Parameters:
+    data (dict): A dictionary containing time series data with keys:
+        - "time": Array of time points in picoseconds
+        - "kinetic": Array of kinetic energy values
+        - "potential": Array of potential energy values
+        - "conserved": Array of total conserved energy values
+
+    Returns:
+    None
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
+    time = data["time"]
+
+    # Plot individual energy components
+    ax.plot(time, data["kinetic"], c="b", label="Kinetic", lw=2)
+    ax.plot(time, data["potential"], c="r", label="Potential", lw=2)
+    ax.plot(time, data["conserved"], c="k", label="Total", lw=2)
+
+    ax.legend(loc="upper left", ncols=1)
+    ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
+    plt.show()
+    return None
+
+
 def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float]) -> None:
     """
     Plot a series of energy contour plots from FES arrays.

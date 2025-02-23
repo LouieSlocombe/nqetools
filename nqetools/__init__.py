@@ -66,6 +66,7 @@ from .pathway import (get_neb_path,
 
 from .plotting import (plot_time_potential_bias,
                        plot_time_temperature,
+                       plot_energy_conservation,
                        plot_energy_contour_series,
                        plot_energy_contour_compare,
                        plot_energy_sep,
