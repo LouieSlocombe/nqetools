@@ -329,3 +329,31 @@ def show_atoms(atoms):
         fig, ax = plt.subplots()
         plot_atoms(atoms, ax)
         plt.show()
+
+
+def plot_arrhenius(temperatures: list[float], rates: list[float]) -> None:
+    """
+    Create an Arrhenius plot of ln(k) vs 1/T.
+
+    Parameters:
+    temperatures (list[float]): List of temperatures in Kelvin.
+    rates (list[float]): List of rate constants corresponding to temperatures.
+
+    Returns:
+    None
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
+    # Convert temperatures to 1/T (in K^-1)
+    inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
+
+    # Calculate ln(k)
+    ln_rates = np.log(rates)
+
+    # Plot data
+    ax.plot(inv_temp, ln_rates, 'o-', c='black', lw=2)
+
+    # Labels and formatting
+    ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
+    plt.show()
+    return None
