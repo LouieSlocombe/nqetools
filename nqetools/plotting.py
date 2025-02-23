@@ -360,6 +360,16 @@ def plot_arrhenius(temperatures: list[float], rates: list[float]) -> None:
 
 
 def plot_kappa_temperature(temperatures: list[float], kappa: list[float]) -> None:
+    """
+    Plot the temperature dependence of the kappa value.
+
+    Parameters:
+    temperatures (list[float]): List of temperatures in Kelvin.
+    kappa (list[float]): List of kappa values corresponding to the temperatures.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
@@ -375,6 +385,16 @@ def plot_kappa_temperature(temperatures: list[float], kappa: list[float]) -> Non
 
 
 def plot_kie_temperature(temperatures: list[float], kie: list[float]) -> None:
+    """
+    Plot the temperature dependence of the kinetic isotope effect (KIE).
+
+    Parameters:
+    temperatures (list[float]): List of temperatures in Kelvin.
+    kie (list[float]): List of KIE values corresponding to the temperatures.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
@@ -390,7 +410,18 @@ def plot_kie_temperature(temperatures: list[float], kie: list[float]) -> None:
 
 
 def plot_bead_convergence(n_beads: list[float], kappa: list[float]) -> None:
+    """
+    Plot the convergence of kappa values with respect to the number of beads.
+
+    Parameters:
+    n_beads (list[float]): List of the number of beads.
+    kappa (list[float]): List of kappa values corresponding to the number of beads.
+
+    Returns:
+    None
+    """
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
     # Plot data
     ax.plot(n_beads, kappa, 'o-', c='black', lw=2)
 
