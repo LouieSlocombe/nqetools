@@ -1,4 +1,3 @@
-import os
 import subprocess
 import time
 
@@ -9,7 +8,8 @@ from .io import (write_xml,
                  copy_hess,
                  get_final_hess,
                  write_xyz,
-                 read_ipi_xyz)
+                 read_ipi_xyz,
+                 remove_directory)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
@@ -207,6 +207,9 @@ def run_md(directory,
     if driver_dict is None:
         driver_dict = {}
 
+    # Clean the directory if it exists
+    remove_directory(directory)
+
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
@@ -351,7 +354,8 @@ def run_plumed_md(directory,
                   xml_in=None):
     # Update the plumed dictionary
     if plumed_dict is None:
-        plumed_dict = {'directory': directory, 'temperature': temperature}
+        plumed_dict = {'directory': directory,
+                       'temperature': temperature}
     else:
         # Add the directory and temperature to the plumed dictionary
         plumed_dict['directory'] = directory
@@ -360,6 +364,9 @@ def run_plumed_md(directory,
     # Update the driver dictionary
     if driver_dict is None:
         driver_dict = {}
+
+    # Clean the directory if it exists
+    remove_directory(directory)
 
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
@@ -482,6 +489,9 @@ def run_optimise(directory,
     if driver_dict is None:
         driver_dict = {}
 
+    # Clean the directory if it exists
+    remove_directory(directory)
+
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
@@ -578,6 +588,9 @@ def run_phonons(directory,
                 xml_in=None):
     if driver_dict is None:
         driver_dict = {}
+
+    # Clean the directory if it exists
+    remove_directory(directory)
 
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
@@ -679,6 +692,9 @@ def run_ts(directory,
            xml_in=None):
     if driver_dict is None:
         driver_dict = {}
+
+    # Clean the directory if it exists
+    remove_directory(directory)
 
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
@@ -799,6 +815,9 @@ def run_inst(directory,
              xml_in=None):
     if driver_dict is None:
         driver_dict = {}
+
+    # Clean the directory if it exists
+    remove_directory(directory)
 
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
