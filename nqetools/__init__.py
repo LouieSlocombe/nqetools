@@ -49,7 +49,8 @@ from .io import (read_ipi_xyz,
                  copy_xyz,
                  copy_hess,
                  find_nqetools_path,
-                 search_fes_files)
+                 search_fes_files,
+                 load_fes_data)
 
 from .pathway import (get_neb_path,
                       stitch_path,

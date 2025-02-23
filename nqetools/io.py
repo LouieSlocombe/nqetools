@@ -270,3 +270,32 @@ def search_fes_files(target_directory: str) -> list[str]:
             matching_files.append(filename)
 
     return matching_files
+
+
+def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
+    """
+    Find FES files in the directory and load their data into numpy arrays.
+
+    Parameters:
+    directory (str): Directory containing the FES files.
+    bins (int): Number of bins for reshaping the data.
+
+    Returns:
+    list[np.ndarray]: List of numpy arrays, each containing the transformed FES data.
+    """
+    # Search for FES files in the specified directory
+    fes_files = search_fes_files(directory)
+    fes_arrays = []
+    bins += 1  # Increment bins by 1
+
+    # Iterate over the sorted list of FES files
+    for file in sorted(fes_files):
+        # Load the data from the file, ignoring lines starting with '#'
+        data = np.loadtxt(os.path.join(directory, file), comments="#")[:, :3]
+        # Transform the data by reshaping and scaling
+        transformed_data = np.array([1, 1, 1])[:, np.newaxis, np.newaxis] * data.T.reshape(3, bins, bins)
+        # Append the transformed data to the list
+        fes_arrays.append(transformed_data)
+
+    # Return the list of transformed data arrays
+    return fes_arrays
