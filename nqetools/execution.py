@@ -61,7 +61,7 @@ def run_ipi(directory,
     return None
 
 
-def run_plumed_hills(directory, bins=100, stride=100, cv=[[0.21, 0.31], [-1, 1]]):
+def run_plumed_hills(directory, bins=100, stride=100, cv=None):
     """
     Generalized function to run plumed sum_hills with multiple collective variables (CVs).
 
@@ -69,24 +69,31 @@ def run_plumed_hills(directory, bins=100, stride=100, cv=[[0.21, 0.31], [-1, 1]]
     directory (str): The directory containing the HILLS file.
     bins (int, optional): Number of bins for the histogram. Default is 100.
     stride (int, optional): Stride for the sum_hills command. Default is 100.
-    cv (list of list, optional): List of CV ranges. Each CV range is a list of two values [min, max]. Default is [[0.21, 0.31], [-1, 1]].
+    cv (list of list, optional): List of CV ranges. Each CV range is a list of two values [min, max].
 
     Returns:
     None
     """
+    if cv is None:
+        cv = [[0.21, 0.31], [-1, 1]]
+
+    # Convert the CV list to a string
     min_values = ",".join(str(c[0]) for c in cv)
     max_values = ",".join(str(c[1]) for c in cv)
     bins_values = ",".join([str(bins)] * len(cv))
 
+    # Get the paths for the HILLS and FES files
     hills_str = os.path.join(directory, 'HILLS')
     fes_str = os.path.join(directory, 'FES')
 
+    # Prepare the sum_hills command
     sum_hills_str = (
         f"plumed sum_hills --hills {hills_str} "
         f"--min {min_values} --max {max_values} --bin {bins_values} "
         f"--outfile {fes_str} --stride {stride} --mintozero"
     )
 
+    # Run the sum_hills command
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
         subprocess.run(sum_hills_str.split(), stdin=file, text=True)
 
