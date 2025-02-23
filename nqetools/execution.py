@@ -166,13 +166,16 @@ def prep_md_xml(directory,
     if thermostat is not None:
         add_thermostat_section(root, thermostat=thermostat)
 
-    # If the md_type has PIMD update
-    if 'PIMD' in md_type:
+    # If the number of beads is greater than 1 running PIMD
+    if n_beads > 1:
         # Add in the centroid
         add_trajectory_centroid(root)
 
         # Update the number of beads
         update_nbeads(root, n_beads)
+
+        # Update the properties to be tracked
+        append_properties(root, ['ensemble_bias{electronvolt}'])
 
     # Update the stride
     update_stride(root, stride)
@@ -309,8 +312,8 @@ def prep_plumed_xml(directory,
     if thermostat is not None:
         add_thermostat_section(root, thermostat=thermostat)
 
-    # If the md_type has PIMD update
-    if 'PIMD' in md_type:
+    # If the number of beads is greater than 1 running PIMD
+    if n_beads > 1:
         # Add in the centroid
         add_trajectory_centroid(root)
 
