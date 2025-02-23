@@ -75,7 +75,8 @@ from .plotting import (plot_time_potential_bias,
                        show_atoms,
                        plot_arrhenius,
                        plot_kappa_temperature,
-                       plot_kie_temperature)
+                       plot_kie_temperature,
+                       plot_bead_convergence)
 
 from .plumed import (prep_plumed,
                      write_plumed_mtd_pos,

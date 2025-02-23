@@ -387,3 +387,14 @@ def plot_kie_temperature(temperatures: list[float], kie: list[float]) -> None:
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"KIE")
     plt.show()
     return None
+
+
+def plot_bead_convergence(n_beads: list[float], kappa: list[float]) -> None:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+    # Plot data
+    ax.plot(n_beads, kappa, 'o-', c='black', lw=2)
+
+    # Labels and formatting
+    ax_plot(fig, ax, r"Number of Beads", r"$\kappa$")
+    plt.show()
+    return None
