@@ -26,24 +26,14 @@ def plot_time_potential_bias(data):
     """
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
-    ax.plot(
-        data["time"],
-        data["potential"],
-        "r",
-        label="potential",
-    )
-    ax.plot(
-        data["time"],
-        data["ensemble_bias"],
-        "b",
-        label="bias",
-    )
+    time = data["time"]
 
-    ax.set_xlabel(r"$t$ / ps")
-    ax.set_ylabel(r"energy / eV")
+    ax.plot(time, data["potential"], c="r", label="potential", lw=2)
+    ax.plot(time, data["ensemble_bias"], c="b", label="bias", lw=2)
+
     ax.legend(loc="upper left", ncols=1)
+    ax_plot(fig, ax, r"$t$, ps", r"Energy, eV")
     plt.show()
-
     return None
 
 
@@ -63,16 +53,13 @@ def plot_time_temperature(data, window_size=100):
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
     min_val = int(window_size / 2)
     max_val = -int(window_size / 2 - 1)
-    ax.plot(
-        data["time"][min_val:max_val],
-        moving_average(data["temperature"], window_size),
-        "r",
-        label=r"$T$",
-    )
 
-    ax.set_xlabel(r"$t$ / ps")
-    ax.set_ylabel(r"temperature / K")
-    ax.legend(loc="upper left", ncols=2)
+    time = data["time"][min_val:max_val]
+    ave_temperature = moving_average(data["temperature"], window_size)
+
+    ax.plot(time, ave_temperature, c="r", lw=2)
+
+    ax_plot(fig, ax, r"$t$, ps", r"Temperature, K")
     plt.show()
     return None
 
@@ -96,7 +83,7 @@ def plot_energy_contour_series(xyz_1, xyz_2, xyz_3):
     cf_1 = ax[0].contourf(*xyz_1)
     cf_2 = ax[1].contourf(*xyz_2)
     cf_3 = ax[2].contourf(*xyz_3)
-    fig.colorbar(cf_3, ax=ax, orientation="vertical", label=r"$F$ / eV")
+    fig.colorbar(cf_3, ax=ax, orientation="vertical", label=r"$F$, eV")
     # Set the y-axis label
     ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
     # Set the x-axis label
