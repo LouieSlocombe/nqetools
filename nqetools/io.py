@@ -250,3 +250,23 @@ def find_nqetools_path():
     if not spec:
         raise ImportError("nqetools package not found")
     return os.path.dirname(spec.origin)
+
+
+def search_fes_files(target_directory: str) -> list[str]:
+    """
+    Searches for files in the target directory with names matching the pattern 'FES*', where '*' is an integer.
+
+    Parameters:
+    target_directory (str): The directory to search in.
+
+    Returns:
+    list[str]: A list of matching file names.
+    """
+    pattern = re.compile(r'^FES\d+$')
+    matching_files = []
+
+    for filename in os.listdir(target_directory):
+        if pattern.match(filename):
+            matching_files.append(filename)
+
+    return matching_files
