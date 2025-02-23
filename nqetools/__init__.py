@@ -61,7 +61,7 @@ from .pathway import (get_neb_path,
                       optimise_irc,
                       get_vibrations)
 
-from .plotting import (plot_time_energy,
+from .plotting import (plot_time_potential_bias,
                        plot_time_temperature,
                        plot_energy_contour_series,
                        plot_energy_contour_compare,
@@ -128,7 +128,5 @@ from .xml_parse import (update_properties,
                         add_thermostat_section,
                         update_dynamics_splitting,
                         update_motion_fixcom)
-
-from .plumed_analysis import (plot_time_potential_bias, plot_time_temperature)
 
 __version__ = "0.1.0"

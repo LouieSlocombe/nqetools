@@ -10,30 +10,31 @@ from .pathway import get_neb_path
 # Setting plot aesthetics for better visibility
 plt.rcParams['axes.linewidth'] = 2.0
 
-def plot_time_energy(output_data):
+
+def plot_time_potential_bias(data):
     """
-    Plot the potential and ensemble bias energy over time.
+    Plots the potential and ensemble bias over time.
 
     Parameters:
-    output_data (dict): Dictionary containing the time, potential, and ensemble bias energy data.
+    data (dict): A dictionary containing the time series data with keys:
+        - "time": A list or array of time points.
+        - "potential": A list or array of potential energy values.
+        - "ensemble_bias": A list or array of ensemble bias values.
 
     Returns:
     None
     """
-    # convert time to ps and energy to eV
-    time_conv = 2.4188843e-05
-    energy_conv = 27.211386
-    time = time_conv * output_data["time"]
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
     ax.plot(
-        time,
-        energy_conv * output_data["potential"],
+        data["time"],
+        data["potential"],
         "r",
         label="potential",
     )
     ax.plot(
-        time,
-        energy_conv * output_data["ensemble_bias"],
+        data["time"],
+        data["ensemble_bias"],
         "b",
         label="bias",
     )
@@ -43,44 +44,37 @@ def plot_time_energy(output_data):
     ax.legend(loc="upper left", ncols=1)
     plt.show()
 
+    return None
 
-def plot_time_temperature(output_data):
+
+def plot_time_temperature(data, window_size=100):
     """
-    Plot the temperature over time for different components.
+    Plots the temperature over time with a moving average.
 
     Parameters:
-    output_data (dict): Dictionary containing the time and temperature data for different components.
+    data (dict): A dictionary containing the time series data with keys:
+        - "time": A list or array of time points.
+        - "temperature": A list or array of temperature values.
+    window_size (int, optional): The window size for the moving average. Default is 100.
 
     Returns:
     None
     """
-    # convert time to ps
-    time_conv = 2.4188843e-05
-    time = time_conv * output_data["time"]
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+    min_val = int(window_size / 2)
+    max_val = -int(window_size / 2 - 1)
     ax.plot(
-        time[50:-49],
-        moving_average(output_data["temperature(O)"], 100),
+        data["time"][min_val:max_val],
+        moving_average(data["temperature"], window_size),
         "r",
-        label=r"$T_\mathrm{O}$",
-    )
-    ax.plot(
-        time[50:-49],
-        moving_average(output_data["temperature(H)"], 100),
-        "gray",
-        label=r"$T_\mathrm{H}$",
-    )
-    ax.plot(
-        time[50:-49],
-        moving_average(output_data["temperature"], 100),
-        "b",
-        label="T",
+        label=r"$T$",
     )
 
     ax.set_xlabel(r"$t$ / ps")
     ax.set_ylabel(r"temperature / K")
     ax.legend(loc="upper left", ncols=2)
     plt.show()
+    return None
 
 
 def plot_energy_contour_series(xyz_1, xyz_2, xyz_3):
