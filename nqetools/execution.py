@@ -175,7 +175,10 @@ def prep_md_xml(directory,
         update_nbeads(root, n_beads)
 
         # Update the properties to be tracked
-        append_properties(root, ['ensemble_bias{electronvolt}'])
+        append_properties(root, ['kinetic_cv{electronvolt}', 'pressure_cv{megapascal}'])
+    else:
+        # Update the properties to be tracked
+        append_properties(root, ['kinetic_md{electronvolt}', 'pressure_md{megapascal}'])
 
     # Update the stride
     update_stride(root, stride)
@@ -271,6 +274,7 @@ def prep_plumed_xml(directory,
 
     # Add in the bias to the properties to be tracked
     append_properties(root, ['ensemble_bias{electronvolt}'])
+
     # If properties is not None, add them to the properties to be tracked
     if properties is not None:
         append_properties(root, properties)
@@ -319,6 +323,12 @@ def prep_plumed_xml(directory,
 
         # Update the number of beads
         update_nbeads(root, n_beads)
+
+        # Update the properties to be tracked
+        append_properties(root, ['kinetic_cv{electronvolt}', 'pressure_cv{megapascal}'])
+    else:
+        # Update the properties to be tracked
+        append_properties(root, ['kinetic_md{electronvolt}', 'pressure_md{megapascal}'])
 
     # Add the plumed input file
     add_plumed_xml(root, plumed_extras=plumed_extras)
