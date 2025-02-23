@@ -74,7 +74,8 @@ from .plotting import (plot_time_potential_bias,
                        plot_neb,
                        show_atoms,
                        plot_arrhenius,
-                       plot_kappa_temperature)
+                       plot_kappa_temperature,
+                       plot_kie_temperature)
 
 from .plumed import (prep_plumed,
                      write_plumed_mtd_pos,
