@@ -9,31 +9,48 @@ import ase.io
 import numpy as np
 from ipi.utils.io import read_file
 from ase.geometry.cell import cellpar_to_cell
+from .conversions import convert_atom_list_bohr_to_angstrom
 
 
-def read_ipi_xyz(filename):
+def read_ipi_xyz(filename, convert_units=True):
     """
     Reads a file in xyz i-PI format and returns it in ASE format.
 
     Parameters:
     filename (str): The path to the xyz file in i-PI format.
+    convert_units (bool): If True, converts coordinates and cell from Bohr to Angstrom.
 
     Returns:
     list: A list of ASE Atoms objects representing the frames in the file.
     """
 
+    # Open the file for reading
     file_handle = open(filename, "r")
     frames = []
+
+    # Loop to read each frame in the file
     while True:
         try:
+            # Read a frame from the file
             ret = read_file("xyz", file_handle)
+            # Append the frame as an ASE Atoms object to the frames list
             frames.append(ase.Atoms(ret["atoms"].names,
                                     positions=ret["atoms"].q.reshape((-1, 3)),
                                     cell=ret["cell"].h.T, pbc=True))
         except EOFError:
+            # Break the loop if end of file is reached
             break
         except:
+            # Raise any other exceptions encountered
             raise
+
+    # Close the file handle
+    file_handle.close()
+
+    # Convert units from Bohr to Angstrom if requested
+    if convert_units:
+        frames = convert_atom_list_bohr_to_angstrom(frames)
+
     return frames
 
 
