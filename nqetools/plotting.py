@@ -71,7 +71,6 @@ def plot_energy_conservation(data: dict) -> None:
     Parameters:
     data (dict): A dictionary containing time series data with keys:
         - "time": Array of time points in picoseconds
-        - "kinetic": Array of kinetic energy values
         - "potential": Array of potential energy values
         - "conserved": Array of total conserved energy values
 
@@ -83,9 +82,8 @@ def plot_energy_conservation(data: dict) -> None:
     time = data["time"]
 
     # Plot individual energy components
-    ax.plot(time, data["kinetic"], c="b", label="Kinetic", lw=2)
-    ax.plot(time, data["potential"], c="r", label="Potential", lw=2)
-    ax.plot(time, data["conserved"], c="k", label="Total", lw=2)
+    ax.plot(time, data["potential"], c="b", label="Potential", lw=2)
+    ax.plot(time, data["conserved"], c="r", label="Total", lw=2)
 
     ax.legend(loc="upper left", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
