@@ -65,7 +65,8 @@ from .pathway import (get_neb_path,
                       optimise_irc,
                       get_vibrations)
 
-from .plotting import (plot_time_potential_bias,
+from .plotting import (plot_step_energy,
+                       plot_time_potential_bias,
                        plot_time_temperature,
                        plot_energy_conservation,
                        plot_energy_contour_series,

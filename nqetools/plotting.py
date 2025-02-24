@@ -10,6 +10,29 @@ from .pathway import get_neb_path
 # Setting plot aesthetics for better visibility
 plt.rcParams['axes.linewidth'] = 2.0
 
+def plot_step_energy(data):
+    """
+    Plots the potential and ensemble bias over time.
+
+    Parameters:
+    data (dict): A dictionary containing the time series data with keys:
+        - "time": A list or array of time points.
+        - "potential": A list or array of potential energy values.
+        - "ensemble_bias": A list or array of ensemble bias values.
+
+    Returns:
+    None
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
+    step = data["step"]
+
+    ax.plot(step, data["potential"], c="r", label="potential", lw=2)
+    # set y scale to log
+    ax.set_yscale("log")
+    ax_plot(fig, ax, r"Optimiser step", r"Energy, eV")
+    plt.show()
+    return None
 
 def plot_time_potential_bias(data):
     """
