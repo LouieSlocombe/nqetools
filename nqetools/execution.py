@@ -230,7 +230,10 @@ def run_md(directory,
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
     # Load the structure
-    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
+    if n_beads > 1:
+        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
+    else:
+        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     return atoms_out
 
 
@@ -389,7 +392,10 @@ def run_plumed_md(directory,
     run_ipi(directory, server, driver, outfile + ".out", n=n_beads)
 
     # Load the structure
-    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
+    if n_beads > 1:
+        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
+    else:
+        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     return atoms_out
 
 
