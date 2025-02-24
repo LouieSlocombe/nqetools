@@ -111,7 +111,7 @@ def prep_md_xml(directory,
                 thermostat=None,
                 md_type="NVT",
                 splitting="baoab",
-                fixcom=False,
+                fix_com=False,
                 stride=10,
                 checkpoint_stride=1000,
                 n_beads=1,
@@ -160,7 +160,7 @@ def prep_md_xml(directory,
     update_dynamics_splitting(root, splitting)
 
     # Update the fixcom
-    update_motion_fixcom(root, fixcom)
+    update_motion_fixcom(root, fix_com)
 
     # Add the thermostat section
     if thermostat is not None:
@@ -204,7 +204,7 @@ def run_md(directory,
            thermostat=None,
            md_type="NVT",
            splitting="baoab",
-           fixcom=False,
+           fix_com=False,
            stride=10,
            checkpoint_stride=1000,
            n_beads=1,
@@ -220,22 +220,10 @@ def run_md(directory,
     os.makedirs(directory, exist_ok=True)
 
     # Prepare the MD xml file
-    prep_md_xml(directory, atoms,
-                outfile=outfile,
-                driver=driver,
-                total_steps=total_steps,
-                deut=deut,
-                temperature=temperature,
-                timestep=timestep,
-                thermostat=thermostat,
-                md_type=md_type,
-                splitting=splitting,
-                fixcom=fixcom,
-                stride=stride,
-                checkpoint_stride=checkpoint_stride,
-                n_beads=n_beads,
-                properties=properties,
-                xml_in=xml_in)
+    prep_md_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
+                temperature=temperature, timestep=timestep, thermostat=thermostat, md_type=md_type, splitting=splitting,
+                fix_com=fix_com, stride=stride, checkpoint_stride=checkpoint_stride, n_beads=n_beads,
+                properties=properties, xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the MD
@@ -357,7 +345,7 @@ def run_plumed_md(directory,
                   thermostat=None,
                   md_type="NVT",
                   splitting="baoab",
-                  fixcom=False,
+                  fix_com=False,
                   stride=10,
                   checkpoint_stride=1000,
                   n_beads=1,
@@ -398,7 +386,7 @@ def run_plumed_md(directory,
                     thermostat=thermostat,
                     md_type=md_type,
                     splitting=splitting,
-                    fixcom=fixcom,
+                    fixcom=fix_com,
                     stride=stride,
                     checkpoint_stride=checkpoint_stride,
                     n_beads=n_beads,

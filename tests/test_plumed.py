@@ -35,7 +35,7 @@ def test_plumed_mtd_pos_pimd():
                                   driver='ase-mace',
                                   md_type="NVT-PIMD",
                                   n_beads=8,
-                                  plumed_type="mtd-pos", )
+                                  plumed_type="mtd-pos")
     pass
 
 
