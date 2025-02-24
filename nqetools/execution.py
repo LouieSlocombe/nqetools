@@ -105,7 +105,7 @@ def prep_md_xml(directory,
                 outfile="md",
                 driver="ase-mace",
                 total_steps=1000,
-                deut=False,
+                deuterate=False,
                 temperature=300.0,
                 timestep=1,
                 thermostat=None,
@@ -139,7 +139,7 @@ def prep_md_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, f_deut=deut)
+    update_mass(root, atoms, f_deut=deuterate)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -198,7 +198,7 @@ def run_md(directory,
            driver="ase-mace",
            driver_dict=None,
            total_steps=1000,
-           deut=False,
+           deuterate=False,
            temperature=300.0,
            timestep=1,
            thermostat=None,
@@ -220,7 +220,7 @@ def run_md(directory,
     os.makedirs(directory, exist_ok=True)
 
     # Prepare the MD xml file
-    prep_md_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deut=deut,
+    prep_md_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
                 temperature=temperature, timestep=timestep, thermostat=thermostat, md_type=md_type, splitting=splitting,
                 fix_com=fix_com, stride=stride, checkpoint_stride=checkpoint_stride, n_beads=n_beads,
                 properties=properties, xml_in=xml_in)
@@ -239,13 +239,13 @@ def prep_plumed_xml(directory,
                     outfile="md",
                     driver="ase-mace",
                     total_steps=1000,
-                    deut=False,
+                    deuterate=False,
                     temperature=300.0,
                     timestep=1.0,
                     thermostat=None,
                     md_type="NVT",
                     splitting="baoab",
-                    fixcom=False,
+                    fix_com=False,
                     stride=10,
                     checkpoint_stride=1000,
                     n_beads=1,
@@ -277,7 +277,7 @@ def prep_plumed_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, f_deut=deut)
+    update_mass(root, atoms, f_deut=deuterate)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -298,7 +298,7 @@ def prep_plumed_xml(directory,
     update_dynamics_splitting(root, splitting)
 
     # Update the fixcom
-    update_motion_fixcom(root, fixcom)
+    update_motion_fixcom(root, fix_com)
 
     # Add the thermostat section
     if thermostat is not None:
@@ -339,7 +339,7 @@ def run_plumed_md(directory,
                   driver="ase-mace",
                   driver_dict=None,
                   total_steps=1000,
-                  deut=False,
+                  deuterate=False,
                   temperature=300.0,
                   timestep=1.0,
                   thermostat=None,
@@ -376,23 +376,10 @@ def run_plumed_md(directory,
     plumed_extras = prep_plumed(atoms, plumed_type, plumed_args)
 
     # Prepare the MD xml file
-    prep_plumed_xml(directory, atoms,
-                    outfile=outfile,
-                    driver=driver,
-                    total_steps=total_steps,
-                    deut=deut,
-                    temperature=temperature,
-                    timestep=timestep,
-                    thermostat=thermostat,
-                    md_type=md_type,
-                    splitting=splitting,
-                    fixcom=fix_com,
-                    stride=stride,
-                    checkpoint_stride=checkpoint_stride,
-                    n_beads=n_beads,
-                    plumed_extras=plumed_extras,
-                    properties=properties,
-                    xml_in=xml_in)
+    prep_plumed_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
+                    temperature=temperature, timestep=timestep, thermostat=thermostat, md_type=md_type,
+                    splitting=splitting, fix_com=fix_com, stride=stride, checkpoint_stride=checkpoint_stride,
+                    n_beads=n_beads, plumed_extras=plumed_extras, properties=properties, xml_in=xml_in)
 
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
@@ -411,7 +398,7 @@ def prep_optimise_xml(directory,
                       outfile="min",
                       driver="ase-mace",
                       total_steps=100,
-                      deut=False,
+                      deuterate=False,
                       optimizer="lbfgs",
                       tol_energy=1.0e-4,
                       tol_force=1.0e-4,
@@ -442,7 +429,7 @@ def prep_optimise_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, f_deut=deut)
+    update_mass(root, atoms, f_deut=deuterate)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -477,7 +464,7 @@ def run_optimise(directory,
                  driver="ase-mace",
                  driver_dict=None,
                  total_steps=100,
-                 deut=False,
+                 deuterate=False,
                  optimizer="lbfgs",
                  tol_energy=1.0e-4,
                  tol_force=1.0e-4,
@@ -496,19 +483,9 @@ def run_optimise(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
-    prep_optimise_xml(directory, atoms,
-                      outfile=outfile,
-                      driver=driver,
-                      total_steps=total_steps,
-                      deut=deut,
-                      optimizer=optimizer,
-                      tol_energy=tol_energy,
-                      tol_force=tol_force,
-                      tol_position=tol_position,
-                      stride=stride,
-                      checkpoint_stride=checkpoint_stride,
-                      properties=properties,
-                      xml_in=xml_in)
+    prep_optimise_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
+                      optimizer=optimizer, tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position,
+                      stride=stride, checkpoint_stride=checkpoint_stride, properties=properties, xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
 
@@ -525,7 +502,7 @@ def prep_phonons_xml(directory,
                      outfile="phonon",
                      driver="ase-mace",
                      total_steps=1000,
-                     deut=False,
+                     deuterate=False,
                      stride=1,
                      checkpoint_stride=1000,
                      properties=None,
@@ -552,7 +529,7 @@ def prep_phonons_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, f_deut=deut)
+    update_mass(root, atoms, f_deut=deuterate)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -582,7 +559,7 @@ def run_phonons(directory,
                 driver="ase-mace",
                 driver_dict=None,
                 total_steps=1000,
-                deut=False,
+                deuterate=False,
                 stride=1,
                 checkpoint_stride=1000,
                 properties=None,
@@ -601,15 +578,8 @@ def run_phonons(directory,
     # Prepare the phonon xyz file
     copy_xyz(get_final_xyz(dir_react_min, sub=f"{outfile_min}*"), directory)
     # Prepare the phonon xml file
-    prep_phonons_xml(directory, atoms,
-                     outfile=outfile,
-                     driver=driver,
-                     total_steps=total_steps,
-                     deut=deut,
-                     stride=stride,
-                     checkpoint_stride=checkpoint_stride,
-                     properties=properties,
-                     xml_in=xml_in)
+    prep_phonons_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
+                     stride=stride, checkpoint_stride=checkpoint_stride, properties=properties, xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the phonons
@@ -621,7 +591,7 @@ def prep_ts_xml(directory,
                 outfile="ts",
                 driver="ase-mace",
                 total_steps=1000,
-                deut=False,
+                deuterate=False,
                 tol_energy=5.0e-6,
                 tol_force=5.0e-6,
                 tol_position=1.0e-6,
@@ -651,7 +621,7 @@ def prep_ts_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, f_deut=deut)
+    update_mass(root, atoms, f_deut=deuterate)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -683,7 +653,7 @@ def run_ts(directory,
            driver="ase-mace",
            driver_dict=None,
            total_steps=1000,
-           deut=False,
+           deuterate=False,
            tol_energy=5.0e-6,
            tol_force=5.0e-6,
            tol_position=1.0e-6,
@@ -701,18 +671,9 @@ def run_ts(directory,
     os.makedirs(directory, exist_ok=True)
 
     # Prepare the ts xml file
-    prep_ts_xml(directory, atoms,
-                outfile=outfile,
-                driver=driver,
-                total_steps=total_steps,
-                deut=deut,
-                tol_energy=tol_energy,
-                tol_force=tol_force,
-                tol_position=tol_position,
-                stride=stride,
-                checkpoint_stride=checkpoint_stride,
-                properties=properties,
-                xml_in=xml_in)
+    prep_ts_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
+                tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position, stride=stride,
+                checkpoint_stride=checkpoint_stride, properties=properties, xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the ts
@@ -724,7 +685,7 @@ def prep_inst_xml(directory,
                   outfile="inst",
                   driver="ase-mace",
                   total_steps=1000,
-                  deut=False,
+                  deuterate=False,
                   n_beads=4,
                   temperature=300.0,
                   tol_energy=5.0e-6,
@@ -760,7 +721,7 @@ def prep_inst_xml(directory,
     update_cell(root, atoms)
 
     # Fix the masses
-    update_mass(root, atoms, f_deut=deut)
+    update_mass(root, atoms, f_deut=deuterate)
 
     # Change the driver ff
     update_driver(root, atoms, driver)
@@ -804,7 +765,7 @@ def run_inst(directory,
              driver="ase-mace",
              driver_dict=None,
              total_steps=1000,
-             deut=False,
+             deuterate=False,
              n_beads=4,
              temperature=300.0,
              tol_energy=5.0e-6,
@@ -828,19 +789,9 @@ def run_inst(directory,
     copy_hess(get_final_hess(directory_ts), directory)
 
     # Prepare the instanton calculation
-    prep_inst_xml(directory, atoms,
-                  outfile=outfile,
-                  driver=driver,
-                  total_steps=total_steps,
-                  deut=deut,
-                  n_beads=n_beads,
-                  temperature=temperature,
-                  tol_energy=tol_energy,
-                  tol_force=tol_force,
-                  tol_position=tol_position,
-                  stride=stride,
-                  checkpoint_stride=checkpoint_stride,
-                  properties=properties,
+    prep_inst_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
+                  n_beads=n_beads, temperature=temperature, tol_energy=tol_energy, tol_force=tol_force,
+                  tol_position=tol_position, stride=stride, checkpoint_stride=checkpoint_stride, properties=properties,
                   xml_in=xml_in)
 
     # Prepare the driver

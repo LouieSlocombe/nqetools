@@ -13,11 +13,7 @@ def test_plumed_mtd_pos():
     directory = "mace_md"
     # If the directory exists, remove it
     nqe.remove_directory(directory)
-    atoms_out = nqe.run_plumed_md(directory,
-                                  atoms,
-                                  driver='ase-mace',
-                                  md_type="NVT",
-                                  plumed_type="mtd-pos")
+    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT", plumed_type="mtd-pos")
     pass
 
 
@@ -30,11 +26,7 @@ def test_plumed_mtd_pos_pimd():
     directory = "mace_md"
     # If the directory exists, remove it
     nqe.remove_directory(directory)
-    atoms_out = nqe.run_plumed_md(directory,
-                                  atoms,
-                                  driver='ase-mace',
-                                  md_type="NVT-PIMD",
-                                  n_beads=8,
+    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT-PIMD", n_beads=8,
                                   plumed_type="mtd-pos")
     pass
 
@@ -49,11 +41,7 @@ def test_plumed_opes_pos():
     directory = "mace_md"
     # If the directory exists, remove it
     nqe.remove_directory(directory)
-    atoms_out = nqe.run_plumed_md(directory,
-                                  atoms,
-                                  driver='ase-mace',
-                                  md_type="NVT",
-                                  plumed_type="opes-pos")
+    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT", plumed_type="opes-pos")
     pass
 
 
@@ -67,11 +55,7 @@ def test_plumed_mtd_dist():
     directory = "mace_md"
     # If the directory exists, remove it
     nqe.remove_directory(directory)
-    atoms_out = nqe.run_plumed_md(directory,
-                                  atoms,
-                                  driver='ase-mace',
-                                  md_type="NVT",
-                                  plumed_type="mtd-dist")
+    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT", plumed_type="mtd-dist")
     pass
 
 
@@ -85,9 +69,5 @@ def test_plumed_opes_dist():
     directory = "mace_md"
     # If the directory exists, remove it
     nqe.remove_directory(directory)
-    atoms_out = nqe.run_plumed_md(directory,
-                                  atoms,
-                                  driver='ase-mace',
-                                  md_type="NVT",
-                                  plumed_type="opes-dist")
+    atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', md_type="NVT", plumed_type="opes-dist")
     pass
