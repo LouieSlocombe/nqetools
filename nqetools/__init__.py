@@ -39,6 +39,7 @@ from .execution import (run_ipi,
 
 from .io import (read_ipi_xyz,
                  read_ipi_output,
+                 load_xyz_with_cell,
                  write_xml,
                  write_xyz,
                  remove_directory,

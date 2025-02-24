@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import ase.io
 import numpy as np
 from ipi.utils.io import read_file
+from ase.geometry.cell import cellpar_to_cell
 
 
 def read_ipi_xyz(filename):
@@ -74,6 +75,39 @@ def read_ipi_output(filename):
         if columns[c].shape[0] == 1:
             columns[c].shape = columns[c].shape[1]
     return columns
+
+
+def load_xyz_with_cell(filepath: str) -> 'ase.Atoms':
+    """
+    Load an XYZ file and create an ASE Atoms object with cell information from the comment line.
+
+    Parameters:
+    filepath (str): Path to the XYZ file
+
+    Returns:
+    ase.Atoms: ASE Atoms object with cell information
+    """
+    # Read the atoms object from XYZ file
+    atoms = ase.io.read(filepath, format='xyz')
+
+    # Read the file again to get the comment line
+    with open(filepath, 'r') as f:
+        comment = f.readline().strip()
+
+    # Extract cell parameters from comment line
+    if 'CELL(abcABC):' in comment:
+        cell_str = comment.split('CELL(abcABC):')[1].split('cell{')[0]
+        cell_params = [float(x) for x in cell_str.split()]
+
+        # Convert angles to radians for ASE
+        a, b, c = cell_params[0:3]
+        alpha, beta, gamma = np.deg2rad(cell_params[3:6])
+
+        # Set the cell to the atoms object
+        atoms.cell = cellpar_to_cell([a, b, c, alpha, beta, gamma])
+        atoms.pbc = True
+
+    return atoms
 
 
 def write_xml(root, file):
