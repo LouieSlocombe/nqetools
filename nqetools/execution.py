@@ -219,11 +219,28 @@ def run_md(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
     # Prepare the MD xml file
-    prep_md_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                temperature=temperature, timestep=timestep, thermostat=thermostat, md_type=md_type, splitting=splitting,
-                fix_com=fix_com, stride=stride, checkpoint_stride=checkpoint_stride, n_beads=n_beads,
-                properties=properties, xml_in=xml_in)
+    prep_md_xml(directory,
+                atoms,
+                outfile=outfile,
+                driver=driver,
+                total_steps=total_steps,
+                deuterate=deuterate,
+                temperature=temperature,
+                timestep=timestep,
+                thermostat=thermostat,
+                md_type=md_type,
+                splitting=splitting,
+                fix_com=fix_com,
+                stride=stride,
+                checkpoint_stride=checkpoint_stride,
+                n_beads=n_beads,
+                properties=properties,
+                xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the MD
@@ -375,14 +392,32 @@ def run_plumed_md(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
     # Prepare the plumed input file
     plumed_extras = prep_plumed(atoms, plumed_type, plumed_args)
 
     # Prepare the MD xml file
-    prep_plumed_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                    temperature=temperature, timestep=timestep, thermostat=thermostat, md_type=md_type,
-                    splitting=splitting, fix_com=fix_com, stride=stride, checkpoint_stride=checkpoint_stride,
-                    n_beads=n_beads, plumed_extras=plumed_extras, properties=properties, xml_in=xml_in)
+    prep_plumed_xml(directory,
+                    atoms,
+                    outfile=outfile,
+                    driver=driver,
+                    total_steps=total_steps,
+                    deuterate=deuterate,
+                    temperature=temperature,
+                    timestep=timestep,
+                    thermostat=thermostat,
+                    md_type=md_type,
+                    splitting=splitting,
+                    fix_com=fix_com,
+                    stride=stride,
+                    checkpoint_stride=checkpoint_stride,
+                    n_beads=n_beads,
+                    plumed_extras=plumed_extras,
+                    properties=properties,
+                    xml_in=xml_in)
 
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
@@ -489,9 +524,25 @@ def run_optimise(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
-    prep_optimise_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                      optimizer=optimizer, tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position,
-                      stride=stride, checkpoint_stride=checkpoint_stride, properties=properties, xml_in=xml_in)
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
+    # Prepare the minimization xml file
+    prep_optimise_xml(directory,
+                      atoms,
+                      outfile=outfile,
+                      driver=driver,
+                      total_steps=total_steps,
+                      deuterate=deuterate,
+                      optimizer=optimizer,
+                      tol_energy=tol_energy,
+                      tol_force=tol_force,
+                      tol_position=tol_position,
+                      stride=stride,
+                      checkpoint_stride=checkpoint_stride,
+                      properties=properties,
+                      xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
 
@@ -579,13 +630,25 @@ def run_phonons(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
     # Get the directory and the file name
     dir_react_min, outfile_min = os.path.split(min_file_path)
     # Prepare the phonon xyz file
     copy_xyz(get_final_xyz(dir_react_min, sub=f"{outfile_min}*"), directory)
     # Prepare the phonon xml file
-    prep_phonons_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                     stride=stride, checkpoint_stride=checkpoint_stride, properties=properties, xml_in=xml_in)
+    prep_phonons_xml(directory,
+                     atoms,
+                     outfile=outfile,
+                     driver=driver,
+                     total_steps=total_steps,
+                     deuterate=deuterate,
+                     stride=stride,
+                     checkpoint_stride=checkpoint_stride,
+                     properties=properties,
+                     xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the phonons
@@ -676,10 +739,24 @@ def run_ts(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
     # Prepare the ts xml file
-    prep_ts_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                tol_energy=tol_energy, tol_force=tol_force, tol_position=tol_position, stride=stride,
-                checkpoint_stride=checkpoint_stride, properties=properties, xml_in=xml_in)
+    prep_ts_xml(directory,
+                atoms,
+                outfile=outfile,
+                driver=driver,
+                total_steps=total_steps,
+                deuterate=deuterate,
+                tol_energy=tol_energy,
+                tol_force=tol_force,
+                tol_position=tol_position,
+                stride=stride,
+                checkpoint_stride=checkpoint_stride,
+                properties=properties,
+                xml_in=xml_in)
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the ts
@@ -790,14 +867,29 @@ def run_inst(directory,
     # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
     # Copy the files from the ts calculation
     copy_xyz(get_final_xyz(directory_ts), directory)
     copy_hess(get_final_hess(directory_ts), directory)
 
     # Prepare the instanton calculation
-    prep_inst_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                  n_beads=n_beads, temperature=temperature, tol_energy=tol_energy, tol_force=tol_force,
-                  tol_position=tol_position, stride=stride, checkpoint_stride=checkpoint_stride, properties=properties,
+    prep_inst_xml(directory,
+                  atoms,
+                  outfile=outfile,
+                  driver=driver,
+                  total_steps=total_steps,
+                  deuterate=deuterate,
+                  n_beads=n_beads,
+                  temperature=temperature,
+                  tol_energy=tol_energy,
+                  tol_force=tol_force,
+                  tol_position=tol_position,
+                  stride=stride,
+                  checkpoint_stride=checkpoint_stride,
+                  properties=properties,
                   xml_in=xml_in)
 
     # Prepare the driver
