@@ -4,6 +4,7 @@ import time
 from subprocess import Popen
 
 import ase.build
+import numpy as np
 from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.calculators.nwchem import NWChem
@@ -288,3 +289,22 @@ def test_get_ipi_driver():
     driver_path = nqe.get_ipi_driver()
     ref_path = "/home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi/bin/i-pi-driver"
     assert driver_path == ref_path
+
+
+def test_load_xyz_with_cell():
+    print(flush=True)
+    atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
+    target_positions = [[0.54044999, -0.97484999, -0.21658],
+                        [2.92483996, -0.83925199, 0.152397],
+                        [0.18386, -1.25803998, -1.07874999],
+                        [1.74328998, -0.90927799, -0.100395],
+                        [3.29706995, -1.59323998, 0.64725299],
+                        [3.53032995, -0.60813799, -0.57607799],
+                        [0.0423316, -0.19486, 0.092281]]
+    target_cell = [[13.383769816511084, 0.0, 0.0],
+                   [8.195195433157629e-16, 13.383769816511084, 0.0],
+                   [8.195195433157629e-16, 8.195195433157629e-16, 13.383769816511084]]
+    comparison = [np.allclose(a, b) for a, b in zip(atoms.get_cell(), target_cell)]
+    assert all(comparison)
+    comparison = [np.allclose(a, b) for a, b in zip(atoms.get_positions(), target_positions)]
+    assert all(comparison)
