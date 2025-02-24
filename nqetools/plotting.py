@@ -30,7 +30,7 @@ def plot_step_energy(data):
     ax.plot(step, data["potential"], c="r", label="potential", lw=2)
     # set y scale to log
     ax.set_yscale("log")
-    ax_plot(fig, ax, r"Optimiser step", r"Energy, eV")
+    ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
     plt.show()
     return None
 
@@ -55,7 +55,7 @@ def plot_time_potential_bias(data):
     ax.plot(time, data["ensemble_bias"], c="b", label="bias", lw=2)
 
     ax.legend(loc="upper left", ncols=1)
-    ax_plot(fig, ax, r"$t$, ps", r"Energy, eV")
+    ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
     plt.show()
     return None
 
@@ -82,7 +82,7 @@ def plot_time_temperature(data, window_size=100):
 
     ax.plot(time, ave_temperature, c="r", lw=2)
 
-    ax_plot(fig, ax, r"$t$, ps", r"Temperature, K")
+    ax_plot(fig, ax, r"$t$ (ps)", r"Temperature (K)")
     plt.show()
     return None
 
@@ -142,11 +142,11 @@ def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float] 
     for i, xyz in enumerate(fes_arrays):
         cf = ax[i].contourf(xyz[1], xyz[0], xyz[2])
         contours.append(cf)
-        ax[i].set_xlabel(r"$d_\mathrm{OO}$ / Å")
+        ax[i].set_xlabel(r"$d_\mathrm{OO}$  (Å)")
         ax[i].set_title(fr"$t={times[i]}$ ps")
 
     ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
-    fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$, eV")
+    fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
     plt.show()
     return None
 
@@ -170,7 +170,7 @@ def plot_energy_contour_compare(xyz_a, xyz_b):
     cp1 = ax.contour(*xyz_a, colors="b", levels=levels)
     cp2 = ax.contour(*xyz_b, colors="r", levels=levels)
     ax.set_ylabel(r"$\Delta C_\mathrm{H}$")
-    ax.set_xlabel(r"$d_\mathrm{OO}$ / Å")
+    ax.set_xlabel(r"$d_\mathrm{OO}$ (Å)")
     ax.legend(
         handles=[
             plt.Line2D([0], [0], color="b", label="MD"),
@@ -222,7 +222,7 @@ def plot_energy_sep(xyz_a, xyz_b):
     )
     ax.set_ylim(0.08, 0.6)
     ax.legend(ncols=2, loc="upper right", fontsize=9)
-    ax.set_ylabel(r"$F$ / eV")
+    ax.set_ylabel(r"$F$ (eV)")
     ax.set_xlabel(r"$\Delta C_\mathrm{H}$")
     plt.show()
     return None
