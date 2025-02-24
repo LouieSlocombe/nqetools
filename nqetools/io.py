@@ -8,8 +8,7 @@ import xml.etree.ElementTree as ET
 import ase.io
 import numpy as np
 from ipi.utils.io import read_file
-from ase.geometry.cell import cellpar_to_cell
-from .conversions import convert_atom_list_bohr_to_angstrom
+from .conversions import convert_atom_list_bohr_to_angstrom, eV_to_kJpermol
 
 
 def read_ipi_xyz(filename, convert_units=True):
@@ -324,7 +323,7 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
         # Load the data from the file, ignoring lines starting with '#'
         data = np.loadtxt(os.path.join(directory, file), comments="#")[:, :3]
         # Transform the data by reshaping and scaling
-        transformed_data = np.array([1, 1, 1])[:, np.newaxis, np.newaxis] * data.T.reshape(3, bins, bins)
+        transformed_data = np.array([1.0, 1.0, 1.0/eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data.T.reshape(3, bins, bins)
         # Append the transformed data to the list
         fes_arrays.append(transformed_data)
 

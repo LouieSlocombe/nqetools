@@ -140,7 +140,7 @@ def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float] 
 
     contours = []
     for i, xyz in enumerate(fes_arrays):
-        cf = ax[i].contourf(xyz[1], xyz[0], xyz[2])
+        cf = ax[i].contourf(*xyz)
         contours.append(cf)
         ax[i].set_xlabel(r"$d_\mathrm{OO}$  (Å)")
         ax[i].set_title(fr"$t={times[i]}$ ps")
