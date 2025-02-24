@@ -21,7 +21,8 @@ from .conversions import (bohr_to_angstrom,
                           J_to_kJ,
                           avo_num,
                           eV_to_kJpermol,
-                          eVperA2_to_kJpermolpernm2)
+                          eVperA2_to_kJpermolpernm2,
+                          convert_atom_list_bohr_to_angstrom)
 
 from .driver import (write_ase_mace_driver,
                      write_ase_nwchem_driver,
@@ -39,7 +40,6 @@ from .execution import (run_ipi,
 
 from .io import (read_ipi_xyz,
                  read_ipi_output,
-                 load_xyz_with_cell,
                  write_xml,
                  write_xyz,
                  remove_directory,
