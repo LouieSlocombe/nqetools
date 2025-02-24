@@ -8,11 +8,13 @@ def test_zundel_driver():
     print("Testing zundel driver", flush=True)
 
     # Read the molecule
-    atoms = read("../examples/zundel/h5o2+.xyz")
+    atoms = read("data/h5o2+.xyz")
+    atoms.center(vacuum=20.0)
 
     # Make a directory to store everything
     directory = "zundel_opti"
     nqe.run_optimise(directory, atoms, driver='zundel', total_steps=2)
+    nqe.remove_directory(directory)
     pass
 
 
@@ -21,11 +23,14 @@ def test_cbe_driver():
     print("Testing cbe driver", flush=True)
 
     # Read the molecule
-    atoms = read("../examples/ch4hcbe/init.xyz")
+    atoms = read("data/ch4hcbe.xyz")
+    atoms.center(vacuum=20.0)
 
     # Make a directory to store everything
     directory = "cbe_opti"
     nqe.run_optimise(directory, atoms, driver='cbe', total_steps=2)
+    nqe.remove_directory(directory)
+    pass
 
 
 def test_ase_mace_driver():
@@ -49,6 +54,7 @@ def test_ase_mace_driver():
     # Make a directory to store everything
     directory = "mace_opti"
     nqe.run_optimise(directory, atoms, driver='ase-mace', total_steps=2)
+    nqe.remove_directory(directory)
     pass
 
 
@@ -73,6 +79,7 @@ def test_ase_orca_driver():
     # Make a directory to store everything
     directory = "orca_opti"
     nqe.run_optimise(directory, atoms, driver='ase-orca', total_steps=2)
+    nqe.remove_directory(directory)
     pass
 
 
@@ -96,10 +103,10 @@ def test_ase_nwchem_driver():
 
     # Make a directory to store everything
     directory = "nwchem_opti"
-    nqe.remove_directory(directory)
 
     # Run the optimization
     nqe.run_optimise(directory, atoms, driver='ase-nwchem', total_steps=2)
+    nqe.remove_directory(directory)
     pass
 
 
@@ -123,8 +130,8 @@ def test_nwchem_driver():
 
     # Make a directory to store everything
     directory = "nwchem_opti"
-    nqe.remove_directory(directory)
 
     # Run the optimization
     nqe.run_optimise(directory, atoms, driver='nwchem', total_steps=2)
+    nqe.remove_directory(directory)
     pass
