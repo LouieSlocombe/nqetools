@@ -181,3 +181,20 @@ https://github.com/water-ice-group/plumed_tutorial_mace
 https://github.com/lab-cosmo/chemiscope
 
 https://gle4md.org/index.html?page=matrix
+
+# SOL install instructions
+```
+mamba create -n ipi_env python=3.12
+source activate ipi_env
+mamba install -c conda-forge pytest numpy scipy matplotlib pyfftw ase -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip install mace-torch sella chemiscope
+tar -xvzf plumed-2.9.3.tgz
+cd plumed-2.9.3
+./configure --prefix=$HOME/opt
+./configure --enable-modules=opes
+make -j 4
+make install
+export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
+mamba install -c conda-forge plumed py-plumed
+```
