@@ -37,33 +37,17 @@ if __name__ == "__main__":
     # Make sure the directory is empty
     # Run the calculation
     nqe.remove_directory(directory_md)
-    atoms = nqe.run_md(directory_md, atoms,
-                       driver=driver_code,
-                       md_type=md_type,
-                       n_beads=1,
-                       thermostat=thermostat,
-                       timestep=timestep,
-                       total_steps=total_steps,
-                       stride=stride,
-                       temperature=temperature,
-                       )
+    atoms = nqe.run_md(directory_md, atoms, driver=driver_code, total_steps=total_steps, temperature=temperature,
+                       timestep=timestep, thermostat=thermostat, md_type=md_type, stride=stride, n_beads=1)
     view(atoms)
 
     # Run metadynamics
     # Make sure the directory is empty
     # Run the calculation
     nqe.remove_directory(directory_metamd)
-    atoms = nqe.run_plumed_md(directory_metamd, atoms,
-                              driver=driver_code,
-                              md_type=md_type,
-                              n_beads=1,
-                              thermostat=thermostat,
-                              timestep=timestep,
-                              total_steps=total_steps,
-                              stride=stride,
-                              temperature=temperature,
-                              plumed_type=plumed_type,
-                              )
+    atoms = nqe.run_plumed_md(directory_metamd, atoms, driver=driver_code, total_steps=total_steps,
+                              temperature=temperature, timestep=timestep, thermostat=thermostat, md_type=md_type,
+                              stride=stride, n_beads=1, plumed_type=plumed_type)
     view(atoms)
 
 

@@ -72,17 +72,8 @@ nqe.remove_directory(directory)
 #                                            "sigma": 0.1,
 #                                            "pace": 500})
 
-atoms_out = nqe.run_plumed_md(directory,
-                              atoms,
-                              driver='ase-mace',
-                              md_type="NVT-GLE",
-                              plumed_type="opes-diff1",
-                              temperature=temperature,
-                              plumed_dict={"idx1": 1,
-                                           "idx2": 8,
-                                           "idx3": 0,
-                                           "barrier": barrier,
-                                           "pace": 500})
+atoms_out = nqe.run_plumed_md(directory, atoms, driver='ase-mace', temperature=temperature, md_type="NVT-GLE",
+                              plumed_type="opes-diff1")
 view(atoms_out)
 # Analyse the results
 
