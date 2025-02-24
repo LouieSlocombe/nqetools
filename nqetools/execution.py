@@ -372,7 +372,8 @@ def run_md(directory,
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
     else:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    return atoms_out
+    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    return atoms_out, output_data, output_desc
 
 
 def prep_plumed_xml(directory,
@@ -552,7 +553,8 @@ def run_plumed_md(directory,
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
     else:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    return atoms_out
+    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    return atoms_out, output_data, output_desc
 
 
 def prep_phonons_xml(directory,
