@@ -493,7 +493,7 @@ def run_optimise(directory,
     print(f"Running the minimization with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
     # Load the structure
-    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos.xyz"))
+    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     return atoms_out
 
 
