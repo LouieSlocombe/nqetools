@@ -279,20 +279,20 @@ def update_total_steps(root, total_steps):
     return None
 
 
-def update_optimizer(root, optimizer_mode):
+def update_optimiser(root, optimiser_mode):
     """
-    Updates the optimizer element in the XML tree to set the mode attribute.
+    Updates the optimiser element in the XML tree to set the mode attribute.
 
     Parameters:
     root (Element): The root element of the XML tree.
-    optimizer_mode (str): The mode to set in the optimizer element.
+    optimiser_mode (str): The mode to set in the optimiser element.
 
     Returns:
     None
     """
     # Find the optimizer element and update its mode attribute
     for rank in root.iter('optimizer'):
-        rank.set('mode', optimizer_mode)
+        rank.set('mode', optimiser_mode)
     return None
 
 
@@ -668,7 +668,7 @@ def update_dynamics_splitting(root: ET.Element, splitting: str = "baoab") -> Non
     return None
 
 
-def update_motion_fixcom(root: ET.Element, fixcom: bool = False) -> None:
+def update_motion_fix_com(root: ET.Element, fix_com: bool = False) -> None:
     """
     Updates the fixcom field in the motion section of the XML tree.
 
@@ -687,10 +687,10 @@ def update_motion_fixcom(root: ET.Element, fixcom: bool = False) -> None:
         # Find or create fixcom element
         fixcom_elem = motion.find("fixcom")
         if fixcom_elem is not None:
-            fixcom_elem.text = str(fixcom)
+            fixcom_elem.text = str(fix_com)
         else:
             fixcom_elem = ET.SubElement(motion, "fixcom")
-            fixcom_elem.text = str(fixcom)
+            fixcom_elem.text = str(fix_com)
     else:
         raise ValueError("No motion element found in the XML tree.")
     return None

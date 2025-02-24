@@ -123,7 +123,7 @@ from .xml_parse import (update_properties,
                         update_temperature,
                         update_title,
                         update_total_steps,
-                        update_optimizer,
+                        update_optimiser,
                         update_tol,
                         update_open_paths,
                         update_timestep,
@@ -137,6 +137,6 @@ from .xml_parse import (update_properties,
                         add_trajectory_file,
                         add_thermostat_section,
                         update_dynamics_splitting,
-                        update_motion_fixcom)
+                        update_motion_fix_com)
 
 __version__ = "0.1.0"

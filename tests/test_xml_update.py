@@ -291,7 +291,7 @@ def test_update_dynamics_splitting():
 def test_update_motion_fixcom():
     root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the motion fixcom
-    nqe.update_motion_fixcom(root, fixcom=True)
+    nqe.update_motion_fix_com(root, fix_com=True)
 
     # Write to file for visual inspection
     # vis_xml(root)

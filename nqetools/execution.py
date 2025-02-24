@@ -1,6 +1,6 @@
 import subprocess
 import time
-
+import ipi
 from .driver import prep_driver
 from .io import (write_xml,
                  copy_xyz,
@@ -106,7 +106,7 @@ def prep_optimise_xml(directory,
                       driver="ase-mace",
                       total_steps=100,
                       deuterate=False,
-                      optimizer="lbfgs",
+                      optimiser="lbfgs",
                       tol_energy=1.0e-4,
                       tol_force=1.0e-4,
                       tol_position=1.0e-4,
@@ -115,7 +115,7 @@ def prep_optimise_xml(directory,
                       properties=None,
                       xml_in=None,
                       file_in="init.xyz"):
-    # Prepare the minimization xml file
+    # Prepare the minimisation xml file
     if xml_in is not None:
         tree = ET.parse(xml_in)
     else:
@@ -148,7 +148,7 @@ def prep_optimise_xml(directory,
     update_total_steps(root, total_steps)
 
     # Update the optimizer
-    update_optimizer(root, optimizer)
+    update_optimiser(root, optimiser)
 
     # Update the tolerances
     update_tol(root, tol_energy, tol_force, tol_position)
@@ -172,7 +172,7 @@ def run_optimise(directory,
                  driver_dict=None,
                  total_steps=100,
                  deuterate=False,
-                 optimizer="lbfgs",
+                 optimiser="lbfgs",
                  tol_energy=1.0e-4,
                  tol_force=1.0e-4,
                  tol_position=1.0e-4,
@@ -194,14 +194,14 @@ def run_optimise(directory,
     if isinstance(atoms, list):
         atoms = atoms[-1]
 
-    # Prepare the minimization xml file
+    # Prepare the minimisation xml file
     prep_optimise_xml(directory,
                       atoms,
                       outfile=outfile,
                       driver=driver,
                       total_steps=total_steps,
                       deuterate=deuterate,
-                      optimizer=optimizer,
+                      optimiser=optimiser,
                       tol_energy=tol_energy,
                       tol_force=tol_force,
                       tol_position=tol_position,
@@ -212,12 +212,13 @@ def run_optimise(directory,
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
 
-    # Run the minimization
-    print(f"Running the minimization with the driver: {driver}", flush=True)
+    # Run the minimisation
+    print(f"Running the minimisation with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, outfile + ".out")
     # Load the structure
     atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    return atoms_out
+    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    return atoms_out, output_data, output_desc
 
 
 def prep_md_xml(directory,
@@ -280,7 +281,7 @@ def prep_md_xml(directory,
     update_dynamics_splitting(root, splitting)
 
     # Update the fixcom
-    update_motion_fixcom(root, fix_com)
+    update_motion_fix_com(root, fix_com)
 
     # Add the thermostat section
     if thermostat is not None:
@@ -438,7 +439,7 @@ def prep_plumed_xml(directory,
     update_dynamics_splitting(root, splitting)
 
     # Update the fixcom
-    update_motion_fixcom(root, fix_com)
+    update_motion_fix_com(root, fix_com)
 
     # Add the thermostat section
     if thermostat is not None:
