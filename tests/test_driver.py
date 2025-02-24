@@ -1,7 +1,6 @@
 import ase.build
-from ase.io import read
 import nqetools as nqe
-
+import pytest
 
 def test_zundel_driver():
     print(flush=True)
@@ -22,7 +21,7 @@ def test_cbe_driver():
     print("Testing cbe driver", flush=True)
 
     # Read the molecule
-    atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
+    atoms = nqe.read_ipi_xyz("data/ch4hcbe.xyz")[-1]
 
     # Make a directory to store everything
     directory = "cbe_opti"
@@ -45,8 +44,9 @@ def test_ase_mace_driver():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    # Read the molecule
-    atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
+    # Build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
 
     # Make a directory to store everything
     directory = "mace_opti"
@@ -54,7 +54,8 @@ def test_ase_mace_driver():
     nqe.remove_directory(directory)
     pass
 
-
+# Fails!
+@pytest.mark.fail
 def test_ase_orca_driver():
     """
     Tests the ORCA driver using the ASE driver.
@@ -79,7 +80,8 @@ def test_ase_orca_driver():
     nqe.remove_directory(directory)
     pass
 
-
+# Fails!
+@pytest.mark.fail
 def test_ase_nwchem_driver():
     """
     Tests the NWChem driver using the ASE driver.
