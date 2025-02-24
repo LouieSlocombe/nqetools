@@ -6,27 +6,27 @@ from .conversions import (A_to_nm,
 from .tools import round_sf
 
 
-def prep_plumed(plumed_type, atoms, args):
+def prep_plumed(atoms,plumed_type, plumed_args):
     if plumed_type == 'mtd-pos':
-        return write_plumed_mtd_pos(**args)
+        return write_plumed_mtd_pos(**plumed_args)
     elif plumed_type == 'opes-pos':
-        return write_plumed_opes_pos(**args)
+        return write_plumed_opes_pos(**plumed_args)
     elif plumed_type == 'mtd-coord':
-        return write_plumed_mtd_coord(atoms, **args)
+        return write_plumed_mtd_coord(atoms, **plumed_args)
     elif plumed_type == 'opes-coord':
-        return write_plumed_opes_coord(atoms, **args)
+        return write_plumed_opes_coord(atoms, **plumed_args)
     elif plumed_type == 'mtd-dists':
-        return write_plumed_mtd_dists(**args)
+        return write_plumed_mtd_dists(**plumed_args)
     elif plumed_type == 'opes-dists':
-        return write_plumed_opes_dists(**args)
+        return write_plumed_opes_dists(**plumed_args)
     elif plumed_type == 'mtd-dist':
-        return write_plumed_mtd_dist(**args)
+        return write_plumed_mtd_dist(**plumed_args)
     elif plumed_type == 'opes-dist':
-        return write_plumed_opes_dist(**args)
+        return write_plumed_opes_dist(**plumed_args)
     elif plumed_type == 'mtd-diff1':
-        return write_plumed_mtd_diff1(**args)
+        return write_plumed_mtd_diff1(**plumed_args)
     elif plumed_type == 'opes-diff1':
-        return write_plumed_opes_diff1(**args)
+        return write_plumed_opes_diff1(**plumed_args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 

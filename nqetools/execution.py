@@ -362,17 +362,17 @@ def run_plumed_md(directory,
                   checkpoint_stride=1000,
                   n_beads=1,
                   plumed_type="mtd-pos",
-                  plumed_dict=None,
+                  plumed_args=None,
                   properties=None,
                   xml_in=None):
     # Update the plumed dictionary
-    if plumed_dict is None:
-        plumed_dict = {'directory': directory,
+    if plumed_args is None:
+        plumed_args = {'directory': directory,
                        'temperature': temperature}
     else:
         # Add the directory and temperature to the plumed dictionary
-        plumed_dict['directory'] = directory
-        plumed_dict['temperature'] = temperature
+        plumed_args['directory'] = directory
+        plumed_args['temperature'] = temperature
 
     # Update the driver dictionary
     if driver_dict is None:
@@ -385,7 +385,7 @@ def run_plumed_md(directory,
     os.makedirs(directory, exist_ok=True)
 
     # Prepare the plumed input file
-    plumed_extras = prep_plumed(plumed_type, atoms, plumed_dict)
+    plumed_extras = prep_plumed(atoms, plumed_type, plumed_args)
 
     # Prepare the MD xml file
     prep_plumed_xml(directory, atoms,
