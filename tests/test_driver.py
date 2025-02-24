@@ -8,8 +8,7 @@ def test_zundel_driver():
     print("Testing zundel driver", flush=True)
 
     # Read the molecule
-    atoms = read("data/h5o2+.xyz")
-    atoms.center(vacuum=20.0)
+    atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
 
     # Make a directory to store everything
     directory = "zundel_opti"
@@ -23,8 +22,7 @@ def test_cbe_driver():
     print("Testing cbe driver", flush=True)
 
     # Read the molecule
-    atoms = read("data/ch4hcbe.xyz")
-    atoms.center(vacuum=20.0)
+    atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
 
     # Make a directory to store everything
     directory = "cbe_opti"
@@ -47,9 +45,8 @@ def test_ase_mace_driver():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    # Build the molecule
-    atoms = ase.build.molecule('H2O')
-    atoms.center(vacuum=5.0)
+    # Read the molecule
+    atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
 
     # Make a directory to store everything
     directory = "mace_opti"

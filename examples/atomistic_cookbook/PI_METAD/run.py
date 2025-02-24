@@ -29,8 +29,8 @@ if __name__ == "__main__":
     plumed_type = "mtd-coord"
 
     # Load the initial structure
-    atoms = read("h5o2+.xyz", index=-1)
-    atoms.center(vacuum=20.0)
+    # Read the molecule
+    atoms = nqe.read_ipi_xyz("h5o2+.xyz")[-1]
     view(atoms)
 
     # Run unbiased MD
