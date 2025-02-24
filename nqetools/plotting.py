@@ -91,7 +91,7 @@ def plot_energy_conservation(data: dict) -> None:
     return None
 
 
-def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float]) -> None:
+def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float] = None) -> None:
     """
     Plot a series of energy contour plots from FES arrays.
 
@@ -102,8 +102,17 @@ def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float])
     Returns:
     None
     """
+
+    if times is None:
+        times = np.arange(len(fes_arrays))
+
     fig, ax = plt.subplots(
-        1, len(fes_arrays), figsize=(8, 3), sharex=True, sharey=True, constrained_layout=True
+        1,
+        len(fes_arrays),
+        figsize=(8, 3),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True
     )
 
     contours = []
