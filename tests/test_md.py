@@ -12,7 +12,7 @@ def test_npt_bzp():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NPT-BZP")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NPT-BZP", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -26,7 +26,7 @@ def test_npt_mttk():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NPT-MTTK")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NPT-MTTK", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -40,7 +40,7 @@ def test_npt_re():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NPT-RE")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NPT-RE", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -54,7 +54,21 @@ def test_nve():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVE")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVE", total_steps=10)
+    nqe.remove_directory(directory)
+    pass
+
+
+def test_nve_pimd():
+    print(flush=True)
+    print("Testing NVE md", flush=True)
+    # build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
+
+    # Make a directory to store everything
+    directory = "pimd"
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVE", total_steps=10, n_beads=2)
     nqe.remove_directory(directory)
     pass
 
@@ -68,7 +82,7 @@ def test_nvt():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -82,7 +96,7 @@ def test_nvt_gle():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-GLE")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-GLE", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -96,7 +110,7 @@ def test_nvt_langevin():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-LANGEVIN")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-LANGEVIN", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -110,7 +124,7 @@ def test_nvt_pimd():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-PIMD", n_beads=2)
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-PIMD", total_steps=10, n_beads=2)
     nqe.remove_directory(directory)
     pass
 
@@ -124,7 +138,7 @@ def test_nvt_pimd_sc():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-PIMD-SC", n_beads=2)
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-PIMD-SC", total_steps=10, n_beads=2)
     nqe.remove_directory(directory)
     pass
 
@@ -138,7 +152,7 @@ def test_nvt_re():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-RE")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-RE", total_steps=10)
     nqe.remove_directory(directory)
     pass
 
@@ -152,6 +166,6 @@ def test_nvt_svr():
 
     # Make a directory to store everything
     directory = "md"
-    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-SVR")
+    nqe.run_md(directory, atoms, driver='ase-mace', md_type="NVT-SVR", total_steps=10)
     nqe.remove_directory(directory)
     pass
