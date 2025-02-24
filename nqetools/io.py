@@ -293,7 +293,7 @@ def search_fes_files(target_directory: str) -> list[str]:
     Returns:
     list[str]: A list of matching file names.
     """
-    pattern = re.compile(r'^FES\d+$')
+    pattern = re.compile(r'^FES\d+\.dat$')
     matching_files = []
 
     for filename in os.listdir(target_directory):
