@@ -112,21 +112,34 @@ def write_xml(root, file):
     return None
 
 
-def write_xyz(atoms, file, vacuum=None):
+def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
     """
     Writes an ASE Atoms object to an XYZ file, ensuring the directory exists and centering the atoms with a specified vacuum.
+    If the atoms have no cell or a zero-sized cell, adds 5Å of vacuum by default.
 
     Parameters:
     atoms (ase.Atoms): The ASE Atoms object to write.
     file (str): The path to the output XYZ file.
-    vacuum (float, optional): The vacuum padding to apply when centering the atoms. Default is 20.0.
+    vacuum (float, optional): The vacuum padding to apply when centering the atoms. Default is None.
+    vacuum_min (float, optional): The minimum vacuum padding to apply if the cell size is zero. Default is 5.0Å.
 
     Returns:
     ase.Atoms: The centered ASE Atoms object.
     """
+    # Check if cell exists and is non-zero
+    cell = atoms.get_cell()
+    # Add vacuum if cell is zero
+    if cell.volume == 0:
+        print(f"Cell is zero, adding {vacuum_min}A vacuum!")
+        atoms.center(vacuum=vacuum_min)
+
+    # Add vacuum if requested
     if vacuum is not None:
         atoms.center(vacuum=vacuum)
+
+    # Ensure the directory exists
     os.makedirs(os.path.dirname(file), exist_ok=True)
+    # Write the atoms object to the XYZ file
     ase.io.write(file, atoms)
     return atoms
 
