@@ -100,6 +100,126 @@ def run_plumed_hills(directory, bins=100, stride=100, cv=None):
     return None
 
 
+def prep_optimise_xml(directory,
+                      atoms,
+                      outfile="min",
+                      driver="ase-mace",
+                      total_steps=100,
+                      deuterate=False,
+                      optimizer="lbfgs",
+                      tol_energy=1.0e-4,
+                      tol_force=1.0e-4,
+                      tol_position=1.0e-4,
+                      stride=1,
+                      checkpoint_stride=10,
+                      properties=None,
+                      xml_in=None,
+                      file_in="init.xyz"):
+    # Prepare the minimization xml file
+    if xml_in is not None:
+        tree = ET.parse(xml_in)
+    else:
+        tree = ET.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
+    root = tree.getroot()
+
+    # Add in the properties to be tracked
+    if properties is not None:
+        append_properties(root, properties)
+
+    # Set the initial structure
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    # Update the structure loading
+    update_file(root, file_in)
+
+    # Fix the cell
+    update_cell(root, atoms)
+
+    # Fix the masses
+    update_mass(root, atoms, f_deut=deuterate)
+
+    # Change the driver ff
+    update_driver(root, atoms, driver)
+
+    # Change the title
+    update_title(root, outfile)
+
+    # Update the total_steps
+    update_total_steps(root, total_steps)
+
+    # Update the optimizer
+    update_optimizer(root, optimizer)
+
+    # Update the tolerances
+    update_tol(root, tol_energy, tol_force, tol_position)
+
+    # Update the stride
+    update_stride(root, stride)
+
+    # Update the checkpoint stride
+    update_checkpoint_stride(root, checkpoint_stride)
+
+    # Write the file
+    write_xml(root, os.path.join(directory, 'input.xml'))
+    return None
+
+
+def run_optimise(directory,
+                 atoms,
+                 server="i-pi input.xml",
+                 outfile="min",
+                 driver="ase-mace",
+                 driver_dict=None,
+                 total_steps=100,
+                 deuterate=False,
+                 optimizer="lbfgs",
+                 tol_energy=1.0e-4,
+                 tol_force=1.0e-4,
+                 tol_position=1.0e-4,
+                 stride=1,
+                 checkpoint_stride=1000,
+                 properties=None,
+                 xml_in=None):
+    # Prepare the minimization xml file
+    if driver_dict is None:
+        driver_dict = {}
+
+    # Clean the directory if it exists
+    remove_directory(directory)
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    # If atoms is a list of atoms, take the last one as the structure
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
+    # Prepare the minimization xml file
+    prep_optimise_xml(directory,
+                      atoms,
+                      outfile=outfile,
+                      driver=driver,
+                      total_steps=total_steps,
+                      deuterate=deuterate,
+                      optimizer=optimizer,
+                      tol_energy=tol_energy,
+                      tol_force=tol_force,
+                      tol_position=tol_position,
+                      stride=stride,
+                      checkpoint_stride=checkpoint_stride,
+                      properties=properties,
+                      xml_in=xml_in)
+    # Prepare the driver
+    driver = prep_driver(atoms, directory, driver, driver_dict)
+
+    # Run the minimization
+    print(f"Running the minimization with the driver: {driver}", flush=True)
+    run_ipi(directory, server, driver, outfile + ".out")
+    # Load the structure
+    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
+    return atoms_out
+
+
 def prep_md_xml(directory,
                 atoms,
                 outfile="md",
@@ -431,126 +551,6 @@ def run_plumed_md(directory,
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
     else:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    return atoms_out
-
-
-def prep_optimise_xml(directory,
-                      atoms,
-                      outfile="min",
-                      driver="ase-mace",
-                      total_steps=100,
-                      deuterate=False,
-                      optimizer="lbfgs",
-                      tol_energy=1.0e-4,
-                      tol_force=1.0e-4,
-                      tol_position=1.0e-4,
-                      stride=1,
-                      checkpoint_stride=10,
-                      properties=None,
-                      xml_in=None,
-                      file_in="init.xyz"):
-    # Prepare the minimization xml file
-    if xml_in is not None:
-        tree = ET.parse(xml_in)
-    else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
-    root = tree.getroot()
-
-    # Add in the properties to be tracked
-    if properties is not None:
-        append_properties(root, properties)
-
-    # Set the initial structure
-    write_xyz(atoms, os.path.join(directory, file_in))
-
-    # Update the structure loading
-    update_file(root, file_in)
-
-    # Fix the cell
-    update_cell(root, atoms)
-
-    # Fix the masses
-    update_mass(root, atoms, f_deut=deuterate)
-
-    # Change the driver ff
-    update_driver(root, atoms, driver)
-
-    # Change the title
-    update_title(root, outfile)
-
-    # Update the total_steps
-    update_total_steps(root, total_steps)
-
-    # Update the optimizer
-    update_optimizer(root, optimizer)
-
-    # Update the tolerances
-    update_tol(root, tol_energy, tol_force, tol_position)
-
-    # Update the stride
-    update_stride(root, stride)
-
-    # Update the checkpoint stride
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    # Write the file
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
-
-
-def run_optimise(directory,
-                 atoms,
-                 server="i-pi input.xml",
-                 outfile="min",
-                 driver="ase-mace",
-                 driver_dict=None,
-                 total_steps=100,
-                 deuterate=False,
-                 optimizer="lbfgs",
-                 tol_energy=1.0e-4,
-                 tol_force=1.0e-4,
-                 tol_position=1.0e-4,
-                 stride=1,
-                 checkpoint_stride=1000,
-                 properties=None,
-                 xml_in=None):
-    # Prepare the minimization xml file
-    if driver_dict is None:
-        driver_dict = {}
-
-    # Clean the directory if it exists
-    remove_directory(directory)
-
-    # Make the directory if it doesn't exist
-    os.makedirs(directory, exist_ok=True)
-
-    # If atoms is a list of atoms, take the last one as the structure
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
-    # Prepare the minimization xml file
-    prep_optimise_xml(directory,
-                      atoms,
-                      outfile=outfile,
-                      driver=driver,
-                      total_steps=total_steps,
-                      deuterate=deuterate,
-                      optimizer=optimizer,
-                      tol_energy=tol_energy,
-                      tol_force=tol_force,
-                      tol_position=tol_position,
-                      stride=stride,
-                      checkpoint_stride=checkpoint_stride,
-                      properties=properties,
-                      xml_in=xml_in)
-    # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
-
-    # Run the minimization
-    print(f"Running the minimization with the driver: {driver}", flush=True)
-    run_ipi(directory, server, driver, outfile + ".out")
-    # Load the structure
-    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     return atoms_out
 
 
