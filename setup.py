@@ -18,6 +18,7 @@ setup(
     python_requires='>=3.12',
     install_requires=[
         'numpy',
+        'pandas',
         'matplotlib',
         'ase',
         'sella',

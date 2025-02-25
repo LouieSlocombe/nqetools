@@ -2,7 +2,7 @@
 
 ### Get the FES estimate used by OPES, from a dumped state file (STATE_WFILE). 1D or 2D only ###
 # usage is similar to plumed sum_hills
-
+import subprocess
 import argparse
 import sys
 
@@ -12,7 +12,7 @@ import pandas as pd
 do_bck = False  # backup files in plumed style
 if do_bck:
     bck_script = 'bck.meup.sh'  # e.g. place the script in your ~/bin
-    import subprocess
+
 
 ### Parser stuff ###
 parser = argparse.ArgumentParser(
@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(
 # files
 parser.add_argument('--state', '-f', dest='filename', type=str, default='STATE',
                     help='the state file name, with the compressed kernels')
-parser.add_argument('--outfile', '-o', dest='outfile', type=str, default='fes.dat', help='name of the output file')
+parser.add_argument('--outfile', '-o', dest='outfile', type=str, default='FES.dat', help='name of the output file')
 # compulsory
 kbt_group = parser.add_mutually_exclusive_group(required=True)
 kbt_group.add_argument('--kt', dest='kbt', type=float, help='the temperature in energy units')
@@ -61,24 +61,19 @@ if all_stored:
     else:
         prefix = outfile[:outfile.rfind('/')]
         if prefix + '/' == outfile:
-            outfile += 'fes.dat'
+            outfile += 'FES.dat'
         outfile_n = outfile[outfile.rfind('/'):]
     if outfile_n.rfind('.') == -1:
         suffix = ''
     else:
         suffix = outfile_n[outfile_n.rfind('.'):]
         outfile_n = outfile_n[:outfile_n.rfind('.')]
-    outfile_n = prefix + outfile_n + '_%d' + suffix
+    outfile_n = prefix + outfile_n + '%d' + suffix
 explore = 'unset'
 
 ### Get data ###
 # get data and check number of stored states
-try:
-    import datatable  # datatable is faster than pandas, but less common
-
-    data = datatable.fread(filename, header=False).to_numpy()
-except ImportError:
-    data = pd.read_table(filename, sep='\s+', header=None).to_numpy()
+data = pd.read_table(filename, sep=r'\s+', header=None).to_numpy()
 fields_pos = []
 tot_lines = data.shape[0]
 for i in range(tot_lines):
