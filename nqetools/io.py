@@ -156,7 +156,7 @@ def remove_directory(directory):
     if os.path.exists(directory):
         shutil.rmtree(directory)
     else:
-        print(f"The directory {directory} does not exist.")
+        pass
     return None
 
 
