@@ -29,7 +29,8 @@ from .driver import (write_ase_mace_driver,
                      write_ase_orca_driver,
                      prep_driver)
 
-from .execution import (run_ipi,
+from .execution import (run_command,
+                        run_ipi,
                         run_md,
                         run_plumed_md,
                         run_optimise,

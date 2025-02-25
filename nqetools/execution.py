@@ -14,6 +14,18 @@ from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
 
+def run_command(command):
+    """
+    Runs a simple command using the subprocess module.
+
+    Parameters:
+    command (str): The command to run.
+
+    Returns:
+    str: The output of the command.
+    """
+    result = subprocess.run(command.split(), shell=True, capture_output=True, text=True)
+    return result.stdout
 
 def run_ipi(directory,
             server,
