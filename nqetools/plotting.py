@@ -181,11 +181,17 @@ def plot_time_energy_conservation(data: dict,
 
 def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
                              times: list[float] = None,
+                             max_times=5,
                              save=True,
                              show=True,
                              filename="fes_contourf") -> None:
     if times is None:
         times = np.arange(len(fes_arrays))
+
+    # If there are more than 5 times, select only the last 5
+    if len(times) > max_times:
+        fes_arrays = fes_arrays[-max_times:]
+        times = times[-max_times:]
 
     fig, ax = plt.subplots(
         1,
