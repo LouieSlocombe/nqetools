@@ -4,7 +4,7 @@ from .calcs import (correlate,
                     freq_from_eigvals,
                     calculate_temperature_crossover,
                     calculate_good_nbeads,
-                    calc_kappa)
+                    )
 
 from .calculators import (nwchem_calc_preset,
                           orca_calc_preset,
@@ -92,7 +92,8 @@ from .plumed import (prep_plumed,
                      write_plumed_mtd_dists,
                      write_plumed_opes_dists)
 
-from .post_proc import (instanton_postproc)
+from .instanton import (calc_kappa,
+                        instanton_post_process)
 
 from .qchem_mod import (QChem)
 

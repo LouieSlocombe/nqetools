@@ -9,17 +9,101 @@ from ipi.utils.messages import verbosity
 from ipi.utils.units import unit_to_internal, Constants
 
 
-def instanton_postproc(input_file,
-                       case="reactant",
-                       temperature=300.0,
-                       asr="poly",
-                       energy_shift=0.0,
-                       filter_list=[],
-                       n_beads_r=0,
-                       freq_reac=0,
-                       quiet=False,
-                       save=False,
-                       ):
+def kappa_core(
+        Q_trn_TS,
+        Q_rot_TS,
+        Q_vib_TS,
+        Q_trn_inst,
+        Q_rot_inst,
+        Q_vib_inst,
+        BN,
+        temperature,
+        N,
+        S_over_hbar,
+        Beta_times_V,
+        hbar=1.0):
+    """
+    Computes the tunneling factor (kappa) for a given set of parameters.
+
+    Parameters:
+    Q_trn_TS (float): Translational partition function at the transition state.
+    Q_rot_TS (float): Rotational partition function at the transition state.
+    Q_vib_TS (float): Vibrational partition function at the transition state.
+    Q_trn_inst (float): Translational partition function at the instanton.
+    Q_rot_inst (float): Rotational partition function at the instanton.
+    Q_vib_inst (float): Vibrational partition function at the instanton.
+    BN (float): A parameter related to the instanton.
+    temperature (float): Temperature in Kelvin.
+    N (int): Number of beads.
+    S_over_hbar (float): Action divided by reduced Planck's constant.
+    Beta_times_V (float): Beta times potential energy.
+    hbar (float, optional): Reduced Planck's constant. Default is 1.0.
+
+    Returns:
+    float: The computed tunneling factor (kappa).
+    """
+    kelvin2au = 3.1668152e-06
+    beta = 1.0 / (temperature * kelvin2au)
+    f_trn = Q_trn_inst / Q_trn_TS
+    f_rot = Q_rot_inst / Q_rot_TS
+    f_vib = np.sqrt((2. * np.pi * N * BN) / (beta * hbar ** 2)) * Q_vib_inst / Q_vib_TS
+
+    kappa = f_trn * f_rot * f_vib * np.exp(-S_over_hbar + Beta_times_V)
+
+    # printing out the transmission factor and the relevant contributions.
+    print('f_tra               = {:5.3f}'.format(f_trn), flush=True)
+    print('f_rot               = {:5.3f}'.format(f_rot), flush=True)
+    print('f_vib               = {:5.3f}'.format(f_vib), flush=True)
+    print('exp(-S/hbar+V/beta) = {:5.3f}'.format(np.exp(-S_over_hbar + Beta_times_V)), flush=True)
+    print('=============================', flush=True)
+    print('Tunneling factor    = {:5.3f}'.format(kappa), flush=True)
+    return kappa
+
+
+def calc_kappa(ts_path, instanton_path, temperature, n_beads):
+    """
+    Calculates the tunneling factor (kappa) for a given transition state and instanton path.
+
+    Parameters:
+    ts_path (str): Path to the transition state data.
+    instanton_path (str): Path to the instanton data.
+    temperature (float): Temperature in Kelvin.
+    n_beads (int): Number of beads.
+
+    Returns:
+    float: The computed tunneling factor (kappa).
+    """
+    Q_trn_TS, Q_rot_TS, Q_vib_TS, Beta_times_V = instanton_post_process(ts_path, case="TS", temperature=temperature,
+                                                                        n_beads_r=n_beads)
+
+    Q_trn_inst, Q_rot_inst, Q_vib_inst, BN, S_over_hbar = instanton_post_process(instanton_path, case="instanton",
+                                                                                 temperature=temperature)
+
+    kappa = kappa_core(Q_trn_TS,
+                       Q_rot_TS,
+                       Q_vib_TS,
+                       Q_trn_inst,
+                       Q_rot_inst,
+                       Q_vib_inst,
+                       BN,
+                       temperature,
+                       n_beads,
+                       S_over_hbar,
+                       Beta_times_V)
+    return kappa
+
+
+def instanton_post_process(input_file,
+                           case="reactant",
+                           temperature=300.0,
+                           asr="poly",
+                           energy_shift=0.0,
+                           filter_list=[],
+                           n_beads_r=0,
+                           freq_reac=0,
+                           quiet=False,
+                           save=False,
+                           ):
     """
     input_file: Restart file
     case: Type of the calculation to analyse. Options: 'instanton', 'reactant' or 'TS'.
