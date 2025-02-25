@@ -65,47 +65,52 @@ def ax_plot(fig, ax, xlab, ylab, xs=14, ys=14):
     return None
 
 
-def plot_step_energy(data, save=False, filename="step_energy"):
-    """
-    Plots the potential and ensemble bias over time.
+def show_atoms(atoms,
+               save=True,
+               show=True,
+               filename="atoms"):
+    if isinstance(atoms, list):
+        fig, ax = plt.subplots()
+        for atom in atoms:
+            plot_atoms(atom, ax)
+    else:
+        fig, ax = plt.subplots()
+        plot_atoms(atoms, ax)
 
-    Parameters:
-    data (dict): A dictionary containing the time series data with keys:
-        - "time": A list or array of time points.
-        - "potential": A list or array of potential energy values.
-        - "ensemble_bias": A list or array of ensemble bias values.
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
-    Returns:
-    None
-    """
+
+def plot_step_energy(data,
+                     save=True,
+                     show=True,
+                     filename="step_energy"):
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     step = data["step"]
 
     ax.plot(step, data["potential"], c="black", label="potential", lw=2)
-    # set y scale to log
     ax.set_yscale("log")
     ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_time_potential_bias(data, save=False, filename="time_potential_bias"):
-    """
-    Plots the potential and ensemble bias over time.
-
-    Parameters:
-    data (dict): A dictionary containing the time series data with keys:
-        - "time": A list or array of time points.
-        - "potential": A list or array of potential energy values.
-        - "ensemble_bias": A list or array of ensemble bias values.
-
-    Returns:
-    None
-    """
+def plot_time_potential_bias(data,
+                             save=True,
+                             show=True,
+                             filename="time_potential_bias"):
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     time = data["time"]
@@ -118,23 +123,18 @@ def plot_time_potential_bias(data, save=False, filename="time_potential_bias"):
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_time_temperature(data, window_size=100, save=False, filename="time_temperature"):
-    """
-    Plots the temperature over time with a moving average.
-
-    Parameters:
-    data (dict): A dictionary containing the time series data with keys:
-        - "time": A list or array of time points.
-        - "temperature": A list or array of temperature values.
-    window_size (int, optional): The window size for the moving average. Default is 100.
-
-    Returns:
-    None
-    """
+def plot_time_temperature(data,
+                          window_size=100,
+                          save=True,
+                          show=True,
+                          filename="time_temperature"):
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
     min_val = int(window_size / 2)
     max_val = -int(window_size / 2 - 1)
@@ -148,27 +148,17 @@ def plot_time_temperature(data, window_size=100, save=False, filename="time_temp
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
 def plot_time_energy_conservation(data: dict,
-                                  save=False,
+                                  save=True,
+                                  show=True,
                                   filename="time_conservation") -> None:
-    """
-    Plot energy conservation (total energy) as a function of time.
-
-    Parameters:
-        save:
-        filename:
-    data (dict): A dictionary containing time series data with keys:
-        - "time": Array of time points in picoseconds
-        - "potential": Array of potential energy values
-        - "conserved": Array of total conserved energy values
-
-    Returns:
-    None
-    """
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     time = data["time"]
@@ -182,25 +172,18 @@ def plot_time_energy_conservation(data: dict,
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_energy_contourf_series(fes_arrays: list[np.ndarray],
-                               times: list[float] = None,
-                               save=False,
-                               filename="time_conservation") -> None:
-    """
-    Plot a series of energy contour plots from FES arrays.
-
-    Parameters:
-    fes_arrays (list[np.ndarray]): List of FES arrays, each with shape (3, bins, bins).
-    times (list[float]): List of time points corresponding to each FES array.
-
-    Returns:
-    None
-    """
-
+def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
+                             times: list[float] = None,
+                             save=True,
+                             show=True,
+                             filename="fes_contourf") -> None:
     if times is None:
         times = np.arange(len(fes_arrays))
 
@@ -225,28 +208,25 @@ def plot_energy_contourf_series(fes_arrays: list[np.ndarray],
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_energy_contour_compare(xyz_a, xyz_b):
-    """
-    Plot a comparison of energy contour plots for two sets of data.
-
-    Parameters:
-    xyz_a (tuple): Data for the first contour plot.
-    xyz_b (tuple): Data for the second contour plot.
-
-    Returns:
-    None
-    """
+def plot_fes_contour_compare(fes_a,
+                             fes_b,
+                             save=True,
+                             show=True,
+                             filename="fes_contour_compare"):
     fig, ax = plt.subplots(
         1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
     )
 
     levels = np.linspace(0, 0.5, 6)
-    cp1 = ax.contour(*xyz_a, colors="b", levels=levels)
-    cp2 = ax.contour(*xyz_b, colors="r", levels=levels)
+    cp1 = ax.contour(*fes_a, colors="b", levels=levels)
+    cp2 = ax.contour(*fes_b, colors="r", levels=levels)
     ax.set_ylabel(r"$\Delta C_\mathrm{H}$")
     ax.set_xlabel(r"$d_\mathrm{OO}$ (Å)")
     ax.legend(
@@ -255,46 +235,50 @@ def plot_energy_contour_compare(xyz_a, xyz_b):
             plt.Line2D([0], [0], color="r", label="PIMD"),
         ]
     )
-    plt.show()
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_energy_sep(xyz_a, xyz_b):
-    """
-    Plot the energy separation for two sets of data.
-
-    Parameters:
-    xyz_a (numpy.ndarray): Data for the first plot.
-    xyz_b (numpy.ndarray): Data for the second plot.
-
-    Returns:
-    None
-    """
-    fig, ax = plt.subplots(
-        1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
-    )
+def plot_fes_sep(fes_a,
+                 fes_b,
+                 save=True,
+                 show=True,
+                 filename="energy_sep"):
+    fig, ax = plt.subplots(1,
+                           1,
+                           figsize=(4, 3),
+                           sharex=True,
+                           sharey=True,
+                           constrained_layout=True
+                           )
 
     ax.plot(
-        xyz_a[1, :, 50],
-        xyz_a[2, :, 50],
+        fes_a[1, :, 50],
+        fes_a[2, :, 50],
         "b",
         label=r"MD, $d_\mathrm{OO}=2.6 $Å"
     )
     ax.plot(
-        xyz_b[1, :, 50],
-        xyz_b[2, :, 50],
+        fes_b[1, :, 50],
+        fes_b[2, :, 50],
         "r",
         label=r"PIMD, $d_\mathrm{OO}=2.6 $Å",
     )
     ax.plot(
-        xyz_a[1, :, 60],
-        xyz_a[2, :, 60],
+        fes_a[1, :, 60],
+        fes_a[2, :, 60],
         "b--",
         label=r"MD, $d_\mathrm{OO}=2.7 $Å",
     )
     ax.plot(
-        xyz_b[1, :, 60],
-        xyz_b[2, :, 60],
+        fes_b[1, :, 60],
+        fes_b[2, :, 60],
         "r--",
         label=r"PIMD, $d_\mathrm{OO}=2.7 $Å",
     )
@@ -302,23 +286,17 @@ def plot_energy_sep(xyz_a, xyz_b):
     ax.legend(ncols=2, loc="upper right", fontsize=9)
     ax.set_ylabel(r"$F$ (eV)")
     ax.set_xlabel(r"$\Delta C_\mathrm{H}$")
-    plt.show()
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_neb(images, calc, filename="neb", show=True):
-    """
-    Plot the Nudged Elastic Band (NEB) path for a series of images.
-
-    Parameters:
-    images (list of ase.Atoms): List of ASE Atoms objects representing the images along the NEB path.
-    calc (ase.Calculator): Calculator to be used for the energy calculations.
-    filename (str, optional): The base name for the saved plot files. Default is "neb".
-    show (bool, optional): Whether to display the plot. Default is True.
-
-    Returns:
-    None
-    """
+def plot_neb(images, calc, save=True, show=True, filename="neb"):
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
@@ -338,31 +316,17 @@ def plot_neb(images, calc, filename="neb", show=True):
     # Add labels and formatting
     n_plot("Path (Å)", "Energy (eV)")
 
-    # Save the plot
-    plt.savefig(f"{filename}.png", dpi=600)
-    plt.savefig(f"{filename}.pdf")
-
-    # Display the plot
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    plt.close()
+    else:
+        plt.close()
     return None
 
 
-def plot_sella(images, calc, filename="irc", show=True):
-    """
-    Plot the energy profile along the NEB path for a series of images using the Sella method.
-
-    Parameters:
-    images (list of ase.Atoms): List of ASE Atoms objects representing the images along the NEB path.
-    calc (ase.Calculator): Calculator to be used for the energy calculations.
-    filename (str, optional): The base name for the saved plot files. Default is "irc".
-    show (bool, optional): Whether to display the plot. Default is True.
-
-    Returns:
-    None
-    """
-
+def plot_sella(images, calc, save=True, show=True, filename="irc"):
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
@@ -382,49 +346,21 @@ def plot_sella(images, calc, filename="irc", show=True):
     # Add labels and formatting
     n_plot("Path (Å)", "Energy (eV)")
 
-    # Save the plot
-    plt.savefig(f"{filename}.png", dpi=600)
-    plt.savefig(f"{filename}.pdf")
-
-    # Display the plot
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    plt.close()
+    else:
+        plt.close()
     return None
 
 
-def show_atoms(atoms):
-    """
-    Plot the atomic structure using matplotlib.
-
-    Parameters:
-    atoms (ase.Atoms): ASE Atoms object representing the atomic structure.
-
-    Returns:
-    None
-    """
-    if isinstance(atoms, list):
-        fig, ax = plt.subplots()
-        for atom in atoms:
-            plot_atoms(atom, ax)
-        plt.show()
-    else:
-        fig, ax = plt.subplots()
-        plot_atoms(atoms, ax)
-        plt.show()
-
-
-def plot_arrhenius(temperatures: list[float], rates: list[float]) -> None:
-    """
-    Create an Arrhenius plot of ln(k) vs 1/T.
-
-    Parameters:
-    temperatures (list[float]): List of temperatures in Kelvin.
-    rates (list[float]): List of rate constants corresponding to temperatures.
-
-    Returns:
-    None
-    """
+def plot_arrhenius(temperatures: list[float],
+                   rates: list[float],
+                   save=True,
+                   show=True,
+                   filename="arrhenius") -> None:
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
@@ -438,21 +374,21 @@ def plot_arrhenius(temperatures: list[float], rates: list[float]) -> None:
 
     # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
-    plt.show()
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_kappa_temperature(temperatures: list[float], kappa: list[float]) -> None:
-    """
-    Plot the temperature dependence of the kappa value.
-
-    Parameters:
-    temperatures (list[float]): List of temperatures in Kelvin.
-    kappa (list[float]): List of kappa values corresponding to the temperatures.
-
-    Returns:
-    None
-    """
+def plot_kappa_temperature(temperatures: list[float],
+                           kappa: list[float],
+                           save=True,
+                           show=True,
+                           filename="kappa_temperature") -> None:
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
@@ -463,21 +399,21 @@ def plot_kappa_temperature(temperatures: list[float], kappa: list[float]) -> Non
 
     # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"$\kappa$")
-    plt.show()
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_kie_temperature(temperatures: list[float], kie: list[float]) -> None:
-    """
-    Plot the temperature dependence of the kinetic isotope effect (KIE).
-
-    Parameters:
-    temperatures (list[float]): List of temperatures in Kelvin.
-    kie (list[float]): List of KIE values corresponding to the temperatures.
-
-    Returns:
-    None
-    """
+def plot_kie_temperature(temperatures: list[float],
+                         kie: list[float],
+                         save=True,
+                         show=True,
+                         filename="kie_temperature") -> None:
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
@@ -488,21 +424,22 @@ def plot_kie_temperature(temperatures: list[float], kie: list[float]) -> None:
 
     # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"KIE")
-    plt.show()
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
 
 
-def plot_bead_convergence(n_beads: list[float], kappa: list[float]) -> None:
-    """
-    Plot the convergence of kappa values with respect to the number of beads.
-
-    Parameters:
-    n_beads (list[float]): List of the number of beads.
-    kappa (list[float]): List of kappa values corresponding to the number of beads.
-
-    Returns:
-    None
-    """
+def plot_bead_convergence(n_beads: list[float],
+                          kappa: list[float],
+                          save=True,
+                          show=True,
+                          filename="kie_temperature"
+                          ) -> None:
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Plot data
@@ -510,5 +447,11 @@ def plot_bead_convergence(n_beads: list[float], kappa: list[float]) -> None:
 
     # Labels and formatting
     ax_plot(fig, ax, r"Number of Beads", r"$\kappa$")
-    plt.show()
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return None
