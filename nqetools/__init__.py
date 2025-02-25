@@ -36,7 +36,7 @@ from .execution import (run_command,
                         run_optimise,
                         run_phonons,
                         run_ts,
-                        run_inst,
+                        run_instanton,
                         run_plumed_hills,
                         run_plumed_hills_opes)
 

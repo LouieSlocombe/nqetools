@@ -792,24 +792,28 @@ def run_ts(directory,
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the ts
     run_ipi(directory, server, driver, f"{outfile}.out")
+    # Load the structure
+    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
+    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    return atoms_out, output_data, output_desc
 
 
-def prep_inst_xml(directory,
-                  atoms,
-                  outfile="inst",
-                  driver="ase-mace",
-                  total_steps=1000,
-                  deuterate=False,
-                  n_beads=4,
-                  temperature=300.0,
-                  tol_energy=5.0e-6,
-                  tol_force=5.0e-6,
-                  tol_position=1.0e-6,
-                  stride=1,
-                  checkpoint_stride=1000,
-                  properties=None,
-                  xml_in=None,
-                  file_in="init.xyz"):
+def prep_instanton_xml(directory,
+                       atoms,
+                       outfile="instanton",
+                       driver="ase-mace",
+                       total_steps=1000,
+                       deuterate=False,
+                       n_beads=4,
+                       temperature=300.0,
+                       tol_energy=5.0e-6,
+                       tol_force=5.0e-6,
+                       tol_position=1.0e-6,
+                       stride=1,
+                       checkpoint_stride=1000,
+                       properties=None,
+                       xml_in=None,
+                       file_in="init.xyz"):
     n_atoms = len(atoms)
     n_dof = 3 * n_atoms - 6
     n_doft = 3 * n_atoms
@@ -872,24 +876,24 @@ def prep_inst_xml(directory,
     return None
 
 
-def run_inst(directory,
-             atoms,
-             directory_ts_phonons,
-             server="i-pi input.xml",
-             outfile="inst",
-             driver="ase-mace",
-             driver_dict=None,
-             total_steps=1000,
-             deuterate=False,
-             n_beads=4,
-             temperature=300.0,
-             tol_energy=5.0e-6,
-             tol_force=5.0e-6,
-             tol_position=1.0e-6,
-             stride=1,
-             checkpoint_stride=1000,
-             properties=None,
-             xml_in=None):
+def run_instanton(directory,
+                  atoms,
+                  directory_ts_phonons,
+                  server="i-pi input.xml",
+                  outfile="instanton",
+                  driver="ase-mace",
+                  driver_dict=None,
+                  total_steps=1000,
+                  deuterate=False,
+                  n_beads=4,
+                  temperature=300.0,
+                  tol_energy=5.0e-6,
+                  tol_force=5.0e-6,
+                  tol_position=1.0e-6,
+                  stride=1,
+                  checkpoint_stride=1000,
+                  properties=None,
+                  xml_in=None):
     if driver_dict is None:
         driver_dict = {}
 
@@ -907,21 +911,10 @@ def run_inst(directory,
     copy_hess(get_final_hess(directory_ts_phonons), directory)
 
     # Prepare the instanton calculation
-    prep_inst_xml(directory,
-                  atoms,
-                  outfile=outfile,
-                  driver=driver,
-                  total_steps=total_steps,
-                  deuterate=deuterate,
-                  n_beads=n_beads,
-                  temperature=temperature,
-                  tol_energy=tol_energy,
-                  tol_force=tol_force,
-                  tol_position=tol_position,
-                  stride=stride,
-                  checkpoint_stride=checkpoint_stride,
-                  properties=properties,
-                  xml_in=xml_in)
+    prep_instanton_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
+                       n_beads=n_beads, temperature=temperature, tol_energy=tol_energy, tol_force=tol_force,
+                       tol_position=tol_position, stride=stride, checkpoint_stride=checkpoint_stride,
+                       properties=properties, xml_in=xml_in)
 
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
