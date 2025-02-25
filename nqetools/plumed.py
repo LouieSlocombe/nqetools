@@ -27,6 +27,10 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_mtd_diff1(**plumed_args)
     elif plumed_type == 'opes-diff1':
         return write_plumed_opes_diff1(**plumed_args)
+    elif plumed_type == 'mtd-diff2':
+        return write_plumed_mtd_diff2(**plumed_args)
+    elif plumed_type == 'opes-diff2':
+        return write_plumed_opes_diff2(**plumed_args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
@@ -412,6 +416,106 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'diff', 'mtd.bias']
+
+
+def write_plumed_mtd_diff2(directory=None,
+                           idx1=0,
+                           idx2=1,
+                           idx3=2,
+                           idx4=3,
+                           idx5=4,
+                           idx6=5,
+                           temperature=300,
+                           sigma=None,
+                           pace=10,
+                           stride=10,
+                           height=0.041,
+                           bias=10,
+                           ):
+    if directory is None:
+        directory = os.getcwd()
+
+    if sigma is None:
+        sigma = [0.05, 0.05]
+
+    # Convert the height from eV to kJ/mol
+    height = round_sf(height * eV_to_kJpermol)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+    idx3 += 1
+    idx4 += 1
+    idx5 += 1
+    idx6 += 1
+
+    impt = f"""
+d1: DISTANCE ATOMS={idx1},{idx2}
+d2: DISTANCE ATOMS={idx2},{idx3}
+
+d3: DISTANCE ATOMS={idx4},{idx5}
+d4: DISTANCE ATOMS={idx5},{idx6}
+
+diff1: COMBINE ARG=d1,d2 COEFFICIENTS=1,-1 PERIODIC=NO
+diff2: COMBINE ARG=d3,d4 COEFFICIENTS=1,-1 PERIODIC=NO
+
+mtd: METAD ARG=diff1,diff2 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['d1', 'd2', 'd3', 'd4', 'diff1', 'diff2', 'mtd.bias']
+
+
+def write_plumed_opes_diff2(directory=None,
+                            idx1=0,
+                            idx2=1,
+                            idx3=2,
+                            idx4=3,
+                            idx5=4,
+                            idx6=5,
+                            temperature=300,
+                            pace=10,
+                            stride=10,
+                            barrier=0.041,
+                            stride_hills=100,
+                            ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+    idx3 += 1
+    idx4 += 1
+    idx5 += 1
+    idx6 += 1
+
+    impt = f"""
+d1: DISTANCE ATOMS={idx1},{idx2}
+d2: DISTANCE ATOMS={idx2},{idx3}
+
+d3: DISTANCE ATOMS={idx4},{idx5}
+d4: DISTANCE ATOMS={idx5},{idx6}
+
+diff1: COMBINE ARG=d1,d2 COEFFICIENTS=1,-1 PERIODIC=NO
+diff2: COMBINE ARG=d3,d4 COEFFICIENTS=1,-1 PERIODIC=NO
+
+opes: OPES_METAD ARG=diff1,diff2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['d1', 'd2', 'd3', 'd4', 'diff1', 'diff2', 'mtd.bias']
 
 
 def plumed_input_dpt(
