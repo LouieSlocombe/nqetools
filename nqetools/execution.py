@@ -126,8 +126,7 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
         f'{path_to_opes} --kt {kbt} --all_stored '
         f' --min {min_values} --max {max_values} --bin {bins_values}'
     )
-    result = subprocess.run(command.split(), shell=True, capture_output=True, text=True)
-    print(result.stdout, flush=True)
+    subprocess.run(command.split())
 
     # change back to the original directory
     os.chdir(cwd)
