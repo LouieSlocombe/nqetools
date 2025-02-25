@@ -37,7 +37,8 @@ from .execution import (run_command,
                         run_phonons,
                         run_ts,
                         run_inst,
-                        run_plumed_hills)
+                        run_plumed_hills,
+                        run_plumed_hills_opes)
 
 from .io import (read_ipi_xyz,
                  read_ipi_output,

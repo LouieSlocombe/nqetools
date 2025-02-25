@@ -9,10 +9,12 @@ from .io import (write_xml,
                  get_final_hess,
                  write_xyz,
                  read_ipi_xyz,
-                 remove_directory)
+                 remove_directory,
+                 find_nqetools_path)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
+
 
 def run_command(command):
     """
@@ -26,6 +28,7 @@ def run_command(command):
     """
     result = subprocess.run(command.split(), shell=True, capture_output=True, text=True)
     return result.stdout
+
 
 def run_ipi(directory,
             server,
@@ -73,21 +76,12 @@ def run_ipi(directory,
     return None
 
 
-def run_plumed_hills(directory, bins=100, stride=100, cv=None):
-    """
-    Generalized function to run plumed sum_hills with multiple collective variables (CVs).
-
-    Parameters:
-    directory (str): The directory containing the HILLS file.
-    bins (int, optional): Number of bins for the histogram. Default is 100.
-    stride (int, optional): Stride for the sum_hills command. Default is 100.
-    cv (list of list, optional): List of CV ranges. Each CV range is a list of two values [min, max].
-
-    Returns:
-    None
-    """
+def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None):
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
+
+    # Convert the temperature to kBT
+    kbt = temperature * 0.0083144621
 
     # Convert the CV list to a string
     min_values = ",".join(str(c[0]) for c in cv)
@@ -102,13 +96,41 @@ def run_plumed_hills(directory, bins=100, stride=100, cv=None):
     sum_hills_str = (
         f"plumed sum_hills --hills {hills_str} "
         f"--min {min_values} --max {max_values} --bin {bins_values} "
-        f"--outfile {fes_str} --stride {stride} --mintozero"
+        f"--outfile {fes_str} --stride {stride} --kt {kbt} --mintozero"
     )
 
     # Run the sum_hills command
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
         subprocess.run(sum_hills_str.split(), stdin=file, text=True)
 
+    return None
+
+
+def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
+    if cv is None:
+        cv = [[0.21, 0.31], [-1, 1]]
+
+    # Convert the temperature to kBT
+    kbt = temperature * 0.0083144621
+
+    # Convert the CV list to a string
+    min_values = ",".join(str(c[0]) for c in cv)
+    max_values = ",".join(str(c[1]) for c in cv)
+    bins_values = ",".join([str(bins)] * len(cv))
+
+    # Need to be in the directory of the run
+    cwd = os.getcwd()
+    os.chdir(directory)
+    path_to_opes = os.path.join(find_nqetools_path(), "opes", "fes_from_state.py")
+    command = (
+        f'{path_to_opes} --kt {kbt} --all_stored '
+        f' --min {min_values} --max {max_values} --bin {bins_values}'
+    )
+    result = subprocess.run(command.split(), shell=True, capture_output=True, text=True)
+    print(result.stdout, flush=True)
+
+    # change back to the original directory
+    os.chdir(cwd)
     return None
 
 
