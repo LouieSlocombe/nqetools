@@ -332,7 +332,7 @@ def move_zundel_driver_pes_files(directory):
         os.system(f"cp {os.path.join(base, file)} {directory}")
 
 
-def prep_driver(atoms, directory, f_driver, driver_dict):
+def prep_driver(atoms, directory, f_driver, driver_args):
     """
     Prepares the driver command based on the specified driver type and parameters.
 
@@ -353,18 +353,18 @@ def prep_driver(atoms, directory, f_driver, driver_dict):
         return f"{driver_path} -u -a zundel -m zundel"
     elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
-        write_ase_mace_driver(directory, **driver_dict)
+        write_ase_mace_driver(directory, **driver_args)
         return "python3 run-ase-mace.py"
     elif f_driver == "ase-nwchem":
         # If the driver is an ASE-NWChem driver, write the driver file
-        write_ase_nwchem_driver(directory, **driver_dict)
+        write_ase_nwchem_driver(directory, **driver_args)
         return "python3 run-ase-nwchem.py"
     elif f_driver == "ase-orca":
         # If the driver is an ASE-ORCA driver, write the driver file
-        write_ase_orca_driver(directory, **driver_dict)
+        write_ase_orca_driver(directory, **driver_args)
         return "python3 run-ase-orca.py"
     elif f_driver == "nwchem":
-        write_nwchem_driver(atoms, directory, **driver_dict)
+        write_nwchem_driver(atoms, directory, **driver_args)
         return "nwchem nwchem.nwi > nwchem.out"
     else:
         # If not a recognized driver, raise an error

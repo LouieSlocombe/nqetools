@@ -201,7 +201,7 @@ def run_optimise(directory,
                  server="i-pi input.xml",
                  outfile="min",
                  driver="ase-mace",
-                 driver_dict=None,
+                 driver_args=None,
                  total_steps=100,
                  deuterate=False,
                  optimiser="lbfgs",
@@ -213,8 +213,8 @@ def run_optimise(directory,
                  properties=None,
                  xml_in=None):
     # Prepare the minimization xml file
-    if driver_dict is None:
-        driver_dict = {}
+    if driver_args is None:
+        driver_args = {}
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -242,7 +242,7 @@ def run_optimise(directory,
                       properties=properties,
                       xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the minimisation
     print(f"Running the minimisation with the driver: {driver}", flush=True)
@@ -349,7 +349,7 @@ def run_md(directory,
            server="i-pi input.xml",
            outfile="md",
            driver="ase-mace",
-           driver_dict=None,
+           driver_args=None,
            total_steps=1000,
            deuterate=False,
            temperature=300.0,
@@ -363,8 +363,8 @@ def run_md(directory,
            n_beads=1,
            properties=None,
            xml_in=None):
-    if driver_dict is None:
-        driver_dict = {}
+    if driver_args is None:
+        driver_args = {}
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -395,7 +395,7 @@ def run_md(directory,
                 properties=properties,
                 xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the MD
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, f"{outfile}.out")
@@ -511,7 +511,7 @@ def run_plumed_md(directory,
                   server="i-pi input.xml",
                   outfile="md",
                   driver="ase-mace",
-                  driver_dict=None,
+                  driver_args=None,
                   total_steps=1000,
                   deuterate=False,
                   temperature=300.0,
@@ -537,8 +537,8 @@ def run_plumed_md(directory,
         plumed_args['temperature'] = temperature
 
     # Update the driver dictionary
-    if driver_dict is None:
-        driver_dict = {}
+    if driver_args is None:
+        driver_args = {}
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -574,7 +574,7 @@ def run_plumed_md(directory,
                     xml_in=xml_in)
 
     # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the MD
     print(f"Running plumed MD ({md_type}) with the driver: {driver}", flush=True)
@@ -648,15 +648,15 @@ def run_phonons(directory,
                 server="i-pi input.xml",
                 outfile="phonon",
                 driver="ase-mace",
-                driver_dict=None,
+                driver_args=None,
                 total_steps=1000,
                 deuterate=False,
                 stride=1,
                 checkpoint_stride=1000,
                 properties=None,
                 xml_in=None):
-    if driver_dict is None:
-        driver_dict = {}
+    if driver_args is None:
+        driver_args = {}
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -680,7 +680,7 @@ def run_phonons(directory,
                      properties=properties,
                      xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the phonons
     run_ipi(directory, server, driver, f"{outfile}.out")
     return None
@@ -751,7 +751,7 @@ def run_ts(directory,
            server="i-pi input.xml",
            outfile="ts",
            driver="ase-mace",
-           driver_dict=None,
+           driver_args=None,
            total_steps=1000,
            deuterate=False,
            tol_energy=5.0e-6,
@@ -761,8 +761,8 @@ def run_ts(directory,
            checkpoint_stride=1000,
            properties=None,
            xml_in=None):
-    if driver_dict is None:
-        driver_dict = {}
+    if driver_args is None:
+        driver_args = {}
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -789,7 +789,7 @@ def run_ts(directory,
                 properties=properties,
                 xml_in=xml_in)
     # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the ts
     run_ipi(directory, server, driver, f"{outfile}.out")
     # Load the structure
@@ -882,7 +882,7 @@ def run_instanton(directory,
                   server="i-pi input.xml",
                   outfile="instanton",
                   driver="ase-mace",
-                  driver_dict=None,
+                  driver_args=None,
                   total_steps=1000,
                   deuterate=False,
                   n_beads=4,
@@ -894,8 +894,8 @@ def run_instanton(directory,
                   checkpoint_stride=1000,
                   properties=None,
                   xml_in=None):
-    if driver_dict is None:
-        driver_dict = {}
+    if driver_args is None:
+        driver_args = {}
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -918,7 +918,7 @@ def run_instanton(directory,
                        properties=properties, xml_in=xml_in)
 
     # Prepare the driver
-    driver = prep_driver(atoms, directory, driver, driver_dict)
+    driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the instanton
     run_ipi(directory, server, driver, f"{outfile}.out")
