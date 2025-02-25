@@ -1,6 +1,8 @@
 import subprocess
 import time
+
 import ipi
+
 from .driver import prep_driver
 from .io import (write_xml,
                  copy_xyz,
@@ -9,8 +11,7 @@ from .io import (write_xml,
                  get_final_hess,
                  write_xyz,
                  read_ipi_xyz,
-                 remove_directory,
-                 find_nqetools_path)
+                 remove_directory)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp
 from .xml_parse import *
@@ -640,13 +641,12 @@ def prep_phonons_xml(directory,
     update_checkpoint_stride(root, checkpoint_stride)
 
     # Write the file
-    write_xml(root, f'{directory}input.xml')
+    write_xml(root, os.path.join(directory, 'input.xml'))
     return None
 
 
 def run_phonons(directory,
                 atoms,
-                min_file_path,
                 server="i-pi input.xml",
                 outfile="phonon",
                 driver="ase-mace",
@@ -670,10 +670,6 @@ def run_phonons(directory,
     if isinstance(atoms, list):
         atoms = atoms[-1]
 
-    # Get the directory and the file name
-    dir_react_min, outfile_min = os.path.split(min_file_path)
-    # Prepare the phonon xyz file
-    copy_xyz(get_final_xyz(dir_react_min, sub=f"{outfile_min}*"), directory)
     # Prepare the phonon xml file
     prep_phonons_xml(directory,
                      atoms,
@@ -688,7 +684,8 @@ def run_phonons(directory,
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the phonons
-    run_ipi(directory, server, driver, outfile + ".out")
+    run_ipi(directory, server, driver,  f"{outfile}.out")
+    return None
 
 
 def prep_ts_xml(directory,
@@ -747,7 +744,7 @@ def prep_ts_xml(directory,
     update_checkpoint_stride(root, checkpoint_stride)
 
     # Write the file
-    write_xml(root, f'{directory}input.xml')
+    write_xml(root, os.path.join(directory, 'input.xml'))
     return None
 
 
@@ -873,7 +870,8 @@ def prep_inst_xml(directory,
     update_checkpoint_stride(root, checkpoint_stride)
 
     # Write the file
-    write_xml(root, f'{directory}input.xml')
+    write_xml(root, os.path.join(directory, 'input.xml'))
+    return None
 
 
 def run_inst(directory,
