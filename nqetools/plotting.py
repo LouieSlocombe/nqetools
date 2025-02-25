@@ -238,7 +238,7 @@ def plot_fes_contourf_compare(fes_a,
         cf = ax[i].contourf(*xyz)
         contours.append(cf)
         ax[i].set_xlabel(r"$d_\mathrm{OO}$  (Å)")
-        ax[i].set_title(fr"$t={titles[i]}$ ps")
+        ax[i].set_title(fr"{titles[i]}")
 
     ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
     fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
