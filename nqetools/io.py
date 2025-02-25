@@ -313,19 +313,23 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
     Returns:
     list[np.ndarray]: List of numpy arrays, each containing the transformed FES data.
     """
-    # Search for FES files in the specified directory
     fes_files = search_fes_files(directory)
     fes_arrays = []
-    bins += 1  # Increment bins by 1
+    bins += 1
 
-    # Iterate over the sorted list of FES files
     for file in sorted(fes_files):
-        # Load the data from the file, ignoring lines starting with '#'
-        data = np.loadtxt(os.path.join(directory, file), comments="#")[:, :3]
-        # Transform the data by reshaping and scaling
-        transformed_data = np.array([1.0, 1.0, 1.0/eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data.T.reshape(3, bins, bins)
-        # Append the transformed data to the list
+        file_path = os.path.join(directory, file)
+
+        # Read first line to detect number of CVs
+        with open(file_path, 'r') as f:
+            first_line = f.readline().strip()
+            n_cv = len(first_line.split()[2:])  # Skip #! FIELDS and time
+        print(f"Loading {file_path} with {n_cv} FIELDS")
+        data = np.loadtxt(file_path, comments="#")
+        if n_cv == 2:
+            transformed_data = np.array([1.0, 1.0/eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
+        else:
+            transformed_data = np.array([1.0, 1.0, 1.0/eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data[:, :3].T.reshape(3, bins, bins)
         fes_arrays.append(transformed_data)
 
-    # Return the list of transformed data arrays
     return fes_arrays

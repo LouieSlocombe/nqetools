@@ -179,6 +179,50 @@ def plot_time_energy_conservation(data: dict,
     return None
 
 
+def plot_fes_series_1d(fes_arrays: list[np.ndarray],
+                       times: list[float] = None,
+                       max_times: int = 5,
+                       save: bool = True,
+                       show: bool = True,
+                       filename: str = "fes_1d") -> None:
+    """
+    Plot a series of 1D free energy surfaces.
+
+    Parameters:
+    fes_arrays (list[np.ndarray]): List of arrays containing [x, F] data
+    times (list[float], optional): List of times for each FES
+    max_times (int, optional): Maximum number of plots to show. Default is 5
+    save (bool, optional): Whether to save the plot. Default is True
+    show (bool, optional): Whether to display the plot. Default is True
+    filename (str, optional): Base filename for saving. Default is "fes_1d"
+    """
+    if times is None:
+        times = np.arange(len(fes_arrays))
+
+    # If there are more than max_times, select only the last max_times
+    if len(times) > max_times:
+        fes_arrays = fes_arrays[-max_times:]
+        times = times[-max_times:]
+
+    fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
+
+    for i, xy in enumerate(fes_arrays):
+        ax.plot(xy[0], xy[1], label=fr"$t={times[i]}$ ps")
+
+    ax.set_xlabel(r"$d_\mathrm{OO}$ (Å)")
+    ax.set_ylabel(r"$F$ (eV)")
+    ax.legend()
+
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
 def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
                              times: list[float] = None,
                              max_times=5,
