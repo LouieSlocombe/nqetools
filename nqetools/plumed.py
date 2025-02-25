@@ -6,7 +6,7 @@ from .conversions import (A_to_nm,
 from .tools import round_sf
 
 
-def prep_plumed(atoms,plumed_type, plumed_args):
+def prep_plumed(atoms, plumed_type, plumed_args):
     if plumed_type == 'mtd-pos':
         return write_plumed_mtd_pos(**plumed_args)
     elif plumed_type == 'opes-pos':
@@ -369,7 +369,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['d1', 'mtd.bias']
+    return ['d1', 'd2', 'diff', 'mtd.bias']
 
 
 def write_plumed_opes_diff1(directory=None,
@@ -404,7 +404,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['d1', 'opes.bias']
+    return ['d1', 'd2', 'diff', 'mtd.bias']
 
 
 def plumed_input_dpt(
