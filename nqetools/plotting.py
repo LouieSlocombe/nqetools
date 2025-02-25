@@ -10,6 +10,7 @@ from .pathway import get_neb_path
 # Setting plot aesthetics for better visibility
 plt.rcParams['axes.linewidth'] = 2.0
 
+
 def plot_step_energy(data):
     """
     Plots the potential and ensemble bias over time.
@@ -27,12 +28,13 @@ def plot_step_energy(data):
 
     step = data["step"]
 
-    ax.plot(step, data["potential"], c="r", label="potential", lw=2)
+    ax.plot(step, data["potential"], c="black", label="potential", lw=2)
     # set y scale to log
     ax.set_yscale("log")
     ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
     plt.show()
     return None
+
 
 def plot_time_potential_bias(data):
     """
@@ -51,8 +53,8 @@ def plot_time_potential_bias(data):
 
     time = data["time"]
 
-    ax.plot(time, data["potential"], c="r", label="potential", lw=2)
-    ax.plot(time, data["ensemble_bias"], c="b", label="bias", lw=2)
+    ax.plot(time, data["potential"], c="black", label="potential", lw=2)
+    ax.plot(time, data["ensemble_bias"], c="red", label="bias", lw=2)
 
     ax.legend(loc="upper left", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
@@ -80,7 +82,7 @@ def plot_time_temperature(data, window_size=100):
     time = data["time"][min_val:max_val]
     ave_temperature = moving_average(data["temperature"], window_size)
 
-    ax.plot(time, ave_temperature, c="r", lw=2)
+    ax.plot(time, ave_temperature, c="blue", lw=2)
 
     ax_plot(fig, ax, r"$t$ (ps)", r"Temperature (K)")
     plt.show()
@@ -105,8 +107,8 @@ def plot_energy_conservation(data: dict) -> None:
     time = data["time"]
 
     # Plot individual energy components
-    ax.plot(time, data["potential"], c="b", label="Potential", lw=2)
-    ax.plot(time, data["conserved"], c="r", label="Total", lw=2)
+    ax.plot(time, data["potential"], c="black", label="Potential", lw=2)
+    ax.plot(time, data["conserved"], c="red", label="Total", lw=2)
 
     ax.legend(loc="upper left", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
