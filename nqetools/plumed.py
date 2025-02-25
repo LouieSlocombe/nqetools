@@ -364,7 +364,7 @@ def write_plumed_mtd_diff1(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1
+    idx2 += 1 # Assumed transferring atom
     idx3 += 1
 
     impt = f"""
@@ -400,7 +400,7 @@ def write_plumed_opes_diff1(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1
+    idx2 += 1 # Assumed transferring atom
     idx3 += 1
 
     impt = f"""
@@ -415,7 +415,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['d1', 'd2', 'diff', 'mtd.bias']
+    return ['d1', 'd2', 'diff', 'opes.bias']
 
 
 def write_plumed_mtd_diff2(directory=None,
@@ -443,10 +443,10 @@ def write_plumed_mtd_diff2(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1
+    idx2 += 1 # Assumed transferring atom
     idx3 += 1
     idx4 += 1
-    idx5 += 1
+    idx5 += 1 # Assumed transferring atom
     idx6 += 1
 
     impt = f"""
@@ -491,10 +491,10 @@ def write_plumed_opes_diff2(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1
+    idx2 += 1 # Assumed transferring atom
     idx3 += 1
     idx4 += 1
-    idx5 += 1
+    idx5 += 1 # Assumed transferring atom
     idx6 += 1
 
     impt = f"""
@@ -515,7 +515,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['d1', 'd2', 'd3', 'd4', 'diff1', 'diff2', 'mtd.bias']
+    return ['d1', 'd2', 'd3', 'd4', 'diff1', 'diff2', 'opes.bias']
 
 
 def plumed_input_dpt(
