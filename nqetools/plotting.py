@@ -11,7 +11,61 @@ from .pathway import get_neb_path
 plt.rcParams['axes.linewidth'] = 2.0
 
 
-def plot_step_energy(data):
+def n_plot(xlab, ylab, xs=14, ys=14):
+    """
+    Add labels and formatting to a plot.
+
+    Use with
+    plt.rcParams['axes.linewidth'] = 2.0
+
+    Parameters:
+    xlab (str): Label for the x-axis.
+    ylab (str): Label for the y-axis.
+    xs (int, optional): Font size for the x-axis label. Default is 14.
+    ys (int, optional): Font size for the y-axis label. Default is 14.
+
+    Returns:
+    None
+    """
+    plt.minorticks_on()
+    plt.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
+    plt.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
+    plt.tick_params(axis='both', which='both', top=True, right=True)
+    plt.xlabel(xlab, fontsize=xs)
+    plt.ylabel(ylab, fontsize=ys)
+    plt.tight_layout()
+    return None
+
+
+def ax_plot(fig, ax, xlab, ylab, xs=14, ys=14):
+    """
+    Configure and style the plot with specified labels and tick parameters for a given axis.
+
+    Use with
+    plt.rcParams['axes.linewidth'] = 2.0
+
+    Args:
+        fig (matplotlib.figure.Figure): The figure object containing the plot.
+        ax (matplotlib.axes.Axes): The axes object to be styled.
+        xlab (str): The label for the x-axis.
+        ylab (str): The label for the y-axis.
+        xs (int, optional): Font size for the x-axis label. Default is 14.
+        ys (int, optional): Font size for the y-axis label. Default is 14.
+
+    Returns:
+        None
+    """
+    ax.minorticks_on()
+    ax.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
+    ax.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
+    ax.tick_params(axis='both', which='both', top=True, right=True)
+    ax.set_xlabel(xlab, fontsize=xs)
+    ax.set_ylabel(ylab, fontsize=ys)
+    fig.tight_layout()
+    return None
+
+
+def plot_step_energy(data, save=False, filename="step_energy"):
     """
     Plots the potential and ensemble bias over time.
 
@@ -32,11 +86,14 @@ def plot_step_energy(data):
     # set y scale to log
     ax.set_yscale("log")
     ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     plt.show()
     return None
 
 
-def plot_time_potential_bias(data):
+def plot_time_potential_bias(data, save=False, filename="time_potential_bias"):
     """
     Plots the potential and ensemble bias over time.
 
@@ -58,11 +115,14 @@ def plot_time_potential_bias(data):
 
     ax.legend(loc="upper left", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     plt.show()
     return None
 
 
-def plot_time_temperature(data, window_size=100):
+def plot_time_temperature(data, window_size=100, save=False, filename="time_temperature"):
     """
     Plots the temperature over time with a moving average.
 
@@ -85,15 +145,22 @@ def plot_time_temperature(data, window_size=100):
     ax.plot(time, ave_temperature, c="blue", lw=2)
 
     ax_plot(fig, ax, r"$t$ (ps)", r"Temperature (K)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     plt.show()
     return None
 
 
-def plot_energy_conservation(data: dict) -> None:
+def plot_time_energy_conservation(data: dict,
+                                  save=False,
+                                  filename="time_conservation") -> None:
     """
     Plot energy conservation (total energy) as a function of time.
 
     Parameters:
+        save:
+        filename:
     data (dict): A dictionary containing time series data with keys:
         - "time": Array of time points in picoseconds
         - "potential": Array of potential energy values
@@ -112,11 +179,17 @@ def plot_energy_conservation(data: dict) -> None:
 
     ax.legend(loc="upper left", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     plt.show()
     return None
 
 
-def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float] = None) -> None:
+def plot_energy_contourf_series(fes_arrays: list[np.ndarray],
+                               times: list[float] = None,
+                               save=False,
+                               filename="time_conservation") -> None:
     """
     Plot a series of energy contour plots from FES arrays.
 
@@ -149,6 +222,9 @@ def plot_energy_contour_series(fes_arrays: list[np.ndarray], times: list[float] 
 
     ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
     fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
     plt.show()
     return None
 
@@ -227,60 +303,6 @@ def plot_energy_sep(xyz_a, xyz_b):
     ax.set_ylabel(r"$F$ (eV)")
     ax.set_xlabel(r"$\Delta C_\mathrm{H}$")
     plt.show()
-    return None
-
-
-def n_plot(xlab, ylab, xs=14, ys=14):
-    """
-    Add labels and formatting to a plot.
-
-    Use with
-    plt.rcParams['axes.linewidth'] = 2.0
-
-    Parameters:
-    xlab (str): Label for the x-axis.
-    ylab (str): Label for the y-axis.
-    xs (int, optional): Font size for the x-axis label. Default is 14.
-    ys (int, optional): Font size for the y-axis label. Default is 14.
-
-    Returns:
-    None
-    """
-    plt.minorticks_on()
-    plt.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
-    plt.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
-    plt.tick_params(axis='both', which='both', top=True, right=True)
-    plt.xlabel(xlab, fontsize=xs)
-    plt.ylabel(ylab, fontsize=ys)
-    plt.tight_layout()
-    return None
-
-
-def ax_plot(fig, ax, xlab, ylab, xs=14, ys=14):
-    """
-    Configure and style the plot with specified labels and tick parameters for a given axis.
-
-    Use with
-    plt.rcParams['axes.linewidth'] = 2.0
-
-    Args:
-        fig (matplotlib.figure.Figure): The figure object containing the plot.
-        ax (matplotlib.axes.Axes): The axes object to be styled.
-        xlab (str): The label for the x-axis.
-        ylab (str): The label for the y-axis.
-        xs (int, optional): Font size for the x-axis label. Default is 14.
-        ys (int, optional): Font size for the y-axis label. Default is 14.
-
-    Returns:
-        None
-    """
-    ax.minorticks_on()
-    ax.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
-    ax.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
-    ax.tick_params(axis='both', which='both', top=True, right=True)
-    ax.set_xlabel(xlab, fontsize=xs)
-    ax.set_ylabel(ylab, fontsize=ys)
-    fig.tight_layout()
     return None
 
 
