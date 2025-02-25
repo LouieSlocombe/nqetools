@@ -94,7 +94,7 @@ def plot_step_energy(data,
 
     step = data["step"]
 
-    ax.plot(step, data["potential"], c="black", label="potential", lw=2)
+    ax.plot(step, np.abs(data["potential"]), c="black", label="potential", lw=2)
     ax.set_yscale("log")
     ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
     if save:
