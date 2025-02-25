@@ -155,6 +155,7 @@ def write_plumed_opes_coord(atoms,
                             pace=10,
                             stride=10,
                             barrier=0.041,
+                            stride_hills=100,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -182,7 +183,7 @@ d: DISTANCE ATOMS={idx1},{idx2}
 c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
-opes: OPES_METAD ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
