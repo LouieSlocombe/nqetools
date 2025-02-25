@@ -215,6 +215,43 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
     return None
 
 
+def plot_fes_contourf_compare(fes_a,
+                              fes_b,
+                              titles=None,
+                              save=True,
+                              show=True,
+                              filename="fes_contourf_compare") -> None:
+    fes_arrays = [fes_a, fes_b]
+    if titles is None:
+        titles = ["MD", "PIMD"]
+    fig, ax = plt.subplots(
+        1,
+        2,
+        figsize=(8, 3),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True
+    )
+
+    contours = []
+    for i, xyz in enumerate(fes_arrays):
+        cf = ax[i].contourf(*xyz)
+        contours.append(cf)
+        ax[i].set_xlabel(r"$d_\mathrm{OO}$  (Å)")
+        ax[i].set_title(fr"$t={titles[i]}$ ps")
+
+    ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
+    fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
 def plot_fes_contour_compare(fes_a,
                              fes_b,
                              save=True,
