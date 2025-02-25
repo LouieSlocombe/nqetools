@@ -908,7 +908,8 @@ def run_instanton(directory,
         atoms = atoms[-1]
 
     # Copy the files from the ts calculation
-    copy_hess(get_final_hess(directory_ts_phonons), directory)
+    #copy_hess(get_final_hess(directory_ts_phonons), directory)
+    copy_hess(os.path.join(directory_ts_phonons,'phonon.phonons_full.hess'), directory)
 
     # Prepare the instanton calculation
     prep_instanton_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
