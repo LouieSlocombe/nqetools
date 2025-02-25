@@ -2,6 +2,7 @@ import subprocess
 import time
 
 import ipi
+import numpy as np
 
 from .driver import prep_driver
 from .io import (write_xml,
@@ -111,11 +112,15 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
 
     # Convert the temperature to kBT
     kbt = temperature * 0.0083144621
-
-    # Convert the CV list to a string
-    min_values = ",".join(str(c[0]) for c in cv)
-    max_values = ",".join(str(c[1]) for c in cv)
-    bins_values = ",".join([str(bins)] * len(cv))
+    if np.shape(cv) == 2:
+        # Convert the CV list to a string
+        min_values = ",".join(str(c[0]) for c in cv)
+        max_values = ",".join(str(c[1]) for c in cv)
+        bins_values = ",".join([str(bins)] * len(cv))
+    else:
+        min_values = str(cv[0])
+        max_values = str(cv[1])
+        bins_values = str(bins)
 
     # Need to be in the directory of the run
     cwd = os.getcwd()
