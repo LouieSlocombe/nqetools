@@ -5,8 +5,6 @@ import ipi
 
 from .driver import prep_driver
 from .io import (write_xml,
-                 copy_xyz,
-                 get_final_xyz,
                  copy_hess,
                  get_final_hess,
                  write_xyz,
@@ -248,7 +246,7 @@ def run_optimise(directory,
 
     # Run the minimisation
     print(f"Running the minimisation with the driver: {driver}", flush=True)
-    run_ipi(directory, server, driver, outfile + ".out")
+    run_ipi(directory, server, driver, f"{outfile}.out")
     # Load the structure
     atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
@@ -314,7 +312,7 @@ def prep_md_xml(directory,
     # Updating splitting
     update_dynamics_splitting(root, splitting)
 
-    # Update the fixcom
+    # Update the fix_com
     update_motion_fix_com(root, fix_com)
 
     # Add the thermostat section
@@ -400,7 +398,7 @@ def run_md(directory,
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the MD
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
-    run_ipi(directory, server, driver, outfile + ".out")
+    run_ipi(directory, server, driver, f"{outfile}.out")
     # Load the structure
     if n_beads > 1:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
@@ -580,7 +578,7 @@ def run_plumed_md(directory,
 
     # Run the MD
     print(f"Running plumed MD ({md_type}) with the driver: {driver}", flush=True)
-    run_ipi(directory, server, driver, outfile + ".out", n=n_beads)
+    run_ipi(directory, server, driver, f"{outfile}.out", n=n_beads)
 
     # Load the structure
     if n_beads > 1:
@@ -684,7 +682,7 @@ def run_phonons(directory,
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the phonons
-    run_ipi(directory, server, driver,  f"{outfile}.out")
+    run_ipi(directory, server, driver, f"{outfile}.out")
     return None
 
 
@@ -793,7 +791,7 @@ def run_ts(directory,
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_dict)
     # Run the ts
-    run_ipi(directory, server, driver, outfile + ".out")
+    run_ipi(directory, server, driver, f"{outfile}.out")
 
 
 def prep_inst_xml(directory,
@@ -876,7 +874,7 @@ def prep_inst_xml(directory,
 
 def run_inst(directory,
              atoms,
-             directory_ts,
+             directory_ts_phonons,
              server="i-pi input.xml",
              outfile="inst",
              driver="ase-mace",
@@ -906,8 +904,7 @@ def run_inst(directory,
         atoms = atoms[-1]
 
     # Copy the files from the ts calculation
-    copy_xyz(get_final_xyz(directory_ts), directory)
-    copy_hess(get_final_hess(directory_ts), directory)
+    copy_hess(get_final_hess(directory_ts_phonons), directory)
 
     # Prepare the instanton calculation
     prep_inst_xml(directory,
@@ -930,5 +927,5 @@ def run_inst(directory,
     driver = prep_driver(atoms, directory, driver, driver_dict)
 
     # Run the instanton
-    run_ipi(directory, server, driver, outfile + ".out")
+    run_ipi(directory, server, driver, f"{outfile}.out")
     return None
