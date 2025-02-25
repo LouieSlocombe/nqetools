@@ -38,7 +38,8 @@ def write_plumed_mtd_pos(directory=None,
                          height=1.0,
                          bias=2.5,
                          temperature=300,
-                         stride=10):
+                         stride=10,
+                         ):
     if directory is None:
         directory = os.getcwd()
 
@@ -49,7 +50,7 @@ def write_plumed_mtd_pos(directory=None,
     idx_atom += 1
     impt = f"""
 q: POSITION ATOM={idx_atom}
-mtd: METAD ARG=q.x,q.y,q.z PACE={pace} SIGMA={sigma},{sigma},{sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
+mtd: METAD ARG=q.x PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -57,7 +58,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['q', 'mtd.bias']
+    return ['q.x', 'mtd.bias']
 
 
 def write_plumed_opes_pos(directory=None,
@@ -65,7 +66,9 @@ def write_plumed_opes_pos(directory=None,
                           pace=20,
                           barrier=1.0,
                           temperature=300,
-                          stride=10):
+                          stride=10,
+                          stride_hills=100,
+                          ):
     if directory is None:
         directory = os.getcwd()
 
@@ -77,7 +80,7 @@ def write_plumed_opes_pos(directory=None,
 
     impt = f"""
 q: POSITION ATOM={idx_atom}
-opes: OPES_METAD ARG=q.x,q.y,q.z PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=q.x PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -85,7 +88,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['q', 'opes.bias']
+    return ['q.x', 'opes.bias']
 
 
 def write_plumed_mtd_coord(atoms,
@@ -245,6 +248,7 @@ def write_plumed_opes_dists(directory=None,
                             pace=10,
                             stride=10,
                             barrier=0.041,
+                            stride_hills=100,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -261,7 +265,7 @@ def write_plumed_opes_dists(directory=None,
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx3},{idx4}
-opes: OPES_METAD ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -312,6 +316,7 @@ def write_plumed_opes_dist(directory=None,
                            pace=10,
                            stride=10,
                            barrier=0.041,
+                           stride_hills=100,
                            ):
     if directory is None:
         directory = os.getcwd()
@@ -325,7 +330,7 @@ def write_plumed_opes_dist(directory=None,
 
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
-opes: OPES_METAD ARG=d1 PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=d1 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -381,6 +386,7 @@ def write_plumed_opes_diff1(directory=None,
                             pace=10,
                             stride=10,
                             barrier=0.041,
+                            stride_hills=100,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -397,7 +403,7 @@ def write_plumed_opes_diff1(directory=None,
 d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx2},{idx3}
 diff: COMBINE ARG=d1,d2 COEFFICIENTS=1,-1 PERIODIC=NO
-opes: OPES_METAD ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature}
+opes: OPES_METAD ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
