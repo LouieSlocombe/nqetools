@@ -543,10 +543,10 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
         return []
 
     # Total time in ps (convert fs to ps by dividing by 1000)
-    total_time = (timestep * total_steps) / 1000
+    total_time = (timestep * total_steps) / 1000.0
 
     # Calculate time points evenly spaced across the simulation
     time_points = [i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
                    for i in range(n_arrays)]
 
-    return time_points
+    return [round_sf(t, sig_figs=2) for t in time_points]
