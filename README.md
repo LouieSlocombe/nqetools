@@ -184,11 +184,11 @@ https://gle4md.org/index.html?page=matrix
 
 # SOL install instructions
 ```
+module load mamba/latest
 mamba create -n ipi_env python=3.12
 source activate ipi_env
-mamba install -c conda-forge pytest numpy scipy matplotlib pyfftw ase -y
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-pip install mace-torch sella chemiscope
+pip install ase mace-torch sella pyfftw
 tar -xvzf plumed-2.9.3.tgz
 cd plumed-2.9.3
 ./configure --prefix=$HOME/opt
@@ -196,5 +196,8 @@ cd plumed-2.9.3
 make -j 4
 make install
 export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
-mamba install -c conda-forge plumed py-plumed
+pip install plumed
+pip install py-plumed
+pip install i-pi
+pip install chemiscope
 ```
