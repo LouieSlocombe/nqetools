@@ -72,6 +72,7 @@ def write_plumed_opes_pos(directory=None,
                           temperature=300,
                           stride=10,
                           stride_hills=100,
+                          explore=False
                           ):
     if directory is None:
         directory = os.getcwd()
@@ -82,9 +83,13 @@ def write_plumed_opes_pos(directory=None,
     # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
     impt = f"""
 q: POSITION ATOM={idx_atom}
-opes: OPES_METAD ARG=q.x PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+opes: {opes_command} ARG=q.x PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -163,6 +168,7 @@ def write_plumed_opes_coord(atoms,
                             stride=10,
                             barrier=0.041,
                             stride_hills=100,
+                            explore=False,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -185,12 +191,16 @@ def write_plumed_opes_coord(atoms,
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
     impt = f"""
 d: DISTANCE ATOMS={idx1},{idx2} 
 c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 dc: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
-opes: OPES_METAD ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
+opes: {opes_command} ARG=d,dc PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
@@ -253,6 +263,7 @@ def write_plumed_opes_dists(directory=None,
                             stride=10,
                             barrier=0.041,
                             stride_hills=100,
+                            explore=False,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -266,10 +277,14 @@ def write_plumed_opes_dists(directory=None,
     idx3 += 1
     idx4 += 1
 
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx3},{idx4}
-opes: OPES_METAD ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+opes: {opes_command} ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -321,6 +336,7 @@ def write_plumed_opes_dist(directory=None,
                            stride=10,
                            barrier=0.041,
                            stride_hills=100,
+                           explore=False,
                            ):
     if directory is None:
         directory = os.getcwd()
@@ -332,9 +348,13 @@ def write_plumed_opes_dist(directory=None,
     idx1 += 1
     idx2 += 1
 
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
-opes: OPES_METAD ARG=d1 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+opes: {opes_command} ARG=d1 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -391,6 +411,7 @@ def write_plumed_opes_diff1(directory=None,
                             stride=10,
                             barrier=0.041,
                             stride_hills=100,
+                            explore=False,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -403,11 +424,15 @@ def write_plumed_opes_diff1(directory=None,
     idx2 += 1  # Assumed transferring atom
     idx3 += 1
 
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx2},{idx3}
 diff: COMBINE ARG=d1,d2 COEFFICIENTS=1,-1 PERIODIC=NO
-opes: OPES_METAD ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+opes: {opes_command} ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -482,6 +507,7 @@ def write_plumed_opes_diff2(directory=None,
                             stride=10,
                             barrier=0.041,
                             stride_hills=100,
+                            explore=False,
                             ):
     if directory is None:
         directory = os.getcwd()
@@ -497,6 +523,10 @@ def write_plumed_opes_diff2(directory=None,
     idx5 += 1  # Assumed transferring atom
     idx6 += 1
 
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
     impt = f"""
 d1: DISTANCE ATOMS={idx1},{idx2}
 d2: DISTANCE ATOMS={idx2},{idx3}
@@ -507,7 +537,7 @@ d4: DISTANCE ATOMS={idx5},{idx6}
 diff1: COMBINE ARG=d1,d2 COEFFICIENTS=1,-1 PERIODIC=NO
 diff2: COMBINE ARG=d3,d4 COEFFICIENTS=1,-1 PERIODIC=NO
 
-opes: OPES_METAD ARG=diff1,diff2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+opes: {opes_command} ARG=diff1,diff2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
