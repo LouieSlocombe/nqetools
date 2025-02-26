@@ -298,14 +298,13 @@ def plot_fes_contourf(fes,
                       save=True,
                       show=True,
                       filename="fes_contourf") -> None:
-    fig, ax = plt.subplot(
+    fig, ax = plt.subplot(1, 1,
         figsize=(8, 3),
         constrained_layout=True
     )
 
     cf = ax.contourf(*fes)
     ax.set_xlabel(r"$d_\mathrm{OO}$  (Å)")
-
     ax.set_ylabel(r"$\Delta C_\mathrm{H}$")
     fig.colorbar(cf, ax=ax, orientation="vertical", label=r"$F$ (eV)")
     if save:

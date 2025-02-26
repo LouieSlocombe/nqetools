@@ -364,7 +364,7 @@ def write_plumed_mtd_diff1(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1 # Assumed transferring atom
+    idx2 += 1  # Assumed transferring atom
     idx3 += 1
 
     impt = f"""
@@ -400,7 +400,7 @@ def write_plumed_opes_diff1(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1 # Assumed transferring atom
+    idx2 += 1  # Assumed transferring atom
     idx3 += 1
 
     impt = f"""
@@ -443,10 +443,10 @@ def write_plumed_mtd_diff2(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1 # Assumed transferring atom
+    idx2 += 1  # Assumed transferring atom
     idx3 += 1
     idx4 += 1
-    idx5 += 1 # Assumed transferring atom
+    idx5 += 1  # Assumed transferring atom
     idx6 += 1
 
     impt = f"""
@@ -491,10 +491,10 @@ def write_plumed_opes_diff2(directory=None,
 
     # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1 # Assumed transferring atom
+    idx2 += 1  # Assumed transferring atom
     idx3 += 1
     idx4 += 1
-    idx5 += 1 # Assumed transferring atom
+    idx5 += 1  # Assumed transferring atom
     idx6 += 1
 
     impt = f"""
