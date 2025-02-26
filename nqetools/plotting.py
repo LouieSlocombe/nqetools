@@ -3,6 +3,7 @@ import copy
 import matplotlib.pyplot as plt
 import numpy as np
 from ase.visualize.plot import plot_atoms
+from scipy.interpolate import make_interp_spline
 
 from .calcs import moving_average
 from .pathway import get_neb_path
@@ -177,8 +178,6 @@ def plot_time_energy_conservation(data: dict,
     else:
         plt.close()
     return None
-
-
 
 
 def plot_fes_series_1d(fes_arrays: list[np.ndarray],
@@ -376,22 +375,28 @@ def plot_fes_sep(fes_a,
     return None
 
 
-def plot_neb(images, calc, save=True, show=True, filename="neb"):
+def plot_neb(images, calc, save=True, show=True, filename="neb", smooth=True, k=2):
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
 
     # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
-
-    # Shift the graph
     energies -= min(energies)
 
     # Get the path
     path = get_neb_path(images)
 
-    # Plot the energy profile
-    plt.plot(path, energies, 'o-', c='k', lw=2)
+    if smooth:
+        spl = make_interp_spline(path, energies, k=k)
+        path_smooth = np.linspace(min(path), max(path), 100)
+        energies_smooth = spl(path_smooth)
+        plt.scatter(path, energies, c='k')
+
+        # Plot both spline and scatter points
+        plt.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
+    else:
+        plt.plot(path, energies, 'o-', c='k', lw=2)
 
     # Add labels and formatting
     n_plot("Path (Å)", "Energy (eV)")
@@ -406,7 +411,7 @@ def plot_neb(images, calc, save=True, show=True, filename="neb"):
     return None
 
 
-def plot_sella(images, calc, save=True, show=True, filename="irc"):
+def plot_sella(images, calc, save=True, show=True, filename="irc", smooth=True, k=2):
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
@@ -420,8 +425,16 @@ def plot_sella(images, calc, save=True, show=True, filename="irc"):
     # Get the path
     path = get_neb_path(images)
 
-    # Plot the energy profile
-    plt.plot(path, energies, 'o-', c='k', lw=2)
+    if smooth:
+        spl = make_interp_spline(path, energies, k=k)
+        path_smooth = np.linspace(min(path), max(path), 100)
+        energies_smooth = spl(path_smooth)
+        plt.scatter(path, energies, c='k')
+
+        # Plot both spline and scatter points
+        plt.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
+    else:
+        plt.plot(path, energies, 'o-', c='k', lw=2)
 
     # Add labels and formatting
     n_plot("Path (Å)", "Energy (eV)")
