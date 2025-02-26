@@ -294,6 +294,30 @@ def plot_fes_contourf_compare(fes_a,
     return None
 
 
+def plot_fes_contourf(fes,
+                      save=True,
+                      show=True,
+                      filename="fes_contourf") -> None:
+    fig, ax = plt.subplot(
+        figsize=(8, 3),
+        constrained_layout=True
+    )
+
+    cf = ax.contourf(*fes)
+    ax.set_xlabel(r"$d_\mathrm{OO}$  (Å)")
+
+    ax.set_ylabel(r"$\Delta C_\mathrm{H}$")
+    fig.colorbar(cf, ax=ax, orientation="vertical", label=r"$F$ (eV)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
 def plot_fes_contour_compare(fes_a,
                              fes_b,
                              save=True,
