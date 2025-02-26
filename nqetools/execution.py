@@ -1,6 +1,6 @@
 import subprocess
 import time
-
+from itertools import chain
 import ipi
 import numpy as np
 
@@ -12,7 +12,7 @@ from .io import (write_xml,
                  read_ipi_xyz,
                  remove_directory)
 from .plumed import prep_plumed
-from .tools import rm_ipi_tmp
+from .tools import rm_ipi_tmp, round_sf
 from .xml_parse import *
 
 
@@ -122,20 +122,25 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
     cwd = os.getcwd()
     os.chdir(directory)
     path_to_opes = os.path.join(find_nqetools_path(), "opes", "fes_from_state.py")
-    command = f'{path_to_opes} --kt {kbt} --all_stored'
+    command = f'{path_to_opes} --kt {round_sf(kbt)}'
 
-    # Only add min, max and bins if cv is not a list of None
-    if not all(x is None for x in cv):
-        # Handle both 1D and 2D cases
-        if not isinstance(cv[0], (list, tuple)):
-            # 1D case: convert to list of lists format
-            cv = [cv]
-
-        # Convert the CV list to strings
-        min_values = ",".join(str(c[0]) for c in cv)
-        max_values = ",".join(str(c[1]) for c in cv)
+    if all(item is None for item in chain.from_iterable(cv)):
         bins_values = ",".join([str(bins)] * len(cv))
+        command += f' --bin {bins_values}'
+    else:
+        if len(np.shape(cv)) == 2:
+            # Convert the CV list to a string
+            min_values = ",".join(str(c[0]) for c in cv)
+            max_values = ",".join(str(c[1]) for c in cv)
+            bins_values = ",".join([str(bins)] * len(cv))
+        else:
+            min_values = str(cv[0])
+            max_values = str(cv[1])
+            bins_values = str(bins)
         command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+
+    command += f' --all_stored'
+    print(command, flush=True)
 
     subprocess.run(command.split())
 
