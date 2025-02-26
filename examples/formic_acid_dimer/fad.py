@@ -4,27 +4,14 @@ from mace.calculators import mace_off, mace_anicc
 
 import nqetools as nqe
 
-
-def make_dimer(file_in='fad.xyz'):
-    atoms = read(file_in, -1)
-    atoms.center()
-    # make a copy
-    atoms2 = atoms.copy()
-    # rotate the second molecule
-    atoms2.rotate(180, 'z', rotate_cell=False)
-
-    # translate the second molecule
-    atoms2.translate([0.0, 3.4, 0.0])
-    # combine the two molecules
-    combined = atoms + atoms2
-    return combined
+atoms = read('fad.xyz', -1)
 
 
 fmax = 0.01
 n_images = 9
 calc = mace_off(model="small")  # mace_anicc()
 calc = mace_anicc()
-reactant = make_dimer()
+reactant = nqe.make_dimer(atoms)
 reactant = nqe.optimise_geom(reactant, calc, fmax=fmax)
 view(reactant)
 
