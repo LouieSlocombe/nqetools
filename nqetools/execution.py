@@ -83,21 +83,26 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
     # Convert the temperature to kBT
     kbt = temperature * 0.0083144621
 
-    # Convert the CV list to a string
-    min_values = ",".join(str(c[0]) for c in cv)
-    max_values = ",".join(str(c[1]) for c in cv)
-    bins_values = ",".join([str(bins)] * len(cv))
-
     # Get the paths for the HILLS and FES files
     hills_str = os.path.join(directory, 'HILLS')
     fes_str = os.path.join(directory, 'FES')
 
-    # Prepare the sum_hills command
-    sum_hills_str = (
-        f"plumed sum_hills --hills {hills_str} "
-        f"--min {min_values} --max {max_values} --bin {bins_values} "
-        f"--outfile {fes_str} --stride {stride} --kt {kbt} --mintozero"
-    )
+    # Start building the command
+    sum_hills_str = f"plumed sum_hills --hills {hills_str} --outfile {fes_str} --stride {stride} --kt {kbt} --mintozero"
+
+    # Only add min, max and bins if cv is not a list of None
+    if not all(x is None for x in cv):
+        if np.shape(cv) == 2:
+            # Convert the CV list to a string
+            min_values = ",".join(str(c[0]) for c in cv)
+            max_values = ",".join(str(c[1]) for c in cv)
+            bins_values = ",".join([str(bins)] * len(cv))
+        else:
+            min_values = str(cv[0])
+            max_values = str(cv[1])
+            bins_values = str(bins)
+
+        sum_hills_str += f" --min {min_values} --max {max_values} --bin {bins_values}"
 
     # Run the sum_hills command
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
@@ -112,24 +117,26 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
 
     # Convert the temperature to kBT
     kbt = temperature * 0.0083144621
-    if np.shape(cv) == 2:
-        # Convert the CV list to a string
-        min_values = ",".join(str(c[0]) for c in cv)
-        max_values = ",".join(str(c[1]) for c in cv)
-        bins_values = ",".join([str(bins)] * len(cv))
-    else:
-        min_values = str(cv[0])
-        max_values = str(cv[1])
-        bins_values = str(bins)
 
     # Need to be in the directory of the run
     cwd = os.getcwd()
     os.chdir(directory)
     path_to_opes = os.path.join(find_nqetools_path(), "opes", "fes_from_state.py")
-    command = (
-        f'{path_to_opes} --kt {kbt} --all_stored '
-        f' --min {min_values} --max {max_values} --bin {bins_values}'
-    )
+    command = f'{path_to_opes} --kt {kbt} --all_stored'
+
+    # Only add min, max and bins if cv is not a list of None
+    if not all(x is None for x in cv):
+        # Handle both 1D and 2D cases
+        if not isinstance(cv[0], (list, tuple)):
+            # 1D case: convert to list of lists format
+            cv = [cv]
+
+        # Convert the CV list to strings
+        min_values = ",".join(str(c[0]) for c in cv)
+        max_values = ",".join(str(c[1]) for c in cv)
+        bins_values = ",".join([str(bins)] * len(cv))
+        command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+
     subprocess.run(command.split())
 
     # change back to the original directory
