@@ -9,7 +9,15 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/LouieSlocombe/nqetools',
-    packages=find_packages(),
+    packages=find_packages(include=['nqetools', 'nqetools.*']),
+    package_data={
+        'nqetools': [
+            'templates/*',
+            'thermostats/*',
+            'opes/*',
+        ],
+    },
+    include_package_data=True,
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
