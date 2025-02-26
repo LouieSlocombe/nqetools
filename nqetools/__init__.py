@@ -116,6 +116,7 @@ from .tools import (add_ipi_paths,
                     move_to_distances,
                     get_ipi_driver,
                     get_fes_times,
+                    make_dimer,
                     )
 
 from .xml_parse import (update_properties,

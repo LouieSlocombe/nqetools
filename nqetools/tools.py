@@ -550,3 +550,24 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
                    for i in range(n_arrays)]
 
     return [round_sf(t, sig_figs=2) for t in time_points]
+
+
+def make_dimer(atoms, translate=None):
+    if translate is None:
+        translate = [0.0, 3.4, 0.0]
+
+    # Center the first molecule
+    atoms.center()
+
+    # Make a copy
+    atoms2 = atoms.copy()
+
+    # Rotate the second molecule
+    atoms2.rotate(180, 'z', rotate_cell=False)
+
+    # Translate the second molecule
+    atoms2.translate(translate)
+
+    # Combine the two molecules
+    combined = atoms + atoms2
+    return combined
