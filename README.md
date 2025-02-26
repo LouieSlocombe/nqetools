@@ -208,3 +208,37 @@ pip install py-plumed
 pip install i-pi
 pip install chemiscope
 ```
+# ARCHER2 install instructions
+```
+module load PrgEnv-gnu
+module load rocm 
+module load craype-accel-amd-gfx90a 
+module load craype-x86-milan 
+module load cray-python/3.10.10
+python -m venv $WORK/ipi_env
+source $WORK/ipi_env/bin/activate
+
+export PYTHONUSERBASE=$WORK/.local
+export PATH=$PYTHONUSERBASE/bin:$PATH
+export PYTHONPATH=$PYTHONUSERBASE/lib/python3.10/site-packages:$PYTHONPATH
+export MPLCONFIGDIR=$WORK/.config/matplotlib
+
+
+pip install --upgrade pip
+
+tar -xvzf plumed-2.9.3.tgz
+cd plumed-2.9.3
+./configure --prefix=$WORK/opt
+./configure --enable-modules=opes
+make -j 8
+make install
+export PLUMED_KERNEL=$WORK/plumed-2.9.3/src/lib/libplumedKernel.so
+
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2.4
+pip install ase mace-torch sella pyfftw
+pip install plumed
+pip install i-pi chemiscope
+unset SSH_ASKPASS
+pip install git+https://github.com/LouieSlocombe/nqetools.git
+```
