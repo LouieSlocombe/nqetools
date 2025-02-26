@@ -126,6 +126,13 @@ Conda is preferred not to mess up the ecosystem.
 conda install conda-forge::i-pi -y
 ```
 
+## NQETOOLS
+unset SSH_ASKPASS
+```
+pip install git+https://github.com/LouieSlocombe/nqetools.git
+```
+
+
 ## Driver installation
 We need to install the drivers for the codes we want to use.
 ### I-PI drivers
