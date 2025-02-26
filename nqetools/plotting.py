@@ -179,23 +179,16 @@ def plot_time_energy_conservation(data: dict,
     return None
 
 
+
+
 def plot_fes_series_1d(fes_arrays: list[np.ndarray],
                        times: list[float] = None,
                        max_times: int = 5,
                        save: bool = True,
                        show: bool = True,
-                       filename: str = "fes_1d") -> None:
-    """
-    Plot a series of 1D free energy surfaces.
-
-    Parameters:
-    fes_arrays (list[np.ndarray]): List of arrays containing [x, F] data
-    times (list[float], optional): List of times for each FES
-    max_times (int, optional): Maximum number of plots to show. Default is 5
-    save (bool, optional): Whether to save the plot. Default is True
-    show (bool, optional): Whether to display the plot. Default is True
-    filename (str, optional): Base filename for saving. Default is "fes_1d"
-    """
+                       filename: str = "fes_1d",
+                       x_lab: str = r"CV1",
+                       y_lab: str = r"$F$ (eV)") -> None:
     if times is None:
         times = np.arange(len(fes_arrays))
 
@@ -204,15 +197,13 @@ def plot_fes_series_1d(fes_arrays: list[np.ndarray],
         fes_arrays = fes_arrays[-max_times:]
         times = times[-max_times:]
 
-    fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
 
     for i, xy in enumerate(fes_arrays):
         ax.plot(xy[0], xy[1], label=fr"$t={times[i]}$ ps")
 
-    ax.set_xlabel(r"$d_\mathrm{OO}$ (Å)")
-    ax.set_ylabel(r"$F$ (eV)")
     ax.legend()
-
+    ax_plot(fig, ax, x_lab, y_lab)
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
@@ -228,7 +219,9 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
                              max_times=5,
                              save=True,
                              show=True,
-                             filename="fes_contourf") -> None:
+                             filename="fes_contourf",
+                             x_lab=r"$d_\mathrm{OO}$  (Å)",
+                             y_lab=r"$\Delta C_\mathrm{H}$") -> None:
     if times is None:
         times = np.arange(len(fes_arrays))
 
@@ -250,10 +243,10 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
     for i, xyz in enumerate(fes_arrays):
         cf = ax[i].contourf(*xyz)
         contours.append(cf)
-        ax[i].set_xlabel(r"$d_\mathrm{OO}$  (Å)")
+        ax[i].set_xlabel(x_lab)
         ax[i].set_title(fr"$t={times[i]}$ ps")
 
-    ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
+    ax[0].set_ylabel(y_lab)
     fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
