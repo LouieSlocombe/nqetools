@@ -312,10 +312,10 @@ def optimise_irc(ts_image, calc,
     None
     """
     # Read the trajectory
-    ts_image.calc = calc
-
+    irc_f = ts_image.copy()
+    irc_f.calc = calc
     print("Running IRC forward", flush=True)
-    sella_irc_f = IRC(ts_image,
+    sella_irc_f = IRC(irc_f,
                       trajectory=irc_f_traj,
                       dx=dx,
                       eta=eta,
@@ -325,8 +325,11 @@ def optimise_irc(ts_image, calc,
                     steps=steps,
                     direction='forward')
 
+    irc_r = ts_image.copy()
+    irc_r.calc = calc
+
     print("Running IRC reverse", flush=True)
-    sella_irc_r = IRC(ts_image,
+    sella_irc_r = IRC(irc_r,
                       trajectory=irc_r_traj,
                       dx=dx,
                       eta=eta,
