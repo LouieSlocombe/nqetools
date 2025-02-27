@@ -88,11 +88,13 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
     fes_str = os.path.join(directory, 'FES')
 
     # Start building the command
-    sum_hills_str = f"plumed sum_hills --hills {hills_str} --outfile {fes_str} --stride {stride} --kt {kbt} --mintozero"
+    command = f"plumed sum_hills --hills {hills_str} --outfile {fes_str} --stride {stride} --kt {kbt} --mintozero"
 
-    # Only add min, max and bins if cv is not a list of None
-    if not all(x is None for x in cv):
-        if np.shape(cv) == 2:
+    if all(item is None for item in chain.from_iterable(cv)):
+        bins_values = ",".join([str(bins)] * len(cv))
+        command += f' --bin {bins_values}'
+    else:
+        if len(np.shape(cv)) == 2:
             # Convert the CV list to a string
             min_values = ",".join(str(c[0]) for c in cv)
             max_values = ",".join(str(c[1]) for c in cv)
@@ -101,12 +103,11 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
             min_values = str(cv[0])
             max_values = str(cv[1])
             bins_values = str(bins)
-
-        sum_hills_str += f" --min {min_values} --max {max_values} --bin {bins_values}"
+        command += f' --min {min_values} --max {max_values} --bin {bins_values}'
 
     # Run the sum_hills command
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
-        subprocess.run(sum_hills_str.split(), stdin=file, text=True)
+        subprocess.run(command.split(), stdin=file, text=True)
 
     return None
 
