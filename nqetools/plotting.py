@@ -213,6 +213,34 @@ def plot_fes_series_1d(fes_arrays: list[np.ndarray],
     return None
 
 
+def plot_fes_series_1d_compare(fes_arrays_a: list[np.ndarray],
+                               fes_arrays_b: list[np.ndarray],
+                               labels: list[str] = None,
+                               save: bool = True,
+                               show: bool = True,
+                               filename: str = "fes_1d_compare",
+                               x_lab: str = r"CV1",
+                               y_lab: str = r"$F$ (eV)") -> None:
+    if labels is None:
+        labels = ["MD", "PIMD"]
+
+    fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
+
+    ax.plot(*fes_arrays_a, '-', label=labels[0], lw=2)
+    ax.plot(*fes_arrays_b, '--', label=labels[1], lw=2)
+
+    ax.legend()
+    ax_plot(fig, ax, x_lab, y_lab)
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
 def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
                              times: list[float] = None,
                              max_times=5,
@@ -299,9 +327,9 @@ def plot_fes_contourf(fes,
                       show=True,
                       filename="fes_contourf") -> None:
     fig, ax = plt.subplot(1, 1,
-        figsize=(8, 3),
-        constrained_layout=True
-    )
+                          figsize=(8, 3),
+                          constrained_layout=True
+                          )
 
     cf = ax.contourf(*fes)
     ax.set_xlabel(r"$d_\mathrm{OO}$  (Å)")
