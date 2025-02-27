@@ -933,6 +933,159 @@ FLUSH STRIDE=1
     return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'opes.bias']
 
 
+def write_plumed_mtd_pt_wob_sep(atoms,
+                                directory=None,
+                                idx1=0,
+                                idx2=1,
+                                idx3=2,
+                                list_1=None,
+                                list_2=None,
+                                temperature=300,
+                                sigma=None,
+                                d_low=1.4,
+                                d_upper=4.0,
+                                kappa=0.026,
+                                pace=10,
+                                stride=10,
+                                height=0.041,
+                                bias=10,
+                                ):
+    if directory is None:
+        directory = os.getcwd()
+
+    if sigma is None:
+        sigma = [0.005, 0.05]
+
+    # Convert d_low and d_upper from A to nm
+    d_low = d_low * A_to_nm
+    d_upper = d_upper * A_to_nm
+
+    # convert the height from eV to kJ/mol
+    height = round_sf(height * eV_to_kJpermol)
+
+    # Get a list of all the atom indexes
+    group_idx = list(range(len(atoms)))
+
+    # Remove the indexes of the atoms which are acceptors or donors
+    group_idx.remove(idx1)
+    group_idx.remove(idx2)
+    group_idx.remove(idx3)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+    idx3 += 1
+    group_idx = [x + 1 for x in group_idx]
+    list_1 = [x + 1 for x in list_1]
+    list_2 = [x + 1 for x in list_2]
+
+    # Indexing starts from 1
+    idx_group = ",".join([str(x) for x in group_idx])
+    idx_list_1 = ",".join([str(x) for x in list_1])
+    idx_list_2 = ",".join([str(x) for x in list_2])
+
+    d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
+
+    impt = f"""
+com1: COM ATOMS={idx_list_1}
+com2: COM ATOMS={idx_list_2}
+
+c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c3: DISTANCES GROUPA={idx3} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+
+d: DISTANCE ATOMS=com1,com2
+
+dc1: COMBINE ARG=c1.lessthan,c2.lessthan,c3.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
+mtd: METAD ARG=d,dc1 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
+uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['d', 'c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'mtd.bias']
+
+
+def write_plumed_opes_pt_wob_sep(atoms,
+                                 directory=None,
+                                 idx1=0,
+                                 idx2=1,
+                                 idx3=2,
+                                 list_1=None,
+                                 list_2=None,
+                                 temperature=300,
+                                 d_low=1.4,
+                                 d_upper=4.0,
+                                 kappa=0.026,
+                                 pace=10,
+                                 stride=10,
+                                 barrier=0.041,
+                                 stride_hills=100,
+                                 explore=False,
+                                 ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert d_low and d_upper from A to nm
+    d_low = d_low * A_to_nm
+    d_upper = d_upper * A_to_nm
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+
+    # Get a list of all the atom indexes
+    group_idx = list(range(len(atoms)))
+
+    # Remove the indexes of the atoms which are acceptors or donors
+    group_idx.remove(idx1)
+    group_idx.remove(idx2)
+    group_idx.remove(idx3)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+    idx3 += 1
+    group_idx = [x + 1 for x in group_idx]
+    list_1 = [x + 1 for x in list_1]
+    list_2 = [x + 1 for x in list_2]
+
+    # Indexing starts from 1
+    idx_group = ",".join([str(x) for x in group_idx])
+    idx_list_1 = ",".join([str(x) for x in list_1])
+    idx_list_2 = ",".join([str(x) for x in list_2])
+
+    d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+com1: COM ATOMS={idx_list_1}
+com2: COM ATOMS={idx_list_2}
+
+c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c3: DISTANCES GROUPA={idx3} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+
+d: DISTANCE ATOMS=com1,com2
+
+dc1: COMBINE ARG=c1.lessthan,c2.lessthan,c3.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
+opes: {opes_command} ARG=d,dc1  PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
+uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['d', 'c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'opes.bias']
+
+
 def plumed_input_dpt(
         output_file: str,
         h1_index: int,
