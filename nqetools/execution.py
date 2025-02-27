@@ -1,6 +1,7 @@
 import subprocess
 import time
 from itertools import chain
+
 import ipi
 import numpy as np
 
@@ -88,22 +89,27 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
     fes_str = os.path.join(directory, 'FES')
 
     # Start building the command
-    command = f"plumed sum_hills --hills {hills_str} --outfile {fes_str} --stride {stride} --kt {kbt} --mintozero"
+    command = f"plumed sum_hills --hills {hills_str} --outfile {fes_str} --stride {stride} --kt {round_sf(kbt)} --mintozero"
 
-    if all(item is None for item in chain.from_iterable(cv)):
-        bins_values = ",".join([str(bins)] * len(cv))
-        command += f' --bin {bins_values}'
-    else:
-        if len(np.shape(cv)) == 2:
+    if len(np.shape(cv)) == 2:
+        if all(item is None for item in chain.from_iterable(cv)):
+            bins_values = ",".join([str(bins)] * len(cv))
+            command += f' --bin {bins_values}'
+        else:
             # Convert the CV list to a string
             min_values = ",".join(str(c[0]) for c in cv)
             max_values = ",".join(str(c[1]) for c in cv)
             bins_values = ",".join([str(bins)] * len(cv))
+            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+    else:
+        if cv[0] is None and cv[1] is None:
+            bins_values = str(bins)
+            command += f' --bin {bins_values}'
         else:
             min_values = str(cv[0])
             max_values = str(cv[1])
             bins_values = str(bins)
-        command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
 
     # Run the sum_hills command
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
@@ -125,20 +131,25 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
     path_to_opes = os.path.join(find_nqetools_path(), "opes", "fes_from_state.py")
     command = f'{path_to_opes} --kt {round_sf(kbt)}'
 
-    if all(item is None for item in chain.from_iterable(cv)):
-        bins_values = ",".join([str(bins)] * len(cv))
-        command += f' --bin {bins_values}'
-    else:
-        if len(np.shape(cv)) == 2:
+    if len(np.shape(cv)) == 2:
+        if all(item is None for item in chain.from_iterable(cv)):
+            bins_values = ",".join([str(bins)] * len(cv))
+            command += f' --bin {bins_values}'
+        else:
             # Convert the CV list to a string
             min_values = ",".join(str(c[0]) for c in cv)
             max_values = ",".join(str(c[1]) for c in cv)
             bins_values = ",".join([str(bins)] * len(cv))
+            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+    else:
+        if cv[0] is None and cv[1] is None:
+            bins_values = str(bins)
+            command += f' --bin {bins_values}'
         else:
             min_values = str(cv[0])
             max_values = str(cv[1])
             bins_values = str(bins)
-        command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
 
     command += f' --all_stored'
     print(command, flush=True)
