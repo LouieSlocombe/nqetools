@@ -130,12 +130,20 @@ def write_plumed_mtd_coord(atoms,
     # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
+    # Get a list of all the atom indexes
+    group_idx = list(range(len(atoms)))
+
+    # Remove the indexes of the atoms which are acceptors or donors
+    group_idx.remove(idx1)
+    group_idx.remove(idx2)
+
     # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
+    group_idx = [x + 1 for x in group_idx]
 
     # Indexing starts from 1
-    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms)}"
+    idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
@@ -183,11 +191,20 @@ def write_plumed_opes_coord(atoms,
     # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
+    # Get a list of all the atom indexes
+    group_idx = list(range(len(atoms)))
+
+    # Remove the indexes of the atoms which are acceptors or donors
+    group_idx.remove(idx1)
+    group_idx.remove(idx2)
+
     # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
+    group_idx = [x + 1 for x in group_idx]
+
     # Indexing starts from 1
-    idx_group = f"{max([idx1, idx2]) + 1}-{len(atoms)}"
+    idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
 
