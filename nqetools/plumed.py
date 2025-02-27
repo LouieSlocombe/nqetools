@@ -812,7 +812,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'c4.lessthan', 'dc1', 'dc2', 'mtd.bias']
+    return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'c4.lessthan', 'dc1', 'dc2', 'opes.bias']
 
 
 def write_plumed_mtd_pt_wob(atoms,
@@ -930,7 +930,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'mtd.bias']
+    return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'opes.bias']
 
 
 def plumed_input_dpt(
