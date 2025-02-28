@@ -47,19 +47,19 @@ def test_calc_instanton_kappa():
     temperature = 300
     n_beads = 40
 
-    directory_instanton = 'data/instanton/ts/'
-    nqe.run_instanton_post_process(directory_instanton,
+    directory_ts = 'data/instanton/ts/'
+    nqe.run_instanton_post_process(directory_ts,
                                    process_type='TS',
                                    temperature=temperature)
-    data_ts = nqe.parse_ts_thermo_data(directory_instanton)
+    data_ts = nqe.parse_ts_thermo_data(directory_ts)
 
-    directory_ts = f'data/instanton/inst_{n_beads}/'
-    nqe.run_instanton_post_process(directory_ts,
+    directory_instanton = f'data/instanton/inst_{n_beads}/'
+    nqe.run_instanton_post_process(directory_instanton,
                                    process_type='instanton',
                                    temperature=temperature,
                                    n_beads=n_beads)
 
-    data_inst = nqe.parse_inst_thermo_data(directory_ts)
+    data_inst = nqe.parse_inst_thermo_data(directory_instanton)
 
     kappa = nqe.calc_instanton_kappa(data_ts, data_inst)
     print(kappa)
