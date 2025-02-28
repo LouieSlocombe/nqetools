@@ -172,15 +172,16 @@ def run_instanton_post_process(directory,
     os.chdir(directory)
     path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "postproc.py")
     # Build the command
-    command = f'{path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}'
+    command = f'python {path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}'
     # Add the filter list if provided
     if filter_list is not None:
         command += f' -f {filter_list}'
-    # Add the output file name
-    command += f' > {outfile}'
-    print(command, flush=True)
-    subprocess.run(command.split())
-    # change back to the original directory
+    print(f"Running command: {command}", flush=True)
+    with open(outfile, "w") as file:
+        result = subprocess.run(command.split(), stdout=file, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            print(f"Error: {result.stderr}", flush=True)
+    # Change back to the original directory
     os.chdir(cwd)
     return None
 
