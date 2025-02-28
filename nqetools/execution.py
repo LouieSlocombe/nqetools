@@ -170,7 +170,7 @@ def run_instanton_post_process(directory,
     # Need to be in the directory of the run
     cwd = os.getcwd()
     os.chdir(directory)
-    path_to_proc = os.path.join(find_nqetools_path(), "/instanton_tools/", "postproc.py")
+    path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "postproc.py")
     # Build the command
     command = f'{path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}'
     # Add the filter list if provided
