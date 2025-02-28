@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 import numpy as np
 from ipi.engine.motion.instanton import SpringMapper
 from ipi.engine.simulation import Simulation
@@ -7,8 +8,10 @@ from ipi.utils.hesstools import clean_hessian
 from ipi.utils.instools import red2comp
 from ipi.utils.messages import verbosity
 from ipi.utils.units import unit_to_internal, Constants
+from scipy.constants import k, h
 
 from .execution import run_instanton_post_process
+
 
 def kappa_core(
         Q_trn_TS,
@@ -538,8 +541,6 @@ def instanton_post_process(input_file,
             sys.exit()
 
 
-
-
 def parse_inst_thermo_data(directory, filename='thermo_data.out'):
     """
     Parse the thermo_data.out file and extract thermodynamic values.
@@ -585,6 +586,7 @@ def parse_inst_thermo_data(directory, filename='thermo_data.out'):
 
     raise ValueError(f"Could not find thermodynamic data in {filepath}")
 
+
 def parse_ts_thermo_data(directory, filename='thermo_data.out'):
     """
     Parse the TS thermo_data.out file and extract thermodynamic values.
@@ -618,6 +620,7 @@ def parse_ts_thermo_data(directory, filename='thermo_data.out'):
 
     return data
 
+
 def calc_instanton_kappa(ts_data, inst_data):
     """
     Calculate the tunneling factor (kappa) from TS and instanton thermodynamic data.
@@ -635,7 +638,7 @@ def calc_instanton_kappa(ts_data, inst_data):
 
     # Calculate f_vib using BN and temperature
     beta = 1.0 / (inst_data['Temperature'] * 3.1668152e-06)  # kelvin2au = 3.1668152e-06
-    f_vib = np.sqrt((2.0 * np.pi * inst_data['NBEADS'] * inst_data['BN']) / (beta * 1.0**2)) * \
+    f_vib = np.sqrt((2.0 * np.pi * inst_data['NBEADS'] * inst_data['BN']) / (beta * 1.0 ** 2)) * \
             np.exp(inst_data['log(Qvib*N)'] - ts_data['logQvib'])
 
     # Calculate kappa
@@ -643,15 +646,134 @@ def calc_instanton_kappa(ts_data, inst_data):
 
     return kappa
 
+
 def calc_kappa_full(directory_ts, directory_instanton, temperature, n_beads):
     run_instanton_post_process(directory_ts,
-                                   process_type='TS',
-                                   temperature=temperature)
+                               process_type='TS',
+                               temperature=temperature)
     data_ts = parse_ts_thermo_data(directory_ts)
 
     run_instanton_post_process(directory_instanton,
-                                   process_type='instanton',
-                                   temperature=temperature,
-                                   n_beads=n_beads)
+                               process_type='instanton',
+                               temperature=temperature,
+                               n_beads=n_beads)
     data_inst = parse_inst_thermo_data(directory_instanton)
     return calc_instanton_kappa(data_ts, data_inst)
+
+
+def parse_react_thermo_data(directory, filename='thermo_data.out'):
+    """
+    Parse the reactant thermo_data.out file and extract thermodynamic values.
+
+    Args:
+        directory (str): Directory containing the thermo_data file
+        filename (str): Name of the thermo data file (default: 'thermo_data.out')
+
+    Returns:
+        dict: Dictionary containing Qtras, Qrot, and logQvib_rp values
+    """
+    filepath = os.path.join(directory, filename)
+
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+
+    data = {}
+
+    for i, line in enumerate(lines):
+        if 'Qtras(bohr^-3) | Qrot     | logQvib_rp' in line:
+            # Get the next line which contains the values
+            data_line = lines[i + 1].strip()
+            values = data_line.split('|')
+
+            data = {
+                'Qtras': float(values[0].strip()),
+                'Qrot': float(values[1].strip()),
+                'logQvib_rp': float(values[2].strip())
+            }
+            return data
+
+    raise ValueError(f"Could not find reactant thermodynamic data in {filepath}")
+
+
+def calculate_forward_rate(T,
+                           Q_trans_react,
+                           Q_rot_react,
+                           logQ_vib_react,
+                           Q_trans_TS,
+                           Q_rot_TS,
+                           logQ_vib_TS,
+                           vkBT):
+    """
+    Calculate the forward rate constant using Transition State Theory.
+
+    Parameters:
+    T (float): Temperature in Kelvin
+    Q_trans_react (float): Translational partition function of the reactant
+    Q_rot_react (float): Rotational partition function of the reactant
+    logQ_vib_react (float): Logarithm of vibrational partition function of the reactant
+    Q_trans_TS (float): Translational partition function of the transition state
+    Q_rot_TS (float): Rotational partition function of the transition state
+    logQ_vib_TS (float): Logarithm of vibrational partition function of the transition state
+    V_TS (float): Potential energy difference between TS and reactant (in Joules)
+
+    Returns:
+    float: Forward rate constant (in s⁻¹)
+    """
+
+    # Convert log partition functions to normal partition functions
+    Q_vib_react = np.exp(logQ_vib_react)
+    Q_vib_TS = np.exp(logQ_vib_TS)
+
+    # Calculate the ratio of partition functions
+    partition_function_ratio = (Q_trans_TS * Q_rot_TS * Q_vib_TS) / (Q_trans_react * Q_rot_react * Q_vib_react)
+
+    # Calculate the exponential Boltzmann factor
+    boltzmann_factor = np.exp(-vkBT)
+
+    # Calculate the forward rate constant
+    k_f = (k * T / h) * partition_function_ratio * boltzmann_factor
+
+    return k_f
+
+
+def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature):
+    """
+    Calculate the forward rate constant using data from TS and reactant thermo files.
+
+    Args:
+        ts_directory (str): Directory containing TS thermo_data file
+        react_directory (str): Directory containing reactant thermo_data file
+        temperature (float): Temperature in Kelvin
+
+    Returns:
+        float: Forward rate constant (in s⁻¹)
+    """
+
+    run_instanton_post_process(react_directory,
+                               process_type='reactant',
+                               temperature=temperature,
+                               filter_list=n_atoms - 1)
+
+    run_instanton_post_process(ts_directory,
+                               process_type='TS',
+                               temperature=temperature)
+
+    # Get TS data
+    ts_data = parse_ts_thermo_data(ts_directory)
+
+    # Get reactant data
+    react_data = parse_react_thermo_data(react_directory)
+
+    # Calculate forward rate using TST
+    k_f = calculate_forward_rate(
+        T=temperature,
+        Q_trans_react=react_data['Qtras'],
+        Q_rot_react=react_data['Qrot'],
+        logQ_vib_react=react_data['logQvib_rp'],
+        Q_trans_TS=ts_data['Qtras'],
+        Q_rot_TS=ts_data['Qrot'],
+        logQ_vib_TS=ts_data['logQvib'],
+        vkBT=ts_data['V/kBT']
+    )
+
+    return k_f

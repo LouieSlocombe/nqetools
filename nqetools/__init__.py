@@ -102,7 +102,9 @@ from .instanton import (calc_kappa,
                         parse_inst_thermo_data,
                         parse_ts_thermo_data,
                         calc_instanton_kappa,
-                        calc_kappa_full)
+                        calc_kappa_full,
+                        parse_react_thermo_data,
+                        calc_forward_rate)
 
 from .qchem_mod import (QChem)
 
