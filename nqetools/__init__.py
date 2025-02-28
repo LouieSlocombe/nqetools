@@ -98,7 +98,11 @@ from .plumed import (prep_plumed,
                      write_plumed_opes_dists)
 
 from .instanton import (calc_kappa,
-                        instanton_post_process)
+                        instanton_post_process,
+                        parse_inst_thermo_data,
+                        parse_ts_thermo_data,
+                        calc_instanton_kappa,
+                        calc_kappa_full)
 
 from .qchem_mod import (QChem)
 

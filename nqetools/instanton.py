@@ -1,5 +1,5 @@
 import sys
-
+import os
 import numpy as np
 from ipi.engine.motion.instanton import SpringMapper
 from ipi.engine.simulation import Simulation
@@ -8,6 +8,7 @@ from ipi.utils.instools import red2comp
 from ipi.utils.messages import verbosity
 from ipi.utils.units import unit_to_internal, Constants
 
+from .execution import run_instanton_post_process
 
 def kappa_core(
         Q_trn_TS,
@@ -535,3 +536,122 @@ def instanton_post_process(input_file,
         else:
             print("We can not recognize the mode.", flush=True)
             sys.exit()
+
+
+
+
+def parse_inst_thermo_data(directory, filename='thermo_data.out'):
+    """
+    Parse the thermo_data.out file and extract thermodynamic values.
+
+    Args:
+        directory (str): Directory containing the thermo_data file
+        filename (str): Name of the thermo data file (default: 'thermo_data.out')
+
+    Returns:
+        dict: Dictionary containing the thermodynamic values including Temperature, NBEADS, and 1/(betaP*hbar)
+    """
+    filepath = os.path.join(directory, filename)
+
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+
+    data = {}
+
+    # Find needed values from the file
+    for i, line in enumerate(lines):
+        if 'Temperature:' in line:
+            data['Temperature'] = float(line.split()[1])
+        elif 'NBEADS:' in line:
+            data['NBEADS'] = int(line.split()[1])
+        elif '1/(betaP*hbar)' in line:
+            data['1/(betaP*hbar)'] = float(line.split('=')[1].strip())
+        elif 'BN' in line and 'Qt' in line:
+            # Get the next line which contains the values
+            data_line = lines[i + 1]
+            # Split the line and clean up the values
+            values = data_line.split('|')
+            bn_parts = values[0].strip().replace('(', '').replace(')', '').split()
+
+            # Add the remaining data
+            data.update({
+                'BN': float(bn_parts[0]),
+                'Qt': float(values[1].strip()),
+                'Qrot': float(values[2].strip()),
+                'log(Qvib*N)': float(values[3].strip()),
+                'S/hbar': float(values[4].split('(')[0].strip()),
+            })
+            return data
+
+    raise ValueError(f"Could not find thermodynamic data in {filepath}")
+
+def parse_ts_thermo_data(directory, filename='thermo_data.out'):
+    """
+    Parse the TS thermo_data.out file and extract thermodynamic values.
+
+    Args:
+        directory (str): Directory containing the thermo_data file
+        filename (str): Name of the thermo data file (default: 'thermo_data.out')
+
+    Returns:
+        dict: Dictionary containing Qtras, Qrot, logQvib, and V/kBT values
+    """
+    filepath = os.path.join(directory, filename)
+
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+
+    data = {}
+
+    for line in lines:
+        if 'Qtras:' in line:
+            data['Qtras'] = float(line.split(':')[1].strip())
+        elif 'Qrot:' in line:
+            data['Qrot'] = float(line.split(':')[1].strip())
+        elif 'logQvib:' in line:
+            data['logQvib'] = float(line.split(':')[1].strip())
+        elif 'V/kBT' in line:
+            data['V/kBT'] = float(line.split()[-1].strip())
+
+    if not data:
+        raise ValueError(f"Could not find thermodynamic data in {filepath}")
+
+    return data
+
+def calc_instanton_kappa(ts_data, inst_data):
+    """
+    Calculate the tunneling factor (kappa) from TS and instanton thermodynamic data.
+
+    Args:
+        ts_data (dict): Dictionary containing TS thermodynamic data
+        inst_data (dict): Dictionary containing instanton thermodynamic data
+
+    Returns:
+        float: Tunneling factor (kappa)
+    """
+    # Extract partition functions and other parameters
+    f_trn = inst_data['Qt'] / ts_data['Qtras']
+    f_rot = inst_data['Qrot'] / ts_data['Qrot']
+
+    # Calculate f_vib using BN and temperature
+    beta = 1.0 / (inst_data['Temperature'] * 3.1668152e-06)  # kelvin2au = 3.1668152e-06
+    f_vib = np.sqrt((2.0 * np.pi * inst_data['NBEADS'] * inst_data['BN']) / (beta * 1.0**2)) * \
+            np.exp(inst_data['log(Qvib*N)'] - ts_data['logQvib'])
+
+    # Calculate kappa
+    kappa = f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
+
+    return kappa
+
+def calc_kappa_full(directory_ts, directory_instanton, temperature, n_beads):
+    run_instanton_post_process(directory_ts,
+                                   process_type='TS',
+                                   temperature=temperature)
+    data_ts = parse_ts_thermo_data(directory_ts)
+
+    run_instanton_post_process(directory_instanton,
+                                   process_type='instanton',
+                                   temperature=temperature,
+                                   n_beads=n_beads)
+    data_inst = parse_inst_thermo_data(directory_instanton)
+    return calc_instanton_kappa(data_ts, data_inst)
