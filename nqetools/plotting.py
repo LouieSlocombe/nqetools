@@ -582,7 +582,7 @@ def plot_bead_convergence(n_beads: list[float],
                           kappa: list[float],
                           save=True,
                           show=True,
-                          filename="kie_temperature"
+                          filename="bead_temperature"
                           ) -> None:
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
