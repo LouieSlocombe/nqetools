@@ -38,7 +38,8 @@ from .execution import (run_command,
                         run_ts,
                         run_instanton,
                         run_plumed_hills,
-                        run_plumed_hills_opes)
+                        run_plumed_hills_opes,
+                        run_instanton_post_process)
 
 from .io import (read_ipi_xyz,
                  read_ipi_output,

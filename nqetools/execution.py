@@ -161,6 +161,30 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
     return None
 
 
+def run_instanton_post_process(directory,
+                               process_type='reactant',
+                               temperature=300.0,
+                               filter_list=None,
+                               n_beads=1,
+                               outfile='thermo_data.out'):
+    # Need to be in the directory of the run
+    cwd = os.getcwd()
+    os.chdir(directory)
+    path_to_proc = os.path.join(find_nqetools_path(), "/instanton_tools/", "postproc.py")
+    # Build the command
+    command = f'{path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}'
+    # Add the filter list if provided
+    if filter_list is not None:
+        command += f' -f {filter_list}'
+    # Add the output file name
+    command += f' > {outfile}'
+    print(command, flush=True)
+    subprocess.run(command.split())
+    # change back to the original directory
+    os.chdir(cwd)
+    return None
+
+
 def prep_optimise_xml(directory,
                       atoms,
                       outfile="min",
@@ -940,10 +964,21 @@ def run_instanton(directory,
     copy_hess(get_final_hess(directory_ts), directory)
 
     # Prepare the instanton calculation
-    prep_instanton_xml(directory, atoms, outfile=outfile, driver=driver, total_steps=total_steps, deuterate=deuterate,
-                       n_beads=n_beads, temperature=temperature, tol_energy=tol_energy, tol_force=tol_force,
-                       tol_position=tol_position, stride=stride, checkpoint_stride=checkpoint_stride,
-                       properties=properties, xml_in=xml_in)
+    prep_instanton_xml(directory,
+                       atoms,
+                       outfile=outfile,
+                       driver=driver,
+                       total_steps=total_steps,
+                       deuterate=deuterate,
+                       n_beads=n_beads,
+                       temperature=temperature,
+                       tol_energy=tol_energy,
+                       tol_force=tol_force,
+                       tol_position=tol_position,
+                       stride=stride,
+                       checkpoint_stride=checkpoint_stride,
+                       properties=properties,
+                       xml_in=xml_in)
 
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_args)
