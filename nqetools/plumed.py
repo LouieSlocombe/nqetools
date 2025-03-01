@@ -43,6 +43,10 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_mtd_pt_wob(atoms, **plumed_args)
     elif plumed_type == 'opes-pt-wob':
         return write_plumed_opes_pt_wob(atoms, **plumed_args)
+    elif plumed_type == 'mtd-pt-wob-sep':
+        return write_plumed_mtd_pt_wob_sep(atoms, **plumed_args)
+    elif plumed_type == 'opes-pt-wob-sep':
+        return write_plumed_opes_pt_wob_sep(atoms, **plumed_args)
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
@@ -935,7 +939,7 @@ def write_plumed_mtd_pt_wob_sep(atoms,
                                 sigma=None,
                                 d_low=1.4,
                                 d_upper=4.0,
-                                kappa=0.026,
+                                kappa=0.1,
                                 pace=10,
                                 stride=10,
                                 height=0.041,
@@ -1006,7 +1010,7 @@ def write_plumed_opes_pt_wob_sep(atoms,
                                  temperature=300,
                                  d_low=1.4,
                                  d_upper=4.0,
-                                 kappa=0.026,
+                                 kappa=0.1,
                                  pace=10,
                                  stride=10,
                                  barrier=0.041,
