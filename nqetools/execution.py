@@ -78,6 +78,7 @@ def run_ipi(directory,
 
 
 def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None):
+    print(f'Running plumed hills', flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
 
@@ -115,10 +116,12 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
         subprocess.run(command.split(), stdin=file, text=True)
 
+    print(f"Plumed hills run complete\n", flush=True)
     return None
 
 
 def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
+    print(f'Running plumed OPES hills', flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
 
@@ -158,6 +161,7 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
 
     # change back to the original directory
     os.chdir(cwd)
+    print(f"Plumed OPES hills run complete\n", flush=True)
     return None
 
 
@@ -167,6 +171,7 @@ def run_instanton_post_process(directory,
                                filter_list=None,
                                n_beads=1,
                                outfile='thermo_data.out'):
+    print(f'Running the {process_type} thermo/instanton post-processing', flush=True)
     # Need to be in the directory of the run
     cwd = os.getcwd()
     os.chdir(directory)
@@ -183,6 +188,7 @@ def run_instanton_post_process(directory,
             print(f"Error: {result.stderr}", flush=True)
     # Change back to the original directory
     os.chdir(cwd)
+    print(f"Thermo/Instanton post-processing complete\n", flush=True)
     return None
 
 
@@ -266,6 +272,7 @@ def run_optimise(directory,
                  checkpoint_stride=1000,
                  properties=None,
                  xml_in=None):
+    print(f"Running the minimisation with the driver: {driver}", flush=True)
     # Prepare the minimization xml file
     if driver_args is None:
         driver_args = {}
@@ -299,11 +306,11 @@ def run_optimise(directory,
     driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the minimisation
-    print(f"Running the minimisation with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, f"{outfile}.out")
     # Load the structure
     atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    print(f"Minimisation complete\n", flush=True)
     return atoms_out, output_data, output_desc
 
 
@@ -417,6 +424,7 @@ def run_md(directory,
            n_beads=1,
            properties=None,
            xml_in=None):
+    print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
 
@@ -451,7 +459,6 @@ def run_md(directory,
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the MD
-    print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, f"{outfile}.out")
     # Load the structure
     if n_beads > 1:
@@ -459,6 +466,7 @@ def run_md(directory,
     else:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    print(f"MD ({md_type}) complete\n", flush=True)
     return atoms_out, output_data, output_desc
 
 
@@ -581,6 +589,7 @@ def run_plumed_md(directory,
                   plumed_args=None,
                   properties=None,
                   xml_in=None):
+    print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     # Update the plumed dictionary
     if plumed_args is None:
         plumed_args = {'directory': directory,
@@ -631,7 +640,6 @@ def run_plumed_md(directory,
     driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the MD
-    print(f"Running plumed MD ({md_type}) with the driver: {driver}", flush=True)
     run_ipi(directory, server, driver, f"{outfile}.out", n=n_beads)
 
     # Load the structure
@@ -640,6 +648,7 @@ def run_plumed_md(directory,
     else:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    print(f"MD ({md_type}) complete\n", flush=True)
     return atoms_out, output_data, output_desc
 
 
@@ -709,6 +718,7 @@ def run_phonons(directory,
                 checkpoint_stride=1000,
                 properties=None,
                 xml_in=None):
+    print(f"Running the phonons with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
 
@@ -737,6 +747,7 @@ def run_phonons(directory,
     driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the phonons
     run_ipi(directory, server, driver, f"{outfile}.out")
+    print(f"Phonons complete\n", flush=True)
     return None
 
 
@@ -815,6 +826,7 @@ def run_ts(directory,
            checkpoint_stride=1000,
            properties=None,
            xml_in=None):
+    print(f"Running the transition state search with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
 
@@ -849,6 +861,7 @@ def run_ts(directory,
     # Load the structure
     atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+    print(f"TS search complete\n", flush=True)
     return atoms_out, output_data, output_desc
 
 
@@ -948,6 +961,7 @@ def run_instanton(directory,
                   checkpoint_stride=1000,
                   properties=None,
                   xml_in=None):
+    print(f"Running the instanton with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
 
@@ -986,4 +1000,5 @@ def run_instanton(directory,
 
     # Run the instanton
     run_ipi(directory, server, driver, f"{outfile}.out")
+    print(f"Instanton complete\n", flush=True)
     return None
