@@ -383,7 +383,7 @@ def get_file_extension(file_path):
     return file_extension
 
 
-def cluster_atoms(atoms: Atoms) -> list[Atoms]:
+def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     """
     Clusters atoms based on their natural cutoffs.
 
@@ -399,6 +399,10 @@ def cluster_atoms(atoms: Atoms) -> list[Atoms]:
     list[ase.Atoms]: A list of ASE Atoms objects, each representing a cluster.
     """
     cutoffs = natural_cutoffs(atoms)
+
+    # Adjust cutoffs by a factor
+    cutoffs = [cutoff * multi for cutoff in cutoffs]
+
     nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
     nl.update(atoms)
 
@@ -419,6 +423,32 @@ def cluster_atoms(atoms: Atoms) -> list[Atoms]:
         clusters_indices.append(cluster)
 
     return [atoms[indices] for indices in clusters_indices]
+
+
+def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
+    """
+    Clusters non-hydrogen atoms based on their natural cutoffs and returns
+    indices of atoms in each cluster.
+
+    This function uses the cluster_atoms function to cluster atoms, and then
+    returns the indices of non-hydrogen atoms in each cluster.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE Atoms object to be clustered.
+
+    Returns:
+    tuple[list[int], list[int]]: Two lists containing the indices of atoms
+                               in each of the two non-hydrogen clusters.
+    """
+    # Cluster all atoms
+    clusters = cluster_atoms(atoms)
+    assert len(clusters) == 2
+
+    # Get indices of atoms in each cluster
+    idx1 = [i for i in clusters[0] if atoms.get_chemical_symbols()[i] != "H"]
+    idx2 = [i for i in clusters[1] if atoms.get_chemical_symbols()[i] != "H"]
+
+    return idx1, idx2
 
 
 def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
