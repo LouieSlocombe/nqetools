@@ -161,7 +161,7 @@ def get_double(q0, nbeads0, natoms, h0):
     for i in range(nbeads0):
         x = i * ii + iii
         y = ((nbeads0 - 1) - i) * ii
-        h[x : x + ii, x : x + ii] = h0[y : y + ii, y : y + ii]
+        h[x: x + ii, x: x + ii] = h0[y: y + ii, y: y + ii]
 
     return q, nbeads, h
 
@@ -261,7 +261,6 @@ simulation = Simulation.load_from_xml(
     open(inputt), custom_verbosity="quiet", request_banner=False, read_only=True
 )
 
-
 beads = simulation.syslist[0].motion.beads.clone()
 m = simulation.syslist[0].motion.beads.m.copy()
 nbeads = simulation.syslist[0].motion.beads.nbeads
@@ -279,7 +278,6 @@ if case != "instanton" and nbeads > 1:
     print(("case {} , beads {}".format(case, nbeads)))
     sys.exit()
 
-
 # Depending the case we read from the restart file different things:
 if case == "reactant":
     dynmat = simulation.syslist[0].motion.dynmatrix.copy()
@@ -291,6 +289,10 @@ if case == "reactant":
     m3 = beads.m3
     if len(filt) > 0:
         pos, h, natoms, m, m3 = Filter(pos, h, natoms, m, beads.m3, filt)
+
+    pots = simulation.syslist[0].motion.optarrays["old_u"]
+    V0 = simulation.syslist[0].motion.optarrays["energy_shift"]
+
 
 elif case == "TS":
     pos = beads.q
@@ -384,7 +386,7 @@ if not quiet or case == "reactant" or case == "TS":
     save_frequencies(d, nzeros)
 
 if case == "reactant":
-    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar**2)) ** 1.5
+    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
 
     if asr == "poly":
         Qrot = (8 * np.pi * detI / ((hbar) ** 6 * (beta) ** 3)) ** 0.5
@@ -401,13 +403,21 @@ if case == "reactant":
     np.savetxt(outfile, dd.reshape(1, dd.size))
     outfile.close()
 
+    U = pots.sum() - V0
+
     print(("\nWe are done. Reactants. Nbeads {}".format(nbeadsR)))
     print(("{:14s} | {:8s} | {:8s}".format("Qtras(bohr^-3)", "Qrot", "logQvib_rp")))
     print(("{:14.3f} | {:8.3f} |{:8.3f}\n".format(Qtras, Qrot, logQvib_rp)))
     print("A file with the eigenvalues in atomic units was generated\n")
+    print(
+        (
+            "Potential energy at reactant:  {} eV\n".format(
+                U / eV2au, )
+        )
+    )
 
 elif case == "TS":
-    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar**2)) ** 1.5
+    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
 
     if asr == "poly":
         Qrot = (8 * np.pi * detI / ((hbar) ** 6 * (beta) ** 3)) ** 0.5
@@ -435,11 +445,11 @@ elif case == "TS":
 
 elif case == "instanton":
     if mode == "rate":
-        Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar**2)) ** 1.5
+        Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
 
         if asr == "poly" and not quiet:
             Qrot = (8 * np.pi * detI / ((hbar) ** 6 * (betaP) ** 3)) ** 0.5
-            Qrot /= nbeads**3
+            Qrot /= nbeads ** 3
         else:
             Qrot = 1.0
 
@@ -456,9 +466,9 @@ elif case == "instanton":
                     "Please check that this you don't have any unwanted zero frequency"
                 )
             logQvib = (
-                -np.sum(np.log(betaP * hbar * np.sqrt(np.absolute(np.delete(d, 1)))))
-                + nzeros * np.log(nbeads)
-                + np.log(nbeads)
+                    -np.sum(np.log(betaP * hbar * np.sqrt(np.absolute(np.delete(d, 1)))))
+                    + nzeros * np.log(nbeads)
+                    + np.log(nbeads)
             )
         else:
             logQvib = 0.0
@@ -510,7 +520,7 @@ elif case == "instanton":
             d_min[i] = float(aux[i])
         d_min = d_min.reshape((natoms * 3))
         out.close()
-        ww = get_rp_freq(np.sign(d_min) * d_min**2, nbeads, temp, mode="splitting")
+        ww = get_rp_freq(np.sign(d_min) * d_min ** 2, nbeads, temp, mode="splitting")
         react = np.sum(np.log(ww))
 
         action1 = (pots.sum() - nbeads * V0) * 1 / (temp * nbeads * kb)
@@ -530,7 +540,7 @@ elif case == "instanton":
             phi = 1
 
         tetaphi = (
-            betaP * hbar * np.sqrt(action / (2 * hbar * np.pi)) * np.exp(-action / hbar)
+                betaP * hbar * np.sqrt(action / (2 * hbar * np.pi)) * np.exp(-action / hbar)
         )
         teta = tetaphi / phi
         h = -teta / betaP
@@ -548,7 +558,7 @@ elif case == "instanton":
         print("BN {} a.u.".format(BN))
         print(
             "BN/(hbar^2 * betaN)  {}  (should be same as S/hbar) ".format(
-                (BN / ((hbar**2) * betaP))
+                (BN / ((hbar ** 2) * betaP))
             )
         )
         print("")
