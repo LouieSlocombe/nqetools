@@ -819,7 +819,6 @@ def write_plumed_mtd_pt_wob(atoms,
                             directory=None,
                             idx1=0,
                             idx2=1,
-                            idx3=2,
                             temperature=300,
                             sigma=0.005,
                             d_low=1.4,
@@ -843,12 +842,10 @@ def write_plumed_mtd_pt_wob(atoms,
     # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
-    group_idx.remove(idx3)
 
     # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
-    idx3 += 1
     group_idx = [x + 1 for x in group_idx]
 
     # Indexing starts from 1
@@ -859,8 +856,7 @@ def write_plumed_mtd_pt_wob(atoms,
     impt = f"""
 c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
-c3: DISTANCES GROUPA={idx3} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
-dc1: COMBINE ARG=c1.lessthan,c2.lessthan,c3.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
+dc1: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 mtd: METAD ARG=dc1 PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
@@ -869,14 +865,13 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'mtd.bias']
+    return ['c1.lessthan', 'c2.lessthan', 'dc1', 'mtd.bias']
 
 
 def write_plumed_opes_pt_wob(atoms,
                              directory=None,
                              idx1=0,
                              idx2=1,
-                             idx3=2,
                              temperature=300,
                              d_low=1.4,
                              pace=10,
@@ -934,7 +929,6 @@ def write_plumed_mtd_pt_wob_sep(atoms,
                                 directory=None,
                                 idx1=0,
                                 idx2=1,
-                                idx3=2,
                                 list_1=None,
                                 list_2=None,
                                 temperature=300,
@@ -966,12 +960,10 @@ def write_plumed_mtd_pt_wob_sep(atoms,
     # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
-    group_idx.remove(idx3)
 
     # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
-    idx3 += 1
     group_idx = [x + 1 for x in group_idx]
     list_1 = [x + 1 for x in list_1]
     list_2 = [x + 1 for x in list_2]
@@ -989,11 +981,10 @@ com2: COM ATOMS={idx_list_2}
 
 c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
-c3: DISTANCES GROUPA={idx3} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 
 d: DISTANCE ATOMS=com1,com2
 
-dc1: COMBINE ARG=c1.lessthan,c2.lessthan,c3.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
+dc1: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 mtd: METAD ARG=d,dc1 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FILE=HILLS BIASFACTOR={bias} TEMP={temperature}
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
@@ -1003,14 +994,13 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['d', 'c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'mtd.bias']
+    return ['d', 'c1.lessthan', 'c2.lessthan', 'dc1', 'mtd.bias']
 
 
 def write_plumed_opes_pt_wob_sep(atoms,
                                  directory=None,
                                  idx1=0,
                                  idx2=1,
-                                 idx3=2,
                                  list_1=None,
                                  list_2=None,
                                  temperature=300,
@@ -1039,12 +1029,10 @@ def write_plumed_opes_pt_wob_sep(atoms,
     # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
-    group_idx.remove(idx3)
 
     # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
-    idx3 += 1
     group_idx = [x + 1 for x in group_idx]
     list_1 = [x + 1 for x in list_1]
     list_2 = [x + 1 for x in list_2]
@@ -1066,11 +1054,10 @@ com2: COM ATOMS={idx_list_2}
 
 c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
-c3: DISTANCES GROUPA={idx3} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
 
 d: DISTANCE ATOMS=com1,com2
 
-dc1: COMBINE ARG=c1.lessthan,c2.lessthan,c3.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
+dc1: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
 opes: {opes_command} ARG=d,dc1  PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
 uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 
@@ -1080,7 +1067,7 @@ FLUSH STRIDE=1
     # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['d', 'c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'dc1', 'opes.bias']
+    return ['d', 'c1.lessthan', 'c2.lessthan', 'dc1', 'opes.bias']
 
 
 def plumed_input_dpt(
