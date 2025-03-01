@@ -172,6 +172,7 @@ def run_instanton_post_process(directory,
                                process_type='reactant',
                                temperature=300.0,
                                filter_list=None,
+                               ref_energy=None,
                                n_beads=1,
                                outfile='thermo_data.out'):
     print(f'Running the {process_type} thermo/instanton post-processing', flush=True)
@@ -185,6 +186,10 @@ def run_instanton_post_process(directory,
     # Add the filter list if provided
     if filter_list is not None:
         command += f' -f {filter_list}'
+
+    # Add the reference energy if provided
+    if ref_energy is not None:
+        command += f' -e {ref_energy}'
 
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
