@@ -651,23 +651,15 @@ def calc_kappa_full(directory_react,
                     directory_ts,
                     directory_instanton,
                     temperature,
+                    react_energy,
                     n_beads,
                     filter_list=None):
-
-    run_instanton_post_process(directory_react,
-                               process_type='reactant',
-                               temperature=temperature,
-                               filter_list=filter_list)
-    data_react = parse_react_thermo_data(directory_react)
-
-    # Get the reference energy from the reactant data
-    ref_energy = data_react['potential_energy']
 
     run_instanton_post_process(directory_ts,
                                process_type='TS',
                                temperature=temperature,
                                filter_list=filter_list,
-                               ref_energy=ref_energy)
+                               ref_energy=react_energy)
     data_ts = parse_ts_thermo_data(directory_ts)
 
     run_instanton_post_process(directory_instanton,
@@ -675,7 +667,7 @@ def calc_kappa_full(directory_react,
                                temperature=temperature,
                                n_beads=n_beads,
                                filter_list=filter_list,
-                               ref_energy=ref_energy)
+                               ref_energy=react_energy)
     data_inst = parse_inst_thermo_data(directory_instanton)
     return calc_instanton_kappa(data_ts, data_inst)
 
@@ -707,13 +699,12 @@ def parse_react_thermo_data(directory, filename='thermo_data.out'):
             data['Qtras'] = float(values[0].strip())
             data['Qrot'] = float(values[1].strip())
             data['logQvib_rp'] = float(values[2].strip())
-        elif 'Potential energy at reactant:' in line:
-            data['potential_energy'] = float(line.split(':')[1].strip().split()[0])
 
     if not data:
         raise ValueError(f"Could not find reactant thermodynamic data in {filepath}")
 
     return data
+
 
 def calculate_forward_rate(T,
                            Q_trans_react,
@@ -756,7 +747,7 @@ def calculate_forward_rate(T,
     return k_f
 
 
-def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature):
+def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature,react_energy):
     """
     Calculate the forward rate constant using data from TS and reactant thermo files.
 
@@ -774,15 +765,10 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature):
                                temperature=temperature,
                                filter_list=n_atoms - 1)
 
-    data_react = parse_react_thermo_data(react_directory)
-
-    # Get the reference energy from the reactant data
-    ref_energy = data_react['potential_energy']
-
     run_instanton_post_process(ts_directory,
                                process_type='TS',
                                temperature=temperature,
-                               ref_energy=ref_energy)
+                               ref_energy=react_energy)
 
     # Get TS data
     ts_data = parse_ts_thermo_data(ts_directory)

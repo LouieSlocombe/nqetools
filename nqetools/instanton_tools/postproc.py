@@ -290,9 +290,6 @@ if case == "reactant":
     if len(filt) > 0:
         pos, h, natoms, m, m3 = Filter(pos, h, natoms, m, beads.m3, filt)
 
-    pots = simulation.syslist[0].motion.optarrays["old_u"]
-    V0 = simulation.syslist[0].motion.optarrays["energy_shift"]
-
 
 elif case == "TS":
     pos = beads.q
@@ -403,18 +400,10 @@ if case == "reactant":
     np.savetxt(outfile, dd.reshape(1, dd.size))
     outfile.close()
 
-    U = pots.sum() - V0
-
     print(("\nWe are done. Reactants. Nbeads {}".format(nbeadsR)))
     print(("{:14s} | {:8s} | {:8s}".format("Qtras(bohr^-3)", "Qrot", "logQvib_rp")))
     print(("{:14.3f} | {:8.3f} |{:8.3f}\n".format(Qtras, Qrot, logQvib_rp)))
     print("A file with the eigenvalues in atomic units was generated\n")
-    print(
-        (
-            "Potential energy at reactant:  {} eV\n".format(
-                U / eV2au, )
-        )
-    )
 
 elif case == "TS":
     Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
