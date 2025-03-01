@@ -112,6 +112,8 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
             bins_values = str(bins)
             command += f' --min {min_values} --max {max_values} --bin {bins_values}'
 
+    print(f"Running command:\n{command}", flush=True)
+
     # Run the sum_hills command
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
         subprocess.run(command.split(), stdin=file, text=True)
@@ -155,7 +157,8 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
             command += f' --min {min_values} --max {max_values} --bin {bins_values}'
 
     command += f' --all_stored'
-    print(command, flush=True)
+    print(f"Working directory: {directory}", flush=True)
+    print(f"Running command:\n{command}", flush=True)
 
     subprocess.run(command.split())
 
@@ -172,6 +175,7 @@ def run_instanton_post_process(directory,
                                n_beads=1,
                                outfile='thermo_data.out'):
     print(f'Running the {process_type} thermo/instanton post-processing', flush=True)
+
     # Need to be in the directory of the run
     cwd = os.getcwd()
     os.chdir(directory)
@@ -181,11 +185,16 @@ def run_instanton_post_process(directory,
     # Add the filter list if provided
     if filter_list is not None:
         command += f' -f {filter_list}'
-    print(f"Running command: {command}", flush=True)
+
+    print(f"Working directory: {directory}", flush=True)
+    print(f"Running command:\n{command}", flush=True)
+
+    # Run the command and write the output to the outfile
     with open(outfile, "w") as file:
         result = subprocess.run(command.split(), stdout=file, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
             print(f"Error: {result.stderr}", flush=True)
+
     # Change back to the original directory
     os.chdir(cwd)
     print(f"Thermo/Instanton post-processing complete\n", flush=True)
