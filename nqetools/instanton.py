@@ -647,14 +647,13 @@ def calc_instanton_kappa(ts_data, inst_data):
     return kappa
 
 
-def calc_kappa_full(directory_react,
-                    directory_ts,
-                    directory_instanton,
-                    temperature,
-                    react_energy,
-                    n_beads,
-                    filter_list=None):
-
+def calc_kappa_full(
+        directory_ts,
+        directory_instanton,
+        temperature,
+        react_energy=0.0,
+        n_beads=4,
+        filter_list=None):
     run_instanton_post_process(directory_ts,
                                process_type='TS',
                                temperature=temperature,
@@ -747,7 +746,7 @@ def calculate_forward_rate(T,
     return k_f
 
 
-def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature,react_energy):
+def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react_energy):
     """
     Calculate the forward rate constant using data from TS and reactant thermo files.
 
