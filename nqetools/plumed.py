@@ -47,6 +47,11 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_mtd_pt_wob_sep(atoms, **plumed_args)
     elif plumed_type == 'opes-pt-wob-sep':
         return write_plumed_opes_pt_wob_sep(atoms, **plumed_args)
+    elif plumed_type == 'opes-pt-wob-dist':
+        return write_plumed_opes_pt_wob_dist(atoms, **plumed_args)
+
+
+
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
 
@@ -1072,6 +1077,91 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc1', 'opes.bias']
+
+
+def write_plumed_opes_pt_wob_dist(atoms,
+                                  directory=None,
+                                  idx1=0,
+                                  idx2=1,
+                                  idx3=2,
+                                  idx4=3,
+                                  idx5=4,
+                                  idx6=5,
+                                  idx7=6,
+                                  idx8=7,
+                                  temperature=300,
+                                  d_low=1.4,
+                                  pace=10,
+                                  stride=10,
+                                  barrier=0.041,
+                                  stride_hills=100,
+                                  explore=False,
+                                  ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert d_low and d_upper from A to nm
+    d_low = d_low * A_to_nm
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+
+    # Get a list of all the atom indexes
+    group_idx = list(range(len(atoms)))
+
+    # Remove the indexes of the atoms which are acceptors or donors
+    group_idx.remove(idx1)
+    group_idx.remove(idx2)
+
+    # Fix the indexing as it starts from 1
+    idx1 += 1
+    idx2 += 1
+    group_idx = [x + 1 for x in group_idx]
+
+    # Indexing starts from 1
+    idx_group = ",".join([str(x) for x in group_idx])
+
+    d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+c1: DISTANCES GROUPA={idx1} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+c2: DISTANCES GROUPA={idx2} GROUPB={idx_group} LESS_THAN={{{d_low_line}}}
+dc1: COMBINE ARG=c1.lessthan,c2.lessthan COEFFICIENTS=1,-1 PERIODIC=NO
+opes: {opes_command} ARG=dc1  PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+
+    impt = f"""
+# Compute distances between specified atoms
+d1: DISTANCE ATOMS={idx1},{idx2}
+d2: DISTANCE ATOMS={idx3},{idx4}
+d3: DISTANCE ATOMS={idx5},{idx6}
+d4: DISTANCE ATOMS={idx7},{idx8}
+
+# Compute sums of distances
+sum1: COMBINE ARG=d1,d3 COEFFICIENTS=1,1 PERIODIC=NO
+sum2: COMBINE ARG=d2,d4 COEFFICIENTS=1,1 PERIODIC=NO
+
+# Compute the final difference
+dc1: COMBINE ARG=sum1,sum2 COEFFICIENTS=1,-1 PERIODIC=NO
+
+opes: {opes_command} ARG=dc1  PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES 
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+
+    """
+
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['dc1', 'opes.bias']
 
 
 def plumed_input_dpt(
