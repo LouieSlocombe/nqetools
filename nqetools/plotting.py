@@ -290,7 +290,9 @@ def plot_fes_contourf_compare(fes_a,
                               titles=None,
                               save=True,
                               show=True,
-                              filename="fes_contourf_compare") -> None:
+                              filename="fes_contourf_compare",
+                              x_lab=r"$d_\mathrm{OO}$  (Å)",
+                              y_lab=r"$\Delta C_\mathrm{H}$") -> None:
     fes_arrays = [fes_a, fes_b]
     if titles is None:
         titles = ["MD", "PIMD"]
@@ -307,10 +309,10 @@ def plot_fes_contourf_compare(fes_a,
     for i, xyz in enumerate(fes_arrays):
         cf = ax[i].contourf(*xyz)
         contours.append(cf)
-        ax[i].set_xlabel(r"$d_\mathrm{OO}$  (Å)")
+        ax[i].set_xlabel(x_lab)
         ax[i].set_title(fr"{titles[i]}")
 
-    ax[0].set_ylabel(r"$\Delta C_\mathrm{H}$")
+    ax[0].set_ylabel(y_lab)
     fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -325,15 +327,18 @@ def plot_fes_contourf_compare(fes_a,
 def plot_fes_contourf(fes,
                       save=True,
                       show=True,
-                      filename="fes_contourf") -> None:
+                      filename="fes_contourf",
+                      x_lab=r"$d_\mathrm{OO}$  (Å)",
+                      y_lab=r"$\Delta C_\mathrm{H}$"
+                      ) -> None:
     fig, ax = plt.subplots(1, 1,
-                           figsize=(8, 3),
+                           figsize=(4, 3),
                            constrained_layout=True
                            )
 
     cf = ax.contourf(*fes)
-    ax.set_xlabel(r"$d_\mathrm{OO}$  (Å)")
-    ax.set_ylabel(r"$\Delta C_\mathrm{H}$")
+    ax.set_xlabel(x_lab)
+    ax.set_ylabel(y_lab)
     fig.colorbar(cf, ax=ax, orientation="vertical", label=r"$F$ (eV)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -349,7 +354,10 @@ def plot_fes_contour_compare(fes_a,
                              fes_b,
                              save=True,
                              show=True,
-                             filename="fes_contour_compare"):
+                             filename="fes_contour_compare",
+                             x_lab=r"$d_\mathrm{OO}$  (Å)",
+                             y_lab=r"$\Delta C_\mathrm{H}$"
+                             ):
     fig, ax = plt.subplots(
         1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
     )
@@ -357,8 +365,10 @@ def plot_fes_contour_compare(fes_a,
     levels = np.linspace(0, 0.5, 6)
     cp1 = ax.contour(*fes_a, colors="b", levels=levels)
     cp2 = ax.contour(*fes_b, colors="r", levels=levels)
-    ax.set_ylabel(r"$\Delta C_\mathrm{H}$")
-    ax.set_xlabel(r"$d_\mathrm{OO}$ (Å)")
+
+    ax.set_xlabel(x_lab)
+    ax.set_ylabel(y_lab)
+
     ax.legend(
         handles=[
             plt.Line2D([0], [0], color="b", label="MD"),
