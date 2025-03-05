@@ -538,11 +538,60 @@ def plot_arrhenius(temperatures: list[float],
     return None
 
 
+def plot_arrhenius_2(temperatures: list[float],
+                     rates_c: list[float],
+                     rates_q: list[float],
+                     save=True,
+                     show=True,
+                     filename="arrhenius") -> None:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
+    # Convert temperatures to 1/T (in K^-1)
+    inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
+
+    # Plot data
+    ax.plot(inv_temp, np.log(rates_c), 'o-', c='black', lw=2, label="Classical")
+    ax.plot(inv_temp, np.log(rates_q), 'o-', c='red', lw=2, label="Quantum")
+    ax.legend()
+    # Labels and formatting
+    ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
 def plot_kappa_temperature(temperatures: list[float],
                            kappa: list[float],
                            save=True,
                            show=True,
                            filename="kappa_temperature") -> None:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
+    # Plot data
+    ax.plot(temperatures, kappa, 'o-', c='black', lw=2)
+
+    # Labels and formatting
+    ax_plot(fig, ax, r"Temperature (K)", r"$\kappa$")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
+def plot_kappa_temperature_inv(temperatures: list[float],
+                               kappa: list[float],
+                               save=True,
+                               show=True,
+                               filename="kappa_temperature_inv") -> None:
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
