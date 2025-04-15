@@ -1,6 +1,8 @@
 import ase.build
-import nqetools as nqe
 import pytest
+
+import nqetools as nqe
+
 
 def test_zundel_driver():
     print(flush=True)
@@ -54,6 +56,7 @@ def test_ase_mace_driver():
     nqe.remove_directory(directory)
     pass
 
+
 # Fails!
 @pytest.mark.fail
 def test_ase_orca_driver():
@@ -79,6 +82,7 @@ def test_ase_orca_driver():
     nqe.run_optimise(directory, atoms, driver='ase-orca', total_steps=2)
     nqe.remove_directory(directory)
     pass
+
 
 # Fails!
 @pytest.mark.fail

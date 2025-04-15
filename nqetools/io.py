@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import ase.io
 import numpy as np
 from ipi.utils.io import read_file
+
 from .conversions import convert_atom_list_bohr_to_angstrom, eV_to_kJpermol
 
 
@@ -327,9 +328,12 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
         print(f"Loading {file_path} with {n_cv} FIELDS")
         data = np.loadtxt(file_path, comments="#")
         if n_cv == 2:
-            transformed_data = np.array([1.0, 1.0/eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
+            transformed_data = np.array([1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
         else:
-            transformed_data = np.array([1.0, 1.0, 1.0/eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data[:, :3].T.reshape(3, bins, bins)
+            transformed_data = np.array([1.0, 1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data[:,
+                                                                                                       :3].T.reshape(3,
+                                                                                                                     bins,
+                                                                                                                     bins)
         fes_arrays.append(transformed_data)
 
     return fes_arrays

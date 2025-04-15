@@ -5,7 +5,6 @@ from .calcs import (correlate,
                     calculate_temperature_crossover,
                     calculate_good_nbeads,
                     )
-
 from .calculators import (nwchem_calc_preset,
                           orca_calc_preset,
                           qchem_calc_preset,
@@ -14,7 +13,6 @@ from .calculators import (nwchem_calc_preset,
                           orca_preset_xtb,
                           orca_preset_mp2_gold,
                           orca_preset_ccsd_gold)
-
 from .conversions import (bohr_to_angstrom,
                           A_to_nm,
                           eV_to_J,
@@ -23,12 +21,10 @@ from .conversions import (bohr_to_angstrom,
                           eV_to_kJpermol,
                           eVperA2_to_kJpermolpernm2,
                           convert_atom_list_bohr_to_angstrom)
-
 from .driver import (write_ase_mace_driver,
                      write_ase_nwchem_driver,
                      write_ase_orca_driver,
                      prep_driver)
-
 from .execution import (run_command,
                         run_ipi,
                         run_md,
@@ -40,7 +36,14 @@ from .execution import (run_command,
                         run_plumed_hills,
                         run_plumed_hills_opes,
                         run_instanton_post_process)
-
+from .instanton import (calc_kappa,
+                        instanton_post_process,
+                        parse_inst_thermo_data,
+                        parse_ts_thermo_data,
+                        calc_instanton_kappa,
+                        calc_kappa_full,
+                        parse_react_thermo_data,
+                        calc_forward_rate)
 from .io import (read_ipi_xyz,
                  read_ipi_output,
                  write_xml,
@@ -55,7 +58,6 @@ from .io import (read_ipi_xyz,
                  find_nqetools_path,
                  search_fes_files,
                  load_fes_data)
-
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,
@@ -67,7 +69,6 @@ from .pathway import (get_neb_path,
                       optimise_ts,
                       optimise_irc,
                       get_vibrations)
-
 from .plotting import (plot_step_energy,
                        plot_time_potential_bias,
                        plot_time_temperature,
@@ -90,7 +91,6 @@ from .plotting import (plot_step_energy,
                        plot_kie_temperature,
                        plot_bead_convergence,
                        plot_fes_series_1d_compare)
-
 from .plumed import (prep_plumed,
                      write_plumed_mtd_pos,
                      write_plumed_opes_pos,
@@ -98,18 +98,7 @@ from .plumed import (prep_plumed,
                      write_plumed_opes_coord,
                      write_plumed_mtd_dists,
                      write_plumed_opes_dists)
-
-from .instanton import (calc_kappa,
-                        instanton_post_process,
-                        parse_inst_thermo_data,
-                        parse_ts_thermo_data,
-                        calc_instanton_kappa,
-                        calc_kappa_full,
-                        parse_react_thermo_data,
-                        calc_forward_rate)
-
 from .qchem_mod import (QChem)
-
 from .tools import (add_ipi_paths,
                     rm_ipi_tmp,
                     has_pbc,
@@ -131,7 +120,6 @@ from .tools import (add_ipi_paths,
                     get_fes_times,
                     make_dimer,
                     )
-
 from .xml_parse import (update_properties,
                         append_properties,
                         update_mass,

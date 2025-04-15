@@ -265,6 +265,7 @@ def test_add_trajectory_file():
     # Check that the centroid trajectory has been added to the xml
     assert count_matching_words(str(ET.tostring(root)), "kinetic_cv") == 1
 
+
 def test_add_thermostat_section():
     root = ET.parse(os.path.join(base_dir, "templates/NVT.xml")).getroot()
     # Update the thermostat section
@@ -287,6 +288,7 @@ def test_update_dynamics_splitting():
 
     # Check that the dynamics splitting has been updated
     assert count_matching_words(str(ET.tostring(root)), "baoab") == 1
+
 
 def test_update_motion_fixcom():
     root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
