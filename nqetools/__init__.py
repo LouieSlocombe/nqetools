@@ -37,7 +37,6 @@ from .execution import (run_command,
                         run_plumed_hills_opes,
                         run_instanton_post_process)
 from .instanton import (calc_kappa,
-                        instanton_post_process,
                         parse_inst_thermo_data,
                         parse_ts_thermo_data,
                         calc_instanton_kappa,
