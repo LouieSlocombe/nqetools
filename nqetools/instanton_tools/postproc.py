@@ -60,7 +60,7 @@ parser.add_argument(
     "-asr",
     "--asr",
     default="poly",
-    help="Removes the zero frequency vibrational modes depending on the symmerty of the system",
+    help="Removes the zero frequency vibrational modes depending on the symmetry of the system",
 )
 parser.add_argument(
     "-e", "--energy_shift", type=float, default=0.0, help="Zero of energy in eV"
@@ -130,7 +130,7 @@ if args.temperature == 0.0:
 
 
 def get_double(q0, nbeads0, natoms, h0):
-    """Takes nbeads, positions and hessian (only the 'physcal part') of the half polymer and
+    """Takes nbeads, positions and hessian (only the 'physical part') of the half polymer and
     returns the equivalent for the full ringpolymer."""
     q = np.concatenate((q0, np.flipud(q0)), axis=0)
     nbeads = 2 * nbeads0
@@ -200,13 +200,11 @@ def get_rp_freq(w0, nbeads, temp, mode="rate"):
                         + w0[n]
                     )
                 )
-                # note the w0 is the eigenvalue ( the square of the frequency )
         return w
 
     elif mode == "splitting":
         for n in range(w0.size):
             for k in range(nbeads):
-                # note the w0 is the eigenvalue ( the square of the frequency )
                 ww = np.append(
                     ww,
                     np.sqrt(
@@ -258,7 +256,7 @@ if case != "instanton" and nbeads > 1:
     print(("case {} , beads {}".format(case, nbeads)), flush=True)
     sys.exit()
 
-# Depending on the case we read from the restart file different things:
+# Depending on the case, we read from the restart file different things:
 if case == "reactant":
     dynmat = simulation.syslist[0].motion.dynmatrix.copy()
 
@@ -342,7 +340,7 @@ elif case == "instanton":
 
 # ----------------------------------------------------------START----------------------------------------------
 beta = 1.0 / (kb * temp)
-betaP = 1.0 / (kb * (nbeads) * temp)
+betaP = 1.0 / (kb * nbeads * temp)
 
 print(("\nTemperature: {} K".format(temp / K2au)), flush=True)
 print(("NBEADS: {}".format(nbeads)), flush=True)
@@ -368,7 +366,7 @@ if case == "reactant":
     Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
 
     if asr == "poly":
-        Qrot = (8 * np.pi * detI / ((hbar) ** 6 * (beta) ** 3)) ** 0.5
+        Qrot = (8 * np.pi * detI / (hbar ** 6 * beta ** 3)) ** 0.5
     else:
         Qrot = 1.0
 
@@ -391,7 +389,7 @@ elif case == "TS":
     Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
 
     if asr == "poly":
-        Qrot = (8 * np.pi * detI / ((hbar) ** 6 * (beta) ** 3)) ** 0.5
+        Qrot = (8 * np.pi * detI / (hbar ** 6 * beta ** 3)) ** 0.5
     else:
         Qrot = 1.0
 
@@ -419,7 +417,7 @@ elif case == "instanton":
         Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
 
         if asr == "poly" and not quiet:
-            Qrot = (8 * np.pi * detI / ((hbar) ** 6 * (betaP) ** 3)) ** 0.5
+            Qrot = (8 * np.pi * detI / (hbar ** 6 * betaP ** 3)) ** 0.5
             Qrot /= nbeads ** 3
         else:
             Qrot = 1.0
@@ -515,7 +513,6 @@ elif case == "instanton":
         )
         teta = tetaphi / phi
         h = -teta / betaP
-        # cm2au= (2 * np.pi * 3e10 * 2.4188843e-17)  # Handy for debugging
 
         print("\n\nWe are done", flush=True)
         print("Nbeads {}, betaP {} a.u.,hbar {} a.u".format(nbeads, betaP, hbar), flush=True)
