@@ -129,9 +129,6 @@ if args.temperature == 0.0:
     raise ValueError("The temperature must be specified.'")
 
 
-# ----- Define some functions-----------------
-
-
 def get_double(q0, nbeads0, natoms, h0):
     """Takes nbeads, positions and hessian (only the 'physcal part') of the half polymer and
     returns the equivalent for the full ringpolymer."""
@@ -186,7 +183,7 @@ def get_rp_freq(w0, nbeads, temp, mode="rate"):
     ww = []
 
     if np.amin(w0) < 0.0:
-        print("@get_rp_freq: We have a negative frequency, something is going wrong.")
+        print("@get_rp_freq: We have a negative frequency, something is going wrong.", flush=True)
         sys.exit()
 
     if mode == "rate":
@@ -221,7 +218,7 @@ def get_rp_freq(w0, nbeads, temp, mode="rate"):
                 )
         return np.array(ww)
     else:
-        print("We can't indentify the mode")
+        print("We can't indentify the mode", flush=True)
         sys.exit()
 
 
@@ -235,13 +232,10 @@ def save_frequencies(d, nzeros, filename="freq.dat"):
     dd = np.concatenate((aux, freq))
     np.savetxt(outfile, dd.reshape(dd.size, 1), header="Frequencies (cm^-1)")
     outfile.close()
-    print("We saved the frequencies in {}".format(filename))
+    print("We saved the frequencies in {}".format(filename), flush=True)
 
 
-# -----END of some functions-----------------
-
-# -----READ---------------------------------
-print("\nWe are ready to start. Reading {} ... (This can take a while)".format(inputt))
+print("\nWe are ready to start. Reading {} ... (This can take a while)".format(inputt), flush=True)
 
 simulation = Simulation.load_from_xml(
     open(inputt), custom_verbosity="quiet", request_banner=False, read_only=True
@@ -255,16 +249,16 @@ natoms = simulation.syslist[0].motion.beads.natoms
 if case == "reactant":
     if nbeadsR == 0:
         print(
-            "We have to specify number of beads for computing the partition function in the reactant case"
+            "We have to specify number of beads for computing the partition function in the reactant case", flush=True
         )
         sys.exit()
 
 if case != "instanton" and nbeads > 1:
-    print(("Incompatibility between case and nbeads in {}.".format(inputt)))
-    print(("case {} , beads {}".format(case, nbeads)))
+    print(("Incompatibility between case and nbeads in {}.".format(inputt)), flush=True)
+    print(("case {} , beads {}".format(case, nbeads)), flush=True)
     sys.exit()
 
-# Depending the case we read from the restart file different things:
+# Depending on the case we read from the restart file different things:
 if case == "reactant":
     dynmat = simulation.syslist[0].motion.dynmatrix.copy()
 
@@ -285,7 +279,7 @@ elif case == "TS":
     V0 = simulation.syslist[0].motion.optarrays["energy_shift"]
 
     if V00 != 0.0:
-        print("Overwriting energy shift with the provided values")
+        print("Overwriting energy shift with the provided values", flush=True)
         V0 = V00 * eV2au
 elif case == "instanton":
     hessian = simulation.syslist[0].motion.optarrays["hessian"].copy()
@@ -296,12 +290,12 @@ elif case == "instanton":
     V0 = simulation.syslist[0].motion.optarrays["energy_shift"]
 
     if V00 != 0.0:
-        print("Overwriting energy shift with the provided values")
+        print("Overwriting energy shift with the provided values", flush=True)
         V0 = V00 * eV2au
 
     if np.absolute(temp - temp2) / K2au > 2:
         print(
-            "\n Mismatch between provided temperature and temperature in the calculation"
+            "\n Mismatch between provided temperature and temperature in the calculation", flush=True
         )
         sys.exit()
 
@@ -319,12 +313,13 @@ elif case == "instanton":
     elif mode == "splitting":
         if input_freq is None:
             print(
-                'Please provide a name of the file containing the list of the frequencies for the minimum using "-freq" flag'
+                'Please provide a name of the file containing the list of the frequencies for the minimum using "-freq" flag',
+                flush=True
             )
-            print(" You can generate that file using this script in the case reactant.")
+            print(" You can generate that file using this script in the case reactant.", flush=True)
             sys.exit()
 
-        print(("Our linear polymer has  {}".format(nbeads)))
+        print(("Our linear polymer has  {}".format(nbeads)), flush=True)
         pos = beads.q
         m3 = beads.m3
         omega2 = (temp * nbeads * kb / hbar) ** 2
@@ -337,34 +332,35 @@ elif case == "instanton":
             h = np.add(h0, spring)
             if asr != "none":
                 print(
-                    "We are changing asr to none since we consider a fixed ended linear polimer for the post-processing"
+                    "We are changing asr to none since we consider a fixed ended linear polimer for the post-processing",
+                    flush=True
                 )
                 asr = "none"
     else:
-        print("We can not recognize the mode. STOP HERE")
+        print("We can not recognize the mode. STOP HERE", flush=True)
         sys.exit()
 
 # ----------------------------------------------------------START----------------------------------------------
 beta = 1.0 / (kb * temp)
 betaP = 1.0 / (kb * (nbeads) * temp)
 
-print(("\nTemperature: {} K".format(temp / K2au)))
-print(("NBEADS: {}".format(nbeads)))
-print(("atoms:  {}".format(natoms)))
-print(("ASR:    {}".format(asr)))
-print(("1/(betaP*hbar) = {:8.5f}".format((1 / (betaP * hbar)))))
+print(("\nTemperature: {} K".format(temp / K2au)), flush=True)
+print(("NBEADS: {}".format(nbeads)), flush=True)
+print(("atoms:  {}".format(natoms)), flush=True)
+print(("ASR:    {}".format(asr)), flush=True)
+print(("1/(betaP*hbar) = {:8.5f}".format((1 / (betaP * hbar)))), flush=True)
 
 if not quiet or case == "reactant" or case == "TS":
-    print("Diagonalization ... \n\n")
+    print("Diagonalization ... \n\n", flush=True)
     d, w, detI = clean_hessian(h, pos, natoms, nbeads, m, m3, asr, mofi=True)
-    print("Lowest 10 frequencies (cm^-1)")
+    print("Lowest 10 frequencies (cm^-1)", flush=True)
     d10 = np.array2string(
         np.sign(d[0:10]) * np.absolute(d[0:10]) ** 0.5 / cm2au,
         precision=2,
         max_line_width=100,
         formatter={"float_kind": lambda x: "%.2f" % x},
     )
-    print(("{}".format(d10)))
+    print(("{}".format(d10)), flush=True)
 
     save_frequencies(d, nzeros)
 
@@ -386,10 +382,10 @@ if case == "reactant":
     np.savetxt(outfile, dd.reshape(1, dd.size))
     outfile.close()
 
-    print(("\nWe are done. Reactants. Nbeads {}".format(nbeadsR)))
-    print(("{:14s} | {:8s} | {:8s}".format("Qtras(bohr^-3)", "Qrot", "logQvib_rp")))
-    print(("{:14.3f} | {:8.3f} |{:8.3f}\n".format(Qtras, Qrot, logQvib_rp)))
-    print("A file with the eigenvalues in atomic units was generated\n")
+    print(("\nWe are done. Reactants. Nbeads {}".format(nbeadsR)), flush=True)
+    print(("{:14s} | {:8s} | {:8s}".format("Qtras(bohr^-3)", "Qrot", "logQvib_rp")), flush=True)
+    print(("{:14.3f} | {:8.3f} |{:8.3f}\n".format(Qtras, Qrot, logQvib_rp)), flush=True)
+    print("A file with the eigenvalues in atomic units was generated\n", flush=True)
 
 elif case == "TS":
     Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
@@ -405,17 +401,17 @@ elif case == "TS":
 
     U = pots.sum() - V0
 
-    print("\nWe are done. TS")
-    print(("Partition functions at {} K".format(temp / K2au)))
-    print(("\nQtras: {}".format(Qtras)))
-    print(("Qrot: {}".format(Qrot)))
-    print(("logQvib: {}".format(logQvib)))
+    print("\nWe are done. TS", flush=True)
+    print(("Partition functions at {} K".format(temp / K2au)), flush=True)
+    print(("\nQtras: {}".format(Qtras)), flush=True)
+    print(("Qrot: {}".format(Qrot)), flush=True)
+    print(("logQvib: {}".format(logQvib)), flush=True)
     print(
         (
             "Potential energy at TS:  {} eV, V/kBT {}\n".format(
                 U / eV2au, U / (kb * temp)
             )
-        )
+        ), flush=True
     )
 
 elif case == "instanton":
@@ -430,15 +426,15 @@ elif case == "instanton":
 
         if not quiet:
             del_freq = np.sign(d[1]) * np.absolute(d[1]) ** 0.5 / cm2au
-            print("Deleted frequency: {:8.3f} cm^-1".format(del_freq))
+            print("Deleted frequency: {:8.3f} cm^-1".format(del_freq), flush=True)
 
             if asr != "poly":
-                print("WARNING asr != poly")
-                print("First 10 eigenvalues")
+                print("WARNING asr != poly", flush=True)
+                print("First 10 eigenvalues", flush=True)
                 ten_eigv = np.sign(d[0:10]) * np.absolute(d[0:10]) ** 0.5 / cm2au
-                print("{}".format(ten_eigv))
+                print("{}".format(ten_eigv), flush=True)
                 print(
-                    "Please check that this you don't have any unwanted zero frequency"
+                    "Please check that this you don't have any unwanted zero frequency", flush=True
                 )
             logQvib = (
                     -np.sum(np.log(betaP * hbar * np.sqrt(np.absolute(np.delete(d, 1)))))
@@ -456,7 +452,7 @@ elif case == "instanton":
         print(
             "\nWe are done. Instanton rate. Nbeads {} (diff only {})".format(
                 nbeads, nbeads / 2
-            )
+            ), flush=True
         )
         print(
             "   {:8s} {:8s}  | {:11s} | {:11s} | {:11s} | {:8s} ( {:8s},{:8s} ) |".format(
@@ -468,7 +464,7 @@ elif case == "instanton":
                 "S/hbar",
                 "S1/hbar",
                 "S2/hbar",
-            )
+            ), flush=True
         )
         print(
             "{:8.3f} ( {:8.3f} ) | {:11.3f} | {:11.3f} | {:11.3f} | {:8.3f} ( {:8.3f} {:8.3f} ) |".format(
@@ -480,17 +476,17 @@ elif case == "instanton":
                 (action1 + action2),
                 action1,
                 action2,
-            )
+            ), flush=True
         )
-        print("\n\n")
+        print("\n\n", flush=True)
 
     elif mode == "splitting":
         out = open(input_freq, "r")
         d_min = np.zeros(natoms * 3)
         aux = out.readline().split()
         if len(aux) != (natoms * 3):
-            print(("We are expecting {} frequencies.".format((natoms * 3 - 6))))
-            print(("instead we have read  {}".format(len(aux))))
+            print(("We are expecting {} frequencies.".format((natoms * 3 - 6))), flush=True)
+            print(("instead we have read  {}".format(len(aux))), flush=True)
         for i in range((natoms * 3)):
             d_min[i] = float(aux[i])
         d_min = d_min.reshape((natoms * 3))
@@ -503,7 +499,7 @@ elif case == "instanton":
         action = action1 + action2
         if action / hbar > 5.0:
             print(
-                "WARNING, S/h seems to big. Probably a proper energy shift is missing."
+                "WARNING, S/h seems to big. Probably a proper energy shift is missing.", flush=True
             )
 
         BN = np.sum(beads.m3[1:, :] * (beads.q[1:, :] - beads.q[:-1, :]) ** 2)
@@ -521,36 +517,36 @@ elif case == "instanton":
         h = -teta / betaP
         # cm2au= (2 * np.pi * 3e10 * 2.4188843e-17)  # Handy for debugging
 
-        print("\n\nWe are done")
-        print("Nbeads {}, betaP {} a.u.,hbar {} a.u".format(nbeads, betaP, hbar))
-        print("")
-        print("V0  {} eV ( {} Kcal/mol) ".format(V0 / eV2au, V0 / cal2au / 1000))
+        print("\n\nWe are done", flush=True)
+        print("Nbeads {}, betaP {} a.u.,hbar {} a.u".format(nbeads, betaP, hbar), flush=True)
+        print("", flush=True)
+        print("V0  {} eV ( {} Kcal/mol) ".format(V0 / eV2au, V0 / cal2au / 1000), flush=True)
         print(
             "S1/hbar {} ,S2/hbar {} ,S/hbar {}".format(
                 action1 / hbar, action2 / hbar, action / hbar
-            )
+            ), flush=True
         )
-        print("BN {} a.u.".format(BN))
+        print("BN {} a.u.".format(BN), flush=True)
         print(
             "BN/(hbar^2 * betaN)  {}  (should be same as S/hbar) ".format(
                 (BN / ((hbar ** 2) * betaP))
-            )
+            ), flush=True
         )
-        print("")
+        print("", flush=True)
         if quiet:
-            print("phi is not computed because you specified the quiet option")
+            print("phi is not computed because you specified the quiet option", flush=True)
             print(
-                ("We can provied only Tetaphi which value is {} a.u. ".format(tetaphi))
+                ("We can provied only Tetaphi which value is {} a.u. ".format(tetaphi)), flush=True
             )
         else:
-            print(("phi {} a.u.   Teta {} a.u. ".format(phi, tetaphi / phi)))
+            print(("phi {} a.u.   Teta {} a.u. ".format(phi, tetaphi / phi)), flush=True)
             print(
                 "Tunnelling splitting matrix element (h)  {} a.u ({} cm^-1)".format(
                     h, h / cm2au
-                )
+                ), flush=True
             )
     else:
-        print("We can not recongnize the mode.")
+        print("We can not recongnize the mode.", flush=True)
         sys.exit()
 
 info("\n\n", Verbosity.medium)
