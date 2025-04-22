@@ -1,5 +1,6 @@
-""" Instanton_interpolation.py
-Reads a hessian file  and/or a positions file (xyz format) and creates an interpolation
+"""
+Instanton_interpolation.py
+Reads a hessian file and/or a positions file (xyz format) and creates an interpolation
 that can be used in a further instanton optimization with more beads
 
 Syntax manual:    python  Instanton_interpolation.py -m -xyz <geometry file> -h <hessian file> -n <new-beads(half-polymer)>
@@ -14,25 +15,11 @@ main directory must be added to the PYTHONPATH environment variable.
 
 """
 
-# Y. Litman 2017
-
-import os
-import numpy as np
-import sys
 import argparse
+import os
+import sys
 
-
-# You can insert the i-pi path with the following lines.
-# Uncomment them and adjust the ipi_path variable
-
-# ipi_path='/home/litman/Yair/Instanton/I-PI-mc/i-pi-mc'
-
-# if not (os.path.exists(ipi_path)):
-#   print 'We can not find ipi in %s' %ipi_path
-#   print 'Please correct the path'
-#   sys.exit()
-# sys.path.insert(0, ipi_path)
-
+import numpy as np
 from ipi.utils.io import read_file, print_file
 from ipi.utils.nmtransform import nm_rescale
 from ipi.utils.units import unit_to_internal
@@ -242,7 +229,7 @@ if input_hess != "None" or chk != "None":
             diag = rpc.b1tob2(h2)
             new_h[i, j:size2:size0] += diag
 
-    new_h_half = new_h[:, 0 : size2 // 2]
+    new_h_half = new_h[:, 0: size2 // 2]
     np.savetxt(out, new_h_half.reshape(1, new_h_half.size))
     # new_h_half = new_h[:, 0:size2 / 2]
     # np.savetxt(out, new_h.reshape(1, new_h.size))

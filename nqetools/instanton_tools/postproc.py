@@ -1,10 +1,5 @@
-import numpy as np
-import sys
-
-import argparse
-from ipi.utils.messages import verbosity, info
-
-""" Reads all the information needed from a i-pi RESTART file and compute the partition functions of the reactant, transition state (TS) or
+"""
+Reads all the information needed from a i-pi RESTART file and compute the partition functions of the reactant, transition state (TS) or
 instanton according to J. Phys. Chem. Lett. 7, 437(2016) (Instanton Rate calculations) or J. Chem. Phys. 134, 054109 (2011) (Tunneling Splitting)
 
 
@@ -28,25 +23,16 @@ Relies on the infrastructure of i-pi, so the ipi package should
 be installed in the Python module directory, or the i-pi
 main directory must be added to the PYTHONPATH environment variable.
 """
+import argparse
+import sys
 
-# Y. Litman, 2017.
-
-# You can insert the i-pi path with the following lines.
-# Uncomment them and adjust the ipi_path variable
-
-# ipi_path='/home/litman/Yair/Instanton/I-PI-mc/i-pi-mc'
-
-# if not (os.path.exists(ipi_path)):
-#    print 'We can not find ipi in %s' %ipi_path
-#    print 'Please correct the path'
-#    sys.exit()
-# sys.path.insert(0, ipi_path)
-
-from ipi.engine.simulation import Simulation
-from ipi.utils.units import unit_to_internal, Constants
-from ipi.utils.instools import red2comp
-from ipi.utils.hesstools import clean_hessian
+import numpy as np
 from ipi.engine.motion.instanton import SpringMapper
+from ipi.engine.simulation import Simulation
+from ipi.utils.hesstools import clean_hessian
+from ipi.utils.instools import red2comp
+from ipi.utils.messages import verbosity, info
+from ipi.utils.units import unit_to_internal, Constants
 
 # UNITS
 K2au = unit_to_internal("temperature", "kelvin", 1.0)
