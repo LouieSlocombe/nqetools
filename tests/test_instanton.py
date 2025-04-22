@@ -31,7 +31,10 @@ def test_parse_ts_thermo_data():
     print(data, flush=True)
     os.remove(os.path.join(directory, 'thermo_data.out'))
     os.remove(os.path.join(directory, 'freq.dat'))
-    pass
+    assert data['Qtras'] == 10.187982156996487
+    assert data['Qrot'] == 1206.1509707160856
+    assert data['logQvib'] == -44.27838452659754
+    assert data['V/kBT'] == 25.165638546469864
 
 
 def test_parse_inst_thermo_data():
@@ -49,12 +52,19 @@ def test_parse_inst_thermo_data():
     print(data, flush=True)
     os.remove(os.path.join(directory, 'thermo_data.out'))
     os.remove(os.path.join(directory, 'freq.dat'))
-    pass
+    assert data['Temperature'] == 300.0
+    assert data['NBEADS'] == 160
+    assert data['1/(betaP*hbar)'] == 0.15201
+    assert data['BN'] == 14.28
+    assert data['Qt'] == 10.188
+    assert data['Qrot'] == 1251.027
+    assert data['log(Qvib*N)'] == -43.477
+    assert data['S/hbar'] == 25.026
 
 
 def test_calc_instanton_kappa():
     print(flush=True)
-    temperature = 300
+    temperature = 300.0
     n_beads = 40
 
     directory_ts = 'data/instanton/ts/'
