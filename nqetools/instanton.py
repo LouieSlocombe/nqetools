@@ -14,33 +14,33 @@ from .execution import run_instanton_post_process
 
 
 def kappa_core(
-        Q_trn_TS,
-        Q_rot_TS,
-        Q_vib_TS,
-        Q_trn_inst,
-        Q_rot_inst,
-        Q_vib_inst,
-        BN,
+        q_trn_ts,
+        q_rot_ts,
+        q_vib_ts,
+        q_trn_inst,
+        q_rot_inst,
+        q_vib_inst,
+        bn,
         temperature,
-        N,
-        S_over_hbar,
-        Beta_times_V,
+        n,
+        s_over_hbar,
+        beta_times_v,
         hbar=1.0):
     """
     Computes the tunneling factor (kappa) for a given set of parameters.
 
     Parameters:
-    Q_trn_TS (float): Translational partition function at the transition state.
-    Q_rot_TS (float): Rotational partition function at the transition state.
-    Q_vib_TS (float): Vibrational partition function at the transition state.
-    Q_trn_inst (float): Translational partition function at the instanton.
-    Q_rot_inst (float): Rotational partition function at the instanton.
-    Q_vib_inst (float): Vibrational partition function at the instanton.
-    BN (float): A parameter related to the instanton.
+    q_trn_ts (float): Translational partition function at the transition state.
+    q_rot_ts (float): Rotational partition function at the transition state.
+    q_vib_ts (float): Vibrational partition function at the transition state.
+    q_trn_inst (float): Translational partition function at the instanton.
+    q_rot_inst (float): Rotational partition function at the instanton.
+    q_vib_inst (float): Vibrational partition function at the instanton.
+    bn (float): A parameter related to the instanton.
     temperature (float): Temperature in Kelvin.
-    N (int): Number of beads.
-    S_over_hbar (float): Action divided by reduced Planck's constant.
-    Beta_times_V (float): Beta times potential energy.
+    n (int): Number of beads.
+    s_over_hbar (float): Action divided by reduced Planck's constant.
+    beta_times_v (float): Beta times potential energy.
     hbar (float, optional): Reduced Planck's constant. Default is 1.0.
 
     Returns:
@@ -48,17 +48,17 @@ def kappa_core(
     """
     kelvin2au = 3.1668152e-06
     beta = 1.0 / (temperature * kelvin2au)
-    f_trn = Q_trn_inst / Q_trn_TS
-    f_rot = Q_rot_inst / Q_rot_TS
-    f_vib = np.sqrt((2. * np.pi * N * BN) / (beta * hbar ** 2)) * Q_vib_inst / Q_vib_TS
+    f_trn = q_trn_inst / q_trn_ts
+    f_rot = q_rot_inst / q_rot_ts
+    f_vib = np.sqrt((2. * np.pi * n * bn) / (beta * hbar ** 2)) * q_vib_inst / q_vib_ts
 
-    kappa = f_trn * f_rot * f_vib * np.exp(-S_over_hbar + Beta_times_V)
+    kappa = f_trn * f_rot * f_vib * np.exp(-s_over_hbar + beta_times_v)
 
     # printing out the transmission factor and the relevant contributions.
     print('f_tra               = {:5.3f}'.format(f_trn), flush=True)
     print('f_rot               = {:5.3f}'.format(f_rot), flush=True)
     print('f_vib               = {:5.3f}'.format(f_vib), flush=True)
-    print('exp(-S/hbar+V/beta) = {:5.3f}'.format(np.exp(-S_over_hbar + Beta_times_V)), flush=True)
+    print('exp(-S/hbar+V/beta) = {:5.3f}'.format(np.exp(-s_over_hbar + beta_times_v)), flush=True)
     print('=============================', flush=True)
     print('Tunneling factor    = {:5.3f}'.format(kappa), flush=True)
     return kappa
@@ -77,23 +77,17 @@ def calc_kappa(ts_path, instanton_path, temperature, n_beads):
     Returns:
     float: The computed tunneling factor (kappa).
     """
-    Q_trn_TS, Q_rot_TS, Q_vib_TS, Beta_times_V = instanton_post_process(ts_path, case="TS", temperature=temperature,
+    Q_trn_TS, Q_rot_TS, Q_vib_TS, Beta_times_V = instanton_post_process(ts_path,
+                                                                        case="TS",
+                                                                        temperature=temperature,
                                                                         n_beads_r=n_beads)
 
-    Q_trn_inst, Q_rot_inst, Q_vib_inst, BN, S_over_hbar = instanton_post_process(instanton_path, case="instanton",
+    Q_trn_inst, Q_rot_inst, Q_vib_inst, BN, S_over_hbar = instanton_post_process(instanton_path,
+                                                                                 case="instanton",
                                                                                  temperature=temperature)
 
-    kappa = kappa_core(Q_trn_TS,
-                       Q_rot_TS,
-                       Q_vib_TS,
-                       Q_trn_inst,
-                       Q_rot_inst,
-                       Q_vib_inst,
-                       BN,
-                       temperature,
-                       n_beads,
-                       S_over_hbar,
-                       Beta_times_V)
+    kappa = kappa_core(Q_trn_TS, Q_rot_TS, Q_vib_TS, Q_trn_inst, Q_rot_inst, Q_vib_inst, BN, temperature, n_beads,
+                       S_over_hbar, Beta_times_V)
     return kappa
 
 
@@ -722,7 +716,7 @@ def calculate_forward_rate(T,
     Q_rot_react (float): Rotational partition function of the reactant
     logQ_vib_react (float): Logarithm of vibrational partition function of the reactant
     Q_trans_TS (float): Translational partition function of the transition state
-    Q_rot_TS (float): Rotational partition function of the transition state
+    q_rot_ts (float): Rotational partition function of the transition state
     logQ_vib_TS (float): Logarithm of vibrational partition function of the transition state
     V_TS (float): Potential energy difference between TS and reactant (in Joules)
 
@@ -769,6 +763,9 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
                                temperature=temperature,
                                ref_energy=react_energy)
 
+    kelvin2au = 3.1668152e-06
+    beta = 1.0
+
     # Get TS data
     ts_data = parse_ts_thermo_data(ts_directory)
 
@@ -784,7 +781,7 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
         Q_trans_TS=ts_data['Qtras'],
         Q_rot_TS=ts_data['Qrot'],
         logQ_vib_TS=ts_data['logQvib'],
-        vkBT=ts_data['V/kBT']
+        vkBT=ts_data['V/kBT'] - (react_energy / (temperature * kelvin2au))
     )
 
     return k_f
