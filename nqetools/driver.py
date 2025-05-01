@@ -24,7 +24,7 @@ def write_ase_mace_driver(
     in_file (str): The input file containing atomic structure data.
     host (str): The host for the SocketClient.
     model (str): The model name to use in the MACE calculator.
-    device (str): The device to run the MACE model on (e.g., "cpu").
+    device (str): The device to run the MACE model on (e.g. "cpu").
     default_dtype (str): The default data type for the MACE model.
 
     Returns:
@@ -369,5 +369,5 @@ def prep_driver(atoms, directory, f_driver, driver_args):
         write_nwchem_driver(atoms, directory, **driver_args)
         return "nwchem nwchem.nwi > nwchem.out"
     else:
-        # If not a recognized driver, raise an error
+        # If not a recognised driver, raise an error
         raise ValueError(f"Driver {f_driver} is not recognized.")

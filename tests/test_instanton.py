@@ -3,7 +3,7 @@ import os
 import nqetools as nqe
 
 
-# Fails as the file is not minimized properly
+# Fails as the file is not minimised properly
 def test_parse_react_thermo_data():
     print(flush=True)
     temperature = 300.0

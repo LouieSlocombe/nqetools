@@ -270,7 +270,7 @@ class QChem(FileIOCalculator):
 
                         # After three force components we expect either a
                         # separator line, which we want to skip, or the end of
-                        # the gradient matrix which is characterized by the
+                        # the gradient matrix which is characterised by the
                         # line ' Max gradient component'.
                         # Maybe change stopping criterion to be independent of
                         # next line. e.g. if not lineiter.next().startswith(' ')

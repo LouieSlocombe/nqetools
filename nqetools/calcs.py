@@ -6,7 +6,7 @@ def correlate(x: np.ndarray,
               y: np.ndarray,
               xbar: float = None,
               ybar: float = None,
-              normalize: bool = True) -> np.ndarray:
+              normalise: bool = True) -> np.ndarray:
     """
     Computes the correlation function of two quantities.
 
@@ -15,7 +15,7 @@ def correlate(x: np.ndarray,
     y (numpy.ndarray): The second quantity.
     xbar (float, optional): The mean of the first quantity. If None, it is computed from x.
     ybar (float, optional): The mean of the second quantity. If None, it is computed from y.
-    normalize (bool, optional): Whether to normalize the correlation function. Default is True.
+    normalise (bool, optional): Whether to normalise the correlation function. Default is True.
 
     Returns:
     numpy.ndarray: The correlation function of the two quantities.
@@ -26,19 +26,19 @@ def correlate(x: np.ndarray,
         ybar = y.mean()
 
     cf = np.correlate(x - xbar, y - ybar, mode='same')
-    return cf[len(x) // 2:] / (((x - xbar) * (y - ybar)).sum() if normalize else 1)
+    return cf[len(x) // 2:] / (((x - xbar) * (y - ybar)).sum() if normalise else 1)
 
 
 def autocorrelate(x: np.ndarray,
                   xbar: float = None,
-                  normalize: bool = True) -> np.ndarray:
+                  normalise: bool = True) -> np.ndarray:
     """
     Computes the autocorrelation function of a trajectory.
 
     Parameters:
     x (numpy.ndarray): The input trajectory.
     xbar (float, optional): The mean of the trajectory. If None, it is computed from x.
-    normalize (bool, optional): Whether to normalize the autocorrelation function. Default is True.
+    normalise (bool, optional): Whether to normalise the autocorrelation function. Default is True.
 
     Returns:
     numpy.ndarray: The autocorrelation function of the trajectory.
@@ -46,7 +46,7 @@ def autocorrelate(x: np.ndarray,
     if xbar is None:
         xbar = x.mean()
     acf = np.correlate(x - xbar, x - xbar, mode='same')
-    return acf[len(x) // 2:] / (((x - xbar) * (x - xbar)).sum() if normalize else 1)
+    return acf[len(x) // 2:] / (((x - xbar) * (x - xbar)).sum() if normalise else 1)
 
 
 def moving_average(arr: np.ndarray, window_size: int) -> np.ndarray:

@@ -253,7 +253,7 @@ def prep_optimise_xml(directory,
     # Update the total_steps
     update_total_steps(root, total_steps)
 
-    # Update the optimizer
+    # Update the optimiser
     update_optimiser(root, optimiser)
 
     # Update the tolerances
@@ -896,7 +896,7 @@ def prep_instanton_xml(directory,
                        xml_in=None,
                        file_in="init.xyz"):
     n_atoms = len(atoms)
-    n_dof = 3 * n_atoms - 6
+    # n_dof = 3 * n_atoms - 6
     n_doft = 3 * n_atoms
 
     # Prepare the instanton calculation

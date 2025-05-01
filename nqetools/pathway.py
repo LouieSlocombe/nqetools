@@ -58,13 +58,13 @@ def stitch_path(path1, path2, f_reverse_path=False):
     return irc
 
 
-def resample_path(path, N_resample):
+def resample_path(path, n_resample):
     """
     This function resamples a given path with a specified number of points.
 
     Parameters:
     path (list): The original path to be resampled. Each element of the list is an instance of the Atoms class.
-    N_resample (int): The number of points in the resampled path.
+    n_resample (int): The number of points in the resampled path.
 
     Returns:
     list: The resampled path. Each element of the list is an instance of the Atoms class.
@@ -74,7 +74,7 @@ def resample_path(path, N_resample):
     path_distance = get_neb_path(path)
 
     # Interpolate the path length
-    path_interp = np.linspace(0, path_distance[-1], N_resample)
+    path_interp = np.linspace(0, path_distance[-1], n_resample)
 
     # Get the atom positions
     positions = np.array([image.positions for image in path])
@@ -84,7 +84,7 @@ def resample_path(path, N_resample):
 
     # Create the resampled images
     irc_resampled = [path[0]]  # Ensure the first image is the same
-    for ii in range(1, N_resample - 1):
+    for ii in range(1, n_resample - 1):
         atoms = path[0].copy()
         # Set the positions to the interpolated positions
         atoms.positions = positions_interp[ii, :, :]
@@ -99,14 +99,14 @@ def optimise_geom(atoms, calc,
                   steps=1000,
                   opti_traj='opti.traj'):
     """
-    Optimize the geometry of the given atomic structure using the BFGS algorithm.
+    Optimise the geometry of the given atomic structure using the BFGS algorithm.
 
     Parameters:
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure to be optimized.
-    calc (ase.Calculator): Calculator to be used for the optimization.
-    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
-    steps (int, optional): Maximum number of optimization steps. Default is 1000.
-    opti_traj (str, optional): Filename for saving the optimization trajectory. Default is 'opti.traj'.
+    atoms (ase.Atoms): ASE Atoms object containing the atomic structure to be optimised.
+    calc (ase.Calculator): Calculator to be used for the optimisation.
+    fmax (float, optional): Maximum force tolerance for the optimisation. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimisation steps. Default is 1000.
+    opti_traj (str, optional): Filename for saving the optimisation trajectory. Default is 'opti.traj'.
 
     Returns:
     ase.Atoms: Optimized ASE Atoms object.
@@ -128,21 +128,21 @@ def optimise_reactant_product(reactant, product, calc,
                               reactant_opti='reactant_opti.traj',
                               product_opti='product_opti.traj'):
     """
-    Optimize the geometries of the reactant and product structures.
+    Optimise the geometries of the reactant and product structures.
 
     Parameters:
     reactant (ase.Atoms): ASE Atoms object containing the reactant structure.
     product (ase.Atoms): ASE Atoms object containing the product structure.
-    calc (ase.Calculator): Calculator to be used for the optimization.
-    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
-    steps (int, optional): Maximum number of optimization steps. Default is 1000.
-    reactant_opti (str, optional): Filename for saving the reactant optimization trajectory. Default is 'reactant_opti.traj'.
-    product_opti (str, optional): Filename for saving the product optimization trajectory. Default is 'product_opti.traj'.
+    calc (ase.Calculator): Calculator to be used for the optimisation.
+    fmax (float, optional): Maximum force tolerance for the optimisation. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimisation steps. Default is 1000.
+    reactant_opti (str, optional): Filename for saving the reactant optimisation trajectory. Default is 'reactant_opti.traj'.
+    product_opti (str, optional): Filename for saving the product optimisation trajectory. Default is 'product_opti.traj'.
 
     Returns:
-    tuple: A tuple containing the optimized reactant and product ASE Atoms objects.
+    tuple: A tuple containing the optimised reactant and product ASE Atoms objects.
     """
-    print('Optimizing reactant...', flush=True)
+    print('Optimising reactant...', flush=True)
     reactant = optimise_geom(reactant, calc,
                              fmax=fmax,
                              steps=steps,
@@ -204,17 +204,17 @@ def optimise_neb(neb,
                  ts_traj='ts.traj',
                  n_images=5):
     """
-    Optimize the geometry of a Nudged Elastic Band (NEB) calculation using the BFGS algorithm.
+    Optimise the geometry of a Nudged Elastic Band (NEB) calculation using the BFGS algorithm.
 
     Parameters:
-    neb (ase.neb.NEB): NEB object containing the images to be optimized.
-    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
-    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    neb (ase.neb.NEB): NEB object containing the images to be optimised.
+    fmax (float, optional): Maximum force tolerance for the optimisation. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimisation steps. Default is 1000.
     ts_traj (str, optional): Filename for saving the transition state trajectory. Default is 'ts.traj'.
     n_images (int, optional): Number of images in the NEB calculation. Default is 5.
 
     Returns:
-    list: A list of ASE Atoms objects representing the optimized images.
+    list: A list of ASE Atoms objects representing the optimised images.
     """
     t0 = time.time()
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
@@ -251,16 +251,16 @@ def optimise_ts(ts_image, calc,
                 gamma=0.1,
                 sella_traj='sella.traj'):
     """
-    Optimize the transition state (TS) image using the Sella algorithm.
+    Optimise the transition state (TS) image using the Sella algorithm.
 
     Parameters:
     ts_image (ase.Atoms): ASE Atoms object representing the transition state image.
-    calc (ase.Calculator): Calculator to be used for the optimization.
-    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
-    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    calc (ase.Calculator): Calculator to be used for the optimisation.
+    fmax (float, optional): Maximum force tolerance for the optimisation. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimisation steps. Default is 1000.
     eta (float, optional): Step size parameter for the Sella algorithm. Default is 1e-4.
     gamma (float, optional): Damping parameter for the Sella algorithm. Default is 0.1.
-    sella_traj (str, optional): Filename for saving the Sella optimization trajectory. Default is 'sella.traj'.
+    sella_traj (str, optional): Filename for saving the Sella optimisation trajectory. Default is 'sella.traj'.
 
     Returns:
     ase.Atoms: Optimized ASE Atoms object representing the refined transition state image.
@@ -294,17 +294,17 @@ def optimise_irc(ts_image, calc,
                  irc_f_traj='irc_f.traj',
                  irc_r_traj='irc_r.traj'):
     """
-    Optimize the Intrinsic Reaction Coordinate (IRC) path using the Sella algorithm.
+    Optimise the Intrinsic Reaction Coordinate (IRC) path using the Sella algorithm.
 
     Parameters:
     ts_image (ase.Atoms): ASE Atoms object representing the transition state image.
-    calc (ase.Calculator): Calculator to be used for the optimization.
-    fmax (float, optional): Maximum force tolerance for the optimization. Default is 0.01 eV/Å.
-    steps (int, optional): Maximum number of optimization steps. Default is 1000.
+    calc (ase.Calculator): Calculator to be used for the optimisation.
+    fmax (float, optional): Maximum force tolerance for the optimisation. Default is 0.01 eV/Å.
+    steps (int, optional): Maximum number of optimisation steps. Default is 1000.
     dx (float, optional): Step size parameter for the IRC algorithm. Default is 0.1.
     eta (float, optional): Step size parameter for the Sella algorithm. Default is 1e-4.
     gamma (float, optional): Damping parameter for the Sella algorithm. Default is 0.1.
-    keep_going (bool, optional): If True, continue the optimization until convergence. Default is True.
+    keep_going (bool, optional): If True, continue the optimisation until convergence. Default is True.
     irc_f_traj (str, optional): Filename for saving the forward IRC trajectory. Default is 'irc_f.traj'.
     irc_r_traj (str, optional): Filename for saving the reverse IRC trajectory. Default is 'irc_r.traj'.
 

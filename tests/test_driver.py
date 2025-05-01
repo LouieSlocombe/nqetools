@@ -37,7 +37,7 @@ def test_ase_mace_driver():
     Tests the MACE calculator using the ASE driver.
 
     This function builds a water molecule, centers it with a vacuum of 5.0 Å,
-    sets up the MACE calculator, runs the optimization, and stores the results
+    sets up the MACE calculator, runs the optimisation, and stores the results
     in a specified directory.
 
     Asserts:
@@ -64,7 +64,7 @@ def test_ase_orca_driver():
     Tests the ORCA driver using the ASE driver.
 
     This function builds a water molecule, centers it with a vacuum of 5.0 Å,
-    sets up the ORCA driver, runs the optimization, and stores the results
+    sets up the ORCA driver, runs the optimisation, and stores the results
     in a specified directory.
 
     Asserts:
@@ -91,7 +91,7 @@ def test_ase_nwchem_driver():
     Tests the NWChem driver using the ASE driver.
 
     This function builds a water molecule, centers it with a vacuum of 5.0 Å,
-    sets up the NWChem driver, runs the optimization, and stores the results
+    sets up the NWChem driver, runs the optimisation, and stores the results
     in a specified directory.
 
     Asserts:
@@ -107,7 +107,7 @@ def test_ase_nwchem_driver():
     # Make a directory to store everything
     directory = "nwchem_opti"
 
-    # Run the optimization
+    # Run the optimisation
     nqe.run_optimise(directory, atoms, driver='ase-nwchem', total_steps=2)
     nqe.remove_directory(directory)
     pass
@@ -118,7 +118,7 @@ def test_nwchem_driver():
     Tests the NWChem driver.
 
     This function builds a water molecule, centers it with a vacuum of 5.0 Å,
-    sets up the NWChem driver, runs the optimization, and stores the results
+    sets up the NWChem driver, runs the optimisation, and stores the results
     in a specified directory.
 
     Asserts:
@@ -134,7 +134,7 @@ def test_nwchem_driver():
     # Make a directory to store everything
     directory = "nwchem_opti"
 
-    # Run the optimization
+    # Run the optimisation
     nqe.run_optimise(directory, atoms, driver='nwchem', total_steps=2)
     nqe.remove_directory(directory)
     pass

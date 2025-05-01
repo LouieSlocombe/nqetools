@@ -363,8 +363,8 @@ def plot_fes_contour_compare(fes_a,
     )
 
     levels = np.linspace(0, 0.5, 6)
-    cp1 = ax.contour(*fes_a, colors="b", levels=levels)
-    cp2 = ax.contour(*fes_b, colors="r", levels=levels)
+    ax.contour(*fes_a, colors="b", levels=levels)
+    ax.contour(*fes_b, colors="r", levels=levels)
 
     ax.set_xlabel(x_lab)
     ax.set_ylabel(y_lab)

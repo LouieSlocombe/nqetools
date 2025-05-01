@@ -3,7 +3,7 @@ import importlib.util
 import os
 import re
 import shutil
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as et
 
 import ase.io
 import numpy as np
@@ -38,7 +38,7 @@ def read_ipi_xyz(filename, convert_units=True):
                                     positions=ret["atoms"].q.reshape((-1, 3)),
                                     cell=ret["cell"].h.T, pbc=True))
         except EOFError:
-            # Break the loop if end of file is reached
+            # Break the loop if the end of the file is reached
             break
         except:
             # Raise any other exceptions encountered
@@ -106,8 +106,8 @@ def write_xml(root, file):
     None
     """
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    tree = ET.ElementTree(root)
-    ET.indent(tree.getroot(), space="\t", level=0)
+    tree = et.ElementTree(root)
+    et.indent(tree.getroot(), space="\t", level=0)
     tree.write(file)
     return None
 

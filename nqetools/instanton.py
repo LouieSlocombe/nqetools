@@ -8,7 +8,7 @@ from .execution import run_instanton_post_process
 
 def calc_kappa(ts_path, instanton_path, temperature, n_beads):
     """
-    Calculates the tunneling factor (kappa) for a given transition state and instanton path.
+    Calculates the tunnelling factor (kappa) for a given transition state and instanton path.
 
     Parameters:
     ts_path (str): Path to the transition state data.
@@ -17,7 +17,7 @@ def calc_kappa(ts_path, instanton_path, temperature, n_beads):
     n_beads (int): Number of beads.
 
     Returns:
-    float: The computed tunneling factor (kappa).
+    float: The computed tunnelling factor (kappa).
     """
     # Use run_instanton_post_process to get TS data
     ts_data = run_instanton_post_process(
@@ -35,33 +35,33 @@ def calc_kappa(ts_path, instanton_path, temperature, n_beads):
     )
 
     # Extract required values from the processed data
-    Q_trn_TS = ts_data["Q_trn"]
-    Q_rot_TS = ts_data["Q_rot"]
-    Q_vib_TS = ts_data["Q_vib"]
-    Beta_times_V = ts_data["Beta_times_V"]
+    q_trn_ts = ts_data["Q_trn"]
+    q_rot_ts = ts_data["Q_rot"]
+    q_vib_ts = ts_data["Q_vib"]
+    beta_times_v = ts_data["Beta_times_V"]
 
-    Q_trn_inst = instanton_data["Q_trn"]
-    Q_rot_inst = instanton_data["Q_rot"]
-    Q_vib_inst = instanton_data["Q_vib"]
-    BN = instanton_data["BN"]
-    S_over_hbar = instanton_data["S_over_hbar"]
+    q_trn_inst = instanton_data["Q_trn"]
+    q_rot_inst = instanton_data["Q_rot"]
+    q_vib_inst = instanton_data["Q_vib"]
+    bn = instanton_data["BN"]
+    s_over_hbar = instanton_data["S_over_hbar"]
 
     # Compute kappa directly
     kelvin2au = 3.1668152e-06
     beta = 1.0 / (temperature * kelvin2au)
-    f_trn = Q_trn_inst / Q_trn_TS
-    f_rot = Q_rot_inst / Q_rot_TS
-    f_vib = np.sqrt((2. * np.pi * n_beads * BN) / (beta * 1.0 ** 2)) * Q_vib_inst / Q_vib_TS
+    f_trn = q_trn_inst / q_trn_ts
+    f_rot = q_rot_inst / q_rot_ts
+    f_vib = np.sqrt((2. * np.pi * n_beads * bn) / (beta * 1.0 ** 2)) * q_vib_inst / q_vib_ts
 
-    kappa = f_trn * f_rot * f_vib * np.exp(-S_over_hbar + Beta_times_V)
+    kappa = f_trn * f_rot * f_vib * np.exp(-s_over_hbar + beta_times_v)
 
     # Printing out the transmission factor and the relevant contributions
     print('f_tra               = {:5.3f}'.format(f_trn), flush=True)
     print('f_rot               = {:5.3f}'.format(f_rot), flush=True)
     print('f_vib               = {:5.3f}'.format(f_vib), flush=True)
-    print('exp(-S/hbar+V/beta) = {:5.3f}'.format(np.exp(-S_over_hbar + Beta_times_V)), flush=True)
+    print('exp(-S/hbar+V/beta) = {:5.3f}'.format(np.exp(-s_over_hbar + beta_times_v)), flush=True)
     print('=============================', flush=True)
-    print('Tunneling factor    = {:5.3f}'.format(kappa), flush=True)
+    print('Tunnelling factor   = {:5.3f}'.format(kappa), flush=True)
 
     return kappa
 
@@ -152,7 +152,7 @@ def parse_inst_thermo_data(directory, filename='thermo_data.out'):
 
     data = {}
 
-    # Find needed values from the file
+    # Find the needed values from the file
     for i, line in enumerate(lines):
         if 'Temperature:' in line:
             data['Temperature'] = float(line.split()[1])
@@ -182,14 +182,14 @@ def parse_inst_thermo_data(directory, filename='thermo_data.out'):
 
 def calc_instanton_kappa(ts_data, inst_data):
     """
-    Calculate the tunneling factor (kappa) from TS and instanton thermodynamic data.
+    Calculate the tunnelling factor (kappa) from TS and instanton thermodynamic data.
 
     Args:
         ts_data (dict): Dictionary containing TS thermodynamic data
         inst_data (dict): Dictionary containing instanton thermodynamic data
 
     Returns:
-        float: Tunneling factor (kappa)
+        float: Tunnelling factor (kappa)
     """
     # Extract partition functions and other parameters
     f_trn = inst_data['Qt'] / ts_data['Qtras']
@@ -263,11 +263,11 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
     react_data = parse_react_thermo_data(react_directory)
 
     # Extract partition functions and calculate the forward rate
-    Q_vib_react = np.exp(react_data['logQvib_rp'])
-    Q_vib_TS = np.exp(ts_data['logQvib'])
+    q_vib_react = np.exp(react_data['logQvib_rp'])
+    q_vib_ts = np.exp(ts_data['logQvib'])
 
-    partition_function_ratio = (ts_data['Qtras'] * ts_data['Qrot'] * Q_vib_TS) / \
-                               (react_data['Qtras'] * react_data['Qrot'] * Q_vib_react)
+    partition_function_ratio = (ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts) / \
+                               (react_data['Qtras'] * react_data['Qrot'] * q_vib_react)
 
     boltzmann_factor = np.exp(-ts_data['V/kBT'] + (react_energy / (temperature * kelvin2au)))
 

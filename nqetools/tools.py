@@ -153,18 +153,18 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
 def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc, fmax=0.05):
     """
     Move an atom to be halfway between two target atoms, fix the positions of the three atoms,
-    perform a geometry optimization, and return the final result without any constraints.
+    perform a geometry optimisation, and return the final result without any constraints.
 
     Parameters:
     atoms (Atoms): The ASE Atoms object.
     atom_index (int): The index of the atom to move.
     target_index1 (int): The index of the first target atom.
     target_index2 (int): The index of the second target atom.
-    calc (Calculator): The calculator to be used for the optimization.
-    fmax (float): The maximum force criterion for the optimization. Default is 0.05 eV/Å.
+    calc (Calculator): The calculator to be used for the optimisation.
+    fmax (float): The maximum force criterion for the optimisation. Default is 0.05 eV/Å.
 
     Returns:
-    Atoms: The optimized Atoms object without any constraints.
+    Atoms: The optimised Atoms object without any constraints.
     """
     # Move the atom to be halfway between the two target atoms
     atoms = move_atom_halfway(atoms, atom_index, target_index1, target_index2)
@@ -176,7 +176,7 @@ def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc,
     # Set the calculator
     atoms.set_calculator(calc)
 
-    # Perform the geometry optimization
+    # Perform the geometry optimisation
     BFGS(atoms).run(fmax=fmax)
 
     # Get the final configuration
@@ -208,7 +208,7 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
 
     # Calculate the direction vector from atom1 to atom2
     direction = pos2 - pos1
-    direction /= np.linalg.norm(direction)  # Normalize the direction vector
+    direction /= np.linalg.norm(direction)  # Normalise the direction vector
 
     # Calculate the position of the hydrogen atom
     hydrogen_position = pos1 + direction * distance
@@ -240,7 +240,7 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
 
     # Calculate the new position for the hydrogen atom
     direction = acceptor_pos - donor_pos
-    direction /= np.linalg.norm(direction)  # Normalize the direction vector
+    direction /= np.linalg.norm(direction)  # Normalise the direction vector
     new_hydrogen_pos = acceptor_pos - direction * np.linalg.norm(hydrogen_pos - donor_pos)
 
     # Update the position of the hydrogen atom
@@ -287,7 +287,7 @@ def get_fmax(atoms):
 
 def align_mols(atoms1, atoms2):
     """
-    Align two molecular structures by minimizing their rotational and translational differences.
+    Align two molecular structures by minimising their rotational and translational differences.
 
     Parameters:
     atoms1 (ase.Atoms): The first ASE Atoms object.
@@ -300,7 +300,7 @@ def align_mols(atoms1, atoms2):
     atoms2 = atoms2.copy()
     atoms1.center()
     atoms2.center()
-    # Minimize the rotation and translation
+    # Minimise the rotation and translation
     minimize_rotation_and_translation(atoms1, atoms2)
     return atoms1, atoms2
 
@@ -475,7 +475,7 @@ def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
 
 def move_com_to_origin(atoms: Atoms) -> Atoms:
     """
-    Moves a set of atoms so that its center of mass is at the origin.
+    Moves a set of atoms so that its centre of mass is at the origin.
 
     Parameters:
     atoms (ase.Atoms): The ASE Atoms object.
@@ -518,8 +518,8 @@ def move_clusters_to_distance(cluster1: Atoms,
     if current_distance == 0:
         raise ValueError("The selected atoms are at the same position; cannot determine a valid direction.")
 
-    # Normalize the vector
-    unit_vec = vec / current_distance
+    # Normalise the vector
+    unit_vec = vec / float(current_distance)
 
     # Compute the shift needed to achieve the target distance
     shift = (np.subtract(target_distance, current_distance)) / 2

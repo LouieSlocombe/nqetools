@@ -1,6 +1,6 @@
 import os
 import re
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as et
 
 import ase.build
 
@@ -38,14 +38,14 @@ def count_matching_words(input_string, target_word):
 
 
 def test_update_file():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     nqe.update_file(root, "test.pdb")
 
     # Write to file for visual inspection
     # vis_xml(root)
 
-    assert count_matching_words(str(ET.tostring(root)), "test.pdb") == 1
-    assert count_matching_words(str(ET.tostring(root)), "pdb") == 2
+    assert count_matching_words(str(et.tostring(root)), "test.pdb") == 1
+    assert count_matching_words(str(et.tostring(root)), "pdb") == 2
 
 
 def test_update_cell():
@@ -75,7 +75,7 @@ def test_update_cell():
 
 
 def test_update_properties():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the properties
     properties = ["-99", "-98", "-97"]
     # Update the properties
@@ -85,13 +85,13 @@ def test_update_properties():
     # vis_xml(root)
 
     # Check that the properties are set
-    assert count_matching_words(str(ET.tostring(root)), "-99") == 1
-    assert count_matching_words(str(ET.tostring(root)), "-98") == 1
-    assert count_matching_words(str(ET.tostring(root)), "-97") == 1
+    assert count_matching_words(str(et.tostring(root)), "-99") == 1
+    assert count_matching_words(str(et.tostring(root)), "-98") == 1
+    assert count_matching_words(str(et.tostring(root)), "-97") == 1
 
 
 def test_append_properties():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the properties
     properties = ["-99", "-98", "-97"]
     # Update the properties
@@ -101,21 +101,21 @@ def test_append_properties():
     vis_xml(root)
 
     # Check that the properties are set
-    assert count_matching_words(str(ET.tostring(root)), "-99") == 1
-    assert count_matching_words(str(ET.tostring(root)), "-98") == 1
-    assert count_matching_words(str(ET.tostring(root)), "-97") == 1
+    assert count_matching_words(str(et.tostring(root)), "-99") == 1
+    assert count_matching_words(str(et.tostring(root)), "-98") == 1
+    assert count_matching_words(str(et.tostring(root)), "-97") == 1
 
 
 def test_update_temperature():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the temperature
     temperature = -999
     # Update the temperature
     nqe.update_temperature(root, temperature)
     # Check that the temperature is set
-    assert count_matching_words(str(ET.tostring(root)), str(temperature)) == 1
+    assert count_matching_words(str(et.tostring(root)), str(temperature)) == 1
 
-    root = ET.parse(os.path.abspath("../templates/NVE.xml")).getroot()
+    root = et.parse(os.path.abspath("../templates/NVE.xml")).getroot()
     # Set the temperature
     temperature = -999
     # Update the temperature
@@ -125,11 +125,11 @@ def test_update_temperature():
     # vis_xml(root)
 
     # Check that the temperature is set
-    assert count_matching_words(str(ET.tostring(root)), str(temperature)) == 2
+    assert count_matching_words(str(et.tostring(root)), str(temperature)) == 2
 
 
 def test_update_timestep():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the timestep
     timestep = 0.002
     # Update the timestep
@@ -139,11 +139,11 @@ def test_update_timestep():
     # vis_xml(root)
 
     # Check that the timestep is set
-    assert count_matching_words(str(ET.tostring(root)), str(timestep)) == 1
+    assert count_matching_words(str(et.tostring(root)), str(timestep)) == 1
 
 
 def test_update_stride():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the stride
     stride = -99
     # Update the stride
@@ -153,11 +153,11 @@ def test_update_stride():
     # vis_xml(root)
 
     # # Check that the stride is set
-    assert count_matching_words(str(ET.tostring(root)), str(stride)) == 2
+    assert count_matching_words(str(et.tostring(root)), str(stride)) == 2
 
 
 def test_update_nbeads():
-    root = ET.parse(os.path.join(base_dir, "templates/NVT-PIMD.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVT-PIMD.xml")).getroot()
 
     # Update the plumed file
     nqe.add_plumed_xml(root)
@@ -171,11 +171,11 @@ def test_update_nbeads():
     # vis_xml(root)
 
     # Check that the number of beads is set
-    assert count_matching_words(str(ET.tostring(root)), str(n_beads)) == 1
+    assert count_matching_words(str(et.tostring(root)), str(n_beads)) == 1
 
 
 def test_update_checkpoint_stride():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Set the checkpoint stride
     checkpoint_stride = -99
     # Update the checkpoint stride
@@ -185,11 +185,11 @@ def test_update_checkpoint_stride():
     # vis_xml(root)
 
     # Check that the checkpoint stride is set
-    assert count_matching_words(str(ET.tostring(root)), str(checkpoint_stride)) == 1
+    assert count_matching_words(str(et.tostring(root)), str(checkpoint_stride)) == 1
 
 
 def test_add_trajectory_centroid():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the centroid trajectory
     nqe.add_trajectory_centroid(root)
 
@@ -197,11 +197,11 @@ def test_add_trajectory_centroid():
     # vis_xml(root)
 
     # Check that the centroid trajectory has been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "centroid") == 1
+    assert count_matching_words(str(et.tostring(root)), "centroid") == 1
 
 
 def test_add_trajectory_plumed_extras():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed extras
     nqe.add_trajectory_plumed_extras(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
@@ -209,35 +209,35 @@ def test_add_trajectory_plumed_extras():
     # vis_xml(root)
 
     # Check that the plumed extras have been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "extras_bias") == 1
+    assert count_matching_words(str(et.tostring(root)), "extras_bias") == 1
 
 
 def test_add_plumed_bias_section():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed file
     nqe.add_plumed_bias_section(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
     # Write to file for visual inspection
     # vis_xml(root)
 
-    assert count_matching_words(str(ET.tostring(root)), "interpolate_extras") == 2
-    assert count_matching_words(str(ET.tostring(root)), "doo") == 1
+    assert count_matching_words(str(et.tostring(root)), "interpolate_extras") == 2
+    assert count_matching_words(str(et.tostring(root)), "doo") == 1
 
 
 def test_add_plumed_ff_section():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed file
     nqe.add_plumed_ff_section(root, plumed_extras=["doo", "dc", "mtd.bias"])
 
     # Write to file for visual inspection
     # vis_xml(root)
 
-    assert count_matching_words(str(ET.tostring(root)), "plumed_extras") == 2
-    assert count_matching_words(str(ET.tostring(root)), "doo") == 1
+    assert count_matching_words(str(et.tostring(root)), "plumed_extras") == 2
+    assert count_matching_words(str(et.tostring(root)), "doo") == 1
 
 
 def test_add_plumed_xml():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the plumed file
     nqe.add_plumed_xml(root)
 
@@ -245,17 +245,17 @@ def test_add_plumed_xml():
     # vis_xml(root)
 
     # Check that ffplumed is in the xml
-    assert count_matching_words(str(ET.tostring(root)), "ffplumed") == 2
+    assert count_matching_words(str(et.tostring(root)), "ffplumed") == 2
 
     # Check that bias has been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "bias") == 2
+    assert count_matching_words(str(et.tostring(root)), "bias") == 2
 
     # Check that smotion has been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "smotion") == 2
+    assert count_matching_words(str(et.tostring(root)), "smotion") == 2
 
 
 def test_add_trajectory_file():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the centroid trajectory
     nqe.add_trajectory_file(root, filename="kin", stride=1, text='kinetic_cv')
 
@@ -263,11 +263,11 @@ def test_add_trajectory_file():
     # vis_xml(root)
 
     # Check that the centroid trajectory has been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "kinetic_cv") == 1
+    assert count_matching_words(str(et.tostring(root)), "kinetic_cv") == 1
 
 
 def test_add_thermostat_section():
-    root = ET.parse(os.path.join(base_dir, "templates/NVT.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVT.xml")).getroot()
     # Update the thermostat section
     nqe.add_thermostat_section(root)
 
@@ -275,11 +275,11 @@ def test_add_thermostat_section():
     # vis_xml(root)
 
     # Check that the thermostat section has been added to the xml
-    assert count_matching_words(str(ET.tostring(root)), "thermostat") == 2
+    assert count_matching_words(str(et.tostring(root)), "thermostat") == 2
 
 
 def test_update_dynamics_splitting():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the dynamics splitting
     nqe.update_dynamics_splitting(root, splitting="baoab")
 
@@ -287,11 +287,11 @@ def test_update_dynamics_splitting():
     # vis_xml(root)
 
     # Check that the dynamics splitting has been updated
-    assert count_matching_words(str(ET.tostring(root)), "baoab") == 1
+    assert count_matching_words(str(et.tostring(root)), "baoab") == 1
 
 
 def test_update_motion_fixcom():
-    root = ET.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
+    root = et.parse(os.path.join(base_dir, "templates/NVE.xml")).getroot()
     # Update the motion fixcom
     nqe.update_motion_fix_com(root, fix_com=True)
 
@@ -299,4 +299,4 @@ def test_update_motion_fixcom():
     # vis_xml(root)
 
     # Check that the motion fixcom has been updated
-    assert count_matching_words(str(ET.tostring(root)), "True") == 1
+    assert count_matching_words(str(et.tostring(root)), "True") == 1
