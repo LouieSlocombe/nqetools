@@ -1,7 +1,7 @@
 import subprocess
 import time
 from itertools import chain
-
+import xml.etree.ElementTree as et
 import ipi
 import numpy as np
 
@@ -223,9 +223,9 @@ def prep_optimise_xml(directory,
                       file_in="init.xyz"):
     # Prepare the minimisation xml file
     if xml_in is not None:
-        tree = ET.parse(xml_in)
+        tree = et.parse(xml_in)
     else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -348,9 +348,9 @@ def prep_md_xml(directory,
                 file_in="init.xyz"):
     # Prepare the MD simulation XML file
     if xml_in is not None:
-        tree = ET.parse(xml_in)
+        tree = et.parse(xml_in)
     else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -505,9 +505,9 @@ def prep_plumed_xml(directory,
                     file_in="init.xyz"):
     # Prepare the MD simulation XML file
     if xml_in is not None:
-        tree = ET.parse(xml_in)
+        tree = et.parse(xml_in)
     else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
     root = tree.getroot()
 
     # Add in the bias to the properties to be tracked
@@ -679,9 +679,9 @@ def prep_phonons_xml(directory,
                      file_in="init.xyz"):
     # Prepare the phonon xml file
     if xml_in is not None:
-        tree = ET.parse(xml_in)
+        tree = et.parse(xml_in)
     else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/PHO.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/PHO.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -781,9 +781,9 @@ def prep_ts_xml(directory,
                 file_in="init.xyz"):
     # Prepare the transition state search xml file
     if xml_in is not None:
-        tree = ET.parse(xml_in)
+        tree = et.parse(xml_in)
     else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/TS.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/TS.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -901,9 +901,9 @@ def prep_instanton_xml(directory,
 
     # Prepare the instanton calculation
     if xml_in is not None:
-        tree = ET.parse(xml_in)
+        tree = et.parse(xml_in)
     else:
-        tree = ET.parse(os.path.join(find_nqetools_path(), f"templates/INST.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/INST.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
