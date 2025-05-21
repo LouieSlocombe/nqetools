@@ -1,3 +1,5 @@
+from math import pi
+
 import numpy as np
 from scipy import constants
 
@@ -119,3 +121,31 @@ def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
     # nbeads > (hbar * omega_max) / (kB * T)
     nbeads = (1.0 * omega_max) / (boltzmann_au * temperature)
     return int(nbeads)
+
+
+def wigner_correction(omega_cm: float, T: float) -> float:
+    """
+    Return the Wigner tunnelling factor κ.
+    κ = 1 + (ħ ω)² / (24 kB² T²)
+    with ω supplied as a wavenumber in cm⁻¹.
+
+    Parameters
+    ----------
+    omega_cm : float
+        |ω‡|, the imaginary TS frequency, in cm⁻¹.
+    T : float
+        Temperature in kelvin.
+
+    Returns
+    -------
+    float
+        κ (dimensionless, ≥ 1).
+    """
+    # Pre-compute speed of light in cm s⁻¹ so we can keep ω in cm⁻¹
+    _c_cm_s = constants.c * 100.0  # 2.997 924 58 × 10¹⁰ cm s⁻¹
+    # Convert ω from cm⁻¹ to angular frequency (rad s⁻¹)
+    omega_rad_s = 2.0 * pi * _c_cm_s * omega_cm
+
+    # Apply Wigner formula
+    x = (constants.hbar * omega_rad_s) / (constants.k * T)
+    return 1.0 + (x * x) / 24.0
