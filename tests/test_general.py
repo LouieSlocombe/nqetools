@@ -308,3 +308,60 @@ def test_load_xyz_with_cell():
     assert all(comparison)
     comparison = [np.allclose(a, b) for a, b in zip(atoms.get_positions(), target_positions)]
     assert all(comparison)
+
+
+def test_wigner_correction():
+    """
+    Tests the Wigner tunneling correction factor calculation.
+
+    This function calculates the Wigner tunneling correction factor (κ)
+    using the `wigner_correction` function from the `nqetools` module.
+    The calculation is based on the vibrational frequency (omega) and
+    temperature (T). The result is printed and compared to an expected
+    value using an assertion.
+
+    Parameters:
+        None
+
+    Asserts:
+        The calculated Wigner tunneling factor is approximately 3.183
+        with a tolerance of 1e-2.
+
+    Prints:
+        The calculated Wigner tunneling factor (κ) to three decimal places.
+    """
+    print(flush=True)
+    omega = 1500.0  # Frequency in cm^-1
+    temperature = 298.15  # Temperature in K
+    kappa_wigner = nqe.wigner_correction(omega, temperature)
+    print(f"Wigner tunnelling factor κ = {kappa_wigner:.3f}")
+    assert np.isclose(kappa_wigner, 3.183, atol=1e-2)
+
+
+def test_bell_correction():
+    """
+    Tests the Bell tunneling correction factor calculation.
+
+    This function calculates the Bell tunneling correction factor (κ)
+    using the `bell_correction` function from the `nqetools` module.
+    The calculation is based on the barrier height, width of the barrier,
+    and reduced mass. The result is printed and compared to an expected
+    value using an assertion.
+
+    Parameters:
+        None
+
+    Asserts:
+        The calculated Bell tunneling factor is approximately 28573.077
+        with a tolerance of 1e-2.
+
+    Prints:
+        The calculated Bell tunneling factor (κ) to three decimal places.
+    """
+    print(flush=True)
+    e_barrier = 0.7  # Barrier height in eV
+    a = 0.35  # Width of the barrier in Angstroms
+    mu = 1.0  # Reduced mass in atomic mass units (amu)
+    kappa_bell = nqe.bell_correction(e_barrier, a, mu)
+    print(f"Bell tunnelling factor κ = {kappa_bell:.3f}")
+    assert np.isclose(kappa_bell, 28573.077, atol=1e-2)
