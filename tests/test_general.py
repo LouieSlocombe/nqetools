@@ -324,18 +324,23 @@ def test_wigner_correction():
         None
 
     Asserts:
-        The calculated Wigner tunneling factor is approximately 3.183
-        with a tolerance of 1e-2.
+        The calculated Wigner tunneling factor for each temperature in the
+        `temperature_list` matches the corresponding value in `kappa_list`
+        within an absolute tolerance of 1e-2.
 
     Prints:
-        The calculated Wigner tunneling factor (κ) to three decimal places.
+        The calculated Wigner tunneling factor (κ) for each temperature
+        in the `temperature_list` to three decimal places.
     """
     print(flush=True)
-    omega = 1500.0  # Frequency in cm^-1
-    temperature = 298.15  # Temperature in K
-    kappa_wigner = nqe.wigner_correction(omega, temperature)
-    print(f"Wigner tunnelling factor κ = {kappa_wigner:.3f}")
-    assert np.isclose(kappa_wigner, 3.183, atol=1e-2)
+    omega = -2017.96  # Frequency in cm^-1
+    temperature_list = [300, 500, 1000, 1500, 2000]  # Temperatures in K
+    kappa_list = [4.90263, 2.40495, 1.35124, 1.15611, 1.08781]  # Expected κ values
+
+    for i, temperature in enumerate(temperature_list):
+        kappa_wigner = nqe.wigner_correction(omega, temperature)
+        print(f"Wigner tunnelling factor κ = {kappa_wigner:.3f}")
+        assert np.isclose(kappa_wigner, kappa_list[i], atol=1e-2)
 
 
 def test_bell_correction():
@@ -365,3 +370,39 @@ def test_bell_correction():
     kappa_bell = nqe.bell_correction(e_barrier, a, mu)
     print(f"Bell tunnelling factor κ = {kappa_bell:.3f}")
     assert np.isclose(kappa_bell, 28573.077, atol=1e-2)
+
+
+def test_eckart_correction():
+    """
+    Tests the Eckart tunneling correction factor calculation.
+
+    This function calculates the Eckart tunneling correction factor (κ)
+    using the `eckart_correction` function from the `nqetools` module.
+    The calculation is based on the temperature, vibrational frequency,
+    and energy values for the reactants, transition state, and products.
+    The results are printed and compared to expected values using assertions.
+
+    Parameters:
+        None
+
+    Asserts:
+        The calculated Eckart tunneling factor for each temperature in the
+        `temperature_list` matches the corresponding value in `kappa_list`
+        within a relative tolerance of 1e-2.
+
+    Prints:
+        The calculated Eckart tunneling factor (κ) for each temperature
+        in the `temperature_list` to three decimal places.
+    """
+    print(flush=True)
+    E_reac = 0.0  # Energy of reactants in eV
+    E_TS = 2.93124318  # Energy of the transition state in eV
+    E_prod = 0.329755902  # Energy of products in eV
+    freq = -2017.96  # Vibrational frequency in cm^-1
+    temperature_list = [300, 500, 1000, 1500, 2000]  # Temperatures in K
+    kappa_list = [1623051.0, 7.69349, 1.46551, 1.18111, 1.09858]  # Expected κ values
+
+    for i, temperature in enumerate(temperature_list):
+        kappa_eckart = nqe.eckart_correction(temperature, freq, E_reac, E_TS, E_prod)
+        print(f"Eckart κ({temperature} K) = {kappa_eckart:.3f}")
+        assert np.isclose(kappa_eckart, kappa_list[i], rtol=1e-2)
