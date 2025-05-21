@@ -12,7 +12,7 @@ J_to_kJ = 1.0e-3  # 1 J = 0.001 kJ
 # Avogadro's number
 avo_num = const["Avogadro constant"][0]  # mol^-1
 
-# Conversion factor from eV/Å² to 1 kJ/(mol·nm²)
+# Conversion factor from eV to 1 kJ/mol
 eV_to_kJpermol = eV_to_J * J_to_kJ * avo_num
 # Conversion factor from eV/Å² to 1 kJ/(mol·nm²)
 eVperA2_to_kJpermolpernm2 = eV_to_kJpermol / A_to_nm ** 2

@@ -1,8 +1,7 @@
-from math import exp, sqrt
-from math import pi
-
 import numpy as np
 from scipy import constants
+
+from .conversions import eV_to_kJpermol
 
 
 def correlate(x: np.ndarray,
@@ -152,7 +151,7 @@ def wigner_correction(omega_cm: float, temperature: float) -> float:
     # Pre-compute speed of light in cm s⁻¹ so we can keep ω in cm⁻¹
     _c_cm_s = constants.c * 100.0  # 2.997 924 58 × 10¹⁰ cm s⁻¹
     # Convert ω from cm⁻¹ to angular frequency (rad s⁻¹)
-    omega_rad_s = 2.0 * pi * _c_cm_s * abs(omega_cm)
+    omega_rad_s = 2.0 * constants.pi * _c_cm_s * abs(omega_cm)
     # Apply Wigner formula
     x = (constants.hbar * omega_rad_s) / (constants.k * temperature)
     return 1.0 + (x * x) / 24.0
@@ -189,10 +188,179 @@ def bell_correction(e_barrier: float, a: float, mu: float) -> float:
     a_m = a * angstrom_to_m
     mu_kg = mu * amu_to_kg
 
-    alpha = (2.0 * a_m / constants.hbar) * sqrt(2.0 * mu_kg * e_a_j)
+    alpha = (2.0 * a_m / constants.hbar) * np.sqrt(2.0 * mu_kg * e_a_j)
 
     # No barrier or zero half-width → classical, κ = 1
     if alpha == 0.0:
         return 1.0
 
-    return (exp(alpha) / alpha) * (1.0 - exp(-alpha))
+    return (np.exp(alpha) / alpha) * (1.0 - np.exp(-alpha))
+
+
+def _eckart_inner(
+        e_list: np.ndarray,
+        frequency: float,
+        e_reac: float,
+        e_ts: float,
+        e_prod: float,
+) -> np.ndarray:
+    """
+    Computes the micro-canonical Eckart tunnelling correction factor (κ) for a given energy grid.
+
+    This function calculates the tunnelling correction factor based on the Eckart model,
+    which accounts for quantum mechanical tunnelling effects in reaction rates.
+
+    Parameters
+    ----------
+    e_list : np.ndarray
+        Array of energies (in the same units as the input barriers).
+    frequency : float
+        Transition state frequency in the same units as the energy barriers.
+    e_reac : float
+        Energy of the reactants.
+    e_ts : float
+        Energy of the transition state.
+    e_prod : float
+        Energy of the products.
+
+    Returns
+    -------
+    np.ndarray
+        Array of tunnelling correction factors (κ) for each energy in `e_list`.
+
+    Raises
+    ------
+    ValueError
+        If the forward barrier height exceeds the reverse barrier height.
+
+    Notes
+    -----
+    - The function assumes that the forward barrier (d_v1) is less than or equal
+      to the reverse barrier (d_v2). If this condition is violated, an exception
+      is raised.
+    - The correction factor is computed using the Eckart tunnelling model, which
+      is based on a one-dimensional potential energy surface.
+    """
+    # Determine reference energy and barriers
+    e0 = max(e_reac, e_prod)  # Reference energy (highest of reactants or products)
+    d_v1, d_v2 = sorted([e_ts - e_reac, e_ts - e_prod])  # Forward and reverse barriers
+
+    # Ensure forward barrier does not exceed reverse barrier
+    if d_v1 > d_v2:
+        raise ValueError("Forward barrier must not exceed reverse barrier")
+
+    # Compute dimensionless Eckart parameters
+    alpha_1 = 2.0 * constants.pi * d_v1 / frequency
+    alpha_2 = 2.0 * constants.pi * d_v2 / frequency
+    denom = 1.0 / np.sqrt(alpha_1) + 1.0 / np.sqrt(alpha_2)  # Denominator for scaling
+    two_pi_d = 2.0 * np.sqrt(abs(alpha_1 * alpha_2 - (constants.pi ** 2) / 4.0))  # Parameter for tunnelling
+
+    # Initialize the correction factor array
+    kappa = np.zeros_like(e_list, dtype=float)
+    r0 = np.searchsorted(e_list, e0, side="left")  # Index of the reference energy in `e_list`
+
+    # Loop over energies greater than or equal to the reference energy
+    for r in range(r0, len(e_list)):
+        x_i = (e_list[r] - e0) / d_v1  # Dimensionless energy relative to the forward barrier
+        two_pi_a = 2.0 * np.sqrt(alpha_1 * x_i) / denom  # Parameter for forward tunnelling
+        two_pi_b = 2.0 * np.sqrt(abs((x_i - 1.0) * alpha_1 + alpha_2)) / denom  # Parameter for reverse tunnelling
+
+        # Compute the correction factor based on the tunnelling parameters
+        if max(two_pi_a, two_pi_b, two_pi_d) < 200.0:
+            # Use hyperbolic functions for small values
+            num = np.cosh(two_pi_a - two_pi_b) + np.cosh(two_pi_d)
+            den = np.cosh(two_pi_a + two_pi_b) + np.cosh(two_pi_d)
+        elif any(x > 10.0 for x in
+                 [two_pi_a - two_pi_b - two_pi_d, two_pi_b - two_pi_a - two_pi_d, two_pi_a + two_pi_b - two_pi_d]):
+            # Approximation for large values to avoid overflow
+            kappa[r] = 1.0 - sum(np.exp(-x) for x in [2.0 * two_pi_a, 2.0 * two_pi_b, two_pi_a + two_pi_b - two_pi_d,
+                                                      two_pi_a + two_pi_b + two_pi_d])
+            continue
+        else:
+            # Use exponential functions for intermediate values
+            num = sum(np.exp(x) for x in
+                      [two_pi_a - two_pi_b - two_pi_d, -two_pi_a + two_pi_b - two_pi_d, -2.0 * two_pi_d]) + 1.0
+            den = sum(np.exp(x) for x in
+                      [two_pi_a + two_pi_b - two_pi_d, -two_pi_a - two_pi_b - two_pi_d, -2.0 * two_pi_d]) + 1.0
+
+        # Compute the tunnelling correction factor
+        kappa[r] = 1.0 - num / den
+
+    return kappa
+
+
+def eckart_correction(
+        temperature: float,
+        frequency: float,
+        e_reac: float,
+        e_ts: float,
+        e_prod: float,
+) -> float:
+    """
+    Computes the Eckart tunnelling correction factor (κ) for a reaction at a given temperature.
+
+    This function calculates the tunnelling correction factor using the Eckart model,
+    which accounts for quantum mechanical tunnelling effects in reaction rates.
+
+    Parameters
+    ----------
+    temperature : float
+        Temperature in kelvin (K).
+    frequency : float
+        Transition state frequency in inverse centimeters (cm⁻¹).
+    e_reac : float
+        Energy of the reactants in electron volts (eV).
+    e_ts : float
+        Energy of the transition state in electron volts (eV).
+    e_prod : float
+        Energy of the products in electron volts (eV).
+
+    Returns
+    -------
+    float
+        The Eckart tunnelling correction factor (κ), which is dimensionless.
+
+    Raises
+    ------
+    ValueError
+        If the forward barrier height (d_v1) is negative, the reverse barrier height (d_v2) is negative,
+        or if the forward barrier height exceeds the reverse barrier height.
+
+    Notes
+    -----
+    - The function converts input energies from eV to kJ/mol and then to J/mol for calculations.
+    - The frequency is converted from cm⁻¹ to energy in J/mol.
+    - The correction factor is computed by integrating the micro-canonical correction factor (κ(E))
+      over an energy grid using the `_eckart_inner` function.
+    """
+    beta = 1.0 / (constants.R * temperature)  # mol · J⁻¹
+
+    # Convert energy from eV to kJ mol⁻¹
+    e_reac *= eV_to_kJpermol
+    e_ts *= eV_to_kJpermol
+    e_prod *= eV_to_kJpermol
+
+    # Convert energy from kJ mol⁻¹ to (J mol⁻¹)
+    e_reac *= 1e3
+    e_ts *= 1e3
+    e_prod *= 1e3
+
+    # Convert frequency cm⁻¹ to energy (J mol⁻¹)
+    frequency = constants.h * abs(frequency) * constants.c * 100.0 * constants.N_A
+
+    # Determine reference energy and barriers
+    e0 = max(e_reac, e_prod)
+    d_v1, d_v2 = sorted([e_ts - e_reac, e_ts - e_prod])
+
+    # Sanity checks
+    if d_v1 < 0 or d_v2 < 0:
+        raise ValueError(f"Invalid barrier heights: d_v1={d_v1 / 1e3:.3f} kJ/mol, d_v2={d_v2 / 1e3:.3f} kJ/mol")
+    if d_v1 > d_v2:
+        raise ValueError("Eckart requirement d_v1 ≤ d_v2 violated.")
+
+    # Build energy grid and compute micro-canonical κ(E)
+    d_e = 100.0
+    upper = e0 + 2.0 * (e_ts - e0) + 40.0 * constants.R * temperature
+    e_list = np.arange(e0, upper, d_e)
+    kappa_e = _eckart_inner(e_list, frequency, e_reac, e_ts, e_prod)
+    return np.exp(d_v1 * beta) * np.sum(kappa_e * np.exp(-beta * (e_list - e0))) * d_e * beta

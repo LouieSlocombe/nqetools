@@ -5,7 +5,8 @@ from .calcs import (correlate,
                     calculate_temperature_crossover,
                     calculate_good_nbeads,
                     wigner_correction,
-                    bell_correction)
+                    bell_correction,
+                    eckart_correction)
 from .calculators import (nwchem_calc_preset,
                           orca_calc_preset,
                           qchem_calc_preset,
