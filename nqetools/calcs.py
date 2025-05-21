@@ -126,21 +126,28 @@ def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
 
 def wigner_correction(omega_cm: float, temperature: float) -> float:
     """
-    Return the Wigner tunnelling factor κ.
-    κ = 1 + (ħ ω)² / (24 kB² T²)
-    with ω supplied as a wavenumber in cm⁻¹.
+    Calculate the Wigner tunnelling correction factor (κ).
+
+    The Wigner tunnelling factor is given by the formula:
+    κ = 1 + (ħ ω)² / (24 kB² T²),
+    where ω is the angular frequency derived from the input wavenumber (in cm⁻¹).
 
     Parameters
     ----------
     omega_cm : float
-        |ω‡|, the imaginary TS frequency, in cm⁻¹.
+        The imaginary transition state (TS) frequency, |ω‡|, in cm⁻¹.
     temperature : float
-        Temperature in kelvin.
+        The temperature in kelvin (K).
 
     Returns
     -------
     float
-        κ (dimensionless, ≥ 1).
+        The Wigner tunnelling correction factor (κ), which is dimensionless and always ≥ 1.
+
+    Notes
+    -----
+    - The correction factor accounts for quantum tunnelling effects in reaction rates.
+    - The input frequency (ω) is converted from wavenumber (cm⁻¹) to angular frequency (rad/s).
     """
     # Pre-compute speed of light in cm s⁻¹ so we can keep ω in cm⁻¹
     _c_cm_s = constants.c * 100.0  # 2.997 924 58 × 10¹⁰ cm s⁻¹
@@ -155,16 +162,23 @@ def bell_correction(e_barrier: float, a: float, mu: float) -> float:
     """
     Return the Bell tunnelling factor κ for a symmetric 1-D parabolic barrier.
 
+    The Bell tunnelling factor is calculated using the formula:
     κ_Bell = (e^α / α) · [1 − e^(−α)]
-    with
+    where:
     α = 2 a √(2 μ E_a) / ħ
 
-    Notes
-    -----
-    * κ ≥ 1 by definition (tunnelling always enhances the rate).
-    * The factor is *independent* of temperature; multiply any
-      conventional TST rate constant by κ to obtain the tunnelling-corrected
-      rate.
+    Parameters:
+    e_barrier (float): Barrier height in electron volts (eV).
+    a (float): Width of the barrier in Angstroms (Å).
+    mu (float): Reduced mass in atomic mass units (amu).
+
+    Returns:
+    float: The Bell tunnelling factor κ (dimensionless, κ ≥ 1).
+
+    Notes:
+    - κ ≥ 1 by definition (tunnelling always enhances the rate).
+    - The factor is independent of temperature; multiply any conventional
+      TST rate constant by κ to obtain the tunnelling-corrected rate.
     """
     angstrom_to_m = 1.0e-10  # Å → m
     amu_to_kg = constants.physical_constants["atomic mass constant"][0]  # amu → kg
