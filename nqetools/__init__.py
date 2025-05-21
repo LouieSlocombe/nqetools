@@ -4,7 +4,8 @@ from .calcs import (correlate,
                     freq_from_eigvals,
                     calculate_temperature_crossover,
                     calculate_good_nbeads,
-                    wigner_correction)
+                    wigner_correction,
+                    bell_correction)
 from .calculators import (nwchem_calc_preset,
                           orca_calc_preset,
                           qchem_calc_preset,

@@ -1,5 +1,6 @@
 from math import pi
-
+from math import exp, sqrt
+from typing import Union
 import numpy as np
 from scipy import constants
 
@@ -149,3 +150,37 @@ def wigner_correction(omega_cm: float, T: float) -> float:
     # Apply Wigner formula
     x = (constants.hbar * omega_rad_s) / (constants.k * T)
     return 1.0 + (x * x) / 24.0
+
+
+def bell_correction(e_barrier: float, a: float, mu: float) -> float:
+    """
+    Return the Bell tunnelling factor κ for a symmetric 1-D parabolic barrier.
+
+    κ_Bell = (e^α / α) · [1 − e^(−α)]
+    with
+    α = 2 a √(2 μ E_a) / ħ
+
+    Notes
+    -----
+    * κ ≥ 1 by definition (tunnelling always enhances the rate).
+    * The factor is *independent* of temperature; multiply any
+      conventional TST rate constant by κ to obtain the tunnelling-corrected
+      rate.
+    """
+    ANGSTROM_TO_M = 1.0e-10  # Å → m
+    AMU_TO_KG = constants.physical_constants["atomic mass constant"][0]  # amu → kg
+    EV_TO_J = constants.e  # eV → J
+
+    # --- convert inputs to SI ----------------------------
+    Ea_J = e_barrier * EV_TO_J
+    a_m = a * ANGSTROM_TO_M
+    mu_kg = mu * AMU_TO_KG
+
+    alpha = (2.0 * a_m / constants.hbar) * sqrt(2.0 * mu_kg * Ea_J)
+
+    if alpha == 0.0:
+        # No barrier or zero half-width → classical, κ = 1
+        return 1.0
+
+    kappa = (exp(alpha) / alpha) * (1.0 - exp(-alpha))
+    return kappa
