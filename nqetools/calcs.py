@@ -1,6 +1,6 @@
-from math import pi
 from math import exp, sqrt
-from typing import Union
+from math import pi
+
 import numpy as np
 from scipy import constants
 
@@ -124,7 +124,7 @@ def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
     return int(nbeads)
 
 
-def wigner_correction(omega_cm: float, T: float) -> float:
+def wigner_correction(omega_cm: float, temperature: float) -> float:
     """
     Return the Wigner tunnelling factor κ.
     κ = 1 + (ħ ω)² / (24 kB² T²)
@@ -134,7 +134,7 @@ def wigner_correction(omega_cm: float, T: float) -> float:
     ----------
     omega_cm : float
         |ω‡|, the imaginary TS frequency, in cm⁻¹.
-    T : float
+    temperature : float
         Temperature in kelvin.
 
     Returns
@@ -145,10 +145,9 @@ def wigner_correction(omega_cm: float, T: float) -> float:
     # Pre-compute speed of light in cm s⁻¹ so we can keep ω in cm⁻¹
     _c_cm_s = constants.c * 100.0  # 2.997 924 58 × 10¹⁰ cm s⁻¹
     # Convert ω from cm⁻¹ to angular frequency (rad s⁻¹)
-    omega_rad_s = 2.0 * pi * _c_cm_s * omega_cm
-
+    omega_rad_s = 2.0 * pi * _c_cm_s * abs(omega_cm)
     # Apply Wigner formula
-    x = (constants.hbar * omega_rad_s) / (constants.k * T)
+    x = (constants.hbar * omega_rad_s) / (constants.k * temperature)
     return 1.0 + (x * x) / 24.0
 
 
@@ -167,20 +166,19 @@ def bell_correction(e_barrier: float, a: float, mu: float) -> float:
       conventional TST rate constant by κ to obtain the tunnelling-corrected
       rate.
     """
-    ANGSTROM_TO_M = 1.0e-10  # Å → m
-    AMU_TO_KG = constants.physical_constants["atomic mass constant"][0]  # amu → kg
-    EV_TO_J = constants.e  # eV → J
+    angstrom_to_m = 1.0e-10  # Å → m
+    amu_to_kg = constants.physical_constants["atomic mass constant"][0]  # amu → kg
+    ev_to_j = constants.e  # eV → J
 
     # --- convert inputs to SI ----------------------------
-    Ea_J = e_barrier * EV_TO_J
-    a_m = a * ANGSTROM_TO_M
-    mu_kg = mu * AMU_TO_KG
+    e_a_j = e_barrier * ev_to_j
+    a_m = a * angstrom_to_m
+    mu_kg = mu * amu_to_kg
 
-    alpha = (2.0 * a_m / constants.hbar) * sqrt(2.0 * mu_kg * Ea_J)
+    alpha = (2.0 * a_m / constants.hbar) * sqrt(2.0 * mu_kg * e_a_j)
 
+    # No barrier or zero half-width → classical, κ = 1
     if alpha == 0.0:
-        # No barrier or zero half-width → classical, κ = 1
         return 1.0
 
-    kappa = (exp(alpha) / alpha) * (1.0 - exp(-alpha))
-    return kappa
+    return (exp(alpha) / alpha) * (1.0 - exp(-alpha))
