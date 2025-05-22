@@ -205,6 +205,68 @@ def run_instanton_post_process(directory,
     print(f"Thermo/Instanton post-processing complete\n", flush=True)
     return None
 
+def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
+    # https://github.com/i-pi/piqm2023-tutorial/blob/main/05-RPI/tutorial-4.ipynb
+    # Make the folder input/instanton/80
+    # Go to the folder input/instanton/80
+    # Copy the previous optimized instanton geometry and name it init0
+    # Copy the previous optimized instanton hessian and name it hess0
+    # python ${ipi_path}/tools/py/Instanton_interpolation.py -m -xyz init0 -hess hess0 -n 80
+    # Rename the new hessian and instanton geometry files to hessian.dat and init.xyz, respectively
+    # Copy the input.xml file from input/instanton/40/
+    # Change the number of beads from 40 to 80 in input.xml
+    # Change the hessian shape from (18,18) to (18,1440) in input.xml dof * new_n_beads
+
+    print(f'Running the instanton interpolation', flush=True)
+    # Keep track of the current directory
+    cwd = os.getcwd()
+
+    # Make the new directory
+    os.makedirs(directory_new, exist_ok=True)
+    # Change to the new directory
+    os.chdir(directory_new)
+    # Copy the previous optimized instanton geometry and name it init0
+    os.system(f'cp {os.path.join(directory_old, "init.xyz")} init0')
+    # Copy the previous optimized instanton hessian and name it hess0
+    os.system(f'cp {os.path.join(directory_old, "hessian.dat")} hess0')
+
+    # Get the path to the interpolation script
+    path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "interpolation.py")
+    # Build the command
+    command = f'python {path_to_proc} -m -xyz init0 -hess hess0 -n {new_n_beads}'
+
+    print(f"Running command:\n{command}", flush=True)
+
+    # Run the command and write the output to the outfile
+    with open("interpolation.out", "w") as file:
+        result = subprocess.run(command.split(), stdout=file, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            print(f"Error: {result.stderr}", flush=True)
+
+    # Rename the new hessian and instanton geometry files to hessian.dat and init.xyz, respectively
+    os.system(f'cp hess0 hessian.dat')
+    os.system(f'cp init0 init.xyz')
+
+    # Copy the input.xml file from input/instanton/40/
+    os.system(f'cp {os.path.join(directory_old, "input.xml")} input.xml')
+
+    # Change the number of beads from 40 to 80 in input.xml
+    tree = et.parse('input.xml')
+    root = tree.getroot()
+    update_nbeads(root, new_n_beads)
+
+    # Get the degrees of freedom
+    atoms = read_ipi_xyz(os.path.join(directory_old, "init.xyz"))
+    n_doft = 3 * len(atoms)
+
+    # Update the hessian shape from (18,18) to (18,1440) in input.xml dof * new_n_beads
+    update_hessian(root, n_doft, new_n_beads)
+
+    # Change back to the original directory
+    os.chdir(cwd)
+    print(f"Instanton interpolation complete\n", flush=True)
+    return None
+
 
 def prep_optimise_xml(directory,
                       atoms,
