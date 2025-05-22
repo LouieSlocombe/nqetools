@@ -3,6 +3,9 @@ import os
 import sys
 import time
 
+import inspect
+import textwrap
+
 import ipi
 import numpy as np
 from ase import Atoms
@@ -601,3 +604,20 @@ def make_dimer(atoms, translate=None):
     # Combine the two molecules
     combined = atoms + atoms2
     return combined
+
+
+def convert_code_to_string(code):
+    """
+    Converts a Python function or code object to its string representation.
+
+    This function uses the `inspect.getsource` method to retrieve the source
+    code of the given function or code object and removes any common leading
+    whitespace using `textwrap.dedent`.
+
+    Parameters:
+    code (object): The Python function or code object to convert.
+
+    Returns:
+    str: The string representation of the source code.
+    """
+    return textwrap.dedent(inspect.getsource(code))

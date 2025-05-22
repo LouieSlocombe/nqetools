@@ -90,3 +90,28 @@ def test_get_fes_times():
     fake_data = [np.array(0.0), np.array(1.0), np.array(2.0), np.array(3.0), np.array(4.0), np.array(5.0)]
     val = nqe.get_fes_times(dt, n_steps, fake_data)
     assert val == fake_data
+
+
+def test_convert_code_to_string():
+    """
+    Tests the conversion of a Python function to its string representation.
+
+    This function defines a simple `add` function and uses the `convert_code_to_string`
+    function from the `nqetools` module to convert the `add` function into its string
+    representation. The result is then compared to the expected string representation
+    using an assertion.
+
+    Asserts:
+        The string representation of the `add` function matches the expected string.
+
+    Prints:
+        Flushes the output to ensure any print statements are immediately visible.
+    """
+    print(flush=True)
+
+    def add(a: int, b: int) -> int:
+        """Return the sum of *a* and *b*."""
+        return a + b
+
+    s = nqe.convert_code_to_string(add)
+    assert s == "def add(a: int, b: int) -> int:\n    \"\"\"Return the sum of *a* and *b*.\"\"\"\n    return a + b\n"
