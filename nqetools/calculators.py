@@ -62,34 +62,14 @@ def orca_calc_preset(orca_path=None,
                      xc='B3LYP',
                      charge=0,
                      multiplicity=1,
-                     basis_set='6-31+G(d,p)',
+                     basis_set='6-311G',  # 'cc-pVDZ', '6-31+G(d,p)',
                      nprocs=1,
                      f_solv=True,
                      f_disp=True,
                      atom_list=None,
                      calc_extra=None,
+                     blocks_extra=None,
                      scf_option=None):
-    """
-    Set up and return an ORCA calculator object with the specified settings.
-
-    Parameters:
-    orca_path (str, optional): Path to the ORCA executable. Default is None.
-    directory (str, optional): Directory to store ORCA calculation files. Default is a temporary directory.
-    calc_type (str, optional): The type of calculation to perform. Default is 'DFT'.
-    xc (str, optional): The exchange-correlation functional to use. Default is 'B3LYP'.
-    charge (int, optional): The charge of the molecule. Default is 0.
-    multiplicity (int, optional): The multiplicity of the molecule. Default is 1.
-    basis_set (str, optional): The basis set to use. Default is '6-31+G(d,p)'.
-    nprocs (int, optional): The number of processors to use. Default is 1.
-    f_solv (bool or str, optional): Whether to use a solvent model. If True, uses 'WATER'. Default is True.
-    f_disp (bool or str, optional): Whether to include dispersion corrections. If True, uses 'D4'. Default is True.
-    atom_list (list, optional): List of atoms for QM/MM calculations. Default is None.
-    calc_extra (str, optional): Additional calculation options. Default is None.
-    scf_option (str, optional): Additional SCF options. Default is None.
-
-    Returns:
-    ORCA: An ORCA calculator object with the specified settings.
-    """
     if orca_path is None:
         # try and read the path from the environment
         orca_path = os.environ.get('ORCA_PATH')
@@ -127,7 +107,10 @@ def orca_calc_preset(orca_path=None,
     else:
         inpt_xtb = ''
 
-    inpt_blocks = inpt_procs + inpt_solv
+    if blocks_extra is None:
+        blocks_extra = ''
+
+    inpt_blocks = inpt_procs + inpt_solv + blocks_extra
 
     if calc_type == 'DFT':
         inpt_simple = '{} {} {}'.format(xc, inpt_disp, basis_set)
