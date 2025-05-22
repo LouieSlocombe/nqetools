@@ -44,7 +44,10 @@ from .instanton import (calc_kappa,
                         calc_instanton_kappa,
                         calc_kappa_full,
                         parse_react_thermo_data,
-                        calc_forward_rate)
+                        calc_forward_rate,
+                        exp_decay,
+                        fit_exp_decay,
+                        extrapolate_inf_bead_limit)
 from .io import (read_ipi_xyz,
                  read_ipi_output,
                  write_xml,

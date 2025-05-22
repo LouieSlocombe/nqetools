@@ -4,6 +4,7 @@ import time
 from subprocess import Popen
 
 import ase.build
+import matplotlib.pyplot as plt
 import numpy as np
 from ase.build import molecule
 from ase.calculators.emt import EMT
@@ -406,3 +407,37 @@ def test_eckart_correction():
         kappa_eckart = nqe.eckart_correction(temperature, freq, E_reac, E_TS, E_prod)
         print(f"Eckart κ({temperature} K) = {kappa_eckart:.3f}")
         assert np.isclose(kappa_eckart, kappa_list[i], rtol=1e-2)
+
+
+def test_fit_exp_decay():
+    print(flush=True)
+    rng = np.random.default_rng(seed=42)
+    x_data = np.linspace(0, 10, 60)
+    true_params = (5.0, 2.0, 0.5)
+    y_clean = nqe.exp_decay(x_data, *true_params)
+    y_noise = y_clean + 0.3 * rng.standard_normal(size=x_data.size)
+
+    popt = nqe.fit_exp_decay(x_data, y_noise)
+
+    print(f"Fitted parameters (A, tau, C): {popt}", flush=True)
+
+    plt.scatter(x_data, y_noise, label="data", marker="o")
+    x_fine = np.linspace(x_data.min(), x_data.max(), 400)
+    plt.plot(x_fine, nqe.exp_decay(x_fine, *popt), label="best fit", linewidth=2)
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.legend()
+    plt.show()
+
+    # Assert that the fitted parameters are close to the true parameters
+    assert np.allclose(popt, true_params, rtol=0.2)
+
+
+def test_extrapolate_inf_bead_limit():
+    print(flush=True)
+    n_beads = [10, 20, 40, 80]
+    kappa = [18.486247675370873, 11.481103709870357, 10.127813329699068, 9.809437521247709]
+    kappa_inf = nqe.extrapolate_inf_bead_limit(n_beads, kappa, plot=True)
+    print(f"Extrapolated kappa_inf: {kappa_inf:.3f}", flush=True)
+    # Assert that the extrapolated kappa_inf is close to the last value in kappa
+    assert np.isclose(kappa_inf, kappa[-1], rtol=0.2)

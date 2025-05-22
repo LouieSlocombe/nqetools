@@ -1,9 +1,12 @@
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import k, h
+from scipy.optimize import curve_fit
 
 from .execution import run_instanton_post_process
+from .plotting import n_plot
 
 
 def calc_kappa(ts_path, instanton_path, temperature, n_beads):
@@ -274,3 +277,90 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
     k_f = (k * temperature / h) * partition_function_ratio * boltzmann_factor
 
     return k_f
+
+
+def exp_decay(t, a, tau, c) -> np.ndarray:
+    """
+    Models an exponential decay function.
+
+    This function calculates the value of an exponential decay at time `t`
+    based on the given amplitude (`a`), decay constant (`tau`), and offset (`c`).
+
+    Parameters:
+        t (float or np.ndarray): Time or array of time values.
+        a (float): Amplitude of the decay.
+        tau (float): Decay constant, which determines the rate of decay.
+        c (float): Offset value added to the decay.
+
+    Returns:
+        np.ndarray: The calculated exponential decay values.
+    """
+    return a * np.exp(-t / tau) + c
+
+
+def fit_exp_decay(x, y, p0=None, bounds=None):
+    """
+    Fits an exponential decay function to the given data.
+
+    This function uses non-linear least squares to fit the `exp_decay` function
+    to the provided data points `(x, y)`. It allows for optional initial parameter
+    guesses and bounds for the fitting process.
+
+    Parameters:
+        x (array-like): The independent variable data (e.g., time values).
+        y (array-like): The dependent variable data (e.g., observed values).
+        p0 (tuple, optional): Initial guesses for the parameters (a, tau, c).
+                              Defaults to automatically calculated values.
+        bounds (tuple, optional): Lower and upper bounds for the parameters.
+                                  Defaults to unbounded fitting.
+
+    Returns:
+        tuple: Optimal values for the parameters (a, tau, c) that minimize
+               the squared residuals between the observed and fitted data.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    # Rough automatic starting guesses if user gives none
+    if p0 is None:
+        a0 = y.max() - y.min()
+        tau0 = 0.3 * (x[-1] - x[0]) if x[-1] != x[0] else 1.0
+        c0 = y.min()
+        p0 = (a0, tau0, c0)
+
+    # Default to unbounded fit unless user supplies bounds
+    if bounds is None:
+        bounds = (-np.inf, np.inf)
+
+    popt, _ = curve_fit(exp_decay, x, y, p0=p0, bounds=bounds)
+    return popt
+
+
+def extrapolate_inf_bead_limit(x, y, plot=False):
+    """
+    Extrapolates the infinite bead limit for a given dataset.
+
+    This function fits an exponential decay model to the provided data points `(x, y)`
+    and optionally plots the data along with the fitted curve. It returns the extrapolated
+    value at the infinite bead limit.
+
+    Parameters:
+        x (array-like): The independent variable data (e.g., number of beads).
+        y (array-like): The dependent variable data (e.g., tunneling factor values).
+        plot (bool, optional): Whether to plot the data and the fitted curve. Defaults to False.
+
+    Returns:
+        float: The extrapolated value at the infinite bead limit.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    popt = fit_exp_decay(x, y)
+
+    if plot:
+        plt.scatter(x, y, marker="o")
+        t_fine = np.linspace(x.min(), x.max(), 400)
+        plt.plot(t_fine, exp_decay(t_fine, *popt), color='black', linewidth=2, linestyle='--')
+        n_plot("Number of instanton beads", r"$\kappa$")
+        plt.show()
+
+    return popt[-1]  # Return the fitted value at infinity
