@@ -1,3 +1,6 @@
+cd /home/louie/skunkworks/nqetools/tests/orca
+conda activate ipi_env2
+
 # 0) Make the files executable (once):
 chmod +x ase_orca_client.py
 
@@ -5,13 +8,8 @@ chmod +x ase_orca_client.py
 i-pi ipi_orca.xml > ipi.log 2>&1 &
 
 # 2) Start the ORCA client – one per replica (just one here):
-python ase_orca_client.py orca_ase > client.log 2>&1 &
+python ase_orca_client.py > client.log 2>&1 &
 # (Make sure $ORCA_PATH and/or the orca binary are in your PATH)
 
-# 3) Wait until ipi.log says "Finished trajectory" or kill the job.
-#    Trajectory appears in traj.xyz; energies in energies.dat
-
-cd /home/louie/skunkworks/nqetools/tests/orca
-conda activate ipi_env2
 
 "write me input files to run a simple md using i-pi and orca using the ASE client"

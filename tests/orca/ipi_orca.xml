@@ -1,35 +1,28 @@
-<!-- https://github.com/venkatkapil24/MLIPs-with-iPI/tree/main -->
-<simulation verbosity='low'>
-    <output prefix='nve'>
-        <properties filename='out' stride='200'>[ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin},
-            potential{electronvolt}]
-        </properties>
-        <trajectory filename='pos' stride='200' cell_units="angstrom">positions{angstrom}</trajectory>
-        <checkpoint stride='2000'/>
+<simulation mode='static' verbosity='low'>
+    <output prefix='min'>
+        <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
+        <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>positions{angstrom}</trajectory>
     </output>
-    <total_steps>20000</total_steps>
-    <prng>
-        <seed>31415</seed>
-    </prng>
+    <total_steps>1000</total_steps>
     <ffsocket name='qm' mode='unix' pbc='False'>
         <address>orca_ase</address>
     </ffsocket>
     <system>
         <initialize nbeads='1'>
             <file mode='xyz' units='angstrom'>water.xyz</file>
-            <velocities mode='thermal' units='kelvin'>300</velocities>
-            <cell mode='abc' units='angstrom'>[10, 10, 10]</cell>
+            <cell mode='abc' units='angstrom'>[100, 100, 100]</cell>
         </initialize>
         <forces>
             <force forcefield='qm'></force>
         </forces>
-        <motion mode='dynamics'>
-            <dynamics mode='nve' splitting='baoab'>
-                <timestep units='femtosecond'>0.50</timestep>
-            </dynamics>
+        <motion mode='minimize'>
+            <optimizer mode='lbfgs'>
+                <tolerances>
+                    <energy>5e-5</energy>
+                    <force>5e-5</force>
+                    <position>5e-5</position>
+                </tolerances>
+            </optimizer>
         </motion>
-        <ensemble>
-            <temperature units='kelvin'>300</temperature>
-        </ensemble>
     </system>
 </simulation>
