@@ -141,11 +141,11 @@ Make sure to install the drivers in the same env as i-pi and update the path as 
 git clone https://github.com/i-pi/i-pi.git
 cd /home/louie/i-pi/drivers/f90
 make
-cp -r /home/louie/i-pi/drivers /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi
+cp -r /home/louie/i-pi/drivers /home/louie/anaconda3/envs/ipi_env/lib/python3.13/site-packages/ipi
 ```
 Need to add the bin
 ```
-cp -r /home/louie/i-pi/bin /home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi
+cp -r /home/louie/i-pi/bin /home/louie/anaconda3/envs/ipi_env/lib/python3.13/site-packages/ipi
 ```
 
 ### CP2K
@@ -155,7 +155,7 @@ conda install conda-forge::cp2k -y
 ```
 
 ### NWChem
-he exe will likely be `nwchem`
+The exe will likely be `nwchem`
 ```
 conda install conda-forge::nwchem -y
 ```
