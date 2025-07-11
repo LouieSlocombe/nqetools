@@ -171,7 +171,14 @@ export DFTB_PREFIX=/path/to/your/parameter/sets
 ```
 To make it permanent, you can add this line to your .bashrc or .bash_profile.
 You can get the parameters from https://www.dftb.org/parameters/download.html
-
+https://github.com/dftbparams/3ob/releases
+```
+tar -xf 3ob-3-1.tar.xz
+```
+Put this in the bashrc
+```
+export DFTB_PREFIX=$HOME/3ob-3-1/
+```
 
 # Resources
 https://atomistic-cookbook.org/index.html
