@@ -1,0 +1,32 @@
+<simulation mode='static' verbosity='low'>
+    <output prefix='min'>
+        <properties stride='1' filename='out'>[step, potential{electronvolt}]</properties>
+        <trajectory stride='1' filename='pos' cell_units='angstrom' format='xyz'>positions{angstrom}</trajectory>
+    </output>
+    <total_steps>2</total_steps>
+    <ffsocket mode='inet' name='orca' pbc='False'>
+        <address>localhost</address>
+        <port>10200</port>
+    </ffsocket>
+    <system>
+        <initialize nbeads='1'>
+            <file mode='xyz' units='angstrom'>init.xyz</file>
+            <cell mode='abc' units='angstrom'>[100, 100, 100]</cell>
+        </initialize>
+        <forces>
+            <force forcefield='orca'></force>
+        </forces>
+        <motion mode='minimize'>
+            <optimizer mode='lbfgs'>
+                <ls_options>
+                    <tolerance>1e-3</tolerance>
+                </ls_options>
+                <tolerances>
+                    <energy>1e-3</energy>
+                    <position>1e-5</position>
+                    <force>1e-3</force>
+                </tolerances>
+            </optimizer>
+        </motion>
+    </system>
+</simulation>
