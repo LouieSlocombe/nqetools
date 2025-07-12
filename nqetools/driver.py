@@ -283,7 +283,7 @@ def orca_calc_preset(orca_path=None,
         charge=charge,
         mult=multiplicity,
         directory=directory,
-        orcasimpleinput=inpt_simple,
+        orcasimpleinput=inpt_simple + ' EnGrad',
         orcablocks=inpt_blocks
     )
     return calc
