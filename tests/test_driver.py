@@ -84,6 +84,12 @@ def test_ase_orca_driver():
     pass
 
 
+def test_ase_orca_driver_2():
+    calc = nqe.orca_calc_preset()
+    s = nqe.convert_code_to_string(calc)
+    print(s, flush=True)
+
+
 # Fails!
 @pytest.mark.fail
 def test_ase_nwchem_driver():
