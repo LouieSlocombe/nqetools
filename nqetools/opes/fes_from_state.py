@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 
+import argparse
 ### Get the FES estimate used by OPES, from a dumped state file (STATE_WFILE). 1D or 2D only ###
 # usage is similar to plumed sum_hills
 import subprocess
-import argparse
 import sys
 
 import numpy as np
@@ -12,7 +12,6 @@ import pandas as pd
 do_bck = False  # backup files in plumed style
 if do_bck:
     bck_script = 'bck.meup.sh'  # e.g. place the script in your ~/bin
-
 
 ### Parser stuff ###
 parser = argparse.ArgumentParser(

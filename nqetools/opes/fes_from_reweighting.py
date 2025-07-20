@@ -10,8 +10,9 @@
 # when using --blocks it is better to concatenate them:
 #   cat COLVAR.* > COLVAR
 
-import sys
 import argparse
+import sys
+
 import numpy as np
 import pandas as pd  # much faster reading from file
 
@@ -143,7 +144,7 @@ with open(filename, 'r') as f:
                             col_bias.append(i - 2)
                 if len(col_bias) != len(args_bias.split(',')):
                     sys.exit(error % (
-                                'found %d matching biases, but %d were requested. Use columns number to avoid ambiguity' % (
+                            'found %d matching biases, but %d were requested. Use columns number to avoid ambiguity' % (
                         len(col_bias), len(args_bias.split(',')))))
     print(' using cv "%s" found at column %d' % (name_cv_x, col_x + 1))
     if dim2:
@@ -524,6 +525,6 @@ if block_av:
             for i in range(grid_bin_x):
                 for j in range(grid_bin_y):
                     f.write((fmt + ' ' + fmt + '  ' + fmt + ' ' + fmt + '\n') % (
-                    x[i, j], y[i, j], fes[i, j], fes_err[i, j]))
+                        x[i, j], y[i, j], fes[i, j], fes_err[i, j]))
                 f.write('\n')
 print('                              ')
