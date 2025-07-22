@@ -36,6 +36,7 @@ setup(
         'plumed',
         'pyfftw',
         'chemiscope',
+        'geodesic_interpolate @ git+https://github.com/LouieSlocombe/geodesic_interpolate.git',
     ],
     extras_require={
         'dev': [
