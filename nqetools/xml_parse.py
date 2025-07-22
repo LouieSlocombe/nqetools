@@ -168,6 +168,7 @@ def update_driver(root, atoms, f_driver):
             for child in rank:
                 if child.tag == 'force':
                     child.attrib['forcefield'] = 'driver'
+
     elif f_driver == "cbe":
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'cbe', 'mode': 'unix'})
@@ -179,7 +180,27 @@ def update_driver(root, atoms, f_driver):
             for child in rank:
                 if child.tag == 'force':
                     child.attrib['forcefield'] = 'cbe'
-    elif f_driver in ["ase-mace", "ase-nwchem", "ase-orca", "nwchem"]:
+
+    elif f_driver == "ase-orca":
+        print("Using ASE-ORCA driver", flush=True)
+        for rank in root.iter('ffsocket'):
+            rank.attrib.update({'name': 'driver', 'mode': 'inet', 'pbc': str(f_pbcs)})
+            for child in rank:
+                if child.tag == 'address':
+                    child.text = 'localhost'
+                elif child.tag == 'port':
+                    child.text = '10200'
+            # Add port tag if not present
+            if rank.find('port') is None:
+                port_elem = et.SubElement(rank, 'port')
+                port_elem.text = '10200'
+
+            for rank in root.iter('forces'):
+                for child in rank:
+                    if child.tag == 'force':
+                        child.attrib['forcefield'] = 'driver'
+
+    elif f_driver in ["ase-mace", "ase-nwchem", "nwchem"]:
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
             for child in rank:

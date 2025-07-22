@@ -212,12 +212,13 @@ def orca_calc_preset(orca_path=None,
                      xc='B3LYP',
                      charge=0,
                      multiplicity=1,
-                     basis_set='6-31+G(d,p)',
+                     basis_set='6-311G',  # 'cc-pVDZ', '6-31+G(d,p)',
                      nprocs=1,
                      f_solv=True,
                      f_disp=True,
                      atom_list=None,
                      calc_extra=None,
+                     blocks_extra=None,
                      scf_option=None):
     if orca_path is None:
         # try and read the path from the environment
@@ -256,7 +257,10 @@ def orca_calc_preset(orca_path=None,
     else:
         inpt_xtb = ''
 
-    inpt_blocks = inpt_procs + inpt_solv
+    if blocks_extra is None:
+        blocks_extra = ''
+
+    inpt_blocks = inpt_procs + inpt_solv + blocks_extra
 
     if calc_type == 'DFT':
         inpt_simple = '{} {} {}'.format(xc, inpt_disp, basis_set)
@@ -286,7 +290,7 @@ def orca_calc_preset(orca_path=None,
         orcasimpleinput=inpt_simple + ' EnGrad',
         orcablocks=inpt_blocks
     )
-    return calc
+    return ORCA(profile=profile, orcasimpleinput="B3LYP D3BJ def2-SVP TightSCF EnGrad")
 
     """
     in_str_2 = f"""
@@ -303,8 +307,11 @@ atoms.calc = orca_calc_preset(calc_type='{calc_type}',
                        atom_list={atom_list},
                        calc_extra={calc_extra},
                        scf_option={scf_option})
-client = SocketClient(unixsocket='{host}')
-client.run(atoms, use_stress=True)
+# Create Client
+port = 10200
+host = "localhost"
+client = SocketClient(host=host, port=port)
+client.run(atoms)
 
 """
     # join the strings
