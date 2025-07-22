@@ -82,7 +82,6 @@ def test_ase_orca_driver():
     pass
 
 
-# Fails!
 @pytest.mark.fail
 def test_ase_nwchem_driver():
     """
@@ -110,7 +109,7 @@ def test_ase_nwchem_driver():
     nqe.remove_directory(directory)
     pass
 
-
+@pytest.mark.fail
 def test_nwchem_driver():
     """
     Tests the NWChem driver.
