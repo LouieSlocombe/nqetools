@@ -58,7 +58,7 @@ def test_ase_mace_driver():
 
 
 # Fails!
-@pytest.mark.fail
+#@pytest.mark.fail
 def test_ase_orca_driver():
     """
     Tests the ORCA driver using the ASE driver.
@@ -85,8 +85,13 @@ def test_ase_orca_driver():
 
 
 def test_ase_orca_driver_2():
-    calc = nqe.orca_calc_preset()
-    s = nqe.convert_code_to_string(calc)
+    print(flush=True)
+    from functools import partial
+
+    tmp = partial(nqe.orca_calc_preset)
+
+    s = nqe.convert_code_to_string(tmp)
+    #s = nqe.convert_code_to_string(nqe.orca_calc_preset)
     print(s, flush=True)
 
 
