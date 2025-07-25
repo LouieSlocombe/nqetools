@@ -74,12 +74,13 @@ def calc_kappa(ts_path, instanton_path, temperature, n_beads):
 def parse_react_thermo_data(directory,
                             filename='thermo_data.out',
                             ref_filename='phonon.out'):
-    output_data, output_desc = ipi.read_output(os.path.join(directory, ref_filename))
+    data = {}  # Initialize an empty dictionary to store the extracted data.
+    temp = None  # Initialize temperature variable.
     # Extract the energy from the output data
-    energy = output_data.get('potential', None)[-1]
-    if energy is None:
+    output_data, output_desc = ipi.read_output(os.path.join(directory, ref_filename))
+    data['energy'] = output_data.get('potential', None)[-1]
+    if data['energy'] is None:
         raise ValueError(f"Could not find potential energy in {ref_filename} in {directory}")
-    print('Energy = {}'.format(energy), flush=True)
 
     filepath = os.path.join(directory, filename)  # Construct the full file path.
 
@@ -87,15 +88,12 @@ def parse_react_thermo_data(directory,
     with open(filepath, 'r') as f:
         lines = f.readlines()
 
-    data = {}  # Initialize an empty dictionary to store the extracted data.
-    temp = None  # Initialize temperature variable.
     # Iterate through the lines to find and extract the required data.
     for i, line in enumerate(lines):
         if 'Qtras(bohr^-3) | Qrot     | logQvib_rp' in line:
             # Extract the next line containing the values.
             data_line = lines[i + 1].strip()
             values = data_line.split('|')
-
             # Parse and store the values in the dictionary.
             data['Qtras'] = float(values[0].strip())
             data['Qrot'] = float(values[1].strip())
@@ -106,7 +104,7 @@ def parse_react_thermo_data(directory,
     if temp is None:
         raise ValueError(f"Could not find temperature in {filepath}")
 
-    data['V/kBT'] = float(energy / (kB * temp))  # Calculate V/kBT.
+    data['V/kBT'] = float(data['energy'] / (kB * temp))  # Calculate V/kBT.
     # Raise an error if no data was extracted.
     if not data:
         raise ValueError(f"Could not find reactant thermodynamic data in {filepath}")
