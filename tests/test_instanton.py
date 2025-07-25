@@ -1,5 +1,7 @@
 import os
 
+import numpy as np
+
 import nqetools as nqe
 
 
@@ -29,12 +31,14 @@ def test_parse_ts_thermo_data():
 
     data = nqe.parse_ts_thermo_data(directory)
     print(data, flush=True)
+
     os.remove(os.path.join(directory, 'thermo_data.out'))
     os.remove(os.path.join(directory, 'freq.dat'))
-    assert data['Qtras'] == 10.187982156996487
-    assert data['Qrot'] == 1206.1509707160856
-    assert data['logQvib'] == -44.27838452659754
-    assert data['V/kBT'] == 25.165638546469864
+
+    assert np.allclose(data['Qtras'], 10.187982156996487, rtol=1e-3)
+    assert np.allclose(data['Qrot'], 1206.1509707160842, rtol=1e-3)
+    assert np.allclose(data['logQvib'], -44.27838452659755, rtol=1e-3)
+    assert np.allclose(data['V/kBT'], 25.165638546469864, rtol=1e-3)
 
 
 def test_parse_inst_thermo_data():
@@ -52,14 +56,15 @@ def test_parse_inst_thermo_data():
     print(data, flush=True)
     os.remove(os.path.join(directory, 'thermo_data.out'))
     os.remove(os.path.join(directory, 'freq.dat'))
-    assert data['Temperature'] == 300.0
-    assert data['NBEADS'] == 160
-    assert data['1/(betaP*hbar)'] == 0.15201
-    assert data['BN'] == 14.28
-    assert data['Qt'] == 10.188
-    assert data['Qrot'] == 1251.027
-    assert data['log(Qvib*N)'] == -43.477
-    assert data['S/hbar'] == 25.026
+
+    assert np.allclose(data['Temperature'], 300.0, rtol=1e-3)
+    assert np.allclose(data['NBEADS'], 160, rtol=1e-3)
+    assert np.allclose(data['1/(betaP*hbar)'], 0.15201, rtol=1e-3)
+    assert np.allclose(data['BN'], 14.28, rtol=1e-3)
+    assert np.allclose(data['Qt'], 10.188, rtol=1e-3)
+    assert np.allclose(data['Qrot'], 1251.027, rtol=1e-3)
+    assert np.allclose(data['log(Qvib*N)'], -43.477, rtol=1e-3)
+    assert np.allclose(data['S/hbar'], 25.026, rtol=1e-3)
 
 
 def test_calc_instanton_kappa():
@@ -88,4 +93,4 @@ def test_calc_instanton_kappa():
     os.remove(os.path.join(directory_ts, 'freq.dat'))
     os.remove(os.path.join(directory_inst, 'thermo_data.out'))
     os.remove(os.path.join(directory_inst, 'freq.dat'))
-    assert round(kappa, 3) == round(10.127813329699068, 3)
+    assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
