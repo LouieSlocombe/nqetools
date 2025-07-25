@@ -71,36 +71,55 @@ def calc_kappa(ts_path, instanton_path, temperature, n_beads):
 
 def parse_react_thermo_data(directory, filename='thermo_data.out'):
     """
-    Parse the reactant thermo_data.out file and extract thermodynamic values.
+    Parses the reactant thermodynamic data from a specified file.
 
-    Args:
-        directory (str): Directory containing the thermo_data file
-        filename (str): Name of the thermo data file (default: 'thermo_data.out')
+    This function reads a file containing thermodynamic data for reactants and extracts
+    specific values such as translational partition function (Qtras), rotational partition
+    function (Qrot), vibrational partition function (logQvib_rp), and the potential energy
+    term (V/kBT).
+
+    Parameters:
+        directory (str): The directory containing the thermodynamic data file.
+        filename (str): The name of the thermodynamic data file (default: 'thermo_data.out').
 
     Returns:
-        dict: Dictionary containing Qtras, Qrot, logQvib_rp, and potential energy values
-    """
-    filepath = os.path.join(directory, filename)
+        dict: A dictionary containing the extracted thermodynamic data:
+            - 'Qtras': Translational partition function (float).
+            - 'Qrot': Rotational partition function (float).
+            - 'logQvib_rp': Logarithm of the vibrational partition function (float).
+            - 'V/kBT': Potential energy term divided by kBT (float).
 
+    Raises:
+        ValueError: If the required thermodynamic data cannot be found in the file.
+    """
+    filepath = os.path.join(directory, filename)  # Construct the full file path.
+
+    # Open the file and read all lines.
     with open(filepath, 'r') as f:
         lines = f.readlines()
 
-    data = {}
+    data = {}  # Initialize an empty dictionary to store the extracted data.
 
+    # Iterate through the lines to find and extract the required data.
     for i, line in enumerate(lines):
         if 'Qtras(bohr^-3) | Qrot     | logQvib_rp' in line:
-            # Get the next line which contains the values
+            # Extract the next line containing the values.
             data_line = lines[i + 1].strip()
             values = data_line.split('|')
 
+            # Parse and store the values in the dictionary.
             data['Qtras'] = float(values[0].strip())
             data['Qrot'] = float(values[1].strip())
             data['logQvib_rp'] = float(values[2].strip())
+        elif 'V/kBT' in line:
+            # Extract and store the V/kBT value.
+            data['V/kBT'] = float(line.split()[-1].strip())
 
+    # Raise an error if no data was extracted.
     if not data:
         raise ValueError(f"Could not find reactant thermodynamic data in {filepath}")
 
-    return data
+    return data  # Return the extracted data as a dictionary.
 
 
 def parse_ts_thermo_data(directory, filename='thermo_data.out'):
@@ -251,19 +270,18 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
                                process_type='reactant',
                                temperature=temperature,
                                filter_list=n_atoms - 1)
+    # Get reactant data
+    react_data = parse_react_thermo_data(react_directory)
 
     run_instanton_post_process(ts_directory,
                                process_type='TS',
                                temperature=temperature,
                                ref_energy=react_energy)
 
-    kelvin2au = 3.1668152e-06
-
     # Get TS data
     ts_data = parse_ts_thermo_data(ts_directory)
 
-    # Get reactant data
-    react_data = parse_react_thermo_data(react_directory)
+    kelvin2au = 3.1668152e-06
 
     # Extract partition functions and calculate the forward rate
     q_vib_react = np.exp(react_data['logQvib_rp'])
