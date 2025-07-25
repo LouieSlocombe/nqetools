@@ -43,6 +43,21 @@ def test_parse_ts_thermo_data():
     assert np.allclose(data['logQvib'], -44.27838452659755, rtol=1e-3)
     assert np.allclose(data['V/kBT'], 25.165638546469864, rtol=1e-3)
 
+def test_calc_forward_rate():
+    temperature = 300.0
+    react_directory = 'data/instanton/react_phonon/'
+    ts_directory = 'data/instanton/ts/'
+    k_f = nqe.calc_forward_rate(ts_directory, react_directory, temperature)
+    print(k_f,flush=True)
+
+    os.remove(os.path.join(react_directory, 'eigenvalues_reactant.dat'))
+    os.remove(os.path.join(react_directory, 'thermo_data.out'))
+    os.remove(os.path.join(react_directory, 'freq.dat'))
+
+    os.remove(os.path.join(ts_directory, 'thermo_data.out'))
+    os.remove(os.path.join(ts_directory, 'freq.dat'))
+
+
 
 def test_parse_inst_thermo_data():
     print(flush=True)

@@ -242,31 +242,17 @@ def calc_kappa_full(
     return calc_instanton_kappa(data_ts, data_inst)
 
 
-def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react_energy):
-    """
-    Calculate the forward rate constant using data from TS and reactant thermo files.
-
-    Args:
-        n_atoms (int): Number of atoms in the system
-        ts_directory (str): Directory containing TS thermo_data file
-        react_directory (str): Directory containing reactant thermo_data file
-        temperature (float): Temperature in Kelvin
-        react_energy (float): Reactant energy in atomic units
-
-    Returns:
-        float: Forward rate constant (in s⁻¹)
-    """
+def calc_forward_rate(ts_directory, react_directory, temperature):
     run_instanton_post_process(react_directory,
                                process_type='reactant',
-                               temperature=temperature,
-                               filter_list=n_atoms - 1)
+                               temperature=temperature)
     # Get reactant data
     react_data = parse_react_thermo_data(react_directory)
 
     run_instanton_post_process(ts_directory,
                                process_type='TS',
                                temperature=temperature,
-                               ref_energy=react_energy)
+                               ref_energy=react_data['energy'])
 
     # Get TS data
     ts_data = parse_ts_thermo_data(ts_directory)
@@ -279,6 +265,7 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
                                (react_data['Qtras'] * react_data['Qrot'] * q_vib_react)
 
     boltzmann_factor = np.exp(react_data['V/kBT'] - ts_data['V/kBT'])
+    boltzmann_factor = np.exp(- ts_data['V/kBT'])
 
     k_f = (k * temperature / h) * partition_function_ratio * boltzmann_factor
 
