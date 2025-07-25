@@ -4,45 +4,25 @@ import numpy as np
 
 import nqetools as nqe
 
+
 def test_parse_react_thermo_data():
     print(flush=True)
-    # Values
     temperature = 300.0
-    # tol_energy = 5.0e-4
-    # tol_force = 5.0e-4
-    # tol_position = 1.0e-4
-    # driver_code = 'zundel'
-    #
-    # # Paths
-    # directory_opti = 'data/instanton/opti'
-    # directory_phonon_react = 'data/instanton/phonon_react'
-    #
-    # atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
-    #
-    # # Run minimisation
-    # output = nqe.run_optimise(directory_opti,
-    #                           atoms,
-    #                           driver=driver_code,
-    #                           tol_energy=tol_energy,
-    #                           tol_force=tol_force,
-    #                           tol_position=tol_position)
-    # atoms_opti, output_data_opti, output_desc_opti = output
-    # print(output_data_opti)
-    #
-    # nqe.run_phonons(directory_phonon_react,
-    #                 atoms_opti,
-    #                 driver=driver_code)
-
     directory = 'data/instanton/react_phonon/'
     nqe.run_instanton_post_process(directory,
                                    process_type='reactant',
                                    temperature=temperature)
-
     data = nqe.parse_react_thermo_data(directory)
     print(data, flush=True)
-    os.remove(os.path.join(directory_phonon_react, 'thermo_data.out'))
-    os.remove(os.path.join(directory_phonon_react, 'freq.dat'))
-    pass
+
+    os.remove(os.path.join(directory, 'eigenvalues_reactant.dat'))
+    os.remove(os.path.join(directory, 'thermo_data.out'))
+    os.remove(os.path.join(directory, 'freq.dat'))
+
+    assert np.allclose(data['Qtras'], 32.619, rtol=1e-3)
+    assert np.allclose(data['Qrot'], 7585.695, rtol=1e-3)
+    assert np.allclose(data['logQvib_rp'], -25.34, rtol=1e-3)
+    assert np.allclose(data['V/kBT'], 0.00098229064015049, rtol=1e-3)
 
 
 def test_parse_ts_thermo_data():
@@ -52,7 +32,6 @@ def test_parse_ts_thermo_data():
     nqe.run_instanton_post_process(directory,
                                    process_type='TS',
                                    temperature=temperature)
-
     data = nqe.parse_ts_thermo_data(directory)
     print(data, flush=True)
 
@@ -74,10 +53,9 @@ def test_parse_inst_thermo_data():
                                    process_type='instanton',
                                    temperature=temperature,
                                    n_beads=n_beads)
-
     data = nqe.parse_inst_thermo_data(directory)
-
     print(data, flush=True)
+
     os.remove(os.path.join(directory, 'thermo_data.out'))
     os.remove(os.path.join(directory, 'freq.dat'))
 
@@ -107,14 +85,14 @@ def test_calc_instanton_kappa():
                                    process_type='instanton',
                                    temperature=temperature,
                                    n_beads=n_beads)
-
     data_inst = nqe.parse_inst_thermo_data(directory_inst)
 
     kappa = nqe.calc_instanton_kappa(data_ts, data_inst)
-
     print('Tunneling factor, kappa = {:5.3f}'.format(kappa))
+
     os.remove(os.path.join(directory_ts, 'thermo_data.out'))
     os.remove(os.path.join(directory_ts, 'freq.dat'))
     os.remove(os.path.join(directory_inst, 'thermo_data.out'))
     os.remove(os.path.join(directory_inst, 'freq.dat'))
+
     assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
