@@ -346,8 +346,8 @@ print(("\nTemperature: {} K".format(temp / K2au)), flush=True)
 print(("NBEADS: {}".format(nbeads)), flush=True)
 print(("atoms:  {}".format(natoms)), flush=True)
 print(("ASR:    {}".format(asr)), flush=True)
-print(("1/(betaP*hbar) = ".format((1 / (betaP * hbar)))), flush=True)
-print(("1/(kbT) = ".format(beta)), flush=True)
+print(("1/(betaP*hbar) = {}".format((1 / (betaP * hbar)))), flush=True)
+print(("1/(kbT) = {}".format(beta)), flush=True)
 
 if not quiet or case == "reactant" or case == "TS":
     print("Diagonalization ... \n\n", flush=True)

@@ -1,7 +1,9 @@
 import os
 
+import ipi
 import matplotlib.pyplot as plt
 import numpy as np
+from ase.units import kB
 from scipy.constants import k, h
 from scipy.optimize import curve_fit
 
@@ -69,29 +71,16 @@ def calc_kappa(ts_path, instanton_path, temperature, n_beads):
     return kappa
 
 
-def parse_react_thermo_data(directory, filename='thermo_data.out'):
-    """
-    Parses the reactant thermodynamic data from a specified file.
+def parse_react_thermo_data(directory,
+                            filename='thermo_data.out',
+                            ref_filename='phonon.out'):
+    output_data, output_desc = ipi.read_output(os.path.join(directory, ref_filename))
+    # Extract the energy from the output data
+    energy = output_data.get('potential', None)[-1]
+    if energy is None:
+        raise ValueError(f"Could not find potential energy in {ref_filename} in {directory}")
+    print('Energy = {}'.format(energy), flush=True)
 
-    This function reads a file containing thermodynamic data for reactants and extracts
-    specific values such as translational partition function (Qtras), rotational partition
-    function (Qrot), vibrational partition function (logQvib_rp), and the potential energy
-    term (V/kBT).
-
-    Parameters:
-        directory (str): The directory containing the thermodynamic data file.
-        filename (str): The name of the thermodynamic data file (default: 'thermo_data.out').
-
-    Returns:
-        dict: A dictionary containing the extracted thermodynamic data:
-            - 'Qtras': Translational partition function (float).
-            - 'Qrot': Rotational partition function (float).
-            - 'logQvib_rp': Logarithm of the vibrational partition function (float).
-            - 'V/kBT': Potential energy term divided by kBT (float).
-
-    Raises:
-        ValueError: If the required thermodynamic data cannot be found in the file.
-    """
     filepath = os.path.join(directory, filename)  # Construct the full file path.
 
     # Open the file and read all lines.
@@ -99,7 +88,7 @@ def parse_react_thermo_data(directory, filename='thermo_data.out'):
         lines = f.readlines()
 
     data = {}  # Initialize an empty dictionary to store the extracted data.
-
+    temp = None  # Initialize temperature variable.
     # Iterate through the lines to find and extract the required data.
     for i, line in enumerate(lines):
         if 'Qtras(bohr^-3) | Qrot     | logQvib_rp' in line:
@@ -111,10 +100,13 @@ def parse_react_thermo_data(directory, filename='thermo_data.out'):
             data['Qtras'] = float(values[0].strip())
             data['Qrot'] = float(values[1].strip())
             data['logQvib_rp'] = float(values[2].strip())
-        elif 'V/kBT' in line:
-            # Extract and store the V/kBT value.
-            data['V/kBT'] = float(line.split()[-1].strip())
+        elif 'Temperature:' in line:
+            # Extract the temperature from the line.
+            temp = float(line.split()[1])
+    if temp is None:
+        raise ValueError(f"Could not find temperature in {filepath}")
 
+    data['V/kBT'] = float(energy / (kB * temp))  # Calculate V/kBT.
     # Raise an error if no data was extracted.
     if not data:
         raise ValueError(f"Could not find reactant thermodynamic data in {filepath}")
@@ -281,8 +273,6 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
     # Get TS data
     ts_data = parse_ts_thermo_data(ts_directory)
 
-    kelvin2au = 3.1668152e-06
-
     # Extract partition functions and calculate the forward rate
     q_vib_react = np.exp(react_data['logQvib_rp'])
     q_vib_ts = np.exp(ts_data['logQvib'])
@@ -290,7 +280,7 @@ def calc_forward_rate(n_atoms, ts_directory, react_directory, temperature, react
     partition_function_ratio = (ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts) / \
                                (react_data['Qtras'] * react_data['Qrot'] * q_vib_react)
 
-    boltzmann_factor = np.exp(-ts_data['V/kBT'] + (react_energy / (temperature * kelvin2au)))
+    boltzmann_factor = np.exp(react_data['V/kBT'] - ts_data['V/kBT'])
 
     k_f = (k * temperature / h) * partition_function_ratio * boltzmann_factor
 
