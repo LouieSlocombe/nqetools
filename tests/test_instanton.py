@@ -4,11 +4,35 @@ import numpy as np
 
 import nqetools as nqe
 
-
-# Fails as the file is not minimised properly
 def test_parse_react_thermo_data():
     print(flush=True)
+    # Values
     temperature = 300.0
+    # tol_energy = 5.0e-4
+    # tol_force = 5.0e-4
+    # tol_position = 1.0e-4
+    # driver_code = 'zundel'
+    #
+    # # Paths
+    # directory_opti = 'data/instanton/opti'
+    # directory_phonon_react = 'data/instanton/phonon_react'
+    #
+    # atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
+    #
+    # # Run minimisation
+    # output = nqe.run_optimise(directory_opti,
+    #                           atoms,
+    #                           driver=driver_code,
+    #                           tol_energy=tol_energy,
+    #                           tol_force=tol_force,
+    #                           tol_position=tol_position)
+    # atoms_opti, output_data_opti, output_desc_opti = output
+    # print(output_data_opti)
+    #
+    # nqe.run_phonons(directory_phonon_react,
+    #                 atoms_opti,
+    #                 driver=driver_code)
+
     directory = 'data/instanton/react_phonon/'
     nqe.run_instanton_post_process(directory,
                                    process_type='reactant',
@@ -16,8 +40,8 @@ def test_parse_react_thermo_data():
 
     data = nqe.parse_react_thermo_data(directory)
     print(data, flush=True)
-    os.remove(os.path.join(directory, 'thermo_data.out'))
-    os.remove(os.path.join(directory, 'freq.dat'))
+    os.remove(os.path.join(directory_phonon_react, 'thermo_data.out'))
+    os.remove(os.path.join(directory_phonon_react, 'freq.dat'))
     pass
 
 
