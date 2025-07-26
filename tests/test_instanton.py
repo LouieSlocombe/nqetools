@@ -52,7 +52,7 @@ def test_calc_forward_rate():
     temperature = 300.0
     react_directory = 'data/instanton/react_phonon/'
     ts_directory = 'data/instanton/ts/'
-    k_f = nqe.calc_forward_rate(ts_directory, react_directory, temperature)
+    k_f = nqe.calc_forward_rate(react_directory, ts_directory, temperature)
 
     print(k_f, flush=True)
 
@@ -207,8 +207,8 @@ def test_ch4hcbe_end_to_end():
                       tol_position=tol_position)
 
     # Get the rate
-    rate = nqe.calc_forward_rate(directory_ts,
-                                 directory_phonon_react,
+    rate = nqe.calc_forward_rate(directory_phonon_react,
+                                 directory_ts,
                                  temperature,
                                  filter_list=n_atoms - 1)
 
