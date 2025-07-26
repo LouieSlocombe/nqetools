@@ -214,21 +214,6 @@ def test_exe_md():
     pass
 
 
-# Complete me
-def test_exe_phonons():
-    pass
-
-
-# Complete me
-def test_exe_ts():
-    pass
-
-
-# Complete me
-def test_inst():
-    pass
-
-
 def test_nwchem_socket():
     print(flush=True)
     # https://wiki.fysik.dtu.dk/ase/ase/calculators/socketio/socketio.html
