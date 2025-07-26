@@ -215,51 +215,62 @@ def calc_instanton_kappa(ts_data, inst_data):
             np.exp(inst_data['log(Qvib*N)'] - ts_data['logQvib'])
 
     # Calculate kappa
-    kappa = f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
-
-    return kappa
+    return f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
 
 
 def calc_kappa_full(
-        directory_ts,
-        directory_instanton,
+        dir_react,
+        dir_ts,
+        dir_instanton,
         temperature,
-        react_energy=0.0,
-        n_beads=4,
+        n_beads,
         filter_list=None):
-    run_instanton_post_process(directory_ts,
-                               process_type='TS',
-                               temperature=temperature,
-                               filter_list=filter_list,
-                               ref_energy=react_energy)
-    data_ts = parse_ts_thermo_data(directory_ts)
-
-    run_instanton_post_process(directory_instanton,
-                               process_type='instanton',
-                               temperature=temperature,
-                               n_beads=n_beads,
-                               filter_list=filter_list,
-                               ref_energy=react_energy)
-    data_inst = parse_inst_thermo_data(directory_instanton)
-    return calc_instanton_kappa(data_ts, data_inst)
-
-
-def calc_forward_rate(react_directory, ts_directory, temperature, filter_list=None):
-    run_instanton_post_process(react_directory,
+    # Process the reactant data
+    run_instanton_post_process(dir_react,
                                process_type='reactant',
                                temperature=temperature,
                                filter_list=filter_list)
-    # Get reactant data
-    react_data = parse_react_thermo_data(react_directory)
+    react_data = parse_react_thermo_data(dir_react)
 
-    run_instanton_post_process(ts_directory,
+    # Process the TS
+    run_instanton_post_process(dir_ts,
                                process_type='TS',
                                temperature=temperature,
                                filter_list=filter_list,
                                ref_energy=react_data['energy'])
+    data_ts = parse_ts_thermo_data(dir_ts)
 
-    # Get TS data
-    ts_data = parse_ts_thermo_data(ts_directory)
+    # Process the instanton data
+    run_instanton_post_process(dir_instanton,
+                               process_type='instanton',
+                               temperature=temperature,
+                               n_beads=n_beads,
+                               filter_list=filter_list,
+                               ref_energy=react_data['energy'])
+    data_inst = parse_inst_thermo_data(dir_instanton)
+
+    # Calculate and return the tunnelling factor (kappa)
+    return calc_instanton_kappa(data_ts, data_inst)
+
+
+def calc_forward_rate(dir_react,
+                      dir_ts,
+                      temperature,
+                      filter_list=None):
+    # Get reactant data
+    run_instanton_post_process(dir_react,
+                               process_type='reactant',
+                               temperature=temperature,
+                               filter_list=filter_list)
+    react_data = parse_react_thermo_data(dir_react)
+
+    # Process the TS data
+    run_instanton_post_process(dir_ts,
+                               process_type='TS',
+                               temperature=temperature,
+                               filter_list=filter_list,
+                               ref_energy=react_data['energy'])
+    ts_data = parse_ts_thermo_data(dir_ts)
 
     # Extract partition functions and calculate the forward rate
     q_vib_react = np.exp(react_data['logQvib_rp'])
@@ -270,10 +281,8 @@ def calc_forward_rate(react_directory, ts_directory, temperature, filter_list=No
 
     # boltzmann_factor = np.exp(react_data['V/kBT'] - ts_data['V/kBT'])
     boltzmann_factor = np.exp(-ts_data['V/kBT'])
-
-    k_f = (k * temperature / h) * partition_function_ratio * boltzmann_factor
-
-    return k_f
+    # Calculate the forward rate constant
+    return (k * temperature / h) * partition_function_ratio * boltzmann_factor
 
 
 def exp_decay(t, a, tau, c) -> np.ndarray:
