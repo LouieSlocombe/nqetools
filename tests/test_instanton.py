@@ -91,6 +91,7 @@ def test_parse_inst_thermo_data():
     assert np.allclose(data['log(Qvib*N)'], -43.477, rtol=1e-3)
     assert np.allclose(data['S/hbar'], 25.025, rtol=1e-3)
 
+
 # Warning this takes 5 minutes to run
 def test_calc_instanton_kappa_bead():
     # CBE system
@@ -133,28 +134,26 @@ def test_calc_instanton_kappa_bead():
     print('Tunneling factor, kappa = {:5.5f}'.format(kappa))
     assert np.allclose(kappa, 9.816, rtol=1e-3)
 
-def test_ch4hcbe_temperature():
+
+def test_ch4hcbe_end_to_end():
     # CBE system
     print(flush=True)
-    temperatures = [300.0, 250.0, 200.0, 150.0]
-    n_beads = 40
-    kappas = []
 
     # Paths
     directory_opti = 'opti'
     directory_phonon_react = 'phonon_react'
     directory_ts = 'ts'
-    directory_phonon_ts = 'phonon_ts'
     directory_instanton = 'instanton'
 
     # Driver
     driver_code = 'cbe'
 
     # Values
-    temperature= 300.0
+    temperature = 300.0
     tol_energy = 1.0e-6
     tol_force = 1.0e-6
     tol_position = 1.0e-6
+    n_beads = 40
 
     atoms = nqe.read_ipi_xyz("data/ch4hcbe.xyz")[-1]
     n_atoms = len(atoms)
@@ -183,11 +182,6 @@ def test_ch4hcbe_temperature():
                         tol_position=tol_position)
     atoms_ts, output_data_ts, output_desc_ts = output
 
-    # Run phonons for transition state
-    nqe.run_phonons(directory_phonon_ts,
-                    atoms_ts,
-                    driver=driver_code)
-
     # Run the instanton
     nqe.run_instanton(directory_instanton,
                       atoms_ts,
@@ -203,49 +197,82 @@ def test_ch4hcbe_temperature():
     rate = nqe.calc_forward_rate(directory_ts,
                                  directory_phonon_react,
                                  temperature,
-                                 filter_list=n_atoms-1)
+                                 filter_list=n_atoms - 1)
 
     print('Reaction rate = {}'.format(rate), flush=True)
-
+    assert np.allclose(rate, 1.0416486358380245e-08, rtol=1e-3)
 
     kappa = nqe.calc_kappa_full(directory_ts,
-                    directory_instanton,
-                    temperature,
-                    n_beads)
+                                directory_instanton,
+                                temperature,
+                                n_beads)
     print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
     assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
+
     # Remove the directory
     nqe.remove_directory(directory_opti)
     nqe.remove_directory(directory_phonon_react)
     nqe.remove_directory(directory_ts)
-    nqe.remove_directory(directory_phonon_ts)
     nqe.remove_directory(directory_instanton)
 
 
+def test_ch4hcbe_temperature():
+    # CBE system
+    print(flush=True)
 
-    # for temperature in temperatures:
-    #
-    #     directory_ts = 'data/instanton/ts/'
-    #     nqe.run_instanton_post_process(directory_ts,
-    #                                    process_type='TS',
-    #                                    temperature=temperature)
-    #     data_ts = nqe.parse_ts_thermo_data(directory_ts)
-    #     os.remove(os.path.join(directory_ts, 'thermo_data.out'))
-    #     os.remove(os.path.join(directory_ts, 'freq.dat'))
-    #
-    #     directory_inst = f'data/instanton/inst_{n_beads}/'
-    #     nqe.run_instanton_post_process(directory_inst,
-    #                                    process_type='instanton',
-    #                                    temperature=temperature,
-    #                                    n_beads=n_beads)
-    #     data_inst = nqe.parse_inst_thermo_data(directory_inst)
-    #     os.remove(os.path.join(directory_inst, 'thermo_data.out'))
-    #     os.remove(os.path.join(directory_inst, 'freq.dat'))
-    #
-    #     kappa = nqe.calc_instanton_kappa(data_ts, data_inst)
-    #     print('temperature = {:5.1f} K, Tunneling factor, kappa = {:5.4f}'.format(temperature, kappa))
-    #     kappas.append(kappa)
+    # Paths
+    directory_ts = 'ts'
+    directory_instanton = 'instanton'
 
+    # Driver
+    driver_code = 'cbe'
 
+    # Values
+    tol_energy = 5.0e-4
+    tol_force = 5.0e-4
+    tol_position = 5.0e-4
+    n_beads = 40
 
+    atoms_ts = nqe.read_ipi_xyz("data/ch4hcbe_ts.xyz")[-1]
 
+    # Run transition state optimisation
+    output = nqe.run_ts(directory_ts,
+                        atoms_ts,
+                        driver=driver_code,
+                        tol_energy=tol_energy,
+                        tol_force=tol_force,
+                        tol_position=tol_position)
+    atoms_ts, output_data_ts, output_desc_ts = output
+
+    temperatures = [300.0, 250.0, 200.0]
+    kappas = []
+    kappa_ref = [10.131, 20.419, 226.685]
+
+    for i, temperature in enumerate(temperatures):
+        print(flush=True)
+        print(f'{i}, Running instanton for temperature = {temperature} K', flush=True)
+
+        # Run the instanton
+        nqe.run_instanton(directory_instanton,
+                          atoms_ts,
+                          directory_ts,
+                          driver=driver_code,
+                          n_beads=n_beads,
+                          temperature=temperature,
+                          tol_energy=tol_energy,
+                          tol_force=tol_force,
+                          tol_position=tol_position)
+
+        kappa = nqe.calc_kappa_full(directory_ts,
+                                    directory_instanton,
+                                    temperature,
+                                    n_beads)
+
+        print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+        kappas.append(kappa)
+        nqe.remove_directory(directory_instanton)
+
+    assert np.allclose(kappas, kappa_ref, rtol=1e-3)
+
+    # Remove the directory
+    nqe.remove_directory(directory_ts)
