@@ -6,6 +6,7 @@ import nqetools as nqe
 
 
 def test_parse_react_thermo_data():
+    # Zundel system
     print(flush=True)
     temperature = 300.0
     directory = 'data/instanton/react_phonon/'
@@ -26,6 +27,7 @@ def test_parse_react_thermo_data():
 
 
 def test_parse_ts_thermo_data():
+    # Zundel system
     print(flush=True)
     temperature = 300.0
     directory = 'data/instanton/ts/'
@@ -45,6 +47,8 @@ def test_parse_ts_thermo_data():
 
 
 def test_calc_forward_rate():
+    # Zundel system
+    print(flush=True)
     temperature = 300.0
     react_directory = 'data/instanton/react_phonon/'
     ts_directory = 'data/instanton/ts/'
@@ -63,6 +67,7 @@ def test_calc_forward_rate():
 
 
 def test_parse_inst_thermo_data():
+    # CBE system
     print(flush=True)
     temperature = 300.0
     n_beads = 40
@@ -88,6 +93,7 @@ def test_parse_inst_thermo_data():
 
 # Warning this takes 5 minutes to run
 def test_calc_instanton_kappa_bead():
+    # CBE system
     print(flush=True)
     temperature = 300.0
     n_beads = 40
@@ -128,6 +134,7 @@ def test_calc_instanton_kappa_bead():
     assert np.allclose(kappa, 9.816, rtol=1e-3)
 
 def test_ch4hcbe_temperature():
+    # CBE system
     print(flush=True)
     temperatures = [300.0, 250.0, 200.0, 150.0]
     n_beads = 40
@@ -148,9 +155,6 @@ def test_ch4hcbe_temperature():
     tol_energy = 1.0e-6
     tol_force = 1.0e-6
     tol_position = 1.0e-6
-    total_steps = 1000
-    optimizer = "cg"
-
 
     atoms = nqe.read_ipi_xyz("data/ch4hcbe.xyz")[-1]
     n_atoms = len(atoms)
@@ -200,14 +204,23 @@ def test_ch4hcbe_temperature():
                                  directory_phonon_react,
                                  temperature,
                                  filter_list=n_atoms-1)
-    print('Reaction rate = {}'.format(rate))
+
+    print('Reaction rate = {}'.format(rate), flush=True)
 
 
-    # kappa = nqe.calc_kappa_full(directory_ts,
-    #                 directory_instanton,
-    #                 temperature,
-    #                 n_beads)
-    # print('Tunneling factor, kappa = {:5.5f}'.format(kappa))
+    kappa = nqe.calc_kappa_full(directory_ts,
+                    directory_instanton,
+                    temperature,
+                    n_beads)
+    print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+    assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
+    # Remove the directory
+    nqe.remove_directory(directory_opti)
+    nqe.remove_directory(directory_phonon_react)
+    nqe.remove_directory(directory_ts)
+    nqe.remove_directory(directory_phonon_ts)
+    nqe.remove_directory(directory_instanton)
+
 
 
     # for temperature in temperatures:
