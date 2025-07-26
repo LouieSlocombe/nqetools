@@ -244,16 +244,18 @@ def calc_kappa_full(
     return calc_instanton_kappa(data_ts, data_inst)
 
 
-def calc_forward_rate(ts_directory, react_directory, temperature):
+def calc_forward_rate(ts_directory, react_directory, temperature, filter_list=None):
     run_instanton_post_process(react_directory,
                                process_type='reactant',
-                               temperature=temperature)
+                               temperature=temperature,
+                               filter_list=filter_list)
     # Get reactant data
     react_data = parse_react_thermo_data(react_directory)
 
     run_instanton_post_process(ts_directory,
                                process_type='TS',
                                temperature=temperature,
+                               filter_list=filter_list,
                                ref_energy=react_data['energy'])
 
     # Get TS data

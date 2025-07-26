@@ -145,14 +145,15 @@ def test_ch4hcbe_temperature():
 
     # Values
     temperature= 300.0
-    tol_energy = 5.0e-4
-    tol_force = 5.0e-4
-    tol_position = 1.0e-4
+    tol_energy = 1.0e-6
+    tol_force = 1.0e-6
+    tol_position = 1.0e-6
     total_steps = 1000
     optimizer = "cg"
 
 
     atoms = nqe.read_ipi_xyz("data/ch4hcbe.xyz")[-1]
+    n_atoms = len(atoms)
     atoms_ts = nqe.read_ipi_xyz("data/ch4hcbe_ts.xyz")[-1]
 
     # Run minimisation
@@ -197,8 +198,9 @@ def test_ch4hcbe_temperature():
     # Get the rate
     rate = nqe.calc_forward_rate(directory_ts,
                                  directory_phonon_react,
-                                 temperature)
-    print('Reaction rate = {:5.5f}'.format(rate))
+                                 temperature,
+                                 filter_list=n_atoms-1)
+    print('Reaction rate = {}'.format(rate))
 
 
     # kappa = nqe.calc_kappa_full(directory_ts,
