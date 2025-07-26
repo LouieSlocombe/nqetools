@@ -268,8 +268,8 @@ def calc_forward_rate(ts_directory, react_directory, temperature, filter_list=No
     partition_function_ratio = (ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts) / \
                                (react_data['Qtras'] * react_data['Qrot'] * q_vib_react)
 
-    boltzmann_factor = np.exp(react_data['V/kBT'] - ts_data['V/kBT'])
-    boltzmann_factor = np.exp(- ts_data['V/kBT'])
+    # boltzmann_factor = np.exp(react_data['V/kBT'] - ts_data['V/kBT'])
+    boltzmann_factor = np.exp(-ts_data['V/kBT'])
 
     k_f = (k * temperature / h) * partition_function_ratio * boltzmann_factor
 

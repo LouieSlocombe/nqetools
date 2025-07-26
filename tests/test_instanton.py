@@ -168,6 +168,11 @@ def test_ch4hcbe_end_to_end():
                               tol_position=tol_position)
     atoms_opti, output_data_opti, output_desc_opti = output
 
+    # Get the reactant final energy
+    energy_react = output_data_opti['potential'][-1]
+    print('Final energy of reactant = {:5.5f}'.format(energy_react), flush=True)
+
+
     # Run phonons for reactant
     nqe.run_phonons(directory_phonon_react,
                     atoms_opti,
@@ -181,6 +186,14 @@ def test_ch4hcbe_end_to_end():
                         tol_force=tol_force,
                         tol_position=tol_position)
     atoms_ts, output_data_ts, output_desc_ts = output
+
+    # Get the TS final energy
+    energy_ts = output_data_ts['potential'][-1]
+    print('Final energy of TS = {:5.5f}'.format(energy_ts), flush=True)
+
+    # Check the energy difference
+    delta_energy = energy_ts - energy_react
+    print('Energy difference (TS - Reactant) = {:5.5f}'.format(delta_energy), flush=True)
 
     # Run the instanton
     nqe.run_instanton(directory_instanton,
