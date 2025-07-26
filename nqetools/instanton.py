@@ -90,6 +90,8 @@ def parse_react_thermo_data(directory,
 
     # Iterate through the lines to find and extract the required data.
     for i, line in enumerate(lines):
+        if 'We have a negative frequency' in line:
+            raise ValueError(f"Negative frequency found in {filepath}. Check the optimisation/phonon calculation.")
         if 'Qtras(bohr^-3) | Qrot     | logQvib_rp' in line:
             # Extract the next line containing the values.
             data_line = lines[i + 1].strip()
