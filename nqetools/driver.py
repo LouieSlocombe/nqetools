@@ -14,22 +14,7 @@ def write_ase_mace_driver(
         model="small",
         model_type="off",
         device="cpu",
-        default_dtype="float32"):
-    """
-    Writes a Python script to run a MACE driver with specified parameters.
-
-    Parameters:
-    model_type (str): The type of MACE model to use. Must be one of ["off", "mp", "anicc"].
-    out_file (str): The name of the output file to write the script to.
-    in_file (str): The input file containing atomic structure data.
-    host (str): The host for the SocketClient.
-    model (str): The model name to use in the MACE calculator.
-    device (str): The device to run the MACE model on (e.g. "cpu").
-    default_dtype (str): The default data type for the MACE model.
-
-    Returns:
-    None
-    """
+        default_dtype="float64"):
     assert model_type in ["off", "mp", "anicc"]
     in_str = f"""
 from ase.io import read
