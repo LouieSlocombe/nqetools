@@ -123,7 +123,9 @@ from .tools import (add_ipi_paths,
                     get_ipi_driver,
                     get_fes_times,
                     make_dimer,
-                    convert_code_to_string)
+                    convert_code_to_string,
+                    align_principal_axis,
+                    align_mols)
 from .xml_parse import (update_properties,
                         append_properties,
                         update_mass,
