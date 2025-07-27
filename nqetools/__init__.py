@@ -72,7 +72,8 @@ from .pathway import (get_neb_path,
                       get_ts_image,
                       optimise_ts,
                       optimise_irc,
-                      get_vibrations)
+                      get_vibrations,
+                      quick_guess_ts)
 from .plotting import (plot_step_energy,
                        plot_time_potential_bias,
                        plot_time_temperature,

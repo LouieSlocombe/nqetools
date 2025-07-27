@@ -10,7 +10,7 @@ from ase.vibrations import Vibrations
 from scipy.interpolate import CubicSpline
 from sella import IRC
 from sella import Sella
-
+import geodesic_interpolate as gi
 from .tools import get_fmax
 
 
@@ -364,3 +364,12 @@ def get_vibrations(atoms, calc):
     # Clean the folder
     vib.clean()
     return freqs
+
+
+def quick_guess_ts(reactant, product, n_images=25):
+    # Use geodesic interpolation to guess the transition state
+    atoms_ts = gi.geodesic_interpolate([reactant, product], n_images=n_images)
+    # Select the center image as the transition state
+    atoms_ts = atoms_ts[n_images // 2]
+
+    return atoms_ts
