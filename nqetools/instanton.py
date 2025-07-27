@@ -215,7 +215,12 @@ def calc_instanton_kappa(ts_data, inst_data):
             np.exp(inst_data['log(Qvib*N)'] - ts_data['logQvib'])
 
     # Calculate kappa
-    return f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
+    kappa = f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
+
+    if kappa < 1.0:
+        kappa = 1.0
+
+    return kappa
 
 
 def calc_kappa_full(
