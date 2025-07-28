@@ -172,16 +172,15 @@ def write_ase_orca_driver(
         in_file="init.xyz",
         out_file="run-ase-orca.py",
         charge=0,
-        xc="B3LYP",
+        xc="BLYP",
         multi=1,
-        basis_set="6-31G**",
+        basis_set="6-311G",
         disp=False,
         solv=False,
         calc_type='DFT',
         atom_list=None,
         calc_extra=None,
-        scf_option=None,
-        host="driver"):
+        scf_option=None):
     in_str_1 = """
 import os
 import tempfile
@@ -275,7 +274,7 @@ def orca_calc_preset(orca_path=None,
         orcasimpleinput=inpt_simple + ' EnGrad',
         orcablocks=inpt_blocks
     )
-    return ORCA(profile=profile, orcasimpleinput="B3LYP D3BJ def2-SVP TightSCF EnGrad")
+    return calc
 
     """
     in_str_2 = f"""
