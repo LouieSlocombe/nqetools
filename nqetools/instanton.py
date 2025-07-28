@@ -229,7 +229,8 @@ def calc_kappa_full(
         dir_instanton,
         temperature,
         n_beads,
-        filter_list=None):
+        filter_list=None,
+        ref_energy=True):
     # Process the reactant data
     run_instanton_post_process(dir_react,
                                process_type='reactant',
@@ -237,12 +238,19 @@ def calc_kappa_full(
                                filter_list=filter_list)
     react_data = parse_react_thermo_data(dir_react)
 
+    if ref_energy:
+        # If ref_energy is True, use the reactant energy as reference
+        ref_energy = react_data['energy']
+    else:
+        # If ref_energy is False, set it to None
+        ref_energy = None
+
     # Process the TS
     run_instanton_post_process(dir_ts,
                                process_type='TS',
                                temperature=temperature,
                                filter_list=filter_list,
-                               ref_energy=react_data['energy'])
+                               ref_energy=ref_energy)
     data_ts = parse_ts_thermo_data(dir_ts)
 
     # Process the instanton data
@@ -251,7 +259,7 @@ def calc_kappa_full(
                                temperature=temperature,
                                n_beads=n_beads,
                                filter_list=filter_list,
-                               ref_energy=react_data['energy'])
+                               ref_energy=ref_energy)
     data_inst = parse_inst_thermo_data(dir_instanton)
 
     # Calculate and return the tunnelling factor (kappa)
