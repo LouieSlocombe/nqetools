@@ -88,14 +88,23 @@ def show_atoms(atoms,
 
 
 def plot_step_energy(data,
+                     diff=True,
                      save=True,
                      show=True,
                      filename="step_energy"):
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
 
     step = data["step"]
+    energy = data["potential"]
 
-    ax.plot(step, np.abs(data["potential"]), c="black", label="potential", lw=2)
+    if diff:
+        energy = np.abs(np.diff(energy))
+        step = step[1:]
+    else:
+        energy = np.abs(energy)
+
+
+    ax.plot(step, energy, c="black", label="potential", lw=2)
     ax.set_yscale("log")
     ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
     if save:
