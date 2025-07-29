@@ -218,6 +218,7 @@ def calc_instanton_kappa(ts_data, inst_data):
     kappa = f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
 
     if kappa < 1.0:
+        print(f'Warning: kappa < 1.0, {kappa}', flush=True)
         kappa = 1.0
 
     return kappa
@@ -231,6 +232,24 @@ def calc_kappa_full(
         n_beads,
         filter_list=None,
         ref_energy=True):
+    """
+    Calculates the tunnelling factor (kappa) using reactant, transition state, and instanton data.
+
+    This function processes the thermodynamic data for the reactant, transition state (TS),
+    and instanton, and calculates the tunnelling factor (kappa) based on the provided parameters.
+
+    Parameters:
+        dir_react (str): Directory containing the reactant data.
+        dir_ts (str): Directory containing the transition state data.
+        dir_instanton (str): Directory containing the instanton data.
+        temperature (float): Temperature in Kelvin.
+        n_beads (int): Number of beads used in the instanton calculation.
+        filter_list (list, optional): List of filters to apply during data processing. Defaults to None.
+        ref_energy (bool, optional): Whether to use the reactant energy as a reference. Defaults to True.
+
+    Returns:
+        float: The calculated tunnelling factor (kappa).
+    """
     # Process the reactant data
     run_instanton_post_process(dir_react,
                                process_type='reactant',
@@ -270,6 +289,22 @@ def calc_forward_rate(dir_react,
                       dir_ts,
                       temperature,
                       filter_list=None):
+    """
+    Calculates the forward rate constant for a chemical reaction.
+
+    This function processes the thermodynamic data for the reactant and transition state (TS),
+    extracts partition functions, and calculates the forward rate constant using the
+    Eyring equation.
+
+    Parameters:
+        dir_react (str): Directory containing the reactant data.
+        dir_ts (str): Directory containing the transition state data.
+        temperature (float): Temperature in Kelvin.
+        filter_list (list, optional): List of filters to apply during data processing. Defaults to None.
+
+    Returns:
+        float: The calculated forward rate constant.
+    """
     # Get reactant data
     run_instanton_post_process(dir_react,
                                process_type='reactant',
@@ -292,8 +327,9 @@ def calc_forward_rate(dir_react,
     partition_function_ratio = (ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts) / \
                                (react_data['Qtras'] * react_data['Qrot'] * q_vib_react)
 
-    # boltzmann_factor = np.exp(react_data['V/kBT'] - ts_data['V/kBT'])
+    # Calculate the Boltzmann factor
     boltzmann_factor = np.exp(-ts_data['V/kBT'])
+
     # Calculate the forward rate constant
     return (k * temperature / h) * partition_function_ratio * boltzmann_factor
 
