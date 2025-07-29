@@ -375,7 +375,22 @@ def get_vibrations(atoms, calc):
 
 
 def quick_guess_ts(reactant, product, n_images=25):
-    # Use geodesic interpolation to guess the transition state
+    """
+    Generate a quick guess for the transition state (TS) between a reactant and product.
+
+    This function uses geodesic interpolation to create a series of intermediate images
+    between the reactant and product structures. The center image of the interpolated
+    path is selected as the guessed transition state.
+
+    Parameters:
+    reactant (ase.Atoms): ASE Atoms object representing the reactant structure.
+    product (ase.Atoms): ASE Atoms object representing the product structure.
+    n_images (int, optional): Number of images to generate during interpolation. Default is 25.
+
+    Returns:
+    ase.Atoms: ASE Atoms object representing the guessed transition state.
+    """
+    # Use geodesic interpolation to generate intermediate images between reactant and product
     atoms_ts = gi.geodesic_interpolate([reactant, product], n_images=n_images)
     # Select the center image as the transition state
     atoms_ts = atoms_ts[n_images // 2]

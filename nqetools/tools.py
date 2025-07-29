@@ -1,10 +1,9 @@
 import glob
+import inspect
 import os
 import sys
-import time
-
-import inspect
 import textwrap
+import time
 
 import ipi
 import numpy as np
@@ -541,6 +540,22 @@ def move_to_distances(atoms: Atoms,
                       index1: int,
                       index2: int,
                       distances: list[float]) -> list[Atoms]:
+    """
+    Move two clusters of atoms to specified distances along the vector connecting two target atoms.
+
+    This function splits the input `Atoms` object into two clusters, calculates the vector
+    connecting the specified atoms in the clusters, and moves the clusters to achieve the
+    specified distances between the target atoms.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE Atoms object containing the atomic structure.
+    index1 (int): The index of the reference atom in the first cluster.
+    index2 (int): The index of the reference atom in the second cluster.
+    distances (list[float]): A list of target distances to move the clusters.
+
+    Returns:
+    list[ase.Atoms]: A list of ASE Atoms objects, each representing the clusters moved to the specified distances.
+    """
     # Split the atoms into two clusters
     clusters = cluster_atoms(atoms)
     if len(clusters) != 2:
@@ -548,6 +563,7 @@ def move_to_distances(atoms: Atoms,
 
     cluster1, cluster2 = clusters
 
+    # Adjust index2 to account for the second cluster's indices
     index2 = index2 - len(cluster2)
 
     # Move the clusters to the specified distances
@@ -585,7 +601,23 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
     return [round_sf(t, sig_figs=2) for t in time_points]
 
 
-def make_dimer(atoms, translate=None):
+def make_dimer(atoms, translate=None, angle=180, axis='z'):
+    """
+    Create a dimer by combining two copies of a molecule.
+
+    This function takes an ASE Atoms object, centers the first molecule,
+    creates a copy, rotates the copy by a specified angle around a given axis,
+    translates the copy, and combines the two molecules into a single Atoms object.
+
+    Parameters:
+    atoms (ase.Atoms): The ASE Atoms object representing the molecule.
+    translate (list[float], optional): Translation vector for the second molecule. Default is [0.0, 3.4, 0.0].
+    angle (float, optional): Rotation angle in degrees for the second molecule. Default is 180 degrees.
+    axis (str, optional): Axis of rotation ('x', 'y', or 'z'). Default is 'z'.
+
+    Returns:
+    ase.Atoms: The combined Atoms object representing the dimer.
+    """
     if translate is None:
         translate = [0.0, 3.4, 0.0]
 
@@ -596,7 +628,7 @@ def make_dimer(atoms, translate=None):
     atoms2 = atoms.copy()
 
     # Rotate the second molecule
-    atoms2.rotate(180, 'z', rotate_cell=False)
+    atoms2.rotate(angle, axis, rotate_cell=False)
 
     # Translate the second molecule
     atoms2.translate(translate)
