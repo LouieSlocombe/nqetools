@@ -73,7 +73,8 @@ from .pathway import (get_neb_path,
                       optimise_ts,
                       optimise_irc,
                       get_vibrations,
-                      quick_guess_ts)
+                      quick_guess_ts,
+                      calculate_goat)
 from .plotting import (plot_step_energy,
                        plot_time_potential_bias,
                        plot_time_temperature,

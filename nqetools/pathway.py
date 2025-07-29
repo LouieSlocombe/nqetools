@@ -1,8 +1,15 @@
 import copy
 import os
+import re
+import tempfile
 import time
+from pathlib import Path
+from typing import Union
 
 import numpy as np
+import pandas as pd
+from ase.calculators.orca import ORCA
+from ase.calculators.orca import OrcaProfile
 from ase.io import read
 from ase.mep import NEB
 from ase.optimize import BFGS
@@ -10,6 +17,7 @@ from ase.vibrations import Vibrations
 from scipy.interpolate import CubicSpline
 from sella import IRC
 from sella import Sella
+
 import geodesic_interpolate as gi
 from .tools import get_fmax
 
@@ -373,3 +381,165 @@ def quick_guess_ts(reactant, product, n_images=25):
     atoms_ts = atoms_ts[n_images // 2]
 
     return atoms_ts
+
+
+def extract_conformer_info(filepath: Union[str, Path]) -> pd.DataFrame:
+    """
+    Extract conformer information from an ORCA output file.
+
+    This function reads an ORCA output file and parses the ensemble table to extract
+    conformer data, including conformer index, energy, and percentage of the total.
+
+    Parameters:
+    -----------
+    filepath : Union[str, Path]
+        Path to the ORCA output file containing the ensemble table.
+
+    Returns:
+    --------
+    pd.DataFrame
+        A pandas DataFrame containing the following columns:
+        - 'Conformer': Conformer index (int).
+        - 'Energy_kcal_mol': Energy in kcal/mol (float).
+        - 'Percent_total': Percentage of the total (float).
+
+    Raises:
+    -------
+    ValueError
+        If the ensemble table cannot be located in the file.
+    """
+    # Compile a regex pattern to match a data line in the ensemble table
+    line_pat = re.compile(
+        r"""^\s*
+            (?P<conformer>\d+)\s+          # integer index
+            (?P<energy>-?\d+\.\d+)\s+      # energy in kcal/mol
+            \d+\s+                         # degeneracy (ignored)
+            (?P<ptotal>\d+\.\d+)\s+        # % total
+            \d+\.\d+\s*?$                  # % cumulative (ignored)
+        """,
+        re.VERBOSE,
+    )
+
+    # Compile a regex pattern to locate the table header
+    header_pat = re.compile(r"Conformer\s+Energy.*% total", re.I)
+
+    # Initialize variables for parsing
+    rows = []
+    in_table = False
+
+    # Open the file and read its contents
+    with open(filepath, "r", encoding="utf-8", errors="ignore") as fh:
+        for line in fh:
+            # Check for the table header to start reading data
+            if not in_table and header_pat.search(line):
+                in_table = True  # Start reading on the next lines
+                continue
+
+            if in_table:
+                # Stop reading when the table ends
+                if line.strip() == "" or line.strip().startswith("Conformers"):
+                    break
+                # Match a data line and extract values
+                m = line_pat.match(line)
+                if m:
+                    rows.append(
+                        (
+                            int(m["conformer"]),
+                            float(m["energy"]),
+                            float(m["ptotal"]),
+                        )
+                    )
+
+    # Raise an error if no data was found
+    if not rows:
+        raise ValueError(
+            "Could not locate ensemble table. Check that the file is complete."
+        )
+
+    # Return the extracted data as a pandas DataFrame
+    return pd.DataFrame(
+        rows, columns=["Conformer", "Energy_kcal_mol", "Percent_total"]
+    )
+
+
+def calculate_goat(atoms,
+                   charge=0,
+                   multiplicity=1,
+                   orca_path=None,
+                   n_procs=10):
+    """
+    Perform a GOAT (Global Optimization of Atomic Topologies) calculation using ORCA.
+
+    This function sets up and executes a GOAT calculation to optimize molecular conformers
+    and extract conformer information from the ORCA output file.
+
+    Parameters:
+    -----------
+    atoms : ase.Atoms
+        ASE Atoms object representing the molecule to be optimized.
+    charge : int, optional
+        Total charge of the molecule. Default is 0.
+    multiplicity : int, optional
+        Spin multiplicity of the molecule. Default is 1.
+    orca_path : str, optional
+        Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
+    n_procs : int, optional
+        Number of processors to use for the calculation. Default is 10.
+
+    Returns:
+    --------
+    tuple
+        - atoms : list of ase.Atoms
+            List of ASE Atoms objects representing the optimized conformers.
+        - df : pandas.DataFrame
+            DataFrame containing conformer information, including:
+            - 'Conformer': Conformer index (int).
+            - 'Energy_kcal_mol': Energy in kcal/mol (float).
+            - 'Percent_total': Percentage of the total (float).
+    """
+    # Determine the ORCA path
+    if orca_path is None:
+        # Try to read the path from the environment variable
+        orca_path = os.environ.get('ORCA_PATH')
+    else:
+        # Convert the provided path to an absolute path
+        orca_path = os.path.abspath(orca_path)
+
+    # Create an ORCA profile with the specified command
+    profile = OrcaProfile(command=orca_path)
+
+    # Configure the number of processors
+    if n_procs > 1:
+        inpt_procs = '%pal nprocs {} end'.format(n_procs)
+    else:
+        inpt_procs = ''
+
+    # Create a temporary working directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create and configure the ORCA calculator object
+        calc = ORCA(
+            profile=profile,
+            charge=charge,
+            mult=multiplicity,
+            directory=temp_dir,
+            orcasimpleinput='GOAT XTB',
+            orcablocks=inpt_procs
+        )
+        # Assign the calculator to the ASE Atoms object
+        atoms.calc = calc
+
+        # Trigger the calculation to optimize the geometry
+        _ = atoms.get_potential_energy()
+
+        # Define paths for the output files
+        xyz_file = os.path.join(temp_dir, "orca.finalensemble.xyz")  # Path to the final ensemble file
+        orca_file = os.path.join(temp_dir, "orca.out")  # Path to the ORCA output file
+
+        # Extract conformer information from the ORCA output file
+        df = extract_conformer_info(orca_file)
+
+        # Read the optimized conformers from the ensemble file
+        atoms = read(xyz_file, format="xyz", index=':')
+
+        # Return the optimized conformers and conformer information
+        return atoms, df
