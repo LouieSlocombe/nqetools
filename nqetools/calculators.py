@@ -874,6 +874,7 @@ def calculate_free_energy(atoms,
                           orca_path=None,
                           xc='r2SCAN-3c',
                           basis_set='def2-QZVP',
+                          opt=False,
                           tight_opt=False,
                           tight_scf=False,
                           f_solv=False,
@@ -881,68 +882,15 @@ def calculate_free_energy(atoms,
                           n_procs=10,
                           use_ccsd=False,
                           ccsd_energy=None):
-    """
-    Calculate the Gibbs free energy, enthalpy, and entropy of a molecule.
-
-    This function performs a quantum chemistry calculation using the ORCA package to compute
-    the Gibbs free energy, enthalpy, and entropy of a molecule represented by an ASE `Atoms` object.
-    It supports temperature and pressure adjustments, CCSD energy calculations, and various ORCA options.
-
-    Parameters:
-    -----------
-    atoms : ase.Atoms
-        An ASE `Atoms` object representing the molecule.
-    charge : int, optional
-        Total charge of the molecule. Default is 0.
-    multiplicity : int, optional
-        Spin multiplicity of the molecule. Default is 1.
-    temperature : float, optional
-        Temperature in Kelvin for the calculation. Default is None.
-    pressure : float, optional
-        Pressure in atm for the calculation. Default is None.
-    orca_path : str, optional
-        Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
-    xc : str, optional
-        Exchange-correlation functional to use. Default is 'r2SCAN-3c'.
-    basis_set : str, optional
-        Basis set to use for the calculation. Default is 'def2-QZVP'.
-    tight_opt : bool, optional
-        Whether to use tight geometry optimization. Default is False.
-    tight_scf : bool, optional
-        Whether to use tight SCF convergence criteria. Default is False.
-    f_solv : bool, optional
-        Whether to include solvent effects in the calculation. Default is False.
-    f_disp : bool, optional
-        Whether to include dispersion corrections in the calculation. Default is False.
-    n_procs : int, optional
-        Number of processors to use for the calculation. Default is 10.
-    use_ccsd : bool, optional
-        Whether to use CCSD energy calculations. Default is False.
-    ccsd_energy : float, optional
-        Precomputed CCSD energy in eV. If None, CCSD energy will be calculated if `use_ccsd` is True.
-
-    Returns:
-    --------
-    tuple
-        A tuple containing:
-        - energy : float
-            The Gibbs free energy in eV.
-        - enthalpy : float
-            The enthalpy in eV.
-        - entropy : float
-            The entropy correction in eV.
-
-    Raises:
-    -------
-    ValueError
-        If the CCSD energy calculation fails or the ORCA setup is invalid.
-    """
     # Determine the ORCA path
     orca_path = os.path.abspath(orca_path or os.getenv('ORCA_PATH', 'orca'))
 
     # Set optimization flags
-    opt_flag = 'TIGHTOPT' if tight_opt else 'OPT'
-    if len(atoms) == 1:  # Skip optimization for single atoms
+    if opt:
+        opt_flag = 'TIGHTOPT' if tight_opt else 'OPT'
+        if len(atoms) == 1:  # Skip optimization for single atoms
+            opt_flag = ''
+    else:
         opt_flag = ''
 
     # Set SCF flags
