@@ -191,6 +191,8 @@ https://github.com/Sucerquia/ASE-PLUMED_tutorial/tree/master
 
 https://github.com/water-ice-group/plumed_tutorial_mace
 
+https://fhi-aims-club.gitlab.io/tutorials/molecular-dynamics-with-i-pi/
+
 # Tools
 https://github.com/lab-cosmo/chemiscope
 
