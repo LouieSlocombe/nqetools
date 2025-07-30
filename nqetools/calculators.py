@@ -9,6 +9,7 @@ from ase.calculators.nwchem import NWChem
 from ase.calculators.orca import ORCA
 from ase.calculators.orca import OrcaProfile
 from ase.io import read
+from ase.units import Hartree
 
 from .qchem_mod import QChem
 
@@ -832,3 +833,290 @@ def calculate_ccsd_energy(atoms,
 
         # Perform the energy calculation
         return atoms.get_potential_energy()
+
+
+def grab_value(orca_file, term, splitter):
+    """
+    Extract a specific numerical value from an ORCA output file.
+
+    This function reads an ORCA output file in reverse order, searches for a specific term,
+    and extracts the numerical value associated with it. The value is converted from Hartree
+    units to eV using the ASE `Hartree` constant.
+
+    Parameters:
+    -----------
+    orca_file : str
+        Path to the ORCA output file.
+    term : str
+        The term to search for in the file.
+    splitter : str
+        The delimiter used to split the line containing the term.
+
+    Returns:
+    --------
+    float or None
+        The extracted value in eV, or None if the term is not found.
+    """
+    with open(orca_file, 'r') as f:
+        for line in reversed(f.readlines()):
+            if term in line:
+                return float(line.split(splitter)[-1].split('Eh')[0]) * Hartree
+        return None
+
+
+def calculate_free_energy(atoms,
+                          charge=0,
+                          multiplicity=1,
+                          temperature=None,
+                          pressure=None,
+                          orca_path=None,
+                          xc='r2SCAN-3c',
+                          basis_set='def2-QZVP',
+                          tight_opt=False,
+                          tight_scf=False,
+                          f_solv=False,
+                          f_disp=False,
+                          n_procs=10,
+                          use_ccsd=False,
+                          ccsd_energy=None):
+    """
+    Calculate the Gibbs free energy, enthalpy, and entropy of a molecule.
+
+    This function performs a quantum chemistry calculation using the ORCA package to compute
+    the Gibbs free energy, enthalpy, and entropy of a molecule represented by an ASE `Atoms` object.
+    It supports temperature and pressure adjustments, CCSD energy calculations, and various ORCA options.
+
+    Parameters:
+    -----------
+    atoms : ase.Atoms
+        An ASE `Atoms` object representing the molecule.
+    charge : int, optional
+        Total charge of the molecule. Default is 0.
+    multiplicity : int, optional
+        Spin multiplicity of the molecule. Default is 1.
+    temperature : float, optional
+        Temperature in Kelvin for the calculation. Default is None.
+    pressure : float, optional
+        Pressure in atm for the calculation. Default is None.
+    orca_path : str, optional
+        Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
+    xc : str, optional
+        Exchange-correlation functional to use. Default is 'r2SCAN-3c'.
+    basis_set : str, optional
+        Basis set to use for the calculation. Default is 'def2-QZVP'.
+    tight_opt : bool, optional
+        Whether to use tight geometry optimization. Default is False.
+    tight_scf : bool, optional
+        Whether to use tight SCF convergence criteria. Default is False.
+    f_solv : bool, optional
+        Whether to include solvent effects in the calculation. Default is False.
+    f_disp : bool, optional
+        Whether to include dispersion corrections in the calculation. Default is False.
+    n_procs : int, optional
+        Number of processors to use for the calculation. Default is 10.
+    use_ccsd : bool, optional
+        Whether to use CCSD energy calculations. Default is False.
+    ccsd_energy : float, optional
+        Precomputed CCSD energy in eV. If None, CCSD energy will be calculated if `use_ccsd` is True.
+
+    Returns:
+    --------
+    tuple
+        A tuple containing:
+        - energy : float
+            The Gibbs free energy in eV.
+        - enthalpy : float
+            The enthalpy in eV.
+        - entropy : float
+            The entropy correction in eV.
+
+    Raises:
+    -------
+    ValueError
+        If the CCSD energy calculation fails or the ORCA setup is invalid.
+    """
+    # Determine the ORCA path
+    orca_path = os.path.abspath(orca_path or os.getenv('ORCA_PATH', 'orca'))
+
+    # Set optimization flags
+    opt_flag = 'TIGHTOPT' if tight_opt else 'OPT'
+    if len(atoms) == 1:  # Skip optimization for single atoms
+        opt_flag = ''
+
+    # Set SCF flags
+    scf_flag = 'TIGHTSCF' if tight_scf else ''
+    calc_extra = f'{opt_flag} {scf_flag} FREQ'.strip()
+
+    # Set up the %thermo block for this temperature and pressure
+    if temperature is not None and pressure is None:
+        blocks_extra = f'''
+                                  %freq
+                                      Temp {temperature}
+                                  end
+                                  '''
+    elif pressure is not None and temperature is None:
+        blocks_extra = f'''
+                                          %freq
+                                              Pressure {pressure}
+                                          end
+                                          '''
+    elif pressure is None and temperature is not None:
+        blocks_extra = f'''
+                                          %freq
+                                              Temp {temperature}
+                                              Pressure {pressure}
+                                          end
+                                          '''
+    else:
+        blocks_extra = None
+
+    # Perform CCSD energy calculation if required and not provided
+    if use_ccsd and ccsd_energy is None:
+        ccsd_energy = calculate_ccsd_energy(atoms,
+                                            orca_path=orca_path,
+                                            charge=charge,
+                                            multiplicity=multiplicity,
+                                            n_procs=n_procs)
+        if ccsd_energy is None:
+            raise ValueError("CCSD energy calculation failed. Please check the ORCA setup.")
+
+    # Create a temporary directory for the calculation
+    with tempfile.TemporaryDirectory() as temp_dir:
+        orca_file = os.path.join(temp_dir, 'orca.out')
+
+        # Set up the ORCA calculator
+        calc = orca_calc_preset(orca_path=orca_path,
+                                directory=temp_dir,
+                                charge=charge,
+                                multiplicity=multiplicity,
+                                xc=xc,
+                                basis_set=basis_set,
+                                n_procs=n_procs,
+                                f_solv=f_solv,
+                                f_disp=f_disp,
+                                calc_extra=calc_extra,
+                                blocks_extra=blocks_extra)
+        atoms.calc = calc
+
+        # Trigger the calculation
+        _ = atoms.get_potential_energy()
+
+        # Extract entropy correction
+        entropy = grab_value(orca_file, 'Total entropy correction', '...')
+
+        # Calculate Gibbs free energy based on CCSD or DFT results
+        if use_ccsd:
+            g_e_ele = grab_value(orca_file, 'G-E(el)', '...')
+            g_e_solv = grab_value(orca_file, 'Free-energy (cav+disp)', ':') if f_solv else 0.0
+            energy = ccsd_energy + g_e_ele + g_e_solv
+        else:
+            energy = grab_value(orca_file, 'Final Gibbs free energy', '...')
+
+        # Return energy, enthalpy, and entropy
+        return energy, energy - entropy, entropy
+
+
+def calculate_hessian(atoms,
+                      charge=0,
+                      multiplicity=1,
+                      orca_path=None,
+                      xc='r2SCAN-3c',
+                      basis_set='def2-QZVP',
+                      tight_opt=False,
+                      tight_scf=False,
+                      f_solv=False,
+                      f_disp=False,
+                      n_procs=10):
+    """
+    Perform a Hessian matrix calculation using the ORCA quantum chemistry package.
+
+    This function sets up and executes a Hessian matrix calculation for a molecule
+    represented by an ASE `Atoms` object. It optimizes the geometry and computes
+    the Hessian matrix, which is used for vibrational analysis.
+
+    Parameters:
+    -----------
+    atoms : ase.Atoms
+        An ASE `Atoms` object representing the molecule.
+    charge : int, optional
+        Total charge of the molecule. Default is 0.
+    multiplicity : int, optional
+        Spin multiplicity of the molecule. Default is 1.
+    orca_path : str, optional
+        Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
+    xc : str, optional
+        Exchange-correlation functional to use. Default is 'r2SCAN-3c'.
+    basis_set : str, optional
+        Basis set to use for the calculation. Default is 'def2-QZVP'.
+    tight_opt : bool, optional
+        Whether to use tight geometry optimization. Default is False.
+    tight_scf : bool, optional
+        Whether to use tight SCF convergence criteria. Default is False.
+    f_solv : bool, optional
+        Whether to include solvent effects in the calculation. Default is False.
+    f_disp : bool, optional
+        Whether to include dispersion corrections in the calculation. Default is False.
+    n_procs : int, optional
+        Number of processors to use for the calculation. Default is 10.
+
+    Returns:
+    --------
+    tuple
+        A tuple containing:
+        - atoms : ase.Atoms
+            The optimized geometry of the molecule.
+        - hessian_file : str
+            Path to the file containing the Hessian matrix.
+
+    Raises:
+    -------
+    ValueError
+        If the ORCA path cannot be determined or the calculation fails.
+    """
+    # Determine the ORCA path
+    if orca_path is None:
+        # Try to read the path from the environment variable
+        orca_path = os.environ.get('ORCA_PATH')
+    else:
+        # Convert the provided path to an absolute path
+        orca_path = os.path.abspath(orca_path)
+
+    if tight_opt:
+        # Set up geometry optimization and frequency calculation parameters
+        opt_option = 'TIGHTOPT'
+    else:
+        # Set up frequency calculation parameters only
+        opt_option = 'OPT'
+
+    if tight_scf:
+        # Set up tight SCF convergence parameters
+        calc_extra = f'{opt_option} TIGHTSCF FREQ'
+    else:
+        # Use default SCF convergence parameters
+        calc_extra = f'{opt_option} FREQ'
+
+    # Create a temporary directory for the ORCA calculation
+    with tempfile.TemporaryDirectory() as temp_dir:
+
+        # Set up the ORCA calculator with the specified parameters
+        calc = orca_calc_preset(orca_path=orca_path,
+                                directory=temp_dir,
+                                charge=charge,
+                                multiplicity=multiplicity,
+                                xc=xc,
+                                basis_set=basis_set,
+                                n_procs=n_procs,
+                                f_solv=f_solv,
+                                f_disp=f_disp,
+                                calc_extra=calc_extra)
+
+        # Attach the ORCA calculator to the ASE Atoms object
+        atoms.calc = calc
+
+        # Perform the energy calculation
+        _ = atoms.get_potential_energy()
+
+        # Load the optimized geometry from the ORCA output file
+        atoms_file = os.path.join(temp_dir, "orca.xyz")
+        hessian_file = os.path.join(temp_dir, "orca.hess")
+        return read(atoms_file, format="xyz"), hessian_file
