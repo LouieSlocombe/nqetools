@@ -286,10 +286,10 @@ def calc_kappa_full(
     return calc_instanton_kappa(data_ts, data_inst)
 
 
-def calc_forward_rate_ipi(dir_react,
-                          dir_ts,
-                          temperature,
-                          filter_list=None):
+def calc_forward_rate(dir_react,
+                      dir_ts,
+                      temperature,
+                      filter_list=None):
     # Get reactant data
     run_instanton_post_process(dir_react,
                                process_type='reactant',
@@ -319,10 +319,10 @@ def calc_forward_rate_ipi(dir_react,
     return (k * temperature / h) * partition_function_ratio * boltzmann_factor
 
 
-def calc_forward_rate(atoms_react,
-                      atoms_ts,
-                      temperature=300.0,
-                      calc_settings=None):
+def calc_forward_rate_orca(atoms_react,
+                           atoms_ts,
+                           temperature=300.0,
+                           calc_settings=None):
     if calc_settings is None:
         calc_settings = {}
 

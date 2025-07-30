@@ -51,6 +51,7 @@ from .instanton import (calc_kappa,
                         calc_kappa_full,
                         parse_react_thermo_data,
                         calc_forward_rate,
+                        calc_forward_rate_orca,
                         exp_decay,
                         fit_exp_decay,
                         extrapolate_inf_bead_limit)
