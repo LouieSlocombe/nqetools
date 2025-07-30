@@ -1,6 +1,8 @@
 import os
 import tempfile
 
+import numpy as np
+from ase import Atoms
 from ase.calculators.nwchem import NWChem
 from ase.calculators.orca import ORCA
 from ase.calculators.orca import OrcaProfile
@@ -54,6 +56,123 @@ def nwchem_calc_preset(directory=None,
         tmp['task'] = task
 
     return NWChem(**tmp)
+
+
+def get_total_electrons(atoms: Atoms) -> int:
+    """
+    Calculate the total number of electrons in a molecule.
+
+    This function computes the total number of electrons in a molecule
+    represented by an ASE `Atoms` object. It sums the atomic numbers (Z)
+    of all atoms in the molecule and adjusts for the explicit charge
+    provided in the `Atoms.info` dictionary.
+
+    Parameters:
+    -----------
+    atoms : ase.Atoms
+        An ASE `Atoms` object representing the molecule.
+
+    Returns:
+    --------
+    int
+        The total number of electrons in the molecule, corrected for its charge.
+    """
+    # Sum atomic numbers (Z) for every atom in the molecule
+    n_electrons = int(np.sum(atoms.get_atomic_numbers()))
+
+    # Correct for explicit total charge, if provided in the `Atoms.info` dictionary
+    charge = atoms.info.get('charge', 0.0)
+    n_electrons -= int(round(charge))
+
+    return n_electrons
+
+
+def round_to_nearest_two(number):
+    """
+    Round a number to the nearest multiple of 2.
+    If the result would be 0, return 1 instead.
+
+    Parameters:
+    -----------
+    number : float or int
+        The number to be rounded
+
+    Returns:
+    --------
+    int
+        The nearest multiple of 2, or 1 if result would be 0
+    """
+    # Round to nearest multiple of 2
+    result = round(number / 2) * 2
+
+    # If result is 0, set it to 1
+    if result == 0:
+        result = 1
+
+    return result
+
+
+def calculate_ccsd_energy(atoms,
+                          charge=0,
+                          multiplicity=1,
+                          orca_path=None,
+                          basis_set='def2-TZVPP',
+                          n_procs=10):
+    """
+    Perform a CCSD (Coupled Cluster Single and Double) energy calculation using the ORCA quantum chemistry package.
+
+    This function sets up and executes a CCSD energy calculation for a molecule represented by an ASE `Atoms` object.
+    It ensures that the number of processors used does not exceed the total number of electrons in the system.
+
+    Parameters:
+    -----------
+    atoms : ase.Atoms
+        An ASE `Atoms` object representing the molecule.
+    charge : int, optional
+        Total charge of the molecule. Default is 0.
+    multiplicity : int, optional
+        Spin multiplicity of the molecule. Default is 1.
+    orca_path : str, optional
+        Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
+    basis_set : str, optional
+        Basis set to use for the calculation. Default is 'def2-TZVPP'.
+    n_procs : int, optional
+        Number of processors to use for the calculation. Default is 10.
+
+    Returns:
+    --------
+    float
+        The CCSD energy of the molecule in eV.
+
+    Raises:
+    -------
+    ValueError
+        If the number of processors exceeds the adjusted limit based on the total number of electrons.
+    """
+    # If no ORCA path is provided, try to read it from the environment variable
+    orca_path = os.path.abspath(orca_path or os.getenv('ORCA_PATH', 'orca'))
+
+    # Get the total number of electrons in the system
+    total_electrons = get_total_electrons(atoms)
+    # Prevent too many processors being used
+    if n_procs > total_electrons:
+        n_procs = round_to_nearest_two(total_electrons - 2)
+
+    # Create a temporary directory for the ORCA calculation
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Set up the ORCA calculator with the specified parameters
+        calc = orca_calc_preset(orca_path=orca_path,
+                                directory=temp_dir,
+                                calc_type='CCSD',
+                                charge=charge,
+                                multiplicity=multiplicity,
+                                basis_set=basis_set,
+                                n_procs=n_procs)
+        # Attach the ORCA calculator to the ASE Atoms object
+        atoms.calc = calc
+
+        # Perform the energy calculation
+        return atoms.get_potential_energy()
 
 
 def orca_calc_preset(orca_path=None,
