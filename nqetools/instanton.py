@@ -9,6 +9,7 @@ from scipy.optimize import curve_fit
 
 from .execution import run_instanton_post_process
 from .plotting import n_plot
+from .calculators import calculate_free_energy
 
 
 def calc_kappa(ts_path, instanton_path, temperature, n_beads):
@@ -285,26 +286,10 @@ def calc_kappa_full(
     return calc_instanton_kappa(data_ts, data_inst)
 
 
-def calc_forward_rate(dir_react,
-                      dir_ts,
-                      temperature,
-                      filter_list=None):
-    """
-    Calculates the forward rate constant for a chemical reaction.
-
-    This function processes the thermodynamic data for the reactant and transition state (TS),
-    extracts partition functions, and calculates the forward rate constant using the
-    Eyring equation.
-
-    Parameters:
-        dir_react (str): Directory containing the reactant data.
-        dir_ts (str): Directory containing the transition state data.
-        temperature (float): Temperature in Kelvin.
-        filter_list (list, optional): List of filters to apply during data processing. Defaults to None.
-
-    Returns:
-        float: The calculated forward rate constant.
-    """
+def calc_forward_rate_ipi(dir_react,
+                          dir_ts,
+                          temperature,
+                          filter_list=None):
     # Get reactant data
     run_instanton_post_process(dir_react,
                                process_type='reactant',
@@ -332,6 +317,23 @@ def calc_forward_rate(dir_react,
 
     # Calculate the forward rate constant
     return (k * temperature / h) * partition_function_ratio * boltzmann_factor
+
+
+def calc_forward_rate(atoms_react,
+                      atoms_ts,
+                      temperature=300.0,
+                      calc_settings=None):
+    if calc_settings is None:
+        calc_settings = {}
+
+    e_react = calculate_free_energy(atoms_react, temperature=temperature, **calc_settings)
+    e_ts = calculate_free_energy(atoms_ts, temperature=temperature, **calc_settings)
+
+    # Calculate the Boltzmann factor
+    boltzmann_factor = np.exp(-(e_react - e_ts) / (kB * temperature))
+
+    # Calculate the forward rate constant
+    return (k * temperature / h) * boltzmann_factor
 
 
 def exp_decay(t, a, tau, c) -> np.ndarray:
