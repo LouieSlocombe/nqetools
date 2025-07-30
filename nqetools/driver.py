@@ -193,40 +193,45 @@ from ase.calculators.socketio import SocketClient
 def orca_calc_preset(orca_path=None,
                      directory=None,
                      calc_type='DFT',
-                     xc='B3LYP',
+                     xc='wB97X',
                      charge=0,
                      multiplicity=1,
-                     basis_set='6-311G',  # 'cc-pVDZ', '6-31+G(d,p)',
-                     nprocs=1,
-                     f_solv=True,
-                     f_disp=True,
+                     basis_set='def2-SVP',
+                     n_procs=10,
+                     f_solv=False,
+                     f_disp=False,
                      atom_list=None,
                      calc_extra=None,
                      blocks_extra=None,
                      scf_option=None):
     if orca_path is None:
-        # try and read the path from the environment
+        # Try and read the path from the environment
         orca_path = os.environ.get('ORCA_PATH')
     if directory is None:
+        # Create a temporary directory for the calculation
         directory = os.path.join(tempfile.mkdtemp(), 'orca')
 
+    # Create an ORCA profile with the specified command
     profile = OrcaProfile(command=orca_path)
 
-    if nprocs > 1:
-        inpt_procs = '%pal nprocs {} end'.format(nprocs)
+    # Configure the number of processors
+    if n_procs > 1:
+        inpt_procs = '%pal nprocs {} end'.format(n_procs)
     else:
         inpt_procs = ''
 
+    # Configure the solvent model
     if f_solv is not None and f_solv is not False:
         if f_solv:
             f_solv = 'WATER'
         inpt_solv = '''
-        %CPCM SMD TRUE
-            SMDSOLVENT "{}"
-        END'''.format(f_solv)
+                                              %CPCM SMD TRUE
+                                                  SMDSOLVENT "{}"
+                                              END'''.format(f_solv)
     else:
         inpt_solv = ''
 
+    # Configure the dispersion correction
     if f_disp is None or f_disp is False:
         inpt_disp = ''
     else:
@@ -234,18 +239,22 @@ def orca_calc_preset(orca_path=None,
             f_disp = 'D4'
         inpt_disp = f_disp
 
+    # Configure QM/MM atom list for QM/XTB2 calculations
     if atom_list is not None and calc_type == 'QM/XTB2':
         inpt_xtb = '''
-        %QMMM QMATOMS {{}} END END
-        '''.format(str(atom_list).strip('[').strip(']'))
+                                              %QMMM QMATOMS {{}} END END
+                                              '''.format(str(atom_list).strip('[').strip(']'))
     else:
         inpt_xtb = ''
 
+    # Add any additional input blocks
     if blocks_extra is None:
         blocks_extra = ''
 
+    # Combine all input blocks
     inpt_blocks = inpt_procs + inpt_solv + blocks_extra
 
+    # Configure the main calculation input based on the calculation type
     if calc_type == 'DFT':
         inpt_simple = '{} {} {}'.format(xc, inpt_disp, basis_set)
     elif calc_type == 'MP2':
@@ -258,20 +267,27 @@ def orca_calc_preset(orca_path=None,
     else:
         inpt_simple = '{} {}'.format(calc_type, basis_set)
 
-    # Add the scf option
+    if multiplicity > 1:
+        if calc_type == 'DFT' or calc_type == 'QM/XTB2':
+            inpt_simple = 'UKS  ' + inpt_simple
+        elif calc_type == 'MP2' or calc_type == 'CCSD':
+            inpt_simple = 'UKS ' + inpt_simple
+
+    # Add the SCF option if provided
     if scf_option is not None:
         inpt_simple += ' ' + scf_option
 
-    # Add the extra options
+    # Add any extra calculation options
     if calc_extra is not None:
         inpt_simple += ' ' + calc_extra
 
+    # Create and return the ORCA calculator object
     calc = ORCA(
         profile=profile,
         charge=charge,
         mult=multiplicity,
         directory=directory,
-        orcasimpleinput=inpt_simple + ' TightSCF EnGrad',
+        orcasimpleinput=inpt_simple + ' EnGrad',
         orcablocks=inpt_blocks
     )
     return calc
