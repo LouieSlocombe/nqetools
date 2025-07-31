@@ -16,7 +16,8 @@ def write_ase_mace_driver(
         device="cpu",
         default_dtype="float64"):
     assert model_type in ["off", "mp", "anicc"]
-    in_str = f"""
+    if model_type == "off" or model_type == "mp":
+        in_str = f"""
 from ase.io import read
 from mace.calculators import mace_{model_type}
 from ase.calculators.socketio import SocketClient
@@ -24,7 +25,17 @@ atoms = read('{in_file}', 0)
 atoms.calc = mace_{model_type}(model='{model}', device='{device}', default_dtype='{default_dtype}')
 client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=True)
-    """
+        """
+    else:
+        in_str = f"""
+from ase.io import read
+from mace.calculators import mace_{model_type}
+from ase.calculators.socketio import SocketClient
+atoms = read('{in_file}', 0)
+atoms.calc = mace_{model_type}(device='{device}')
+client = SocketClient(unixsocket='{host}')
+client.run(atoms, use_stress=True)
+            """
     # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
