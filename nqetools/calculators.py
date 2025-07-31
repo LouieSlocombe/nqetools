@@ -154,9 +154,10 @@ def orca_calc_preset(orca_path=None,
 
     # Configure QM/MM atom list for QM/XTB2 calculations
     if atom_list is not None and calc_type == 'QM/XTB2':
-        inpt_xtb = '''
-                                              %QMMM QMATOMS {{}} END END
-                                              '''.format(str(atom_list).strip('[').strip(']'))
+        atom_list = '{'+atom_list+'}'
+        inpt_xtb = f'''
+        %QMMM QMATOMS {atom_list} END END
+                   '''
     else:
         inpt_xtb = ''
 
@@ -200,7 +201,7 @@ def orca_calc_preset(orca_path=None,
         charge=charge,
         mult=multiplicity,
         directory=directory,
-        orcasimpleinput=inpt_simple + ' EnGrad',
+        orcasimpleinput=inpt_simple+ ' EnGrad',
         orcablocks=inpt_blocks
     )
     return calc
