@@ -180,7 +180,8 @@ def write_ase_orca_driver(
         calc_type='DFT',
         atom_list=None,
         calc_extra=None,
-        scf_option=None):
+        scf_option=None,
+        n_procs=10):
     in_str_1 = """
 import os
 import tempfile
@@ -305,9 +306,10 @@ atoms.calc = orca_calc_preset(calc_type='{calc_type}',
                        basis_set='{basis_set}',
                        f_disp={disp},
                        f_solv={solv},
-                       atom_list={atom_list},
+                       atom_list='{atom_list}',
                        calc_extra={calc_extra},
-                       scf_option={scf_option})
+                       scf_option={scf_option},
+                       n_procs={n_procs})
 # Create Client
 port = 10200
 host = "localhost"

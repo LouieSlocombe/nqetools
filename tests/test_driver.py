@@ -82,6 +82,31 @@ def test_ase_orca_driver():
     pass
 
 
+def test_ase_orca_driver_qmmm():
+    print(flush=True)
+    print("Testing ORCA driver", flush=True)
+
+    # Build the molecule
+    atoms1 = ase.build.molecule('H2O')
+    atoms2 = ase.build.molecule('H2O')
+    atoms2.translate([0.0, 0.0, 3.0])  # Move the second water molecule
+    atoms = atoms1 + atoms2
+
+    atoms.center(vacuum=10.0)
+
+    # Make a directory to store everything
+    directory = "orca_opti"
+    nqe.run_optimise(directory,
+                     atoms,
+                     driver='ase-orca',
+                     total_steps=2,
+                     driver_args={'calc_type': 'QM/XTB2',
+                                  'atom_list': '0:2',
+                                  'n_procs': 1})
+    nqe.remove_directory(directory)
+    pass
+
+
 @pytest.mark.fail
 def test_ase_nwchem_driver():
     """
@@ -108,6 +133,7 @@ def test_ase_nwchem_driver():
     nqe.run_optimise(directory, atoms, driver='ase-nwchem', total_steps=2)
     nqe.remove_directory(directory)
     pass
+
 
 @pytest.mark.fail
 def test_nwchem_driver():
