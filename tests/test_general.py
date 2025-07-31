@@ -10,7 +10,7 @@ from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.calculators.nwchem import NWChem
 from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
-from ase.io import write
+from ase.io import write, read
 from ase.optimize import BFGS
 from mace.calculators import mace_anicc, mace_off
 
@@ -429,3 +429,28 @@ def test_extrapolate_inf_bead_limit():
     print(f"Extrapolated kappa_inf: {kappa_inf:.3f}", flush=True)
     # Assert that the extrapolated kappa_inf is close to the last value in kappa
     assert np.isclose(kappa_inf, kappa[-1], rtol=0.2)
+
+
+def test_orca_onion():
+    print(flush=True)
+    print("Testing ORCA ONIOM calculator", flush=True)
+
+    # Build the molecule
+    atoms = read('data/onion_example.xyz')
+
+    # Set up the ORCA ONIOM calculator
+    calc = nqe.orca_calc_preset(calc_type='QM/XTB2',
+                                atom_list='0:11',
+                                n_procs=1)
+
+    # Set the calculator
+    atoms.calc = calc
+
+    # Run the calculation
+    t1 = time.time()
+    energy = atoms.get_potential_energy()
+    t2 = time.time()
+
+    # Print the energy and time taken
+    print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
+    assert np.allclose(energy, -7226.730291092625, rtol=1e-2), "Energy does not match expected value"
