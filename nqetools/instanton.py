@@ -6,70 +6,12 @@ import numpy as np
 from ase.units import kB
 from scipy.constants import k, h
 from scipy.optimize import curve_fit
-
+from ipi.utils.units import unit_to_internal
 from .execution import run_instanton_post_process
 from .plotting import n_plot
 from .calculators import calculate_free_energy
 
-
-def calc_kappa(ts_path, instanton_path, temperature, n_beads):
-    """
-    Calculates the tunnelling factor (kappa) for a given transition state and instanton path.
-
-    Parameters:
-    ts_path (str): Path to the transition state data.
-    instanton_path (str): Path to the instanton data.
-    temperature (float): Temperature in Kelvin.
-    n_beads (int): Number of beads.
-
-    Returns:
-    float: The computed tunnelling factor (kappa).
-    """
-    # Use run_instanton_post_process to get TS data
-    ts_data = run_instanton_post_process(
-        ts_path,
-        process_type="TS",
-        temperature=temperature,
-        n_beads=n_beads
-    )
-
-    # Use run_instanton_post_process to get instanton data
-    instanton_data = run_instanton_post_process(
-        instanton_path,
-        process_type="instanton",
-        temperature=temperature
-    )
-
-    # Extract required values from the processed data
-    q_trn_ts = ts_data["Q_trn"]
-    q_rot_ts = ts_data["Q_rot"]
-    q_vib_ts = ts_data["Q_vib"]
-    beta_times_v = ts_data["Beta_times_V"]
-
-    q_trn_inst = instanton_data["Q_trn"]
-    q_rot_inst = instanton_data["Q_rot"]
-    q_vib_inst = instanton_data["Q_vib"]
-    bn = instanton_data["BN"]
-    s_over_hbar = instanton_data["S_over_hbar"]
-
-    # Compute kappa directly
-    kelvin2au = 3.1668152e-06
-    beta = 1.0 / (temperature * kelvin2au)
-    f_trn = q_trn_inst / q_trn_ts
-    f_rot = q_rot_inst / q_rot_ts
-    f_vib = np.sqrt((2. * np.pi * n_beads * bn) / (beta * 1.0 ** 2)) * q_vib_inst / q_vib_ts
-
-    kappa = f_trn * f_rot * f_vib * np.exp(-s_over_hbar + beta_times_v)
-
-    # Printing out the transmission factor and the relevant contributions
-    print('f_tra               = {:5.3f}'.format(f_trn), flush=True)
-    print('f_rot               = {:5.3f}'.format(f_rot), flush=True)
-    print('f_vib               = {:5.3f}'.format(f_vib), flush=True)
-    print('exp(-S/hbar+V/beta) = {:5.3f}'.format(np.exp(-s_over_hbar + beta_times_v)), flush=True)
-    print('=============================', flush=True)
-    print('Tunnelling factor   = {:5.3f}'.format(kappa), flush=True)
-
-    return kappa
+K2au = unit_to_internal("temperature", "kelvin", 1.0)
 
 
 def parse_react_thermo_data(directory,
@@ -211,13 +153,15 @@ def calc_instanton_kappa(ts_data, inst_data):
     f_rot = inst_data['Qrot'] / ts_data['Qrot']
 
     # Calculate f_vib using BN and temperature
-    beta = 1.0 / (inst_data['Temperature'] * 3.1668152e-06)  # kelvin2au = 3.1668152e-06
-    f_vib = np.sqrt((2.0 * np.pi * inst_data['NBEADS'] * inst_data['BN']) / (beta * 1.0 ** 2)) * \
-            np.exp(inst_data['log(Qvib*N)'] - ts_data['logQvib'])
+    beta = 1.0 / (inst_data['Temperature'] * K2au)
+    prefactor = np.sqrt((2.0 * np.pi * inst_data['NBEADS'] * inst_data['BN']) / (beta * 1.0 ** 2))
+    f_vib = prefactor * np.exp(inst_data['log(Qvib*N)']) / np.exp(ts_data['logQvib'])
+    exp_factor = np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
+
+    print(f'f_trn: {f_trn:.3f}, f_rot: {f_rot:.3f}, f_vib: {f_vib:.3f}, exp: {exp_factor:.3f}', flush=True)
 
     # Calculate kappa
-    kappa = f_trn * f_rot * f_vib * np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
-
+    kappa = f_trn * f_rot * f_vib * exp_factor
     if kappa < 1.0:
         print(f'Warning: kappa < 1.0, {kappa}', flush=True)
         kappa = 1.0

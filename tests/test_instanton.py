@@ -324,7 +324,7 @@ def test_thermo():
                                  directory_ts,
                                  temperature,
                                  debug=True,
-                                 use_part_funcs=False, filter_list=n_atoms - 1)
+                                 use_part_funcs=True, filter_list=n_atoms - 1)
     print('Reaction rate = {}'.format(rate), flush=True)
 
     kappa = nqe.calc_kappa_full(directory_phonon_react,
