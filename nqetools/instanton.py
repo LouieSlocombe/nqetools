@@ -289,7 +289,10 @@ def calc_kappa_full(
 def calc_forward_rate(dir_react,
                       dir_ts,
                       temperature,
-                      filter_list=None):
+                      filter_list=None,
+                      use_part_funcs=True,
+                      debug=False,
+                      barrier=None):
     # Get reactant data
     run_instanton_post_process(dir_react,
                                process_type='reactant',
@@ -309,14 +312,29 @@ def calc_forward_rate(dir_react,
     q_vib_react = np.exp(react_data['logQvib_rp'])
     q_vib_ts = np.exp(ts_data['logQvib'])
 
-    partition_function_ratio = (ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts) / \
-                               (react_data['Qtras'] * react_data['Qrot'] * q_vib_react)
+    react_part = react_data['Qtras'] * react_data['Qrot'] * q_vib_react
+    ts_part = ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts
+    if use_part_funcs:
+        partition_function_ratio = ts_part / react_part
+    else:
+        partition_function_ratio = 1.0
 
     # Calculate the Boltzmann factor
-    boltzmann_factor = np.exp(-ts_data['V/kBT'])
+    if barrier is None:
+        boltzmann_factor = np.exp(-ts_data['V/kBT'])
+    else:
+        boltzmann_factor = np.exp(-barrier / (kB * temperature))
+
+    prefactor = k * temperature / h  # Pre-factor for the rate constant
+
+    if debug:
+        print(f"react_part: {react_part}, ts_part: {ts_part}")
+        print(f"Prefactor: {prefactor}")
+        print(f"Partition function ratio: {partition_function_ratio}")
+        print(f"boltzmann_factor: {boltzmann_factor}")
 
     # Calculate the forward rate constant
-    return (k * temperature / h) * partition_function_ratio * boltzmann_factor
+    return prefactor * partition_function_ratio * boltzmann_factor
 
 
 def calc_forward_rate_orca(atoms_react,
