@@ -225,6 +225,106 @@ def test_ch4hcbe_end_to_end():
     nqe.remove_directory(directory_ts)
     nqe.remove_directory(directory_instanton)
 
+def test_ch4hcbe_end_to_end_orca():
+    # CBE system
+    print(flush=True)
+
+    # Paths
+    directory_opti = 'opti'
+    directory_phonon_react = 'phonon_react'
+    directory_ts = 'ts'
+    directory_instanton = 'instanton'
+
+    # Driver
+    driver_code = 'ase-orca'
+    driver_settings= {'xc': 'blyp',
+                      'charge': 0,
+                      'multi': 2,
+                      'n_procs': 1,}
+
+    # Values
+    temperature = 300.0
+    tol_energy = 1.0e-3
+    tol_force = 1.0e-3
+    tol_position = 1.0e-3
+    n_beads = 20
+
+    atoms = nqe.read_ipi_xyz("data/ch4hcbe.xyz")[-1]
+    n_atoms = len(atoms)
+    atoms_ts = nqe.read_ipi_xyz("data/ch4hcbe_ts.xyz")[-1]
+
+    # Run minimisation
+    output = nqe.run_optimise(directory_opti,
+                              atoms,
+                              driver=driver_code,
+                              driver_args=driver_settings,
+                              tol_energy=tol_energy,
+                              tol_force=tol_force,
+                              tol_position=tol_position)
+    atoms_opti, output_data_opti, output_desc_opti = output
+
+    # Get the reactant final energy
+    energy_react = output_data_opti['potential'][-1]
+    print('Final energy of reactant = {:5.5f}'.format(energy_react), flush=True)
+
+    # Run phonons for reactant
+    nqe.run_phonons(directory_phonon_react,
+                    atoms_opti,
+                    driver=driver_code,
+                    driver_args=driver_settings,)
+
+    # Run transition state optimisation
+    output = nqe.run_ts(directory_ts,
+                        atoms_ts,
+                        driver=driver_code,
+                        driver_args=driver_settings,
+                        tol_energy=tol_energy,
+                        tol_force=tol_force,
+                        tol_position=tol_position)
+    atoms_ts, output_data_ts, output_desc_ts = output
+
+    # Get the TS final energy
+    energy_ts = output_data_ts['potential'][-1]
+    print('Final energy of TS = {:5.5f}'.format(energy_ts), flush=True)
+
+    # Check the energy difference
+    delta_energy = energy_ts - energy_react
+    print('Energy difference (TS - Reactant) = {:5.5f}'.format(delta_energy), flush=True)
+
+    # Get the rate
+    rate = nqe.calc_forward_rate(directory_phonon_react, directory_ts, temperature, filter_list=n_atoms - 1)
+    print('Reaction rate = {}'.format(rate), flush=True)
+    # assert np.allclose(rate, 1.0416486358380245e-08, rtol=1e-3)
+
+    # Run the instanton
+    nqe.run_instanton(directory_instanton,
+                      atoms_ts,
+                      directory_ts,
+                      driver=driver_code,
+                      driver_args=driver_settings,
+                      n_beads=n_beads,
+                      temperature=temperature,
+                      tol_energy=tol_energy,
+                      tol_force=tol_force,
+                      tol_position=tol_position)
+
+
+
+
+
+    kappa = nqe.calc_kappa_full(directory_phonon_react,
+                                directory_ts,
+                                directory_instanton,
+                                temperature,
+                                n_beads, filter_list=n_atoms - 1)
+    print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+    # assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
+    #
+    # # Remove the directory
+    # nqe.remove_directory(directory_opti)
+    # nqe.remove_directory(directory_phonon_react)
+    # nqe.remove_directory(directory_ts)
+    # nqe.remove_directory(directory_instanton)
 
 def test_ch4hcbe_temperature():
     # CBE system
