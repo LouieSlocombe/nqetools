@@ -85,7 +85,8 @@ We need to build from source.
 
 ### Manual compilation
 Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_installation.html`.
-
+- MAKE SURE YOUR ENV IS ACITVATED
+- install compilers in conda `conda install -c conda-forge gcc_linux-64=13 gxx_linux-64=13 gfortran_linux-64=13 sysroot_linux-64`
 - Download from `https://github.com/plumed/plumed2/releases`.
 - Extract `tar -xvzf plumed-2.9.3.tgz`
 - Change into directory `cd plumed-2.9.3`
