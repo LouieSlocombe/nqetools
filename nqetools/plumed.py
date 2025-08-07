@@ -52,6 +52,8 @@ def prep_plumed(atoms, plumed_type, plumed_args):
 
     elif plumed_type == 'opes_com':
         return write_plumed_opes_com(**plumed_args)
+    elif plumed_type == 'opes_1pt':
+        return write_plumed_opes_1pt(**plumed_args)
 
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
@@ -1246,11 +1248,12 @@ PRINT ARG=diff_cn,metad.bias STRIDE={stride} FILE=COLVAR
 def write_plumed_opes_com(directory=None,
                           group_1=[0],
                           group_2=[1],
-                          temperature=300,
+                          temperature=300.0,
                           pace=10,
                           stride=10,
-                          barrier=0.041,
+                          barrier=0.5,
                           d_upper=5.0,
+                          kappa=500.0,
                           stride_hills=100,
                           explore=False,
                           ):
@@ -1259,8 +1262,8 @@ def write_plumed_opes_com(directory=None,
 
     # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    #
-    d_upper = d_upper * A_to_nm
+    # Convert d_upper from A to nm
+    d_upper = round_sf(d_upper * A_to_nm)
 
     # Fix the indexing as it starts from 1
     group_1 = [x + 1 for x in group_1]
@@ -1278,7 +1281,7 @@ com1: COM ATOMS={group_1}
 com2: COM ATOMS={group_2}
 d12: DISTANCE ATOMS=com1,com2
 opes: {opes_command} ARG=d12 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
-upperwall: UPPER_WALLS ARG=d12 AT={d_upper} KAPPA=10.0
+upperwall: UPPER_WALLS ARG=d12 AT={d_upper} KAPPA={kappa}
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
@@ -1287,3 +1290,52 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d12', 'opes.bias', 'upperwall.bias']
+
+
+def write_plumed_opes_1pt(directory=None,
+                          idx_d=0,
+                          idx_h=1,
+                          idx_a=2,
+                          temperature=300.0,
+                          pace=10,
+                          stride=10,
+                          barrier=0.5,
+                          d_upper=3.5,
+                          kappa=500.0,
+                          stride_hills=100,
+                          explore=False,
+                          ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+    # Convert d_upper from A to nm
+    d_upper = round_sf(d_upper * A_to_nm)
+
+    # Fix the indexing as it starts from 1
+    idx_d += 1
+    idx_h += 1  # Assumed transferring atom
+    idx_a += 1
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+d_dh: DISTANCE ATOMS={idx_d},{idx_h}
+d_ah: DISTANCE ATOMS={idx_a},{idx_h}
+d_da: DISTANCE ATOMS={idx_d},{idx_a}
+
+diff: COMBINE ARG=d_dh,d_ah COEFFICIENTS=1,-1 PERIODIC=NO
+opes: {opes_command} ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+upperwall: UPPER_WALLS ARG=d_da AT={d_upper} KAPPA={kappa}
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    # Write the input file
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['d_dh', 'd_ah', 'diff', 'opes.bias', 'upperwall.bias']
