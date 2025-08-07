@@ -1,7 +1,5 @@
 import copy
 from pathlib import Path
-import numpy as np
-import matplotlib.pyplot as plt
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -672,6 +670,27 @@ def plot_bead_convergence(n_beads: list[float],
 
 
 def _load_plumed_colvar(path, field, derivative=False, x="time"):
+    """
+    Load and process data from a PLUMED colvar file.
+
+    This function reads a PLUMED colvar file, extracts the specified columns,
+    and optionally computes the derivative of the selected field.
+
+    Parameters:
+    path (str or pathlib.Path): Path to the PLUMED colvar file.
+    field (str): Name of the field to extract from the file.
+    derivative (bool, optional): Whether to compute the derivative of the field. Default is False.
+    x (str, optional): Name of the column to use as the x-axis. Default is "time".
+
+    Returns:
+    tuple:
+        - x_vals (numpy.ndarray): Values of the x-axis column.
+        - y_vals (numpy.ndarray): Values of the field column (or its derivative if `derivative=True`).
+
+    Raises:
+    ValueError: If the file does not start with the expected header, or if the requested columns are not found.
+    ValueError: If there are insufficient data points to compute the derivative.
+    """
     path = Path(path)
 
     with path.open("r", encoding="utf-8") as f:
@@ -716,6 +735,24 @@ def plot_plumed_field(path,
                       show=True,
                       filename="bead_temperature",
                       derivative=False):
+    """
+    Plot a specific field from a PLUMED colvar file.
+
+    This function loads data from a PLUMED colvar file, extracts the specified field,
+    and plots it against the x-axis column. Optionally, it computes the derivative of the field.
+
+    Parameters:
+    path (str or pathlib.Path): Path to the PLUMED colvar file.
+    field (str): Name of the field to plot.
+    x (str, optional): Name of the column to use as the x-axis. Default is "time".
+    save (bool, optional): Whether to save the plot as a file. Default is True.
+    show (bool, optional): Whether to display the plot. Default is True.
+    filename (str, optional): Filename for saving the plot. Default is "bead_temperature".
+    derivative (bool, optional): Whether to compute the derivative of the field. Default is False.
+
+    Returns:
+    None
+    """
     x_vals, y_vals = _load_plumed_colvar(path, field, derivative=derivative, x=x)
 
     fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)

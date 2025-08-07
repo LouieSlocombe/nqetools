@@ -102,7 +102,8 @@ from .plotting import (plot_step_energy,
                        plot_kappa_temperature_inv,
                        plot_kie_temperature,
                        plot_bead_convergence,
-                       plot_fes_series_1d_compare)
+                       plot_fes_series_1d_compare,
+                       plot_plumed_field)
 from .plumed import (prep_plumed,
                      write_plumed_mtd_pos,
                      write_plumed_opes_pos,
