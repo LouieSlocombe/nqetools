@@ -1,4 +1,7 @@
 import copy
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,7 +105,6 @@ def plot_step_energy(data,
         step = step[1:]
     else:
         energy = np.abs(energy)
-
 
     ax.plot(step, energy, c="black", label="potential", lw=2)
     ax.set_yscale("log")
@@ -659,6 +661,70 @@ def plot_bead_convergence(n_beads: list[float],
 
     # Labels and formatting
     ax_plot(fig, ax, r"Number of Beads", r"$\kappa$")
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    else:
+        plt.close()
+    return None
+
+
+def _load_plumed_colvar(path, field, derivative=False, x="time"):
+    path = Path(path)
+
+    with path.open("r", encoding="utf-8") as f:
+        header = f.readline().strip()
+
+    prefix = "#! FIELDS"
+    if not header.startswith(prefix):
+        raise ValueError("First line must start with '#! FIELDS'.")
+
+    # Extract column names after '#! FIELDS'
+    names = header[len(prefix):].strip().split()
+    if not names:
+        raise ValueError("No column names found after '#! FIELDS'.")
+
+    # Validate requested columns
+    if x not in names:
+        raise ValueError(f"x-axis column '{x}' not found. Available: {names}")
+    if field not in names:
+        raise ValueError(f"Field '{field}' not found. Available: {names}")
+
+    data = np.loadtxt(path, comments="#")
+    name_to_idx = {name: i for i, name in enumerate(names)}
+    x_idx = name_to_idx[x]
+    y_idx = name_to_idx[field]
+
+    x_vals = data[:, x_idx]
+    y_vals = data[:, y_idx]
+
+    dt = x_vals[1] - x_vals[0]
+    if derivative:
+        if len(x_vals) < 2:
+            raise ValueError("Not enough data points to compute derivative.")
+        dy = np.gradient(y_vals, dt)
+        y_vals = dy
+    return x_vals, y_vals
+
+
+def plot_plumed_field(path,
+                      field,
+                      x="time",
+                      save=True,
+                      show=True,
+                      filename="bead_temperature",
+                      derivative=False):
+    x_vals, y_vals = _load_plumed_colvar(path, field, derivative=derivative, x=x)
+
+    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+
+    # Plot data
+    ax.plot(x_vals, y_vals, 'o-', c='black', lw=2)
+
+    # Labels and formatting
+    ax_plot(fig, ax, x, field)
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
