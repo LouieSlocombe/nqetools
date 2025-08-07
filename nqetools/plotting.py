@@ -738,6 +738,11 @@ def plot_plumed_field(path,
     """
     Plot a specific field from a PLUMED colvar file.
 
+    things one might want to plot:
+    rct, (estimate of c(t)) should flatten (no drift) once the bias is stationary.
+    zed, (normalization Zn ) should stop changing when no new CV region is being explored.
+    neff, (effective sample size) should keep growing; a long plateau too early often means you’re not visiting enough of CV space.
+
     This function loads data from a PLUMED colvar file, extracts the specified field,
     and plots it against the x-axis column. Optionally, it computes the derivative of the field.
 
