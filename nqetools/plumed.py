@@ -54,10 +54,16 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_opes_com(**plumed_args)
     elif plumed_type == 'opes_1pt':
         return write_plumed_opes_1pt(**plumed_args)
+    elif plumed_type == 'opes_1pt_coord':
+        return write_plumed_opes_1pt_coord(**plumed_args)
     elif plumed_type == 'opes_2pt_2d':
         return write_plumed_opes_2pt_2d(**plumed_args)
+    elif plumed_type == 'opes_2pt_2d_coord':
+        return write_plumed_opes_2pt_2d_coord(**plumed_args)
     elif plumed_type == 'opes_2pt_1d':
         return write_plumed_opes_2pt_1d(**plumed_args)
+    elif plumed_type == 'opes_2pt_1d_coord':
+        return write_plumed_opes_2pt_1d_coord(**plumed_args)
 
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
@@ -1345,6 +1351,50 @@ FLUSH STRIDE=1
     return ['d_dh', 'd_ah', 'diff', 'opes.bias', 'upperwall.bias']
 
 
+def write_plumed_opes_1pt_coord(directory=None,
+                                idx_d=0,
+                                idx_h=1,
+                                idx_a=2,
+                                temperature=300.0,
+                                pace=10,
+                                stride=10,
+                                barrier=0.5,
+                                r0=1.5,
+                                stride_hills=100,
+                                explore=False):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+    # Convert r0 from A to nm
+    r0 = round_sf(r0 * A_to_nm)
+
+    # Fix indexing to start from 1 (PLUMED convention)
+    idx_d += 1
+    idx_h += 1
+    idx_a += 1
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+c_dh: COORDINATION GROUPA={idx_d} GROUPB={idx_h} R_0={r0}
+c_ah: COORDINATION GROUPA={idx_a} GROUPB={idx_h} R_0={r0}
+c_da: COORDINATION GROUPA={idx_d} GROUPB={idx_a} R_0={r0}
+
+diff: COMBINE ARG=c_dh,c_ah COEFFICIENTS=1,-1 PERIODIC=NO
+opes: {opes_command} ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['c_dh', 'c_ah', 'diff', 'opes.bias']
+
+
 def write_plumed_opes_2pt_2d(directory=None,
                              idx_d1=0,
                              idx_h1=1,
@@ -1405,6 +1455,67 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d_dh1', 'd_ah1', 'diff1', 'd_dh2', 'd_ah2', 'diff2', 'opes.bias', 'upperwall1.bias', 'upperwall2.bias']
+
+
+def write_plumed_opes_2pt_2d_coord(directory=None,
+                                   idx_d1=0,
+                                   idx_h1=1,
+                                   idx_a1=2,
+                                   idx_d2=3,
+                                   idx_h2=4,
+                                   idx_a2=5,
+                                   temperature=300.0,
+                                   pace=10,
+                                   stride=10,
+                                   barrier=0.5,
+                                   stride_hills=100,
+                                   explore=False,
+                                   r0=1.5,
+                                   ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+    # Convert r0 from A to nm
+    r0 = round_sf(r0 * A_to_nm)
+
+    # PLUMED uses 1-based indexing
+    idx_d1 += 1
+    idx_h1 += 1
+    idx_a1 += 1
+    idx_d2 += 1
+    idx_h2 += 1
+    idx_a2 += 1
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+# Coordination numbers for each donor–H–acceptor triplet (1-based indices)
+c_dh1: COORDINATION GROUPA={idx_d1} GROUPB={idx_h1} R_0={r0}
+c_ah1: COORDINATION GROUPA={idx_a1} GROUPB={idx_h1} R_0={r0}
+c_da1: COORDINATION GROUPA={idx_d1} GROUPB={idx_a1} R_0={r0} 
+
+c_dh2: COORDINATION GROUPA={idx_d2} GROUPB={idx_h2} R_0={r0} 
+c_ah2: COORDINATION GROUPA={idx_a2} GROUPB={idx_h2} R_0={r0} 
+c_da2: COORDINATION GROUPA={idx_d2} GROUPB={idx_a2} R_0={r0} 
+
+# Proton-transfer-like coordinates (donor–H minus acceptor–H)
+diff1: COMBINE ARG=c_dh1,c_ah1 COEFFICIENTS=1,-1 PERIODIC=NO
+diff2: COMBINE ARG=c_dh2,c_ah2 COEFFICIENTS=1,-1 PERIODIC=NO
+
+# 2D OPES bias on (diff1, diff2)
+opes: {opes_command} ARG=diff1,diff2 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+"""
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+
+    return ['c_dh1', 'c_ah1', 'diff1', 'c_dh2', 'c_ah2', 'diff2', 'opes.bias']
 
 
 def write_plumed_opes_2pt_1d(directory=None,
@@ -1469,3 +1580,71 @@ FLUSH STRIDE=1
         f.write(impt)
     return ['d_dh1', 'd_ah1', 'diff1', 'd_dh2', 'd_ah2', 'diff2', 'pt_cv', 'opes.bias', 'upperwall1.bias',
             'upperwall2.bias']
+
+
+def write_plumed_opes_2pt_1d_coord(directory=None,
+                                   idx_d1=0,
+                                   idx_h1=1,
+                                   idx_a1=2,
+                                   idx_d2=3,
+                                   idx_h2=4,
+                                   idx_a2=5,
+                                   temperature=300.0,
+                                   pace=10,
+                                   stride=10,
+                                   barrier=0.5,
+                                   stride_hills=100,
+                                   explore=False,
+                                   r0=1.5,
+                                   ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+    # Convert r0 from A to nm
+    r0 = round_sf(r0 * A_to_nm)
+
+    # 1-based indexing for PLUMED
+    idx_d1 += 1
+    idx_h1 += 1
+    idx_a1 += 1
+    idx_d2 += 1
+    idx_h2 += 1
+    idx_a2 += 1
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+# Coordination numbers (donor–H, acceptor–H, donor–acceptor) for both paths
+c_dh1: COORDINATION GROUPA={idx_d1} GROUPB={idx_h1} R_0={r0}
+c_ah1: COORDINATION GROUPA={idx_a1} GROUPB={idx_h1} R_0={r0} 
+c_da1: COORDINATION GROUPA={idx_d1} GROUPB={idx_a1} R_0={r0} 
+
+c_dh2: COORDINATION GROUPA={idx_d2} GROUPB={idx_h2} R_0={r0} 
+c_ah2: COORDINATION GROUPA={idx_a2} GROUPB={idx_h2} R_0={r0}
+c_da2: COORDINATION GROUPA={idx_d2} GROUPB={idx_a2} R_0={r0} 
+
+# Two proton-transfer-like coordinates
+diff1: COMBINE ARG=c_dh1,c_ah1 COEFFICIENTS=1,-1 PERIODIC=NO
+diff2: COMBINE ARG=c_dh2,c_ah2 COEFFICIENTS=1,-1 PERIODIC=NO
+
+# 1D collective variable (average of the two)
+pt_cv: COMBINE ARG=diff1,diff2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+
+# OPES on the 1D CV
+opes: {opes_command} ARG=pt_cv PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+"""
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+
+    return [
+        'c_dh1', 'c_ah1', 'diff1',
+        'c_dh2', 'c_ah2', 'diff2',
+        'pt_cv', 'opes.bias',
+    ]
