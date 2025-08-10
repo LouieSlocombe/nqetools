@@ -297,15 +297,15 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
 
 def plot_fes_contourf_compare(fes_a,
                               fes_b,
-                              titles=None,
+                              labels=None,
                               save=True,
                               show=True,
                               filename="fes_contourf_compare",
                               x_lab="CV1",
                               y_lab="CV2") -> None:
     fes_arrays = [fes_a, fes_b]
-    if titles is None:
-        titles = ["MD", "PIMD"]
+    if labels is None:
+        labels = ["MD", "PIMD"]
     fig, ax = plt.subplots(
         1,
         2,
@@ -320,7 +320,7 @@ def plot_fes_contourf_compare(fes_a,
         cf = ax[i].contourf(*xyz)
         contours.append(cf)
         ax[i].set_xlabel(x_lab)
-        ax[i].set_title(fr"{titles[i]}")
+        ax[i].set_title(fr"{labels[i]}")
 
     ax[0].set_ylabel(y_lab)
     fig.colorbar(contours[-1], ax=ax, orientation="vertical", label=r"$F$ (eV)")
@@ -362,6 +362,7 @@ def plot_fes_contourf(fes,
 
 def plot_fes_contour_compare(fes_a,
                              fes_b,
+                             labels=None,
                              save=True,
                              show=True,
                              filename="fes_contour_compare",
@@ -371,6 +372,8 @@ def plot_fes_contour_compare(fes_a,
     fig, ax = plt.subplots(
         1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
     )
+    if labels is None:
+        labels = ["MD", "PIMD"]
 
     levels = np.linspace(0, 0.5, 6)
     ax.contour(*fes_a, colors="b", levels=levels)
@@ -381,8 +384,8 @@ def plot_fes_contour_compare(fes_a,
 
     ax.legend(
         handles=[
-            plt.Line2D([0], [0], color="b", label="MD"),
-            plt.Line2D([0], [0], color="r", label="PIMD"),
+            plt.Line2D([0], [0], color="b", label=labels[0]),
+            plt.Line2D([0], [0], color="r", label=labels[1]),
         ]
     )
     if save:
