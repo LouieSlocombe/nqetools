@@ -118,6 +118,7 @@ def plot_step_energy(data,
 
 
 def plot_time_potential_bias(data,
+                             zero=True,
                              save=True,
                              show=True,
                              filename="time_potential_bias"):
@@ -125,8 +126,8 @@ def plot_time_potential_bias(data,
 
     time = data["time"]
 
-    ax.plot(time, data["potential"], c="black", label="potential", lw=2)
-    ax.plot(time, data["ensemble_bias"], c="red", label="bias", lw=2)
+    ax.plot(time, np.subtract(data["potential"], data["potential"][0]), c="black", label="potential", lw=2)
+    ax.plot(time, np.subtract(data["ensemble_bias"], data["ensemble_bias"][0]), c="red", label="bias", lw=2)
 
     ax.legend(loc="upper left", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
