@@ -257,8 +257,8 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
                              save=True,
                              show=True,
                              filename="fes_contourf",
-                             x_lab=r"$d_\mathrm{OO}$  (Å)",
-                             y_lab=r"$\Delta C_\mathrm{H}$") -> None:
+                             x_lab="CV1",
+                             y_lab="CV2") -> None:
     if times is None:
         times = np.arange(len(fes_arrays))
 
@@ -301,8 +301,8 @@ def plot_fes_contourf_compare(fes_a,
                               save=True,
                               show=True,
                               filename="fes_contourf_compare",
-                              x_lab=r"$d_\mathrm{OO}$  (Å)",
-                              y_lab=r"$\Delta C_\mathrm{H}$") -> None:
+                              x_lab="CV1",
+                              y_lab="CV2") -> None:
     fes_arrays = [fes_a, fes_b]
     if titles is None:
         titles = ["MD", "PIMD"]
@@ -338,8 +338,8 @@ def plot_fes_contourf(fes,
                       save=True,
                       show=True,
                       filename="fes_contourf",
-                      x_lab=r"$d_\mathrm{OO}$  (Å)",
-                      y_lab=r"$\Delta C_\mathrm{H}$"
+                      x_lab="CV1",
+                      y_lab="CV2"
                       ) -> None:
     fig, ax = plt.subplots(1, 1,
                            figsize=(4, 3),
@@ -365,8 +365,8 @@ def plot_fes_contour_compare(fes_a,
                              save=True,
                              show=True,
                              filename="fes_contour_compare",
-                             x_lab=r"$d_\mathrm{OO}$  (Å)",
-                             y_lab=r"$\Delta C_\mathrm{H}$"
+                             x_lab="CV1",
+                             y_lab="CV2"
                              ):
     fig, ax = plt.subplots(
         1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
