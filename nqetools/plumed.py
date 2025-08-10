@@ -64,6 +64,8 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_opes_2pt_1d(**plumed_args)
     elif plumed_type == 'opes_2pt_1d_coord':
         return write_plumed_opes_2pt_1d_coord(**plumed_args)
+    elif plumed_type == 'opes_2pt_1d_coord_com':
+        return write_plumed_opes_2pt_1d_coord_com(**plumed_args)
 
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
@@ -1647,4 +1649,91 @@ FLUSH STRIDE=1
         'c_dh1', 'c_ah1', 'diff1',
         'c_dh2', 'c_ah2', 'diff2',
         'pt_cv', 'opes.bias',
+    ]
+
+
+def write_plumed_opes_2pt_1d_coord_com(directory=None,
+                                       idx_d1=0,
+                                       idx_h1=1,
+                                       idx_a1=2,
+                                       idx_d2=3,
+                                       idx_h2=4,
+                                       idx_a2=5,
+                                       group_1=[0],
+                                       group_2=[1],
+                                       d_upper=5.0,
+                                       kappa=500.0,
+                                       temperature=300.0,
+                                       pace=10,
+                                       stride=10,
+                                       barrier=0.5,
+                                       stride_hills=100,
+                                       explore=False,
+                                       r0=1.5,
+                                       ):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert the barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+    # Convert r0 from A to nm
+    r0 = round_sf(r0 * A_to_nm)
+    # Convert d_upper from A to nm
+    d_upper = round_sf(d_upper * A_to_nm)
+
+    # 1-based indexing for PLUMED
+    idx_d1 += 1
+    idx_h1 += 1
+    idx_a1 += 1
+    idx_d2 += 1
+    idx_h2 += 1
+    idx_a2 += 1
+
+    # Fix the indexing as it starts from 1
+    group_1 = [x + 1 for x in group_1]
+    group_2 = [x + 1 for x in group_2]
+
+    group_1 = ",".join([str(x) for x in group_1])
+    group_2 = ",".join([str(x) for x in group_2])
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+# Coordination numbers (donor–H, acceptor–H, donor–acceptor) for both paths
+c_dh1: COORDINATION GROUPA={idx_d1} GROUPB={idx_h1} R_0={r0}
+c_ah1: COORDINATION GROUPA={idx_a1} GROUPB={idx_h1} R_0={r0} 
+c_da1: COORDINATION GROUPA={idx_d1} GROUPB={idx_a1} R_0={r0} 
+
+c_dh2: COORDINATION GROUPA={idx_d2} GROUPB={idx_h2} R_0={r0} 
+c_ah2: COORDINATION GROUPA={idx_a2} GROUPB={idx_h2} R_0={r0}
+c_da2: COORDINATION GROUPA={idx_d2} GROUPB={idx_a2} R_0={r0} 
+
+# Two proton-transfer-like coordinates
+diff1: COMBINE ARG=c_dh1,c_ah1 COEFFICIENTS=1,-1 PERIODIC=NO
+diff2: COMBINE ARG=c_dh2,c_ah2 COEFFICIENTS=1,-1 PERIODIC=NO
+
+# 1D collective variable (average of the two)
+pt_cv: COMBINE ARG=diff1,diff2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
+
+# Center of mass for the two groups
+com1: COM ATOMS={group_1}
+com2: COM ATOMS={group_2}
+d12: DISTANCE ATOMS=com1,com2
+
+# OPES on the 1D CV
+opes: {opes_command} ARG=pt_cv,d12 PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+upperwall: UPPER_WALLS ARG=d12 AT={d_upper} KAPPA={kappa}
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+"""
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+
+    return [
+        'c_dh1', 'c_ah1', 'diff1',
+        'c_dh2', 'c_ah2', 'diff2',
+        'pt_cv', 'opes.bias',
+        'd12', 'upperwall.bias',
     ]
