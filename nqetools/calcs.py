@@ -364,3 +364,134 @@ def eckart_correction(
     e_list = np.arange(e0, upper, d_e)
     kappa_e = _eckart_inner(e_list, frequency, e_reac, e_ts, e_prod)
     return np.exp(d_v1 * beta) * np.sum(kappa_e * np.exp(-beta * (e_list - e0))) * d_e * beta
+
+
+from typing import List, Dict
+import math
+import numpy as np
+from scipy import constants as const  # physical constants (CODATA)
+
+
+def analyze_opes_free_energy(
+        free_energy: List[float],
+        temperature: float = 300.0,
+        unit: str = "kJ/mol",
+        dx: float = 1.0,
+) -> Dict[str, object]:
+    """
+    # Example free-energy profile in eV (per molecule)
+    F_ev = [0.35, 0.12, 0.02, 0.05, 0.22, 0.11, 0.01, 0.04, 0.30]
+    out = analyze_opes_free_energy(F_ev, temperature=300.0, unit="eV")
+    print(out["deltaG_forward_dagger"], out["k_forward"])
+
+
+    Analyze a 1D free-energy profile (e.g., from OPES) to extract:
+      - two lowest metastable minima and the barrier (maximum) between them,
+      - energy difference between states,
+      - forward/reverse barrier heights,
+      - forward/reverse Eyring TST rates.
+
+    Parameters
+    ----------
+    free_energy : list of float
+        Free energy values along a reaction coordinate (uniform spacing).
+        Units given by `unit`.
+    temperature : float
+        Temperature in K.
+    unit : {'kJ/mol','kcal/mol','kBT','eV'}
+        Units of the provided energies. For 'eV', values are assumed PER MOLECULE
+        and converted to J/mol using Avogadro's number.
+    dx : float
+        Spacing of the reaction coordinate (for reporting only).
+
+    Returns
+    -------
+    dict with keys as described above.
+    """
+    F = np.asarray(free_energy, dtype=float)
+    n = F.size
+    if n < 3:
+        raise ValueError("Need at least 3 points to define minima and a barrier.")
+
+    # --- find local minima/maxima ---
+    minima = []
+    for i in range(1, n - 1):
+        if (F[i] <= F[i - 1] and F[i] <= F[i + 1]) and (F[i] < F[i - 1] or F[i] < F[i + 1]):
+            minima.append(i)
+    # consider endpoints as possible minima
+    if F[0] <= F[1]:
+        minima.append(0)
+    if F[-1] <= F[-2]:
+        minima.append(n - 1)
+
+    if len(minima) < 2:
+        raise ValueError("Fewer than two metastable minima found. Consider smoothing your profile.")
+
+    # pick two lowest minima (keep left-to-right order)
+    i1, i2 = sorted(sorted(minima, key=lambda i: F[i])[:2])
+    if i2 - i1 < 2:
+        raise ValueError("Two lowest minima are adjacent; no interior barrier point.")
+    ib = int(np.argmax(F[i1 + 1: i2]) + i1 + 1)
+
+    F_min1, F_min2, F_bar = float(F[i1]), float(F[i2]), float(F[ib])
+    dG12 = F_min2 - F_min1
+    dGf = F_bar - F_min1
+    dGr = F_bar - F_min2
+    if dGf <= 0 or dGr <= 0:
+        raise ValueError("Barrier not above both minima. Profile may be noisy or multimodal.")
+
+    # --- convert to ΔG/(RT) for Eyring using SciPy constants ---
+    R = const.R  # J/mol/K
+    k_B = const.k  # J/K
+    h = const.h  # J*s
+
+    u = unit.lower()
+    if u in ["kj/mol", "kjmol", "kj"]:
+        to_J_per_mol = const.kilo  # 1000.0
+        dGf_over_RT = (dGf * to_J_per_mol) / (R * temperature)
+        dGr_over_RT = (dGr * to_J_per_mol) / (R * temperature)
+    elif u in ["kcal/mol", "kcalmol", "kcal"]:
+        to_J_per_mol = const.kilo * const.calorie  # 4184 J
+        dGf_over_RT = (dGf * to_J_per_mol) / (R * temperature)
+        dGr_over_RT = (dGr * to_J_per_mol) / (R * temperature)
+    elif u in ["eV".lower(), "ev"]:
+        # 1 eV per particle = const.electron_volt J; per mole multiply by Avogadro
+        eV_to_J_per_mol = const.electron_volt * const.N_A
+        dGf_over_RT = (dGf * eV_to_J_per_mol) / (R * temperature)
+        dGr_over_RT = (dGr * eV_to_J_per_mol) / (R * temperature)
+    elif u in ["kbt", "rt"]:
+        dGf_over_RT = float(dGf)
+        dGr_over_RT = float(dGr)
+    else:
+        raise ValueError("unit must be 'kJ/mol', 'kcal/mol', 'eV', or 'kBT'.")
+
+    # --- Eyring TST ---
+    prefactor = (k_B * temperature) / h  # s^-1
+    k_forward = prefactor * math.exp(-dGf_over_RT)
+    k_reverse = prefactor * math.exp(-dGr_over_RT)
+
+    return {
+        "minima_indices": (int(i1), int(i2)),
+        "barrier_index": int(ib),
+        "F_min1": F_min1,
+        "F_min2": F_min2,
+        "F_barrier": F_bar,
+        "deltaG_2_minus_1": dG12,
+        "deltaG_forward_dagger": dGf,
+        "deltaG_reverse_dagger": dGr,
+        "k_forward": float(k_forward),
+        "k_reverse": float(k_reverse),
+        "method": "Eyring (SciPy constants)",
+        "notes": (
+            "Two lowest minima chosen as metastable states; barrier is the maximum between them. "
+            "Rates from Eyring TST; assumes a single dominant barrier and well-defined basins. "
+            "For unit='eV', inputs are interpreted as per-molecule energies."
+        ),
+        "units": {
+            "energy": unit,
+            "rate": "s^-1",
+            "temperature_K": temperature,
+            "dx": dx,
+            "prefactor_Eyring_kBT_over_h": prefactor,
+        },
+    }
