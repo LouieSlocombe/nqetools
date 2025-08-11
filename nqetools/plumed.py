@@ -56,6 +56,10 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_opes_1pt(**plumed_args)
     elif plumed_type == 'opes_1pt_coord':
         return write_plumed_opes_1pt_coord(**plumed_args)
+    elif plumed_type == 'opes_1pt_3donor_coord':
+        return write_plumed_opes_1pt_3donor_coord(**plumed_args)
+
+
     elif plumed_type == 'opes_2pt_2d':
         return write_plumed_opes_2pt_2d(**plumed_args)
     elif plumed_type == 'opes_2pt_2d_coord':
@@ -1395,6 +1399,54 @@ FLUSH STRIDE=1
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c_dh', 'c_ah', 'diff', 'opes.bias']
+
+
+def write_plumed_opes_1pt_3donor_coord(directory=None,
+                                       idx_d1=0,
+                                       idx_d2=1,
+                                       idx_d3=2,
+                                       idx_h=2,
+                                       temperature=300.0,
+                                       pace=10,
+                                       stride=10,
+                                       barrier=0.5,
+                                       r0=1.5,
+                                       stride_hills=100,
+                                       explore=False):
+    if directory is None:
+        directory = os.getcwd()
+
+    # Convert barrier from eV to kJ/mol
+    barrier = round_sf(barrier * eV_to_kJpermol)
+    # Convert r0 from A to nm
+    r0 = round_sf(r0 * A_to_nm)
+
+    # Fix indexing to start from 1 (PLUMED convention)
+    idx_d1 += 1
+    idx_d2 += 1
+    idx_d3 += 1
+    idx_h += 1
+
+    opes_command = 'OPES_METAD'
+    if explore:
+        opes_command += '_EXPLORE'
+
+    impt = f"""
+c1: COORDINATION GROUPA={idx_d1} GROUPB={idx_h} R_0={r0}
+c2: COORDINATION GROUPA={idx_d2} GROUPB={idx_h} R_0={r0}
+c3: COORDINATION GROUPA={idx_d3} GROUPB={idx_h} R_0={r0}
+
+z:   COMBINE ARG=c1,c2,c3 COEFFICIENTS=1,1,1 PERIODIC=NO
+
+
+opes: {opes_command} ARG=z PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+PRINT ARG=* STRIDE={stride} FILE=COLVAR
+FLUSH STRIDE=1
+    """
+    with open(os.path.join(directory, "plumed.dat"), "w") as f:
+        f.write(impt)
+    return ['c1', 'c2', 'c3', 'z', 'opes.bias']
 
 
 def write_plumed_opes_2pt_2d(directory=None,
