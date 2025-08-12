@@ -1402,10 +1402,14 @@ FLUSH STRIDE=1
 
 
 def write_plumed_opes_1pt_3donor_coord(directory=None,
-                                       idx_d1=0,
-                                       idx_d2=1,
-                                       idx_d3=2,
-                                       idx_h=2,
+                                       idx_n3=0,
+                                       idx_h3=1,
+                                       idx_o6=2,
+                                       idx_o4=2,
+                                       idx_n1=3,
+                                       idx_h1=4,
+                                       idx_o2=5,
+                                       idx_n2=6,
                                        temperature=300.0,
                                        pace=10,
                                        stride=10,
@@ -1422,22 +1426,49 @@ def write_plumed_opes_1pt_3donor_coord(directory=None,
     r0 = round_sf(r0 * A_to_nm)
 
     # Fix indexing to start from 1 (PLUMED convention)
-    idx_d1 += 1
-    idx_d2 += 1
-    idx_d3 += 1
-    idx_h += 1
+    idx_n3 += 1
+    idx_h3 += 1
+    idx_o6 += 1
+    idx_o4 += 1
+    idx_n1 += 1
+    idx_h1 += 1
+    idx_o2 += 1
+    idx_h1 += 1
+    idx_n2 += 1
 
     opes_command = 'OPES_METAD'
     if explore:
         opes_command += '_EXPLORE'
 
     impt = f"""
-c1: COORDINATION GROUPA={idx_d1} GROUPB={idx_h} R_0={r0}
-c2: COORDINATION GROUPA={idx_d2} GROUPB={idx_h} R_0={r0}
-c3: COORDINATION GROUPA={idx_d3} GROUPB={idx_h} R_0={r0}
+# z1: top PT reaction coordinate
+c_1: COORDINATION GROUPA={idx_n3} GROUPB={idx_h3} R_0={r0}
+c_2: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r0}
+z1: COMBINE ARG=c_1,c_2 COEFFICIENTS=1,-1 PERIODIC=NO
 
-z:   COMBINE ARG=c1,c2,c3 COEFFICIENTS=1,1,1 PERIODIC=NO
+# z2: top PT reaction coordinate
+c_3: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r0}
+c_4: COORDINATION GROUPA={idx_o4} GROUPB={idx_h3} R_0={r0}
+z2: COMBINE ARG=c_3,c_4 COEFFICIENTS=1,-1 PERIODIC=NO
 
+# z3: second PT reaction coordinate
+c_5: COORDINATION GROUPA={idx_n1} GROUPB={idx_h1} R_0={r0}
+c_6: COORDINATION GROUPA={idx_n3} GROUPB={idx_h1} R_0={r0}
+z3: COMBINE ARG=c_5,c_6 COEFFICIENTS=1,-1 PERIODIC=NO
+    
+# z4
+c_7: COORDINATION GROUPA={idx_n1} GROUPB={idx_o2} R_0={r0}
+c_8: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r0}
+z4: COMBINE ARG=c_7,c_8 COEFFICIENTS=1,-1 PERIODIC=NO
+
+# z5
+c_9: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r0}
+c_10: COORDINATION GROUPA={idx_n1} GROUPB={idx_n3} R_0={r0}
+z5: COMBINE ARG=c_9,c_10 COEFFICIENTS=1,-1 PERIODIC=NO
+
+
+z:   COMBINE ARG=z1,z2,z3,z4 COEFFICIENTS=1,1,1,1 PERIODIC=NO
+# z:   COMBINE ARG=z1,z2,z3,z4,z5 COEFFICIENTS=1,1,1,1,1 PERIODIC=NO
 
 opes: {opes_command} ARG=z PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
 
@@ -1446,7 +1477,7 @@ FLUSH STRIDE=1
     """
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
-    return ['c1', 'c2', 'c3', 'z', 'opes.bias']
+    return ['z', 'opes.bias']
 
 
 def write_plumed_opes_2pt_2d(directory=None,
