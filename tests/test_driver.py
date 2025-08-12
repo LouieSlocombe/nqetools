@@ -77,7 +77,7 @@ def test_ase_orca_driver():
 
     # Make a directory to store everything
     directory = "orca_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-orca', total_steps=2)
+    nqe.run_optimise(directory, atoms, driver='ase-orca',driver_args={'n_procs': 1}, total_steps=2)
     nqe.remove_directory(directory)
     pass
 
