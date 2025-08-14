@@ -49,7 +49,7 @@ Start with ase
 ```
 conda install conda-forge::ase -y
 ```
-Then install sella
+Then install Sella
 ```
 conda config --env --add channels conda-forge
 conda install conda-forge::sella -y
@@ -70,7 +70,7 @@ Install pytorch. It might look like this:
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
 ```
-It is worth ensuring the pytorch backend can use the GPU from here. This should return True.
+It is worth ensuring the PyTorch backend can use the GPU from here. This should return True.
 ```
 import torch
 torch.cuda.is_available()
@@ -79,13 +79,26 @@ Next, install mace. Selecting mace-torch:
 ```
 pip install mace-torch
 ```
+You can speed up evaluations using cuequivariance.
+```
+pip install cuequivariance cuequivariance-torch cuequivariance-ops-torch-cu12
+```
+If this fails, you should update libc6.
+```
+sudo apt update
+sudo apt full-upgrade -y
+sudo apt install --only-upgrade libc6 -y
+sudo apt install update-manager-core -y
+sudo do-release-upgrade
+```
+The above is the nuclear option; it won't work on a cluster to which you don't have sudo access.
 
 ## PLUMED
 We need to build from source.
 
 ### Manual compilation
 Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_installation.html`.
-- MAKE SURE YOUR ENV IS ACITVATED
+- MAKE SURE YOUR ENV IS ACTIVATED
 - install compilers in conda `conda install -c conda-forge gcc_linux-64=13 gxx_linux-64=13 gfortran_linux-64=13 sysroot_linux-64`
 - Download from `https://github.com/plumed/plumed2/releases`.
 - Extract `tar -xvzf plumed-2.9.3.tgz`
@@ -94,7 +107,7 @@ Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_instal
 - Configure `./configure --enable-modules=opes`
 - `make -j 4`
 - `make install`
-- The kernel environmental variable must added to the .bashrc.
+- The kernel environmental variable must be added to the .bashrc.
 ```
 export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
 ```
@@ -107,7 +120,7 @@ Similarly, the Python wrappers can be installed with
 ```
 conda install -c conda-forge py-plumed -y
 ```
-You can check if plumed is installed if this returns the plumed path
+You can check if Plumed is installed by checking if this returns the Plumed path
 ```
 import plumed
 plumed.Plumed()
@@ -135,9 +148,9 @@ pip install git+https://github.com/LouieSlocombe/nqetools.git
 
 
 ## Driver installation
-We need to install the drivers for the codes we want to use.
+We need to install the drivers for the code we want to use.
 ### I-PI drivers
-Make sure to install the drivers in the same env as i-pi and update the path as needed.
+Make sure to install the drivers in the same environment as i-pi and update the path as needed.
 ```
 git clone https://github.com/i-pi/i-pi.git
 cd /home/louie/i-pi/drivers/f90
