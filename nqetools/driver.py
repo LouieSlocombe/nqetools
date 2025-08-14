@@ -15,8 +15,8 @@ def write_ase_mace_driver(
         model_type="off",
         device="cpu",
         default_dtype="float64"):
-    assert model_type in ["off", "mp", "anicc"]
-    if model_type == "off" or model_type == "mp":
+    assert model_type in ["off", "mp", "anicc", 'omol']
+    if model_type == "off" or model_type == "mp" or model_type == "omol":
         in_str = f"""
 from ase.io import read
 from mace.calculators import mace_{model_type}
