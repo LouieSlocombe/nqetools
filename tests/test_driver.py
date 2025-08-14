@@ -33,16 +33,6 @@ def test_cbe_driver():
 
 
 def test_ase_mace_driver():
-    """
-    Tests the MACE calculator using the ASE driver.
-
-    This function builds a water molecule, centers it with a vacuum of 5.0 Å,
-    sets up the MACE calculator, runs the optimisation, and stores the results
-    in a specified directory.
-
-    Asserts:
-        None
-    """
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
@@ -53,6 +43,25 @@ def test_ase_mace_driver():
     # Make a directory to store everything
     directory = "mace_opti"
     nqe.run_optimise(directory, atoms, driver='ase-mace', total_steps=2)
+    nqe.remove_directory(directory)
+    pass
+
+
+def test_ase_mace_driver_omol():
+    print(flush=True)
+    print("Testing MACE driver", flush=True)
+
+    # Build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
+
+    # Make a directory to store everything
+    directory = "mace_opti"
+    driver_args = {'model_type': 'omol',
+                   'model': 'extra_large',
+                   'device': 'cuda',
+                   'default_dtype': 'float32'}
+    nqe.run_optimise(directory, atoms, driver='ase-mace', driver_args=driver_args, total_steps=2)
     nqe.remove_directory(directory)
     pass
 
@@ -77,7 +86,7 @@ def test_ase_orca_driver():
 
     # Make a directory to store everything
     directory = "orca_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-orca',driver_args={'n_procs': 1}, total_steps=2)
+    nqe.run_optimise(directory, atoms, driver='ase-orca', driver_args={'n_procs': 1}, total_steps=2)
     nqe.remove_directory(directory)
     pass
 
