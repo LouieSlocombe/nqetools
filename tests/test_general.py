@@ -127,33 +127,32 @@ def test_mace_calc():
     """
     print(flush=True)
     print("Testing MACE calculator", flush=True)
-
-    # Build the molecule
     atoms = ase.build.molecule('H2O')
 
     print('mace_anicc', flush=True)
-    calc = mace_anicc()
-
-    # Set the calculator
-    atoms.calc = calc
-
-    # Run the calculation
+    atoms.calc = mace_anicc()
     t1 = time.time()
     energy = atoms.get_potential_energy()
     t2 = time.time()
     print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
 
     print('mace_off', flush=True)
-    calc = mace_off(model="small", device="cpu", default_dtype="float32")
-
-    # Set the calculator
-    atoms.calc = calc
-
-    # Run the calculation
+    atoms.calc = mace_off(model="small",
+                          device="cpu",
+                          default_dtype="float32")
     t1 = time.time()
     energy = atoms.get_potential_energy()
     t2 = time.time()
     print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
+
+    print('mace_omol', flush=True)
+    atoms.calc = mace_omol(device="cpu",
+                           default_dtype="float32")
+    t1 = time.time()
+    energy = atoms.get_potential_energy()
+    t2 = time.time()
+    print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
+
     pass
 
 
@@ -462,34 +461,46 @@ def test_prepare_neb():
     f_max = 0.01
     f_climb = False
     spring_constant = 5.0
-    # Set up calculator options
-    calc = mace_off(model="medium",
-                    device="cuda",
-                    default_dtype="float64",
-                    disp=True)
-    calc = mace_anicc()
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5), constrained_layout=True)
 
     # Make initial state.
-    reactant = molecule('C2H6')
-    reactant = nqe.optimise_geom(reactant, calc, fmax=f_max)
-
+    reactant_init = molecule('C2H6')
     # Create final state.
-    product = reactant.copy()
-    product.positions[2:5] = reactant.positions[[3, 4, 2]]
-    product = nqe.optimise_geom(product, calc, fmax=f_max)
+    product_init = reactant_init.copy()
+    product_init.positions[2:5] = product_init.positions[[3, 4, 2]]
 
-    neb = nqe.prepare_neb(reactant,
-                          product,
-                          calc,
-                          n_images=n_images,
-                          climb=f_climb,
-                          k=spring_constant,
-                          geo_int=True)
+    # Set up calculator options
+    calc1 = mace_off(model="small",
+                    device="cuda",
+                    default_dtype="float64")
+    calc2 = mace_off(model="medium",
+                    device="cuda",
+                    default_dtype="float64")
+    calc3 = mace_off(model="large",
+                    device="cuda",
+                    default_dtype="float64")
+    calc_a = mace_anicc()
+    calc_o = mace_omol()
 
-    neb_path = nqe.optimise_neb(neb,
-                                fmax=f_max,
-                                n_images=n_images,
-                                ts_traj='ts.traj')
-    os.remove('ts.traj')
+    calcs = [calc1,calc2,calc3, calc_a, calc_o]
+    labels = ['off_sma','off_med','off_lar', 'anicc', 'omol']
 
-    nqe.plot_neb(neb_path, calc)
+    for i, calc in enumerate(calcs):
+        reactant = nqe.optimise_geom(reactant_init, calc, fmax=f_max)
+        product = nqe.optimise_geom(product_init, calc, fmax=f_max)
+        neb = nqe.prepare_neb(reactant,
+                              product,
+                              calc,
+                              n_images=n_images,
+                              climb=f_climb,
+                              k=spring_constant,
+                              geo_int=True)
+        neb_path = nqe.optimise_neb(neb,
+                                    fmax=f_max,
+                                    n_images=n_images,
+                                    ts_traj='ts.traj')
+        os.remove('ts.traj')
+        nqe.plot_neb(neb_path, calc, fig=fig, ax=ax, label=labels[i])
+
+    plt.legend()
+    plt.show()
