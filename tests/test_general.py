@@ -12,7 +12,7 @@ from ase.calculators.nwchem import NWChem
 from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
 from ase.io import write, read
 from ase.optimize import BFGS
-from mace.calculators import mace_anicc, mace_off
+from mace.calculators import mace_anicc, mace_off, mace_omol
 
 import nqetools as nqe
 
@@ -454,3 +454,42 @@ def test_orca_onion():
     # Print the energy and time taken
     print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
     assert np.allclose(energy, -7226.730291092625, rtol=1e-2), "Energy does not match expected value"
+
+
+def test_prepare_neb():
+    print(flush=True)
+    n_images = 15
+    f_max = 0.01
+    f_climb = False
+    spring_constant = 5.0
+    # Set up calculator options
+    calc = mace_off(model="medium",
+                    device="cuda",
+                    default_dtype="float64",
+                    disp=True)
+    calc = mace_anicc()
+
+    # Make initial state.
+    reactant = molecule('C2H6')
+    reactant = nqe.optimise_geom(reactant, calc, fmax=f_max)
+
+    # Create final state.
+    product = reactant.copy()
+    product.positions[2:5] = reactant.positions[[3, 4, 2]]
+    product = nqe.optimise_geom(product, calc, fmax=f_max)
+
+    neb = nqe.prepare_neb(reactant,
+                          product,
+                          calc,
+                          n_images=n_images,
+                          climb=f_climb,
+                          k=spring_constant,
+                          geo_int=True)
+
+    neb_path = nqe.optimise_neb(neb,
+                                fmax=f_max,
+                                n_images=n_images,
+                                ts_traj='ts.traj')
+    os.remove('ts.traj')
+
+    nqe.plot_neb(neb_path, calc)
