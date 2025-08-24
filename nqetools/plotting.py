@@ -448,7 +448,10 @@ def plot_fes_sep(fes_a,
     return None
 
 
-def plot_neb(images, calc, save=True, show=True, filename="neb", smooth=True, k=2):
+def plot_neb(images, calc, fig=None, ax=None, smooth=True, k=2, fig_size=(8, 5), label=None):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=fig_size, constrained_layout=True)
+
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
@@ -464,24 +467,16 @@ def plot_neb(images, calc, save=True, show=True, filename="neb", smooth=True, k=
         spl = make_interp_spline(path, energies, k=k)
         path_smooth = np.linspace(min(path), max(path), 100)
         energies_smooth = spl(path_smooth)
-        plt.scatter(path, energies, c='k')
+        ax.scatter(path, energies)
 
         # Plot both spline and scatter points
-        plt.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
+        ax.plot(path_smooth, energies_smooth, '-', lw=2, label=label)
     else:
-        plt.plot(path, energies, 'o-', c='k', lw=2)
+        ax.plot(path, energies, 'o-', lw=2, label=label)
 
     # Add labels and formatting
-    n_plot("Path (Å)", "Energy (eV)")
-
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    else:
-        plt.close()
-    return None
+    ax_plot(fig, ax,"Path (Å)", "Energy (eV)")
+    return fig, ax
 
 
 def plot_sella(images, calc, save=True, show=True, filename="irc", smooth=True, k=2):
