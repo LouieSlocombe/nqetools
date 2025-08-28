@@ -190,25 +190,30 @@ def plot_time_energy_conservation(data: dict,
 
 
 def plot_fes_series_1d(fes_arrays: list[np.ndarray],
-                       times: list[float] = None,
-                       max_times: int = 5,
+                       slices: list[float] = None,
+                       labels: list[str] = None,
+                       max_slices: int = 5,
                        save: bool = True,
                        show: bool = True,
                        filename: str = "fes_1d",
                        x_lab: str = r"CV1",
                        y_lab: str = r"$F$ (eV)") -> None:
-    if times is None:
-        times = np.arange(len(fes_arrays))
+    if slices is None:
+        slices = np.arange(len(fes_arrays))
 
     # If there are more than max_times, select only the last max_times
-    if len(times) > max_times:
-        fes_arrays = fes_arrays[-max_times:]
-        times = times[-max_times:]
+    if len(slices) > max_slices:
+        fes_arrays = fes_arrays[-max_slices:]
+        slices = slices[-max_slices:]
 
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
 
     for i, xy in enumerate(fes_arrays):
-        ax.plot(xy[0], xy[1], label=fr"$t={times[i]}$ ps")
+        if labels is not None:
+            label = labels[i]
+        else:
+            label = fr"$t={slices[i]}$ ps"
+        ax.plot(xy[0], xy[1], label=label)
 
     ax.legend()
     ax_plot(fig, ax, x_lab, y_lab)
@@ -475,7 +480,7 @@ def plot_neb(images, calc, fig=None, ax=None, smooth=True, k=2, fig_size=(8, 5),
         ax.plot(path, energies, 'o-', lw=2, label=label)
 
     # Add labels and formatting
-    ax_plot(fig, ax,"Path (Å)", "Energy (eV)")
+    ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
     return fig, ax
 
 
