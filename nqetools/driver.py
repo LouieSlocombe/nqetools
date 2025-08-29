@@ -1,7 +1,7 @@
 import os
 
 import ipi
-
+import torch
 from .calculators import (nwchem_calc_preset)
 from .tools import get_ipi_driver
 
@@ -13,9 +13,13 @@ def write_ase_mace_driver(
         host="driver",
         model="small",
         model_type="off",
-        device="cpu",
+        device=None,
         default_dtype="float64"):
     assert model_type in ["off", "mp", "anicc", 'omol']
+
+    if device is None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     if model_type == "off" or model_type == "mp" or model_type == "omol":
         in_str = f"""
 from ase.io import read
