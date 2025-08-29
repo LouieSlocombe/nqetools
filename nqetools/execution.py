@@ -15,6 +15,7 @@ from .io import (write_xml,
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp, round_sf
 from .xml_parse import *
+import multiprocessing
 
 
 def run_command(command):
@@ -29,6 +30,38 @@ def run_command(command):
     """
     result = subprocess.run(command.split(), shell=True, capture_output=True, text=True)
     return result.stdout
+
+
+def check_driver_processes(n_processes, max_ratio=0.9, warn_only=False):
+    """
+    Checks if the requested number of driver processes exceeds available system resources.
+
+    Parameters:
+    n_processes (int): The requested number of driver processes.
+    max_ratio (float, optional): Maximum ratio of cores to use. Default is 0.9 (90%).
+    warn_only (bool, optional): If True, only warn but don't adjust the number. Default is False.
+
+    Returns:
+    int: Recommended number of processes to use
+    """
+
+    # Get the number of available CPU cores
+    available_cores = multiprocessing.cpu_count()
+
+    # Calculate safe number of processes (leave some cores for the system)
+    safe_processes = max(1, int(available_cores * max_ratio))
+
+    # Check if requested number exceeds safe limit
+    if n_processes > safe_processes:
+        if warn_only:
+            print(f"Warning: Requested {n_processes} driver processes, but only {available_cores} CPU cores available.")
+            print(f"Recommended maximum: {safe_processes} processes (using {int(max_ratio * 100)}% of cores).")
+            return n_processes
+        else:
+            print(f"Adjusting driver processes from {n_processes} to {safe_processes} based on available CPU cores.")
+            return safe_processes
+
+    return n_processes
 
 
 def run_ipi(directory,
@@ -57,6 +90,9 @@ def run_ipi(directory,
     os.chdir(directory)
     # Remove the tmp file if it exists
     rm_ipi_tmp()
+    # Check the number of driver processes against available resources
+    n = check_driver_processes(n)
+
     # Start the i-PI server and the driver processes
     if not os.path.exists(outfile):
         # Don't rerun if the outputs already exist
@@ -204,6 +240,7 @@ def run_instanton_post_process(directory,
     os.chdir(cwd)
     print(f"Thermo/Instanton post-processing complete\n", flush=True)
     return None
+
 
 def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
     # https://github.com/i-pi/piqm2023-tutorial/blob/main/05-RPI/tutorial-4.ipynb
