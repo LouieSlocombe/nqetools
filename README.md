@@ -2,7 +2,7 @@
 A package to help run NQE (nuclear quantum effects) calculations based on [i-pi](https://github.com/i-pi/i-pi).
 
 # Install instructions
-You must work from a fresh environment to prevent issues! 
+You must work from a fresh environment to prevent issues! 3.12 required for cuequivariance.
 ```
 conda create -n ipi_env python=3.12
 ```
@@ -13,8 +13,6 @@ conda activate ipi_env
 Add channels in this order
 ```
 conda config --env --add channels conda-forge
-conda config --env --add channels pytorch
-conda config --env --add channels nvidia
 ```
 Best to make them strict
 ```
@@ -32,43 +30,29 @@ conda update conda --all -y
 
 Install the basic requirements.
 ```
-conda install conda-forge::pytest conda-forge::numpy conda-forge::scipy conda-forge::matplotlib -y
-```
-More dependent packages.
-```
-conda install conda-forge::opt_einsum conda-forge::jax conda-forge::jaxlib conda-forge::ml_dtypes conda-forge::sympy conda-forge::pyfftw conda-forge::chemiscope -y
-```
-Install jupyterlab
-```
-conda install conda-forge::jupyterlab -y
+conda install pytest numpy scipy matplotlib opt_einsum jax jaxlib ml_dtypes sympy pyfftw chemiscope jupyterlab -y
 ```
 
 ## ASE and Sella
 Conda can be an older version, which is fine.
-Start with ase
 ```
-conda install conda-forge::ase -y
-```
-Then install Sella
-```
-conda config --env --add channels conda-forge
-conda install conda-forge::sella -y
+conda install ase sella -y
 ```
 Alternatively, if it is very slow. But, not suggested:
 ```
-pip install sella
+pip3 install sella
 ```
 
 ## MACE
 Mace has two options, but the torch option seems best. For model eval and training:
 Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`. 
-First, check what version of CUDA you have, for example, 12.4.
+First, check what version of CUDA you have, for example, 12.9.
 ```
 nvcc --version
 ```
 Install pytorch. It might look like this:
 ```
-conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
+pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu129
 ```
 It is worth ensuring the PyTorch backend can use the GPU from here. This should return True.
 ```
@@ -77,11 +61,11 @@ torch.cuda.is_available()
 ```
 Next, install mace. Selecting mace-torch:
 ```
-pip install mace-torch
+pip3 install mace-torch
 ```
 You can speed up evaluations using cuequivariance.
 ```
-pip install cuequivariance cuequivariance-torch cuequivariance-ops-torch-cu12
+pip3 install cuequivariance cuequivariance-torch cuequivariance-ops-torch-cu12
 ```
 If this fails, you should update libc6.
 ```
@@ -114,11 +98,11 @@ export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
 ### Use conda
 But we can also use the conda-forge packages.
 ```
-conda install -c conda-forge plumed -y
+conda install plumed -y
 ```
 Similarly, the Python wrappers can be installed with
 ```
-conda install -c conda-forge py-plumed -y
+conda install py-plumed -y
 ```
 You can check if Plumed is installed by checking if this returns the Plumed path
 ```
@@ -133,11 +117,12 @@ You should see something along the lines of
 
 <plumed.Plumed object at 0x7f83768e2a00>
 
+You need to make sure that the path it seems to be pointing to is not in your python bin of the env. But, instead it is the one you built! You will need this as OPES is an optional module.
 
 ## I-PI
 Conda is preferred not to mess up the ecosystem.
 ```
-conda install conda-forge::i-pi -y
+conda install i-pi -y
 ```
 
 ## NQETOOLS
