@@ -2,6 +2,7 @@ import os
 
 import ipi
 import torch
+
 from .calculators import (nwchem_calc_preset)
 from .tools import get_ipi_driver
 
@@ -378,6 +379,11 @@ def prep_driver(atoms, directory, f_driver, driver_args):
     elif f_driver == "zundel":
         move_zundel_driver_pes_files(directory)
         return f"{driver_path} -u -a zundel -m zundel"
+    elif f_driver == "mace":
+        # If the driver is an ASE-MACE driver, write the driver file
+        write_ase_mace_driver(directory, **driver_args)
+        f_model = driver_args.get("model", "small")
+        return f"i-pi-py_driver -a driver -u -m mace -o init.xyz,{f_model}"
     elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
         write_ase_mace_driver(directory, **driver_args)

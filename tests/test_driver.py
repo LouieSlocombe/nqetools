@@ -1,3 +1,5 @@
+import getpass
+
 import ase.build
 import pytest
 
@@ -43,6 +45,23 @@ def test_ase_mace_driver():
     # Make a directory to store everything
     directory = "mace_opti"
     nqe.run_optimise(directory, atoms, driver='ase-mace', total_steps=2)
+    nqe.remove_directory(directory)
+    pass
+
+
+def test_mace_driver():
+    print(flush=True)
+    print("Testing MACE driver", flush=True)
+
+    # Build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
+
+    # Make a directory to store everything
+    directory = "mace_opti"
+    driver = 'mace'
+    driver_args = {'model': f'/home/{getpass.getuser()}/.cache/mace/MACE-OFF23_small.model'}
+    nqe.run_optimise(directory, atoms, driver=driver, driver_args=driver_args, total_steps=2)
     nqe.remove_directory(directory)
     pass
 
