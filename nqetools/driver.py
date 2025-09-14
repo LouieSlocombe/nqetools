@@ -15,7 +15,8 @@ def write_ase_mace_driver(
         model="small",
         model_type="off",
         device=None,
-        default_dtype="float64"):
+        default_dtype="float64",
+        enable_cueq=False):
     assert model_type in ["off", "mp", "anicc", 'omol']
 
     if device is None:
@@ -27,7 +28,7 @@ from ase.io import read
 from mace.calculators import mace_{model_type}
 from ase.calculators.socketio import SocketClient
 atoms = read('{in_file}', 0)
-atoms.calc = mace_{model_type}(model='{model}', device='{device}', default_dtype='{default_dtype}')
+atoms.calc = mace_{model_type}(model='{model}', device='{device}', default_dtype='{default_dtype}', enable_cueq={enable_cueq})
 client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=True)
         """
