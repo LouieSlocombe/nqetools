@@ -1,18 +1,20 @@
-import os
 import sys
 import time
-from subprocess import Popen
 
 import ase.build
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.calculators.nwchem import NWChem
+from ase.calculators.qmmm import SimpleQMMM
 from ase.calculators.socketio import PySocketIOClient, SocketIOCalculator
 from ase.io import write, read
 from ase.optimize import BFGS
+from ase.visualize import view
 from mace.calculators import mace_anicc, mace_off, mace_omol
+from subprocess import Popen
 
 import nqetools as nqe
 
@@ -471,19 +473,19 @@ def test_prepare_neb():
 
     # Set up calculator options
     calc1 = mace_off(model="small",
-                    device="cuda",
-                    default_dtype="float64")
+                     device="cuda",
+                     default_dtype="float64")
     calc2 = mace_off(model="medium",
-                    device="cuda",
-                    default_dtype="float64")
+                     device="cuda",
+                     default_dtype="float64")
     calc3 = mace_off(model="large",
-                    device="cuda",
-                    default_dtype="float64")
+                     device="cuda",
+                     default_dtype="float64")
     calc_a = mace_anicc()
     calc_o = mace_omol()
 
-    calcs = [calc1,calc2,calc3, calc_a, calc_o]
-    labels = ['off_sma','off_med','off_lar', 'anicc', 'omol']
+    calcs = [calc1, calc2, calc3, calc_a, calc_o]
+    labels = ['off_sma', 'off_med', 'off_lar', 'anicc', 'omol']
 
     for i, calc in enumerate(calcs):
         reactant = nqe.optimise_geom(reactant_init, calc, fmax=f_max)
@@ -504,3 +506,30 @@ def test_prepare_neb():
 
     plt.legend()
     plt.show()
+
+
+def test_ase_qmmm():
+    print(flush=True)
+    m1 = molecule('H2O')
+    m2 = molecule('C2H6')
+    m2.translate([3, 0, 0])
+    atoms = m1 + m2
+    atoms.center(vacuum=5.0)
+    view(atoms)
+
+    # Set up cheap small model for MM
+    mm_calc = mace_off(model="small",
+                       device="cuda",
+                       default_dtype="float64")
+    # Set up expensive model for QM
+    qm_calc = mace_omol(device="cuda",
+                        default_dtype="float64")
+
+    qmmm_calc = SimpleQMMM([0, 1, 2],
+                           qm_calc,
+                           mm_calc,
+                           mm_calc)
+    atoms.calc = qmmm_calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy:.3f}", flush=True)
+    assert np.allclose(energy, -4253.264, rtol=1e-2), "Energy does not match expected value"
