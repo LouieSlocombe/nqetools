@@ -1,22 +1,25 @@
 import copy
+import numpy as np
 import os
+import pandas as pd
 import re
 import tempfile
 import time
-from pathlib import Path
-from typing import Union
-
-import numpy as np
-import pandas as pd
-from ase.calculators.orca import ORCA
-from ase.calculators.orca import OrcaProfile
+from ase import Atoms
+from ase.calculators.orca import ORCA, OrcaProfile
+from ase.constraints import FixAtoms
 from ase.io import read
 from ase.mep import NEB
+from ase.neighborlist import NeighborList, natural_cutoffs
 from ase.optimize import BFGS
 from ase.vibrations import Vibrations
+from ase.visualize import view
+from itertools import permutations
+from mace.calculators import mace_off
+from pathlib import Path
 from scipy.interpolate import CubicSpline
-from sella import IRC
-from sella import Sella
+from sella import IRC, Sella
+from typing import Union
 
 import geodesic_interpolate as gi
 from .tools import get_fmax
@@ -549,3 +552,217 @@ def calculate_goat(atoms,
 
         # Return the optimized conformers and conformer information
         return atoms, df
+
+
+def bonded_cluster_indices_no_anchor_hub(atoms: Atoms,
+                                         anchor: int,
+                                         mult: float = 1.0) -> list[int]:
+    n = len(atoms)
+    if not (0 <= anchor < n):
+        raise IndexError(f"Anchor index {anchor} out of range for {n} atoms.")
+
+    # Build neighbor list
+    cutoffs = natural_cutoffs(atoms, mult=mult)
+    nl = NeighborList(cutoffs, skin=0.0, self_interaction=False, bothways=True)
+    nl.update(atoms)
+
+    # First step: collect immediate neighbors of the anchor
+    first_neighbors, _ = nl.get_neighbors(anchor)
+    first_neighbors = [i for i in first_neighbors if i != anchor - 2]
+
+    # Seed traversal with first-shell neighbors; mark anchor as visited so we never traverse through it
+    visited = set([anchor]) | set(first_neighbors)
+    stack = list(first_neighbors)
+
+    # Explore without ever stepping onto the anchor again
+    while stack:
+        i = stack.pop()
+        nbrs, _ = nl.get_neighbors(i)
+        for j in nbrs:
+            if j == anchor:
+                continue  # do not traverse through anchor beyond the first step
+            if j not in visited:
+                visited.add(j)
+                stack.append(j)
+
+    return sorted(visited)
+
+
+def _pca_frame(positions):
+    pts = np.asarray(positions)
+    origin = pts.mean(axis=0)
+    X = pts - origin
+    # PCA via SVD
+    U, S, Vt = np.linalg.svd(X, full_matrices=False)
+    # Principal axes are rows of Vt; use columns as unit vectors
+    x = Vt[0]  # largest variance axis
+    y = Vt[1]
+    z = Vt[2]  # normal to the base plane (smallest variance)
+    # Re-orthonormalize into RH frame (numerical safety)
+    x = x / np.linalg.norm(x)
+    z = z / np.linalg.norm(z)
+    y = np.cross(z, x)
+    y = y / np.linalg.norm(y)
+    z = np.cross(x, y)
+    z = z / np.linalg.norm(z)
+    R = np.vstack([x, y, z]).T  # columns are axes
+    return origin, R
+
+
+def _orient_normal_toward(R, origin, target_point):
+    z = R[:, 2]
+    d = np.asarray(target_point) - np.asarray(origin)
+    if np.dot(z, d) < 0.0:
+        # flip both y and z to keep RH: x stays, y->-y, z->-z
+        R = np.column_stack((R[:, 0], -R[:, 1], -R[:, 2]))
+    return R
+
+
+def _rigid_transform(points, anchor_pos, R_target, new_anchor_pos):
+    P = np.asarray(points) - anchor_pos
+    P_rot = P @ R_target.T
+    return P_rot + new_anchor_pos
+
+
+def flip_and_face_bases(
+        atoms: Atoms,
+        baseA_idxs: list,
+        baseB_idxs: list,
+        anchors: list,
+        rot_matrix: list = None,
+) -> Atoms:
+    anchorA_idx = anchors[0]
+    anchorB_idx = anchors[1]
+    atoms = atoms.copy()
+
+    pos = atoms.get_positions()
+    baseA = np.array(baseA_idxs, dtype=int)
+    baseB = np.array(baseB_idxs, dtype=int)
+
+    # Anchors and base centroids
+    anchorA = pos[anchorA_idx].copy()
+    anchorB = pos[anchorB_idx].copy()
+
+    # Local frames via PCA
+    originA, RA = _pca_frame(pos[baseA])
+    originB, RB = _pca_frame(pos[baseB])
+
+    # Make each normal point toward the other base (for a consistent 'face')
+    RB = _orient_normal_toward(RB, originB, originA)
+    RA = _orient_normal_toward(RA, originA, originB)
+
+    # Reflection matrix that flips the normal and y while keeping x,
+    # so after swap the bases "face" each other with aligned x-axes.
+    if rot_matrix is None:
+        rot_matrix = [-1.0, 1.0, -1.0]
+    M = np.diag(rot_matrix)  # x, -y, -z (right-handed overall mapping)
+
+    # World-space rotations to map frames
+    # For A -> B: R_target_A satisfies: R_target_A * RA ≈ RB * M
+    # => R_target_A = RB * M * RA^T
+    R_target_A = RB @ M @ RA.T
+
+    # For B -> A: symmetric
+    R_target_B = RA @ M @ RB.T
+
+    # Apply rigid transforms about anchors, translated onto the opposite anchor
+    # A goes to anchorB; B goes to anchorA
+    newA = _rigid_transform(pos[baseA], anchorA, R_target_A, anchorB)
+    newB = _rigid_transform(pos[baseB], anchorB, R_target_B, anchorA)
+
+    # Write back
+    new_pos = pos.copy()
+    new_pos[baseA] = newA
+    new_pos[baseB] = newB
+    atoms.set_positions(new_pos)
+    return atoms
+
+
+def optimize_with_fixed_anchors(atoms: Atoms,
+                                baseA_idxs: list,
+                                baseB_idxs: list,
+                                anchor_indices: list,
+                                fmax: float = 0.05) -> Atoms:
+    # Create a copy to avoid modifying the original
+    atoms_opt = atoms.copy()
+    # Set up the calculator
+    calc = mace_off(model='small', device="cpu", default_dtype="float64")
+    # Fix anchor atoms in place
+    constraint = FixAtoms(indices=anchor_indices)
+    atoms_opt.set_constraint(constraint)
+
+    # Select only the atoms in baseA and baseB for optimization
+    atoms_opt = atoms_opt[baseA_idxs + baseB_idxs]
+
+    atoms_opt.calc = calc
+    # Perform energy minimization
+    optimizer = BFGS(atoms_opt)
+    optimizer.run(fmax=fmax)
+    view(atoms_opt)
+    atoms_out = atoms.copy()
+    atoms_out[baseA_idxs + baseB_idxs].set_positions(atoms_opt.get_positions())
+
+    return atoms_out
+
+
+def get_best_flip_and_face_bases(
+        atoms: Atoms,
+        baseA_idxs: list,
+        baseB_idxs: list,
+        anchors: list,
+        optimise_after: bool = True,
+) -> Atoms:
+    rot_matrix_permutations = list(set(list(permutations([-1.0, 1.0, 1.0])) + list(permutations([-1.0, -1.0, 1.0]))))
+    print(f"All permutations of rot_matrix: {rot_matrix_permutations}", flush=True)
+
+    # loop over permutations to see which gives the least COM movement
+    best_rot_matrix = None
+    best_dist_after = float('inf')
+    for rot_matrix in rot_matrix_permutations:
+        rot_matrix = list(rot_matrix)
+        print(f"Trying rot_matrix: {rot_matrix}", flush=True)
+        # Swap bases
+        swapped = flip_and_face_bases(
+            atoms,
+            baseA_idxs=baseA_idxs,
+            baseB_idxs=baseB_idxs,
+            anchors=anchors,
+            rot_matrix=rot_matrix,
+        )
+
+        # Calculate the difference in COM of the bases before and after swap
+        com_a_before = atoms[baseA_idxs].get_center_of_mass()
+        com_b_before = atoms[baseB_idxs].get_center_of_mass()
+        com_a_after = swapped[baseA_idxs].get_center_of_mass()
+        com_b_after = swapped[baseB_idxs].get_center_of_mass()
+
+        # Get the euclidean distance moved by each base's COM
+        dist_before = np.linalg.norm(com_a_before - com_b_before)
+        dist_after = np.linalg.norm(com_a_after - com_b_after)
+
+        print(f"dist_before COM: {dist_before}", flush=True)
+        print(f"dist_after COM:  {dist_after}", flush=True)
+        print(flush=True)
+
+        if dist_after < best_dist_after:
+            best_dist_after = dist_after
+            best_rot_matrix = rot_matrix
+
+    print(f"Best rot_matrix:", best_rot_matrix)
+
+    swapped = flip_and_face_bases(
+        atoms,
+        baseA_idxs=baseA_idxs,
+        baseB_idxs=baseB_idxs,
+        anchors=anchors,
+        rot_matrix=best_rot_matrix,
+    )
+    if optimise_after:
+        swapped = optimize_with_fixed_anchors(
+            swapped,
+            baseA_idxs=baseA_idxs,
+            baseB_idxs=baseB_idxs,
+            anchor_indices=anchors,
+        )
+
+    return swapped

@@ -80,7 +80,11 @@ from .pathway import (get_neb_path,
                       optimise_irc,
                       get_vibrations,
                       quick_guess_ts,
-                      calculate_goat)
+                      calculate_goat,
+                      bonded_cluster_indices_no_anchor_hub,
+                      flip_and_face_bases,
+                      optimize_with_fixed_anchors,
+                      get_best_flip_and_face_bases)
 from .plotting import (plot_step_energy,
                        plot_time_potential_bias,
                        plot_time_temperature,
