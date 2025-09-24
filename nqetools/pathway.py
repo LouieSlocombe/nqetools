@@ -20,7 +20,7 @@ from pathlib import Path
 from scipy.interpolate import CubicSpline
 from sella import IRC, Sella
 from typing import Union
-
+from ase.data import covalent_radii
 import geodesic_interpolate as gi
 from .tools import get_fmax
 
@@ -556,13 +556,19 @@ def calculate_goat(atoms,
 
 def bonded_cluster_indices_no_anchor_hub(atoms: Atoms,
                                          anchor: int,
-                                         mult: float = 1.0) -> list[int]:
+                                         mult: float = 1.0,
+                                         multi_h: float=1.3) -> list[int]:
     n = len(atoms)
     if not (0 <= anchor < n):
         raise IndexError(f"Anchor index {anchor} out of range for {n} atoms.")
 
     # Build neighbor list
     cutoffs = natural_cutoffs(atoms, mult=mult)
+    # Increase cutoffs for hydrogen atoms by multi_h
+    for i, atom in enumerate(atoms):
+        if atom.symbol == 'H':
+            cutoffs[i] = covalent_radii[atom.number] * multi_h
+
     nl = NeighborList(cutoffs, skin=0.0, self_interaction=False, bothways=True)
     nl.update(atoms)
 
