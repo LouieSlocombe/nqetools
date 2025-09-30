@@ -535,11 +535,14 @@ def run_md(directory,
            stride=10,
            checkpoint_stride=1000,
            n_beads=1,
+           n_procs=None,
            properties=None,
            xml_in=None):
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
+    if n_procs is None:
+        n_procs = n_beads
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -572,7 +575,7 @@ def run_md(directory,
     # Prepare the driver
     driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the MD
-    run_ipi(directory, server, driver, f"{outfile}.out")
+    run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
     # Load the structure
     if n_beads > 1:
         atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
@@ -698,6 +701,7 @@ def run_plumed_md(directory,
                   stride=10,
                   checkpoint_stride=1000,
                   n_beads=1,
+                  n_procs=None,
                   plumed_type="mtd-pos",
                   plumed_args=None,
                   properties=None,
@@ -715,6 +719,9 @@ def run_plumed_md(directory,
     # Update the driver dictionary
     if driver_args is None:
         driver_args = {}
+
+    if n_procs is None:
+        n_procs = n_beads
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -753,7 +760,7 @@ def run_plumed_md(directory,
     driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the MD
-    run_ipi(directory, server, driver, f"{outfile}.out", n=n_beads)
+    run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
 
     # Load the structure
     if n_beads > 1:
@@ -1066,6 +1073,7 @@ def run_instanton(directory,
                   total_steps=1000,
                   deuterate=False,
                   n_beads=4,
+                  n_procs=None,
                   temperature=300.0,
                   tol_energy=5.0e-6,
                   tol_force=5.0e-6,
@@ -1077,6 +1085,8 @@ def run_instanton(directory,
     print(f"Running the instanton with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
+    if n_procs is None:
+        n_procs = n_beads
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -1112,6 +1122,6 @@ def run_instanton(directory,
     driver = prep_driver(atoms, directory, driver, driver_args)
 
     # Run the instanton
-    run_ipi(directory, server, driver, f"{outfile}.out")
+    run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
     print(f"Instanton complete\n", flush=True)
     return None
