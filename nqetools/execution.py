@@ -543,6 +543,8 @@ def run_md(directory,
         driver_args = {}
     if n_procs is None:
         n_procs = n_beads
+    elif n_procs > n_beads:
+        n_procs = n_beads
 
     # Clean the directory if it exists
     remove_directory(directory)
@@ -721,6 +723,8 @@ def run_plumed_md(directory,
         driver_args = {}
 
     if n_procs is None:
+        n_procs = n_beads
+    elif n_procs > n_beads:
         n_procs = n_beads
 
     # Clean the directory if it exists
@@ -1086,6 +1090,8 @@ def run_instanton(directory,
     if driver_args is None:
         driver_args = {}
     if n_procs is None:
+        n_procs = n_beads
+    elif n_procs > n_beads:
         n_procs = n_beads
 
     # Clean the directory if it exists
