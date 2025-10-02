@@ -1,9 +1,8 @@
 import copy
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 from ase.visualize.plot import plot_atoms
+from pathlib import Path
 from scipy.interpolate import make_interp_spline
 
 from .calcs import moving_average
@@ -13,22 +12,10 @@ from .pathway import get_neb_path
 plt.rcParams['axes.linewidth'] = 2.0
 
 
-def n_plot(xlab, ylab, xs=14, ys=14):
-    """
-    Add labels and formatting to a plot.
-
-    Use with
-    plt.rcParams['axes.linewidth'] = 2.0
-
-    Parameters:
-    xlab (str): Label for the x-axis.
-    ylab (str): Label for the y-axis.
-    xs (int, optional): Font size for the x-axis label. Default is 14.
-    ys (int, optional): Font size for the y-axis label. Default is 14.
-
-    Returns:
-    None
-    """
+def n_plot(xlab,
+           ylab,
+           xs=14,
+           ys=14):
     plt.minorticks_on()
     plt.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
     plt.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
@@ -39,24 +26,12 @@ def n_plot(xlab, ylab, xs=14, ys=14):
     return None
 
 
-def ax_plot(fig, ax, xlab, ylab, xs=14, ys=14):
-    """
-    Configure and style the plot with specified labels and tick parameters for a given axis.
-
-    Use with
-    plt.rcParams['axes.linewidth'] = 2.0
-
-    Args:
-        fig (matplotlib.figure.Figure): The figure object containing the plot.
-        ax (matplotlib.axes.Axes): The axes object to be styled.
-        xlab (str): The label for the x-axis.
-        ylab (str): The label for the y-axis.
-        xs (int, optional): Font size for the x-axis label. Default is 14.
-        ys (int, optional): Font size for the y-axis label. Default is 14.
-
-    Returns:
-        None
-    """
+def ax_plot(fig,
+            ax,
+            xlab,
+            ylab,
+            xs=14,
+            ys=14):
     ax.minorticks_on()
     ax.tick_params(axis='both', which='major', labelsize=ys - 2, direction='in', length=6, width=2)
     ax.tick_params(axis='both', which='minor', labelsize=ys - 2, direction='in', length=4, width=2)
@@ -89,11 +64,16 @@ def show_atoms(atoms,
 
 
 def plot_step_energy(data,
+                     fig=None,
+                     ax=None,
                      diff=True,
                      save=True,
                      show=True,
-                     filename="step_energy"):
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                     filename="step_energy",
+                     fig_size=(8, 3),
+                     y_scale='log'):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     step = data["step"]
     energy = data["potential"]
@@ -105,54 +85,61 @@ def plot_step_energy(data,
         energy = np.abs(energy)
 
     ax.plot(step, energy, c="black", label="potential", lw=2)
-    ax.set_yscale("log")
+    ax.set_yscale(y_scale)
     ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_time_potential_bias(data,
+                             fig=None,
+                             ax=None,
                              save=True,
                              show=True,
-                             filename="time_potential_bias"):
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                             filename="time_potential_bias",
+                             fig_size=(8, 3)):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     time = data["time"]
 
     ax.plot(time, np.subtract(data["potential"], data["potential"][0]), c="black", label="potential", lw=2)
     ax.plot(time, np.subtract(data["ensemble_bias"], data["ensemble_bias"][0]), c="red", label="bias", lw=2)
 
-    ax.legend(loc="upper left", ncols=1)
+    ax.legend(loc="best", ncols=1)
     ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_time_temperature(data,
+                          fig=None,
+                          ax=None,
                           window_size=100,
+                          mov_ave=True,
                           save=True,
                           show=True,
-                          filename="time_temperature"):
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
-    min_val = int(window_size / 2)
-    max_val = -int(window_size / 2 - 1)
+                          filename="time_temperature",
+                          fig_size=(8, 3)):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    time = data["time"][min_val:max_val]
-    ave_temperature = moving_average(data["temperature"], window_size)
-
-    ax.plot(time, ave_temperature, c="blue", lw=2)
+    if mov_ave:
+        min_val = int(window_size / 2)
+        max_val = -int(window_size / 2 - 1)
+        time = data["time"][min_val:max_val]
+        ave_temperature = moving_average(data["temperature"], window_size)
+        ax.plot(time, ave_temperature, c="black", lw=2)
+    else:
+        ax.plot(data["time"], data["temperature"], c="black", lw=2)
 
     ax_plot(fig, ax, r"$t$ (ps)", r"Temperature (K)")
     if save:
@@ -160,16 +147,18 @@ def plot_time_temperature(data,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
-def plot_time_energy_conservation(data: dict,
+def plot_time_energy_conservation(data,
+                                  fig=None,
+                                  ax=None,
                                   save=True,
                                   show=True,
-                                  filename="time_conservation") -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                                  filename="time_conservation",
+                                  fig_size=(8, 3)):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     time = data["time"]
 
@@ -184,12 +173,12 @@ def plot_time_energy_conservation(data: dict,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_series_1d(fes_arrays: list[np.ndarray],
+                       fig=None,
+                       ax=None,
                        slices: list[float] = None,
                        labels: list[str] = None,
                        max_slices: int = 5,
@@ -197,7 +186,8 @@ def plot_fes_series_1d(fes_arrays: list[np.ndarray],
                        show: bool = True,
                        filename: str = "fes_1d",
                        x_lab: str = r"CV1",
-                       y_lab: str = r"$F$ (eV)") -> None:
+                       y_lab: str = r"$F$ (eV)",
+                       fig_size: tuple = (8, 3)):
     if slices is None:
         slices = np.arange(len(fes_arrays))
 
@@ -205,8 +195,8 @@ def plot_fes_series_1d(fes_arrays: list[np.ndarray],
     if len(slices) > max_slices:
         fes_arrays = fes_arrays[-max_slices:]
         slices = slices[-max_slices:]
-
-    fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     for i, xy in enumerate(fes_arrays):
         if labels is not None:
@@ -222,47 +212,49 @@ def plot_fes_series_1d(fes_arrays: list[np.ndarray],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_series_1d_compare(fes_arrays_a: list[np.ndarray],
                                fes_arrays_b: list[np.ndarray],
+                               fig=None,
+                               ax=None,
                                labels: list[str] = None,
                                save: bool = True,
                                show: bool = True,
                                filename: str = "fes_1d_compare",
                                x_lab: str = r"CV1",
-                               y_lab: str = r"$F$ (eV)") -> None:
+                               y_lab: str = r"$F$ (eV)",
+                               fig_size: tuple = (8, 3)):
     if labels is None:
         labels = ["MD", "PIMD"]
-
-    fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     ax.plot(*fes_arrays_a, '-', label=labels[0], lw=2)
     ax.plot(*fes_arrays_b, '--', label=labels[1], lw=2)
 
-    ax.legend()
+    ax.legend(loc="best")
     ax_plot(fig, ax, x_lab, y_lab)
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
+                             fig=None,
+                             ax=None,
                              times: list[float] = None,
                              max_times=5,
                              save=True,
                              show=True,
                              filename="fes_contourf",
                              x_lab="CV1",
-                             y_lab="CV2") -> None:
+                             y_lab="CV2",
+                             fig_size=(8, 3)):
     if times is None:
         times = np.arange(len(fes_arrays))
 
@@ -270,15 +262,15 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
     if len(times) > max_times:
         fes_arrays = fes_arrays[-max_times:]
         times = times[-max_times:]
-
-    fig, ax = plt.subplots(
-        1,
-        len(fes_arrays),
-        figsize=(8, 3),
-        sharex=True,
-        sharey=True,
-        constrained_layout=True
-    )
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            nrows=1,
+            ncols=len(fes_arrays),
+            figsize=fig_size,
+            sharex=True,
+            sharey=True,
+            constrained_layout=True
+        )
 
     contours = []
     for i, xyz in enumerate(fes_arrays):
@@ -294,30 +286,32 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_contourf_compare(fes_a,
                               fes_b,
+                              fig=None,
+                              ax=None,
                               labels=None,
                               save=True,
                               show=True,
                               filename="fes_contourf_compare",
                               x_lab="CV1",
-                              y_lab="CV2") -> None:
+                              y_lab="CV2",
+                              fig_size=(8, 3)):
     fes_arrays = [fes_a, fes_b]
     if labels is None:
         labels = ["MD", "PIMD"]
-    fig, ax = plt.subplots(
-        1,
-        2,
-        figsize=(8, 3),
-        sharex=True,
-        sharey=True,
-        constrained_layout=True
-    )
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            nrows=1,
+            ncols=2,
+            figsize=fig_size,
+            sharex=True,
+            sharey=True,
+            constrained_layout=True
+        )
 
     contours = []
     for i, xyz in enumerate(fes_arrays):
@@ -333,22 +327,21 @@ def plot_fes_contourf_compare(fes_a,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_contourf(fes,
+                      fig=None,
+                      ax=None,
                       save=True,
                       show=True,
                       filename="fes_contourf",
                       x_lab="CV1",
-                      y_lab="CV2"
-                      ) -> None:
-    fig, ax = plt.subplots(1, 1,
-                           figsize=(4, 3),
-                           constrained_layout=True
-                           )
+                      y_lab="CV2",
+                      fig_size=(8, 3),
+                      ):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     cf = ax.contourf(*fes)
     ax.set_xlabel(x_lab)
@@ -359,23 +352,23 @@ def plot_fes_contourf(fes,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_contour_compare(fes_a,
                              fes_b,
+                             fig=None,
+                             ax=None,
                              labels=None,
                              save=True,
                              show=True,
                              filename="fes_contour_compare",
                              x_lab="CV1",
-                             y_lab="CV2"
+                             y_lab="CV2",
+                             fig_size=(8, 3),
                              ):
-    fig, ax = plt.subplots(
-        1, 1, figsize=(4, 3), sharex=True, sharey=True, constrained_layout=True
-    )
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
     if labels is None:
         labels = ["MD", "PIMD"]
 
@@ -397,23 +390,19 @@ def plot_fes_contour_compare(fes_a,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_fes_sep(fes_a,
                  fes_b,
+                 fig=None,
+                 ax=None,
                  save=True,
                  show=True,
-                 filename="energy_sep"):
-    fig, ax = plt.subplots(1,
-                           1,
-                           figsize=(4, 3),
-                           sharex=True,
-                           sharey=True,
-                           constrained_layout=True
-                           )
+                 filename="energy_sep",
+                 fig_size=(8, 3)):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     ax.plot(
         fes_a[1, :, 50],
@@ -448,14 +437,22 @@ def plot_fes_sep(fes_a,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
-def plot_neb(images, calc, fig=None, ax=None, smooth=True, k=2, fig_size=(8, 5), label=None):
+def plot_neb(images,
+             calc,
+             fig=None,
+             ax=None,
+             save=True,
+             show=True,
+             smooth=True,
+             k=2,
+             fig_size=(8, 3),
+             filename="neb",
+             label=None):
     if fig is None or ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=fig_size, constrained_layout=True)
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Attach the calculator to the images
     for image in images:
@@ -481,10 +478,28 @@ def plot_neb(images, calc, fig=None, ax=None, smooth=True, k=2, fig_size=(8, 5),
 
     # Add labels and formatting
     ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
+
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
     return fig, ax
 
 
-def plot_sella(images, calc, save=True, show=True, filename="irc", smooth=True, k=2):
+def plot_sella(images,
+               calc,
+               fig=None,
+               ax=None,
+               save=True,
+               show=True,
+               filename="irc",
+               smooth=True,
+               k=2,
+               fig_size=(8, 3)):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+
     # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
@@ -505,29 +520,31 @@ def plot_sella(images, calc, save=True, show=True, filename="irc", smooth=True, 
         plt.scatter(path, energies, c='k')
 
         # Plot both spline and scatter points
-        plt.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
+        ax.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
     else:
-        plt.plot(path, energies, 'o-', c='k', lw=2)
+        ax.plot(path, energies, 'o-', c='k', lw=2)
 
     # Add labels and formatting
-    n_plot("Path (Å)", "Energy (eV)")
+    ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
 
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_arrhenius(temperatures: list[float],
                    rates: list[float],
+                   fig=None,
+                   ax=None,
                    save=True,
                    show=True,
-                   filename="arrhenius") -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                   filename="arrhenius",
+                   fig_size=(8, 3)) -> None:
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
@@ -545,18 +562,20 @@ def plot_arrhenius(temperatures: list[float],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_arrhenius_2(temperatures: list[float],
                      rates_c: list[float],
                      rates_q: list[float],
+                     fig=None,
+                     ax=None,
                      save=True,
                      show=True,
-                     filename="arrhenius") -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                     filename="arrhenius",
+                     fig_size=(8, 3)) -> None:
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
@@ -572,17 +591,19 @@ def plot_arrhenius_2(temperatures: list[float],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_kappa_temperature(temperatures: list[float],
                            kappa: list[float],
+                           fig=None,
+                           ax=None,
                            save=True,
                            show=True,
-                           filename="kappa_temperature") -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                           filename="kappa_temperature",
+                           fig_size=(8, 3)) -> None:
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Plot data
     ax.plot(temperatures, kappa, 'o-', c='black', lw=2)
@@ -594,17 +615,19 @@ def plot_kappa_temperature(temperatures: list[float],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_kappa_temperature_inv(temperatures: list[float],
                                kappa: list[float],
+                               fig=None,
+                               ax=None,
                                save=True,
                                show=True,
-                               filename="kappa_temperature_inv") -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                               filename="kappa_temperature_inv",
+                               fig_size=(8, 3)) -> None:
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
@@ -619,17 +642,19 @@ def plot_kappa_temperature_inv(temperatures: list[float],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_kie_temperature(temperatures: list[float],
                          kie: list[float],
+                         fig=None,
+                         ax=None,
                          save=True,
                          show=True,
-                         filename="kie_temperature") -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+                         filename="kie_temperature",
+                         fig_size=(8, 3)) -> None:
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
@@ -644,18 +669,20 @@ def plot_kie_temperature(temperatures: list[float],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
 def plot_bead_convergence(n_beads: list[float],
                           kappa: list[float],
+                          fig=None,
+                          ax=None,
                           save=True,
                           show=True,
-                          filename="bead_temperature"
+                          filename="bead_temperature",
+                          fig_size=(8, 3)
                           ) -> None:
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Plot data
     ax.plot(n_beads, kappa, 'o-', c='black', lw=2)
@@ -667,33 +694,13 @@ def plot_bead_convergence(n_beads: list[float],
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
 
 
-def _load_plumed_colvar(path, field, derivative=False, x="time"):
-    """
-    Load and process data from a PLUMED colvar file.
-
-    This function reads a PLUMED colvar file, extracts the specified columns,
-    and optionally computes the derivative of the selected field.
-
-    Parameters:
-    path (str or pathlib.Path): Path to the PLUMED colvar file.
-    field (str): Name of the field to extract from the file.
-    derivative (bool, optional): Whether to compute the derivative of the field. Default is False.
-    x (str, optional): Name of the column to use as the x-axis. Default is "time".
-
-    Returns:
-    tuple:
-        - x_vals (numpy.ndarray): Values of the x-axis column.
-        - y_vals (numpy.ndarray): Values of the field column (or its derivative if `derivative=True`).
-
-    Raises:
-    ValueError: If the file does not start with the expected header, or if the requested columns are not found.
-    ValueError: If there are insufficient data points to compute the derivative.
-    """
+def _load_plumed_colvar(path,
+                        field,
+                        derivative=False,
+                        x="time"):
     path = Path(path)
 
     with path.open("r", encoding="utf-8") as f:
@@ -733,37 +740,21 @@ def _load_plumed_colvar(path, field, derivative=False, x="time"):
 
 def plot_plumed_field(path,
                       field,
+                      fig=None,
+                      ax=None,
                       x="time",
                       save=True,
                       show=True,
                       filename="bead_temperature",
-                      derivative=False):
-    """
-    Plot a specific field from a PLUMED colvar file.
+                      derivative=False,
+                      fig_size=(8, 3)):
+    x_vals, y_vals = _load_plumed_colvar(path,
+                                         field,
+                                         derivative=derivative,
+                                         x=x)
 
-    things one might want to plot:
-    rct, (estimate of c(t)) should flatten (no drift) once the bias is stationary.
-    zed, (normalization Zn ) should stop changing when no new CV region is being explored.
-    neff, (effective sample size) should keep growing; a long plateau too early often means you’re not visiting enough of CV space.
-
-    This function loads data from a PLUMED colvar file, extracts the specified field,
-    and plots it against the x-axis column. Optionally, it computes the derivative of the field.
-
-    Parameters:
-    path (str or pathlib.Path): Path to the PLUMED colvar file.
-    field (str): Name of the field to plot.
-    x (str, optional): Name of the column to use as the x-axis. Default is "time".
-    save (bool, optional): Whether to save the plot as a file. Default is True.
-    show (bool, optional): Whether to display the plot. Default is True.
-    filename (str, optional): Filename for saving the plot. Default is "bead_temperature".
-    derivative (bool, optional): Whether to compute the derivative of the field. Default is False.
-
-    Returns:
-    None
-    """
-    x_vals, y_vals = _load_plumed_colvar(path, field, derivative=derivative, x=x)
-
-    fig, ax = plt.subplots(1, 1, figsize=(4, 3), constrained_layout=True)
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     # Plot data
     ax.plot(x_vals, y_vals, 'o-', c='black', lw=2)
@@ -775,6 +766,4 @@ def plot_plumed_field(path,
         plt.savefig(f"{filename}.pdf")
     if show:
         plt.show()
-    else:
-        plt.close()
-    return None
+    return fig, ax
