@@ -138,7 +138,8 @@ from .tools import (add_ipi_paths,
                     make_dimer,
                     convert_code_to_string,
                     align_principal_axis,
-                    align_mols)
+                    align_mols,
+                    get_distance)
 from .xml_parse import (update_properties,
                         append_properties,
                         update_mass,

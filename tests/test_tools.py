@@ -115,3 +115,10 @@ def test_convert_code_to_string():
 
     s = nqe.convert_code_to_string(add)
     assert s == "def add(a: int, b: int) -> int:\n    \"\"\"Return the sum of *a* and *b*.\"\"\"\n    return a + b\n"
+
+
+def test_get_distance():
+    print(flush=True)
+    water = molecule("H2O")
+    dist = nqe.get_distance(water, 0, 1)
+    assert round(dist, 2) == 0.97

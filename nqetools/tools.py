@@ -653,3 +653,9 @@ def convert_code_to_string(code):
     str: The string representation of the source code.
     """
     return textwrap.dedent(inspect.getsource(code))
+
+
+def get_distance(atoms:Atoms, idx1: int, idx2: int) -> float:
+    pos1 = atoms.positions[idx1]
+    pos2 = atoms.positions[idx2]
+    return np.linalg.norm(pos1 - pos2)
