@@ -655,7 +655,28 @@ def convert_code_to_string(code):
     return textwrap.dedent(inspect.getsource(code))
 
 
-def get_distance(atoms:Atoms, idx1: int, idx2: int) -> float:
+def get_distance(atoms: Atoms, idx1: int, idx2: int) -> float:
     pos1 = atoms.positions[idx1]
     pos2 = atoms.positions[idx2]
     return np.linalg.norm(pos1 - pos2)
+
+
+def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
+    """
+    Find the index of the atom in `super_atoms` that is closest to a specific atom in `sub_atoms`.
+
+    This function calculates the Euclidean distance between the position of a given atom
+    in `sub_atoms` (specified by `sub_idx`) and all atoms in `super_atoms`. It then returns
+    the index of the atom in `super_atoms` with the smallest distance.
+
+    Parameters:
+        super_atoms (ASE Atoms object): The larger set of atoms to search within.
+        sub_atoms (ASE Atoms object): The smaller set of atoms containing the target atom.
+        sub_idx (int): The index of the target atom in `sub_atoms`.
+
+    Returns:
+        int: The index of the closest atom in `super_atoms` to the specified atom in `sub_atoms`.
+    """
+    diff = super_atoms.positions - sub_atoms.positions[sub_idx]  # Compute position differences
+    norm = np.linalg.norm(diff, axis=1)  # Calculate Euclidean distances
+    return np.argmin(norm)  # Return the index of the smallest distance

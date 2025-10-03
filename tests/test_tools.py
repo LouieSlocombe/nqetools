@@ -122,3 +122,11 @@ def test_get_distance():
     water = molecule("H2O")
     dist = nqe.get_distance(water, 0, 1)
     assert round(dist, 2) == 0.97
+
+
+def test_closest_corresponding_index():
+    print(flush=True)
+    water = molecule("H2O")
+    water2 = water.copy()
+    idx = nqe.closest_corresponding_index(water, water2, 1)
+    assert idx == 1
