@@ -3,7 +3,7 @@ import os
 from .conversions import (A_to_nm,
                           eV_to_kJpermol,
                           eVperA2_to_kJpermolpernm2)
-from .tools import round_sf
+from .tools import round_sf, get_distance
 
 
 def prep_plumed(atoms, plumed_type, plumed_args):
@@ -1401,7 +1401,8 @@ FLUSH STRIDE=1
     return ['c_dh', 'c_ah', 'diff', 'opes.bias']
 
 
-def write_plumed_opes_1pt_3donor_coord(directory=None,
+def write_plumed_opes_1pt_3donor_coord(atoms,
+                                       directory=None,
                                        idx_n3=0,
                                        idx_h3=1,
                                        idx_o6=2,
@@ -1414,16 +1415,32 @@ def write_plumed_opes_1pt_3donor_coord(directory=None,
                                        pace=10,
                                        stride=10,
                                        barrier=0.5,
-                                       r0=1.5,
+                                       r0=1.1,
                                        stride_hills=100,
-                                       explore=False):
+                                       explore=False,
+                                       d_upper=4.0,
+                                       kappa=500.0):
     if directory is None:
         directory = os.getcwd()
 
     # Convert barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
     # Convert r0 from A to nm
-    r0 = round_sf(r0 * A_to_nm)
+    # r0 = round_sf(r0 * A_to_nm)
+
+    # Convert d_upper from A to nm
+    d_upper = round_sf(d_upper * A_to_nm)
+
+    r_1 = round_sf(get_distance(atoms, idx_n3, idx_h3) * r0 * A_to_nm)
+    r_2 = round_sf(get_distance(atoms, idx_o6, idx_h3) * r0 * A_to_nm)
+    r_3 = round_sf(get_distance(atoms, idx_o6, idx_h3) * r0 * A_to_nm)
+    r_4 = round_sf(get_distance(atoms, idx_o4, idx_h3) * r0 * A_to_nm)
+    r_5 = round_sf(get_distance(atoms, idx_n1, idx_h1) * r0 * A_to_nm)
+    r_6 = round_sf(get_distance(atoms, idx_n3, idx_h1) * r0 * A_to_nm)
+    r_7 = round_sf(get_distance(atoms, idx_n1, idx_o2) * r0 * A_to_nm)
+    r_8 = round_sf(get_distance(atoms, idx_n2, idx_o2) * r0 * A_to_nm)
+    r_9 = round_sf(get_distance(atoms, idx_n2, idx_o2) * r0 * A_to_nm)
+    r_10 = round_sf(get_distance(atoms, idx_n1, idx_n3) * r0 * A_to_nm)
 
     # Fix indexing to start from 1 (PLUMED convention)
     idx_n3 += 1
@@ -1442,8 +1459,8 @@ def write_plumed_opes_1pt_3donor_coord(directory=None,
 
     impt = f"""
 # z1: top PT reaction coordinate
-c_1: COORDINATION GROUPA={idx_n3} GROUPB={idx_h3} R_0={r0}
-c_2: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r0}
+c_1: COORDINATION GROUPA={idx_n3} GROUPB={idx_h3} R_0={r_1}
+c_2: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r_2}
 
 # c_1: DISTANCE ATOMS={idx_n3},{idx_h3}
 # c_2: DISTANCE ATOMS={idx_o6},{idx_h3}
@@ -1451,8 +1468,8 @@ c_2: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r0}
 z1: COMBINE ARG=c_1,c_2 COEFFICIENTS=1,-1 PERIODIC=NO
 
 # z2: top PT reaction coordinate
-c_3: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r0}
-c_4: COORDINATION GROUPA={idx_o4} GROUPB={idx_h3} R_0={r0}
+c_3: COORDINATION GROUPA={idx_o6} GROUPB={idx_h3} R_0={r_3}
+c_4: COORDINATION GROUPA={idx_o4} GROUPB={idx_h3} R_0={r_4}
 
 # c_3: DISTANCE ATOMS={idx_o6},{idx_h3}
 # c_4: DISTANCE ATOMS={idx_o4},{idx_h3}
@@ -1460,8 +1477,8 @@ c_4: COORDINATION GROUPA={idx_o4} GROUPB={idx_h3} R_0={r0}
 z2: COMBINE ARG=c_3,c_4 COEFFICIENTS=1,-1 PERIODIC=NO
 
 # z3: second PT reaction coordinate
-c_5: COORDINATION GROUPA={idx_n1} GROUPB={idx_h1} R_0={r0}
-c_6: COORDINATION GROUPA={idx_n3} GROUPB={idx_h1} R_0={r0}
+c_5: COORDINATION GROUPA={idx_n1} GROUPB={idx_h1} R_0={r_5}
+c_6: COORDINATION GROUPA={idx_n3} GROUPB={idx_h1} R_0={r_6}
 
 # c_5: DISTANCE ATOMS={idx_n1},{idx_h1}
 # c_6: DISTANCE ATOMS={idx_n3},{idx_h1}
@@ -1469,8 +1486,8 @@ c_6: COORDINATION GROUPA={idx_n3} GROUPB={idx_h1} R_0={r0}
 z3: COMBINE ARG=c_5,c_6 COEFFICIENTS=1,-1 PERIODIC=NO
     
 # z4
-c_7: COORDINATION GROUPA={idx_n1} GROUPB={idx_o2} R_0={r0}
-c_8: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r0}
+c_7: COORDINATION GROUPA={idx_n1} GROUPB={idx_o2} R_0={r_7}
+c_8: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r_8}
 
 # c_7: DISTANCE ATOMS={idx_n1},{idx_o2}
 # c_8: DISTANCE ATOMS={idx_n2},{idx_o2}
@@ -1478,19 +1495,26 @@ c_8: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r0}
 z4: COMBINE ARG=c_7,c_8 COEFFICIENTS=1,-1 PERIODIC=NO
 
 # z5
-c_9: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r0}
-c_10: COORDINATION GROUPA={idx_n1} GROUPB={idx_n3} R_0={r0}
+c_9: COORDINATION GROUPA={idx_n2} GROUPB={idx_o2} R_0={r_9}
+c_10: COORDINATION GROUPA={idx_n1} GROUPB={idx_n3} R_0={r_10}
 
 # c_9: DISTANCE ATOMS={idx_n2},{idx_o2} 
 # c_10: DISTANCE ATOMS={idx_n1},{idx_n3}
 
 z5: COMBINE ARG=c_9,c_10 COEFFICIENTS=1,-1 PERIODIC=NO
 
-
-#z:   COMBINE ARG=z1,z2,z3 COEFFICIENTS=1,1,1 PERIODIC=NO
 z:   COMBINE ARG=z1,z2,z3,z4,z5 COEFFICIENTS=1,1,1,1,1 PERIODIC=NO
 
 opes: {opes_command} ARG=z PACE={pace} BARRIER={barrier} TEMP={temperature} STATE_WFILE=STATE STATE_WSTRIDE={pace}*{stride_hills} STORE_STATES
+
+d1: DISTANCE ATOMS={idx_o6},{idx_o4} 
+d2: DISTANCE ATOMS={idx_n1},{idx_n3}
+d3: DISTANCE ATOMS={idx_n2},{idx_o2}
+
+
+uw1: UPPER_WALLS ARG=d1 AT={d_upper} KAPPA={kappa}
+uw2: UPPER_WALLS ARG=d2 AT={d_upper} KAPPA={kappa}
+uw3: UPPER_WALLS ARG=d3 AT={d_upper} KAPPA={kappa}
 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
