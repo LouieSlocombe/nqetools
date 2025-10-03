@@ -82,6 +82,7 @@ from .pathway import (get_neb_path,
                       quick_guess_ts,
                       calculate_goat,
                       bonded_cluster_indices_no_anchor_hub,
+                      get_dimer_bonded_cluster_indices,
                       flip_and_face_bases,
                       optimize_with_fixed_anchors,
                       get_best_flip_and_face_bases)

@@ -557,7 +557,7 @@ def calculate_goat(atoms,
 def bonded_cluster_indices_no_anchor_hub(atoms: Atoms,
                                          anchor: int,
                                          mult: float = 1.0,
-                                         multi_h: float=1.3) -> list[int]:
+                                         multi_h: float = 1.3) -> list[int]:
     n = len(atoms)
     if not (0 <= anchor < n):
         raise IndexError(f"Anchor index {anchor} out of range for {n} atoms.")
@@ -592,6 +592,25 @@ def bonded_cluster_indices_no_anchor_hub(atoms: Atoms,
                 stack.append(j)
 
     return sorted(visited)
+
+
+def get_dimer_bonded_cluster_indices(atoms: Atoms,
+                                     anchors: list[int],
+                                     mults=None,
+                                     multi_h: float = 1.3) -> list[int]:
+    if mults is None:
+        mults = [1.0, 1.0]
+
+    if len(anchors) != 2:
+        raise ValueError("Anchors list must contain exactly two indices.")
+
+    if len(mults) != 2:
+        raise ValueError("Mults list must contain exactly two values.")
+
+    base_a = bonded_cluster_indices_no_anchor_hub(atoms, anchors[0], mult=mults[0], multi_h=multi_h)
+    base_b = bonded_cluster_indices_no_anchor_hub(atoms, anchors[1], mult=mults[1], multi_h=multi_h)
+
+    return list(sorted(set(base_a + base_b)))
 
 
 def _pca_frame(positions):
@@ -704,7 +723,6 @@ def optimize_with_fixed_anchors(atoms: Atoms,
     # Perform energy minimization
     optimizer = BFGS(atoms_opt)
     optimizer.run(fmax=fmax)
-    view(atoms_opt)
     atoms_out = atoms.copy()
     atoms_out[baseA_idxs + baseB_idxs].set_positions(atoms_opt.get_positions())
 
