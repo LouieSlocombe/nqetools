@@ -533,3 +533,26 @@ def test_ase_qmmm():
     energy = atoms.get_potential_energy()
     print(f"Energy: {energy:.3f}", flush=True)
     assert np.allclose(energy, -4253.264, rtol=1e-2), "Energy does not match expected value"
+
+def test_ase_qmmm_orca_mace():
+    print(flush=True)
+    m1 = molecule('H2O')
+    m2 = molecule('C2H6')
+    m2.translate([3, 0, 0])
+    atoms = m1 + m2
+    atoms.center(vacuum=5.0)
+
+    # Set up cheap small model for MM
+    mm_calc = mace_off(model="small",
+                       device="cuda",
+                       default_dtype="float64")
+    qm_calc = nqe.orca_calc_preset()
+
+    qmmm_calc = SimpleQMMM([0, 1, 2],
+                           qm_calc,
+                           mm_calc,
+                           mm_calc)
+    atoms.calc = qmmm_calc
+    energy = atoms.get_potential_energy()
+    print(f"Energy: {energy:.3f}", flush=True)
+    assert np.allclose(energy, -4250.656, rtol=1e-2), "Energy does not match expected value"
