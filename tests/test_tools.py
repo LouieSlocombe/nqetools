@@ -130,3 +130,17 @@ def test_closest_corresponding_index():
     water2 = water.copy()
     idx = nqe.closest_corresponding_index(water, water2, 1)
     assert idx == 1
+
+def test_combine_without_overlaps():
+    print(flush=True)
+    water = molecule("H2O")
+
+    water2 = water.copy()
+    water2.translate([5,0,0])
+    combined = nqe.combine_without_overlaps(water, water2)
+    assert len(combined) == 6
+
+    water3 = water.copy()
+    water3.translate([0.5,0,0])
+    combined2 = nqe.combine_without_overlaps(water, water3)
+    assert len(combined2) == 3
