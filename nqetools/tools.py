@@ -1,17 +1,18 @@
-import glob
-import inspect
-import os
 import sys
-import textwrap
 import time
 
+import glob
+import inspect
 import ipi
 import numpy as np
+import os
+import textwrap
 from ase import Atoms
 from ase.build import minimize_rotation_and_translation
 from ase.constraints import FixAtoms
 from ase.neighborlist import NeighborList, natural_cutoffs
 from ase.optimize import BFGS
+from typing import List, Set
 
 
 def add_ipi_paths(base: str = None) -> None:
@@ -680,3 +681,127 @@ def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
     diff = super_atoms.positions - sub_atoms.positions[sub_idx]  # Compute position differences
     norm = np.linalg.norm(diff, axis=1)  # Calculate Euclidean distances
     return np.argmin(norm)  # Return the index of the smallest distance
+
+
+def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> List[List[int]]:
+    """
+    Return connected components (bonded groups) using ASE's natural cutoffs.
+    Each group is a list of atom indices in `atoms`.
+    """
+    if len(atoms) == 0:
+        return []
+    cutoffs = [cutoff_scale * c for c in natural_cutoffs(atoms)]
+    nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
+    nl.update(atoms)
+
+    # Build adjacency list
+    adj = [[] for _ in range(len(atoms))]
+    for i in range(len(atoms)):
+        indices, offsets = nl.get_neighbors(i)
+        # only indices are needed for connectivity
+        for j in indices:
+            adj[i].append(j)
+
+    # BFS to get connected components
+    seen: Set[int] = set()
+    groups: List[List[int]] = []
+    for i in range(len(atoms)):
+        if i in seen:
+            continue
+        stack = [i]
+        comp = []
+        seen.add(i)
+        while stack:
+            u = stack.pop()
+            comp.append(u)
+            for v in adj[u]:
+                if v not in seen:
+                    seen.add(v)
+                    stack.append(v)
+        groups.append(sorted(comp))
+    return groups
+
+
+def combine_without_overlaps(
+        A: Atoms,
+        B: Atoms,
+        *,
+        bond_cutoff_scale: float = 1.0,
+        overlap_cutoff_scale: float = 1.0,
+) -> Atoms:
+    """
+    Combine two Atoms objects (A + B) while removing any *molecule* from B
+    that overlaps with A (based on natural cutoffs).
+
+    Overlap criterion:
+        distance(i in A, j in B) < overlap_cutoff_scale * (r_i + r_j)
+    where r_k are ASE's natural cutoffs for bonding.
+
+    Parameters
+    ----------
+    A, B : ase.Atoms
+        Input structures. They are not modified.
+    bond_cutoff_scale : float, optional
+        Scale factor for building connectivity (bonded groups). Default 1.0.
+    overlap_cutoff_scale : float, optional
+        Scale factor for the overlap detection between A and B. Default 1.0.
+        Increase slightly (e.g., 1.1) to be more aggressive at removing clashes.
+
+    Returns
+    -------
+    merged : ase.Atoms
+        The merged structure with clashing molecules from B removed and A appended intact.
+    """
+    # Defensive copies
+    A = A.copy()
+    B = B.copy()
+
+    # Build bonded groups in B alone (so we can remove whole molecules)
+    groups_B = _bonded_groups(B, cutoff_scale=bond_cutoff_scale)
+    index_to_group_B = {}
+    for gidx, group in enumerate(groups_B):
+        for i in group:
+            index_to_group_B[i] = gidx
+
+    # Detect overlaps between A and B using a NeighborList on the *combined* cutoffs,
+    # but we only care about cross-set contacts (i in A, j in B).
+    # NeighborList uses per-atom cutoffs and considers pairs if d < cutoff[i] + cutoff[j].
+    if len(A) and len(B):
+        # Create a temporary concatenated Atoms to reuse PBC/cell consistently
+        # We'll place A first, then B, but positions/cell/pbc are already defined.
+        # If A and B have different cell/PBC, ASE uses the Atoms' own; in practice
+        # you typically set B's cell/PBC (e.g., the water box) and add A into that box first.
+        # Here we assume A and B are already in the same box / coordinate frame.
+        AB = A + B
+
+        # Overlap cutoffs
+        ov_cutoffs = [overlap_cutoff_scale * c for c in natural_cutoffs(AB)]
+        nl_ab = NeighborList(ov_cutoffs, self_interaction=False, bothways=True, skin=0.0)
+        nl_ab.update(AB)
+
+        nA = len(A)
+        # For every atom in A, find neighbors; keep those neighbors whose index is in B
+        # (i.e., >= nA) and record the corresponding B atom index.
+        b_atoms_to_remove: Set[int] = set()
+        for iA in range(nA):
+            js, _ = nl_ab.get_neighbors(iA)
+            for j in js:
+                if j >= nA:  # j belongs to B
+                    jB = j - nA
+                    # Map to the full B molecule (group) and mark all its atoms for removal
+                    gidx = index_to_group_B.get(jB, None)
+                    if gidx is not None:
+                        b_atoms_to_remove.update(groups_B[gidx])
+                    else:
+                        # If an atom in B had no group (isolated), remove that atom alone
+                        b_atoms_to_remove.add(jB)
+
+        # Create B' without the removed atoms
+        if b_atoms_to_remove:
+            keep = [i for i in range(len(B)) if i not in b_atoms_to_remove]
+            B = B[keep]
+
+    # Merge the cleaned B with A (A first by convention)
+    merged = A + B
+
+    return merged
