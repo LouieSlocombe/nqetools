@@ -39,6 +39,7 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_mtd_pt2_a(atoms, **plumed_args)
     elif plumed_type == 'opes-pt2_a':
         return write_plumed_opes_pt2_a(atoms, **plumed_args)
+
     elif plumed_type == 'mtd-pt-wob':
         return write_plumed_mtd_pt_wob(atoms, **plumed_args)
     elif plumed_type == 'opes-pt-wob':
@@ -70,6 +71,12 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_opes_2pt_1d_coord(**plumed_args)
     elif plumed_type == 'opes_2pt_1d_coord_com':
         return write_plumed_opes_2pt_1d_coord_com(**plumed_args)
+
+    elif plumed_type == 'custom':
+        # Write the input file
+        with open(os.path.join(plumed_args['directory'], "plumed.dat"), "w") as f:
+            f.write(plumed_args['input'])
+        return plumed_args['output']
 
     else:
         raise ValueError(f'Unknown plumed type: {plumed_type}')
