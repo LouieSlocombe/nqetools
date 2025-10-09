@@ -534,6 +534,7 @@ def test_ase_qmmm():
     print(f"Energy: {energy:.3f}", flush=True)
     assert np.allclose(energy, -4253.264, rtol=1e-2), "Energy does not match expected value"
 
+
 def test_ase_qmmm_orca_mace():
     print(flush=True)
     m1 = molecule('H2O')
@@ -556,6 +557,7 @@ def test_ase_qmmm_orca_mace():
     energy = atoms.get_potential_energy()
     print(f"Energy: {energy:.3f}", flush=True)
     assert np.allclose(energy, -4250.656, rtol=1e-2), "Energy does not match expected value"
+
 
 def test_ase_eiqmmm():
     # Broken as ORCA does not have AttributeError: 'ORCA' object has no attribute 'embed'

@@ -155,7 +155,7 @@ def update_driver(root, atoms, f_driver):
     None
     """
     # Check if the driver is valid
-    assert f_driver in ["zundel", "cbe", "mace", "ase-mace", "ase-nwchem", "ase-orca", "nwchem"]
+    assert f_driver in ["zundel", "cbe", "mace", "ase-mace","ase-qmmm-mace", "ase-nwchem", "ase-orca", "nwchem"]
     f_pbcs = has_pbc(atoms)
     if f_driver == "zundel":
         for rank in root.iter('ffsocket'):

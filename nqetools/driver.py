@@ -1,6 +1,5 @@
-import os
-
 import ipi
+import os
 import torch
 
 from .calculators import (nwchem_calc_preset)
@@ -45,6 +44,67 @@ client.run(atoms, use_stress=True)
     # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
+    return None
+
+
+def write_ase_qmmm_mace_driver(
+        directory,
+        out_file="run-ase-qmmm-mace.py",
+        in_file="init.xyz",
+        qm_indices=None,
+        qm_model_type="omol",
+        qm_model="medium",
+        mm_model_type="off",
+        mm_model="small",
+        device=None,
+        default_dtype="float64",
+        enable_cueq=False,
+        host="driver"):
+    # Validate model types
+    if qm_indices is None:
+        qm_indices = [0]
+
+    assert qm_model_type in ["off", "mp", "anicc", "omol"], "QM model type must be one of: off, mp, anicc, omol"
+    assert mm_model_type in ["off", "mp", "anicc", "omol"], "MM model type must be one of: off, mp, anicc, omol"
+
+    if device is None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Create the Python script content
+    in_str = f"""
+from ase.io import read
+from mace.calculators import mace_{qm_model_type}, mace_{mm_model_type}
+from ase.calculators.qmmm import SimpleQMMM
+from ase.calculators.socketio import SocketClient
+atoms = read('{in_file}', 0)
+"""
+
+    # Configure the QM calculator based on type
+    if qm_model_type in ["off", "mp", "omol"]:
+        in_str += f"qm_calc = mace_{qm_model_type}(model='{qm_model}', device='{device}', default_dtype='{default_dtype}', enable_cueq={enable_cueq})\n"
+    else:  # For anicc
+        in_str += f"qm_calc = mace_{qm_model_type}(device='{device}')\n"
+
+    # Configure the MM calculator
+    in_str += f"\n# Set up MM calculator\n"
+    if mm_model_type in ["off", "mp", "omol"]:
+        in_str += f"mm_calc = mace_{mm_model_type}(model='{mm_model}', device='{device}', default_dtype='{default_dtype}', enable_cueq={enable_cueq})\n"
+    else:  # For anicc
+        in_str += f"mm_calc = mace_{mm_model_type}(device='{device}')\n"
+
+    # Add QM/MM setup and socket client
+    in_str += f"""
+qm_indices = {qm_indices}
+qmmm_calc = SimpleQMMM(qm_indices, qm_calc, mm_calc, mm_calc)
+atoms.calc = qmmm_calc
+client = SocketClient(unixsocket='{host}')
+client.run(atoms)
+"""
+
+    # Write the file
+    with open(os.path.join(directory, out_file), "w") as f:
+        f.write(in_str)
+
     return None
 
 
@@ -375,28 +435,47 @@ def prep_driver(atoms, directory, f_driver, driver_args):
     str: The command to run the prepared driver.
     """
     driver_path = get_ipi_driver()
+    # Prepare the CBE driver
     if f_driver == "cbe":
         return f"{driver_path} -m ch4hcbe -u"
+
+    # Prepare the Zundel driver
     elif f_driver == "zundel":
         move_zundel_driver_pes_files(directory)
         return f"{driver_path} -u -a zundel -m zundel"
+
+    # Prepare the straight MACE driver
     elif f_driver == "mace":
         # If the driver is an ASE-MACE driver, write the driver file
         write_ase_mace_driver(directory, **driver_args)
         f_model = driver_args.get("model", "small")
         return f"i-pi-py_driver -a driver -u -m mace -o init.xyz,{f_model}"
+
+    # Prepare the ASE-MACE driver
     elif f_driver == "ase-mace":
         # If the driver is an ASE-MACE driver, write the driver file
         write_ase_mace_driver(directory, **driver_args)
         return "python3 run-ase-mace.py"
+
+    # Prepare the ASE-QMMM-MACE driver
+    elif f_driver == "ase-qmmm-mace":
+        # If the driver is an ASE-QMMM-MACE driver, write the driver file
+        write_ase_qmmm_mace_driver(directory, **driver_args)
+        return "python3 run-ase-qmmm-mace.py"
+
+    # Prepare the ASE-NWChem driver
     elif f_driver == "ase-nwchem":
         # If the driver is an ASE-NWChem driver, write the driver file
         write_ase_nwchem_driver(directory, **driver_args)
         return "python3 run-ase-nwchem.py"
+
+    # Prepare the ASE-ORCA driver
     elif f_driver == "ase-orca":
         # If the driver is an ASE-ORCA driver, write the driver file
         write_ase_orca_driver(directory, **driver_args)
         return "python3 run-ase-orca.py"
+
+    # Prepare the NWChem driver
     elif f_driver == "nwchem":
         write_nwchem_driver(atoms, directory, **driver_args)
         return "nwchem nwchem.nwi > nwchem.out"

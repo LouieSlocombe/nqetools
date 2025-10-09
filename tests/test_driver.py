@@ -85,6 +85,36 @@ def test_ase_mace_driver_omol():
     pass
 
 
+def test_ase_mace_driver_qmmm():
+    print(flush=True)
+    print("Testing MACE driver", flush=True)
+
+    # Build the molecule
+    atoms1 = ase.build.molecule('H2O')
+    atoms2 = ase.build.molecule('H2O')
+    atoms2.translate([0.0, 0.0, 3.0])  # Move the second water molecule
+    atoms = atoms1 + atoms2
+
+    atoms.center(vacuum=10.0)
+
+    # Make a directory to store everything
+    directory = "mace_opti"
+    driver_args = {'qm_indices': [0],
+                   'qm_model_type': 'omol',
+                   'qm_model': 'extra_large',
+                   'mm_model_type': 'off',
+                   'mm_model': 'small',
+                   'device': 'cuda',
+                   'default_dtype': 'float32'}
+    nqe.run_optimise(directory,
+                     atoms,
+                     driver='ase-qmmm-mace',
+                     total_steps=2,
+                     driver_args=driver_args)
+    nqe.remove_directory(directory)
+    pass
+
+
 def test_ase_orca_driver():
     """
     Tests the ORCA driver using the ASE driver.
