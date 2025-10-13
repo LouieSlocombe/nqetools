@@ -142,7 +142,8 @@ from .tools import (add_ipi_paths,
                     align_mols,
                     get_distance,
                     closest_corresponding_index,
-                    combine_without_overlaps)
+                    combine_without_overlaps,
+                    largest_bonded_cluster_indices)
 from .xml_parse import (update_properties,
                         append_properties,
                         update_mass,

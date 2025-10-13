@@ -131,16 +131,34 @@ def test_closest_corresponding_index():
     idx = nqe.closest_corresponding_index(water, water2, 1)
     assert idx == 1
 
+
 def test_combine_without_overlaps():
     print(flush=True)
     water = molecule("H2O")
 
     water2 = water.copy()
-    water2.translate([5,0,0])
+    water2.translate([5, 0, 0])
     combined = nqe.combine_without_overlaps(water, water2)
     assert len(combined) == 6
 
     water3 = water.copy()
-    water3.translate([0.5,0,0])
+    water3.translate([0.5, 0, 0])
     combined2 = nqe.combine_without_overlaps(water, water3)
     assert len(combined2) == 3
+
+
+def test_largest_bonded_cluster_indices():
+    print(flush=True)
+    # Create an example Atoms object (for instance, two separate water molecules)
+
+    water = molecule("H2O")
+    # Translate the second water molecule so it does not overlap with the first.
+    water2 = molecule("H2")
+    water2.translate([5, 0, 0])
+
+    # Combine into a single Atoms object.
+    combined = water + water2
+
+    indices = nqe.largest_bonded_cluster_indices(combined)
+    assert len(indices) == 3
+    assert indices == [0, 1, 2]
