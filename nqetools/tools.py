@@ -1,18 +1,18 @@
-import sys
-import time
-
 import glob
 import inspect
 import ipi
 import numpy as np
 import os
+import sys
 import textwrap
-from ase import Atoms
+import time
+from ase.atoms import Atoms
 from ase.build import minimize_rotation_and_translation
 from ase.constraints import FixAtoms
 from ase.neighborlist import NeighborList, natural_cutoffs
 from ase.optimize import BFGS
-from typing import List, Set
+from typing import List
+from typing import Set
 
 
 def add_ipi_paths(base: str = None) -> None:
@@ -805,3 +805,49 @@ def combine_without_overlaps(
     merged = A + B
 
     return merged
+
+
+def largest_bonded_cluster_indices(atoms: Atoms) -> List[int]:
+    n = len(atoms)
+    if n == 0:
+        return []
+
+    # Build neighbor list using ASE's natural covalent radii-based cutoffs
+    cutoffs = natural_cutoffs(atoms)
+    nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
+    nl.update(atoms)
+
+    # Build adjacency as a list of sets for speed
+    adj = [set() for _ in range(n)]
+    for i in range(n):
+        idxs, _ = nl.get_neighbors(i)
+        for j in idxs:
+            # bothways=True should already ensure symmetry, but make it explicit
+            adj[i].add(int(j))
+            adj[int(j)].add(i)
+
+    # Find connected components (clusters) with an iterative DFS
+    visited = [False] * n
+    largest_cluster = []
+
+    for start in range(n):
+        if visited[start]:
+            continue
+        stack = [start]
+        cluster = []
+        visited[start] = True
+        while stack:
+            u = stack.pop()
+            cluster.append(u)
+            for v in adj[u]:
+                if not visited[v]:
+                    visited[v] = True
+                    stack.append(v)
+
+        # Keep the largest; break ties by smallest index in the cluster
+        if (len(cluster) > len(largest_cluster) or
+                (len(cluster) == len(largest_cluster) and cluster and min(cluster) < (
+                        min(largest_cluster) if largest_cluster else float('inf')))):
+            largest_cluster = cluster
+
+    return sorted(largest_cluster)
