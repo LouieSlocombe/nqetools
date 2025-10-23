@@ -1,0 +1,20 @@
+name: nqetools
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.9
+  - pip
+  - numpy
+  - pandas
+  - matplotlib
+  - ase
+  - scipy
+  - pyfftw
+  - pip:
+    - mace-torch
+    - plumed
+    - sella
+    - ipi
+    - chemiscope
+    - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
