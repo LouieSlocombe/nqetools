@@ -24,8 +24,8 @@ def centroid_positions(integrator, n_beads, n_atoms):
     return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer
 
 
-def main(pdb_path):
-    pdb = app.PDBFile(pdb_path)
+if __name__ == "__main__":
+    pdb = app.PDBFile("data/pdb/input_aaa.pdb")
     topo = pdb.topology
     pos0 = pdb.positions
 
@@ -44,33 +44,37 @@ def main(pdb_path):
     )
 
     # --- RPMD integrator ---
-    n_beads = 64
+    n_beads = 16
     temperature = 300 * unit.kelvin
     friction = 1.0 / unit.picosecond
     dt = 0.5 * unit.femtosecond
+
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
     integrator.setApplyThermostat(True)
     integrator.setRandomNumberSeed(2025)
 
-    # Platform (pick what you have; CPU works everywhere)
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    context = openmm.Context(system, integrator, platform)
+    # # Platform, CPU/GPU selection
+    # platform = openmm.Platform.getPlatformByName("CPU") #CUDA
+    # openmm.Context(system, integrator, platform)
 
     # Initialize each bead with the input coordinates + tiny random jiggle
+    perturbation = 0.002  # nm
     n_atoms = topo.getNumAtoms()
     rng = np.random.default_rng(0)
     for b in range(n_beads):
-        jiggle = 0.002 * rng.normal(size=(n_atoms, 3))  # ~0.002 nm perturbation
+        jiggle = perturbation * rng.normal(size=(n_atoms, 3))  # ~0.002 nm perturbation
         bead_pos = []
         for i, p in enumerate(pos0):
             bead_pos.append(openmm.Vec3(p.x + jiggle[i, 0],
                                         p.y + jiggle[i, 1],
-                                        p.z + jiggle[i, 2]))
-        integrator.setPositions(b, bead_pos * unit.nanometer)
+                                        p.z + jiggle[i, 2])* unit.nanometer)
+        integrator.setPositions(b, bead_pos)
         integrator.setVelocities(b, gaussian_velocities(n_atoms, temperature))
 
+
+
     # Simple run parameters
-    n_steps = 20000
+    n_steps = 1_000
     report_every = 100
     out_pdb = Path("centroid_trajectory.pdb")
 
@@ -94,9 +98,4 @@ def main(pdb_path):
                 write_multimodel_pdb(topo, centroid, fh, model_index=step // report_every)
 
         app.PDBFile.writeFooter(topo, fh)
-
     print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
-
-
-if __name__ == "__main__":
-    main("data/pdb/input_aaa.pdb")
