@@ -53,9 +53,9 @@ if __name__ == "__main__":
     integrator.setApplyThermostat(True)
     integrator.setRandomNumberSeed(2025)
 
-    # # Platform, CPU/GPU selection
-    # platform = openmm.Platform.getPlatformByName("CPU") #CUDA
-    # openmm.Context(system, integrator, platform)
+    # Platform, CPU/GPU selection
+    platform = openmm.Platform.getPlatformByName("CUDA")  # CUDA
+    context = openmm.Context(system, integrator, platform)
 
     # Initialize each bead with the input coordinates + tiny random jiggle
     perturbation = 0.002  # nm
@@ -67,11 +67,9 @@ if __name__ == "__main__":
         for i, p in enumerate(pos0):
             bead_pos.append(openmm.Vec3(p.x + jiggle[i, 0],
                                         p.y + jiggle[i, 1],
-                                        p.z + jiggle[i, 2])* unit.nanometer)
-        integrator.setPositions(b, bead_pos)
+                                        p.z + jiggle[i, 2]))
+        integrator.setPositions(b, bead_pos * unit.nanometer)
         integrator.setVelocities(b, gaussian_velocities(n_atoms, temperature))
-
-
 
     # Simple run parameters
     n_steps = 1_000
