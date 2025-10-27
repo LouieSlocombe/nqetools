@@ -3,10 +3,23 @@ from pathlib import Path
 
 import numpy as np
 from openmm import openmm, app, unit
+from pdbfixer import PDBFixer
 
 
-def gaussian_velocities(n_atoms, temperature):
-    kB = unit.BOLTZMANN_CONSTANT_kB * unit.AVOGADRO_CONSTANT_NA  # kJ/mol/K
+def fix_pdb(file_in, file_out, ph=7.0):
+    fixer = PDBFixer(filename=file_in)
+    fixer.findMissingResidues()
+    fixer.findNonstandardResidues()
+    fixer.replaceNonstandardResidues()
+    fixer.removeHeterogens(True)
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
+    fixer.addMissingHydrogens(ph)
+    app.PDBFile.writeFile(fixer.topology, fixer.positions, open(file_out, 'w'))
+    return None
+
+
+def zero_velocities(n_atoms):
     return [openmm.Vec3(0, 0, 0) for _ in range(n_atoms)] * (unit.nanometer / unit.picosecond)
 
 
@@ -14,7 +27,8 @@ def write_multimodel_pdb(topology, positions, fh, model_index):
     app.PDBFile.writeModel(topology, positions, fh, modelIndex=model_index)
 
 
-def centroid_positions(integrator, n_beads, n_atoms):
+def centroid_positions(integrator, n_atoms):
+    n_beads = integrator.getNumCopies()
     acc = np.zeros((n_atoms, 3), dtype=float)
     for b in range(n_beads):
         state = integrator.getState(b, getPositions=True)
@@ -24,10 +38,35 @@ def centroid_positions(integrator, n_beads, n_atoms):
     return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer
 
 
-if __name__ == "__main__":
-    pdb = app.PDBFile("data/pdb/input_aaa.pdb")
-    topo = pdb.topology
+def init_beads(pdb, integrator, perturb=0.002):
+    rng = np.random.default_rng(0)
     pos0 = pdb.positions
+    n_atoms = len(pos0)
+    n_beads = integrator.getNumCopies()
+    for b in range(n_beads):
+        jiggle = perturb * rng.normal(size=(n_atoms, 3))
+        bead_pos = [openmm.Vec3(p.x + dx, p.y + dy, p.z + dz)
+                    for p, (dx, dy, dz) in zip(pos0, jiggle)]
+        integrator.setPositions(b, bead_pos * unit.nanometer)
+        integrator.setVelocities(b, zero_velocities(n_atoms))
+
+
+if __name__ == "__main__":
+    # Simple run parameters
+    n_steps = 1_000
+    report_every = 100
+    in_pdb = "data/pdb/input_aaa.pdb"
+    out_pdb = Path("centroid_trajectory.pdb")
+
+    # --- RPMD integrator ---
+    n_beads = 16
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    topo = pdb.topology
+    n_atoms = topo.getNumAtoms()
 
     # Try a commonly available force field (standard AA + water/ions).
     ff = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
@@ -38,16 +77,10 @@ if __name__ == "__main__":
         topo,
         nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
         nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,  # <-- no bond/angle constraints
+        constraints=None,  # <-- no bond/angle constraints app.HBonds
         rigidWater=False,  # <-- make waters flexible (otherwise they stay rigid)
         removeCMMotion=True,
     )
-
-    # --- RPMD integrator ---
-    n_beads = 16
-    temperature = 300 * unit.kelvin
-    friction = 1.0 / unit.picosecond
-    dt = 0.5 * unit.femtosecond
 
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
     integrator.setApplyThermostat(True)
@@ -58,29 +91,13 @@ if __name__ == "__main__":
     context = openmm.Context(system, integrator, platform)
 
     # Initialize each bead with the input coordinates + tiny random jiggle
-    perturbation = 0.002  # nm
-    n_atoms = topo.getNumAtoms()
-    rng = np.random.default_rng(0)
-    for b in range(n_beads):
-        jiggle = perturbation * rng.normal(size=(n_atoms, 3))  # ~0.002 nm perturbation
-        bead_pos = []
-        for i, p in enumerate(pos0):
-            bead_pos.append(openmm.Vec3(p.x + jiggle[i, 0],
-                                        p.y + jiggle[i, 1],
-                                        p.z + jiggle[i, 2]))
-        integrator.setPositions(b, bead_pos * unit.nanometer)
-        integrator.setVelocities(b, gaussian_velocities(n_atoms, temperature))
-
-    # Simple run parameters
-    n_steps = 1_000
-    report_every = 100
-    out_pdb = Path("centroid_trajectory.pdb")
+    init_beads(pdb, integrator)
 
     # Prepare multi-MODEL PDB (centroid coordinates)
     with open(out_pdb, "w") as fh:
         app.PDBFile.writeHeader(topo, fh)
         # write initial centroid (model 0)
-        centroid = centroid_positions(integrator, n_beads, n_atoms)
+        centroid = centroid_positions(integrator, n_atoms)
         write_multimodel_pdb(topo, centroid, fh, model_index=0)
 
         # Integrate and save snapshots
@@ -92,7 +109,7 @@ if __name__ == "__main__":
                 E = integrator.getTotalEnergy().value_in_unit(unit.kilojoule_per_mole)
                 print(f"step {step:6d} | total RPMD energy: {E:12.3f} kJ/mol")
 
-                centroid = centroid_positions(integrator, n_beads, n_atoms)
+                centroid = centroid_positions(integrator, n_atoms)
                 write_multimodel_pdb(topo, centroid, fh, model_index=step // report_every)
 
         app.PDBFile.writeFooter(topo, fh)
