@@ -4,7 +4,9 @@ from pathlib import Path
 import numpy as np
 from openmm import openmm, app, unit
 from pdbfixer import PDBFixer
+from openmmml import MLPotential
 
+from sys import stdout
 
 def fix_pdb(file_in, file_out, ph=7.0):
     fixer = PDBFixer(filename=file_in)
@@ -38,9 +40,9 @@ def centroid_positions(integrator, n_atoms):
     return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer
 
 
-def init_beads(pdb, integrator, perturb=0.002):
+def init_beads(modeller, integrator, perturb=0.002):
     rng = np.random.default_rng(0)
-    pos0 = pdb.positions
+    pos0 = modeller.positions
     n_atoms = len(pos0)
     n_beads = integrator.getNumCopies()
     for b in range(n_beads):
@@ -59,58 +61,82 @@ if __name__ == "__main__":
     out_pdb = Path("centroid_trajectory.pdb")
 
     # --- RPMD integrator ---
-    n_beads = 16
+    n_beads = 4
     temperature = 300.0 * unit.kelvin
     friction = 1.0 / unit.picosecond
     dt = 0.5 * unit.femtosecond
 
-    pdb = app.PDBFile(in_pdb)
-    topo = pdb.topology
-    n_atoms = topo.getNumAtoms()
+    padding = 2.0
+    box_shape = 'dodecahedron'  # 'dodecahedron' 'cubic'
 
-    # Try a commonly available force field (standard AA + water/ions).
-    ff = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+    pdb = app.PDBFile(in_pdb)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens(forcefield)
+
+    # # Solvate
+    # modeller.addSolvent(forcefield,
+    #                     padding=padding * unit.nanometer,
+    #                     boxShape=box_shape)
+
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms.")
 
     # Determine whether we have a periodic box (PME) or vacuum (CutoffNonPeriodic)
-    has_box = topo.getUnitCellDimensions() is not None
-    system = ff.createSystem(
-        topo,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,  # <-- no bond/angle constraints app.HBonds
-        rigidWater=False,  # <-- make waters flexible (otherwise they stay rigid)
-        removeCMMotion=True,
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    print(has_box)
+    # system = forcefield.createSystem(
+    #     modeller.topology,
+    #     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+    #     nonbondedCutoff=1.0 * unit.nanometer,
+    #     constraints=None,  # <-- no bond/angle constraints app.HBonds
+    #     rigidWater=False,  # <-- make waters flexible (otherwise they stay rigid)
+    #     removeCMMotion=True,
+    # )
+
+    potential = MLPotential(
+        'mace-off23-small'
     )
+    system = potential.createSystem(pdb.topology)
+
 
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
     integrator.setApplyThermostat(True)
     integrator.setRandomNumberSeed(2025)
 
-    # Platform, CPU/GPU selection
-    platform = openmm.Platform.getPlatformByName("CUDA")  # CUDA
-    context = openmm.Context(system, integrator, platform)
+    # # Platform, CPU/GPU selection
+    # platform = openmm.Platform.getPlatformByName("CUDA")  # CUDA CPU
+    # context = openmm.Context(system, integrator, platform)
+    simulation = app.Simulation(modeller.topology, system, integrator)
+
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      100,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True))
 
     # Initialize each bead with the input coordinates + tiny random jiggle
-    init_beads(pdb, integrator)
+    init_beads(modeller, integrator)
 
     # Prepare multi-MODEL PDB (centroid coordinates)
     with open(out_pdb, "w") as fh:
-        app.PDBFile.writeHeader(topo, fh)
+        app.PDBFile.writeHeader(modeller.topology, fh)
         # write initial centroid (model 0)
         centroid = centroid_positions(integrator, n_atoms)
-        write_multimodel_pdb(topo, centroid, fh, model_index=0)
+        write_multimodel_pdb(modeller.topology, centroid, fh, model_index=0)
 
         # Integrate and save snapshots
         for step in range(1, n_steps + 1):
             integrator.step(1)
 
             if step % report_every == 0:
-                # energies: total ring-polymer energy
-                E = integrator.getTotalEnergy().value_in_unit(unit.kilojoule_per_mole)
-                print(f"step {step:6d} | total RPMD energy: {E:12.3f} kJ/mol")
+                # E = integrator.getTotalEnergy().value_in_unit(unit.kilojoule_per_mole)
+                # print(f"step {step:6d} | total RPMD energy: {E:12.3f} kJ/mol")
 
                 centroid = centroid_positions(integrator, n_atoms)
-                write_multimodel_pdb(topo, centroid, fh, model_index=step // report_every)
+                write_multimodel_pdb(modeller.topology, centroid, fh, model_index=step // report_every)
 
-        app.PDBFile.writeFooter(topo, fh)
+        app.PDBFile.writeFooter(modeller.topology, fh)
     print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
