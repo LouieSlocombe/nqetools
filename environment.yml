@@ -22,6 +22,14 @@ dependencies:
   - pyfftw
   - i-pi
   - py-plumed
+  - openmm
+  - openmm-ml
+  - nnpops
+  - openmm-torch
+  - openmmforcefields
+  - openmmtools
+  - ambertools
+  - pdbfixer
   - pip:
     - torch
     - mace-torch
