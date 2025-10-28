@@ -3,18 +3,30 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python>=3.9
+  - python>=3.13
   - pip
+  - pytest
   - numpy
+  - scipy
   - pandas
   - matplotlib
-  - ase
-  - scipy
+  - opt_einsum
+  - jax
+  - jaxlib
+  - ml_dtypes
+  - sympy
   - pyfftw
+  - chemiscope
+  - jupyterlab
+  - ase
+  - sella
+  - pyfftw
+  - ipi
+  - py-plumed
   - pip:
+    - torch-gpu
     - mace-torch
-    - plumed
-    - sella
-    - ipi
-    - chemiscope
+    - cuequivariance
+    - cuequivariance-torch
+    - cuequivariance-ops-torch-cu12
     - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
