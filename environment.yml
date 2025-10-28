@@ -19,13 +19,13 @@ dependencies:
   - chemiscope
   - jupyterlab
   - ase
-  - sella
   - pyfftw
-  - ipi
+  - i-pi
   - py-plumed
   - pip:
-    - torch-gpu
+    - torch
     - mace-torch
+    - sella
     - cuequivariance
     - cuequivariance-torch
     - cuequivariance-ops-torch-cu12
