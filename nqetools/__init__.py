@@ -170,5 +170,10 @@ from .xml_parse import (update_properties,
                         add_thermostat_section,
                         update_dynamics_splitting,
                         update_motion_fix_com)
+from .openmm import (fix_pdb,
+                     zero_velocities,
+                     write_multimodel_pdb,
+                     centroid_positions,
+                     init_beads)
 
 __version__ = "0.1.0"
