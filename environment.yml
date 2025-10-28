@@ -24,6 +24,7 @@ dependencies:
   - py-plumed
   - openmm
   - openmm-ml
+  - pytorch
   - nnpops
   - openmm-torch
   - openmmforcefields
@@ -31,10 +32,10 @@ dependencies:
   - ambertools
   - pdbfixer
   - pip:
-    - torch
+#    - torch
     - mace-torch
     - sella
-    - cuequivariance
-    - cuequivariance-torch
-    - cuequivariance-ops-torch-cu12
+#    - cuequivariance
+#    - cuequivariance-torch
+#    - cuequivariance-ops-torch-cu12
     - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
