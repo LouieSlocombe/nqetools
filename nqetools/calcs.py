@@ -1,3 +1,6 @@
+import math
+from typing import List, Dict
+
 import numpy as np
 from scipy import constants
 
@@ -366,12 +369,6 @@ def eckart_correction(
     return np.exp(d_v1 * beta) * np.sum(kappa_e * np.exp(-beta * (e_list - e0))) * d_e * beta
 
 
-from typing import List, Dict
-import math
-import numpy as np
-from scipy import constants as const  # physical constants (CODATA)
-
-
 def analyze_opes_free_energy(
         free_energy: List[float],
         temperature: float = 300.0,
@@ -441,22 +438,22 @@ def analyze_opes_free_energy(
         raise ValueError("Barrier not above both minima. Profile may be noisy or multimodal.")
 
     # --- convert to ΔG/(RT) for Eyring using SciPy constants ---
-    R = const.R  # J/mol/K
-    k_B = const.k  # J/K
-    h = const.h  # J*s
+    R = constants.R  # J/mol/K
+    k_B = constants.k  # J/K
+    h = constants.h  # J*s
 
     u = unit.lower()
     if u in ["kj/mol", "kjmol", "kj"]:
-        to_J_per_mol = const.kilo  # 1000.0
+        to_J_per_mol = constants.kilo  # 1000.0
         dGf_over_RT = (dGf * to_J_per_mol) / (R * temperature)
         dGr_over_RT = (dGr * to_J_per_mol) / (R * temperature)
     elif u in ["kcal/mol", "kcalmol", "kcal"]:
-        to_J_per_mol = const.kilo * const.calorie  # 4184 J
+        to_J_per_mol = constants.kilo * constants.calorie  # 4184 J
         dGf_over_RT = (dGf * to_J_per_mol) / (R * temperature)
         dGr_over_RT = (dGr * to_J_per_mol) / (R * temperature)
     elif u in ["eV".lower(), "ev"]:
         # 1 eV per particle = const.electron_volt J; per mole multiply by Avogadro
-        eV_to_J_per_mol = const.electron_volt * const.N_A
+        eV_to_J_per_mol = constants.electron_volt * constants.N_A
         dGf_over_RT = (dGf * eV_to_J_per_mol) / (R * temperature)
         dGr_over_RT = (dGr * eV_to_J_per_mol) / (R * temperature)
     elif u in ["kbt", "rt"]:
