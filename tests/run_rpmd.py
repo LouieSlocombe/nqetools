@@ -30,10 +30,10 @@ if __name__ == "__main__":
     modeller.deleteWater()
     modeller.addHydrogens(forcefield)
 
-    # Solvate
-    modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+    # # Solvate
+    # modeller.addSolvent(forcefield,
+    #                     padding=padding * unit.nanometer,
+    #                     boxShape=box_shape)
 
     n_atoms = modeller.topology.getNumAtoms()
     print(f"System has {n_atoms} atoms.")

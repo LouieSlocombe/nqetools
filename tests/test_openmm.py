@@ -8,17 +8,32 @@ from openmmml import MLPotential
 
 def test_openmm_ml():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-
     potential = MLPotential('mace-off23-small')
 
-    system = potential.createSystem(pdb.topology)
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = potential.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
 
     # Run langevin dynamics at 300K for 1000 steps
-    integrator = openmm.LangevinIntegrator(
-        300 * unit.kelvin, 1.0 / unit.picoseconds, 1.0 * unit.femtosecond
-    )
-    simulation = app.Simulation(pdb.topology, system, integrator)
-    simulation.context.setPositions(pdb.positions)
+    integrator = openmm.LangevinIntegrator(300 * unit.kelvin,
+                                           1.0 / unit.picoseconds,
+                                           1.0 * unit.femtosecond)
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology,
+                                system,
+                                integrator,
+                                platform)
+    simulation.context.setPositions(modeller.positions)
     simulation.reporters.append(
         app.StateDataReporter(
             stdout,
@@ -37,30 +52,48 @@ def test_openmm_ml():
 
 def test_openmm_ml_mixed_system():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+    forcefield = app.ForceField('amber14-all.xml',
+                                'amber14/tip3pfb.xml')
+    potential = MLPotential('mace-off23-small')
+
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
     # Solvate
     padding = 1.5
-    box_shape = 'dodecahedron'  # 'dodecahedron' 'cubic'
+    box_shape = 'dodecahedron'
     modeller.addSolvent(forcefield,
                         padding=padding * unit.nanometer,
                         boxShape=box_shape)
 
-
     mm_system = forcefield.createSystem(modeller.topology)
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
-    potential = MLPotential('mace-off23-small')
-    system = potential.createMixedSystem(modeller.topology, mm_system, ml_atoms)
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = potential.createMixedSystem(
+        modeller.topology,
+        mm_system,
+        ml_atoms,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
 
     # Run langevin dynamics at 300K for 1000 steps
-    integrator = openmm.LangevinIntegrator(
-        300 * unit.kelvin, 1.0 / unit.picoseconds, 1.0 * unit.femtosecond
-    )
-    simulation = app.Simulation(modeller.topology, system, integrator)
+    integrator = openmm.LangevinIntegrator(300 * unit.kelvin,
+                                           1.0 / unit.picoseconds,
+                                           1.0 * unit.femtosecond)
+
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology,
+                                system,
+                                integrator,
+                                platform)
+
     simulation.context.setPositions(modeller.positions)
     simulation.reporters.append(
         app.StateDataReporter(
