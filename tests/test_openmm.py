@@ -1,18 +1,13 @@
 import os
-from sys import stdout
-
 from pathlib import Path
 from sys import stdout
-
-from openmm import openmm, app, unit
-from openmmml import MLPotential
-
-import nqetools as nqe
 
 from openff.toolkit import Molecule
 from openmm import openmm, app, unit
 from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmml import MLPotential
+
+import nqetools as nqe
 
 
 def test_openmm_ml():
@@ -139,6 +134,76 @@ def test_openmm_ff_param():
     forcefield.registerTemplateGenerator(gaff.generator)
 
 
+def test_openmm_contraints():
+    pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")  # must have coordinates
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")  # or your choice
+
+    # Optional: add hydrogens, etc.
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.addSolvent(forcefield, model='tip3p', padding=1.0 * unit.nanometer)  # if you want solvent
+
+    # Solvate
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        boxShape='dodecahedron')
+
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME,  # or app.NoCutoff for vacuum
+        nonbondedCutoff=1.0 * unit.nanometer,  # ignored if NoCutoff
+        constraints=app.HBonds  # bond-length constraints to H (not positional!)
+    )
+
+    # --- Build a harmonic positional restraint on the backbone ---
+    # Energy: 0.5 * k * periodicdistance((x,y,z), (x0,y0,z0))^2
+    # Use "periodicdistance" to be PBC-safe; for vacuum you can also use (x-x0)^2 + ...
+    k = 1000.0 * unit.kilojoule_per_mole / unit.nanometer ** 2  # typical strong restraint for minimization
+    restraint = openmm.CustomExternalForce("0.5 * k * periodicdistance(x, y, z, x0, y0, z0)^2")
+    restraint.addGlobalParameter("k", k)
+    restraint.addPerParticleParameter("x0")
+    restraint.addPerParticleParameter("y0")
+    restraint.addPerParticleParameter("z0")
+
+    # Select backbone atoms (N, CA, C) and add them with their reference coordinates
+    bb_indices = []
+    for atom, pos in zip(modeller.topology.atoms(), modeller.positions):
+        if atom.name in ("N", "CA", "C"):
+            idx = atom.index
+            bb_indices.append(idx)
+            restraint.addParticle(idx, [pos.x, pos.y, pos.z])
+
+    system.addForce(restraint)
+
+    # --- Integrator & Simulation ---
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin,  # temperature (not used by minimizer but fine to define)
+        1.0 / unit.picosecond,  # friction
+        0.002 * unit.picoseconds  # timestep
+    )
+
+    platform = openmm.Platform.getPlatformByName("CUDA")  # or "CUDA"/"OpenCL"
+    sim = app.Simulation(modeller.topology, system, integrator, platform)
+    sim.context.setPositions(modeller.positions)
+
+    # (Optional) quick energy/position sanity check
+    state = sim.context.getState(getEnergy=True)
+    print("Initial potential energy:", state.getPotentialEnergy())
+
+    # --- Minimize while restraints are active ---
+    sim.minimizeEnergy(maxIterations=500)  # increase if needed
+
+    # # Get minimized coordinates
+    # min_positions = sim.context.getState(getPositions=True).getPositions(asNumpy=True)
+    # with open("minimized.pdb", "w") as f:
+    #     app.PDBFile.writeFile(mod.topology, min_positions, f)
+
+    # --- If you only wanted restraints during minimization, drop or soften them now ---
+    # To keep but soften:
+    # sim.context.setParameter("k", 100.0 * unit.kilojoule_per_mole / unit.nanometer**2)
+    # To remove entirely:
+    # system.removeForce(system.getNumForces() - 1)  # if 'restraint' was added last
+
+
 def test_openmm_rpmd():
     # Simple run parameters
     n_steps = 1_000
@@ -219,9 +284,111 @@ def test_openmm_rpmd():
     os.remove(data_out)
 
 
+def test_openmm_rpmd_solvated():
+    # Simple run parameters
+    n_steps = 200
+    report_every = 100
+    data_out = 'md_log.txt'
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    out_pdb = Path("centroid_trajectory.pdb")
+    n_beads = 2
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    # Solvate
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        boxShape='dodecahedron')
+
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms.")
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=0.5 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    k = 1000.0 * unit.kilojoule_per_mole / unit.nanometer ** 2  # typical strong restraint for minimization
+    restraint = openmm.CustomExternalForce("0.5 * k * periodicdistance(x, y, z, x0, y0, z0)^2")
+    restraint.addGlobalParameter("k", k)
+    restraint.addPerParticleParameter("x0")
+    restraint.addPerParticleParameter("y0")
+    restraint.addPerParticleParameter("z0")
+
+    # Select backbone atoms (N, CA, C) and add them with their reference coordinates
+    bb_indices = []
+    for atom, pos in zip(modeller.topology.atoms(), modeller.positions):
+        if atom.name in ("N", "CA", "C"):
+            idx = atom.index
+            bb_indices.append(idx)
+            restraint.addParticle(idx, [pos.x, pos.y, pos.z])
+
+    system.addForce(restraint)
+
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
+    integrator.setApplyThermostat(True)
+    integrator.setRandomNumberSeed(2025)
+
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    simulation.reporters.append(app.StateDataReporter(data_out,
+                                                      report_every,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
+                                                      temperature=True,
+                                                      volume=True))
+
+    # Initialize each bead with the input coordinates + tiny random jiggle
+    nqe.init_beads(modeller, simulation, n_beads)
+
+    # Prepare multi-MODEL PDB (centroid coordinates)
+    with open(out_pdb, "w") as fh:
+        app.PDBFile.writeHeader(modeller.topology, fh)
+        # write initial centroid (model 0)
+        centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
+        nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=0)
+
+        # Integrate and save snapshots
+        for step in range(1, n_steps + 1):
+            simulation.step(1)
+
+            if step % report_every == 0:
+                centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
+                nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=step // report_every)
+
+        app.PDBFile.writeFooter(modeller.topology, fh)
+    print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
+    os.remove(out_pdb)
+    os.remove(data_out)
+
+
 def test_openmm_rpmd_ml():
     # Simple run parameters
-    n_steps = 1_000
+    n_steps = 200
     report_every = 100
     data_out = 'md_log.txt'
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -300,7 +467,7 @@ def test_openmm_rpmd_ml():
 
 def test_openmm_rpmd_mixed():
     # Simple run parameters
-    n_steps = 1_000
+    n_steps = 200
     report_every = 100
     data_out = 'md_log.txt'
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -333,24 +500,24 @@ def test_openmm_rpmd_mixed():
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
     has_box = modeller.topology.getUnitCellDimensions() is not None
-    # system = potential.createMixedSystem(
-    #     modeller.topology,
-    #     mm_system,
-    #     ml_atoms,
-    #     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-    #     nonbondedCutoff=1.0 * unit.nanometer,
-    #     constraints=None,
-    #     rigidWater=False,
-    #     removeCMMotion=True,
-    # )
-    system = potential.createSystem(
+    system = potential.createMixedSystem(
         modeller.topology,
+        mm_system,
+        ml_atoms,
         nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
         nonbondedCutoff=1.0 * unit.nanometer,
         constraints=None,
         rigidWater=False,
         removeCMMotion=True,
     )
+    # system = potential.createSystem(
+    #     modeller.topology,
+    #     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+    #     nonbondedCutoff=1.0 * unit.nanometer,
+    #     constraints=None,
+    #     rigidWater=False,
+    #     removeCMMotion=True,
+    # )
 
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
     integrator.setApplyThermostat(True)
