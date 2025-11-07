@@ -85,6 +85,30 @@ def test_ase_mace_driver_omol():
     pass
 
 
+def test_ase_mace_driver_omol_eq():
+    print(flush=True)
+    print("Testing MACE driver", flush=True)
+
+    # Build the molecule
+    atoms = ase.build.molecule('H2O')
+    atoms.center(vacuum=5.0)
+    from mace.calculators import mace_omol
+    atoms.calc = mace_omol(device="cuda",
+                           default_dtype="float64",
+                           enable_cueq=False)
+
+    # # Make a directory to store everything
+    directory = "mace_opti"
+    # driver_args = {'model_type': 'omol',
+    #                'model': 'extra_large',
+    #                'device': 'cuda',
+    #                'default_dtype': 'float32',
+    #                'enable_cueq': 'True'}
+    # nqe.run_optimise(directory, atoms, driver='ase-mace', driver_args=driver_args, total_steps=2)
+    nqe.remove_directory(directory)
+    pass
+
+
 def test_ase_mace_driver_qmmm():
     print(flush=True)
     print("Testing MACE driver", flush=True)
