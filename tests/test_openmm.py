@@ -1,4 +1,6 @@
 import os
+from rdkit import Chem
+import os
 from pathlib import Path
 from sys import stdout
 
@@ -116,9 +118,24 @@ def test_openmm_ml_mixed_system():
 
 
 def test_openmm_ff_param():
+    smi = "c1ccccc1"
+    smi = '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]'
+    input_pdb = "benzene.pdb"
+    mol = Chem.MolFromSmiles(smi)
+    mol = Chem.AddHs(mol)
+
+    # Write a pdb file for the molecule
+    Chem.MolToPDBFile(mol, input_pdb)
+
+    mol = Chem.MolFromPDBFile(input_pdb)
+
+
+
+    molecule = [Molecule.from_rdkit(mol)]
+
     # Create an OpenFF Molecule object for benzene from SMILES
 
-    molecule = Molecule.from_smiles("c1ccccc1")
+    # molecule = Molecule.from_smiles(smi)
     # Create the GAFF template generator
 
     # molecules = Molecule.from_file("molecules.sdf")
@@ -132,6 +149,11 @@ def test_openmm_ff_param():
     )
     # Register the GAFF template generator
     forcefield.registerTemplateGenerator(gaff.generator)
+
+    pdbfile = app.PDBFile(input_pdb)
+
+    system = forcefield.createSystem(pdbfile.topology)
+    os.remove(input_pdb)
 
 
 def test_openmm_ff_param_gt_wobble():
