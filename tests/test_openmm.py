@@ -134,6 +134,39 @@ def test_openmm_ff_param():
     forcefield.registerTemplateGenerator(gaff.generator)
 
 
+def test_openmm_ff_param_gt_wobble():
+    input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
+    generated_files = nqe.extract_nonstandard_res(input_pdb, '.', sdf=True)
+
+    molecules = [Molecule.from_file(f) for f in generated_files]
+
+    gaff = GAFFTemplateGenerator(molecules=molecules)
+    # Create an OpenMM ForceField object with AMBER ff14SB and TIP3P with compatible ions
+    forcefield = app.ForceField(
+        "amber/protein.ff14SB.xml",
+        "amber/tip3p_standard.xml",
+        "amber/tip3p_HFE_multivalent.xml",
+    )
+    # Register the GAFF template generator
+    forcefield.registerTemplateGenerator(gaff.generator)
+    for f in generated_files:
+        os.remove(f)
+
+    pdb = app.PDBFile(input_pdb)
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    # Solvate
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        boxShape='dodecahedron')
+
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms.")
+
+
 def test_openmm_contraints():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")  # must have coordinates
     forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")  # or your choice

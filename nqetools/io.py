@@ -476,7 +476,9 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
     return n_written
 
 
-def extract_nonstandard_res(pdb_file_path: str, output_dir: str = ".") -> list:
+def extract_nonstandard_res(pdb_file_path: str,
+                            output_dir: str = ".",
+                            sdf: bool = False) -> list:
     pdb = PDBFile(pdb_file_path)
 
     topology = pdb.getTopology()
@@ -520,7 +522,7 @@ def extract_nonstandard_res(pdb_file_path: str, output_dir: str = ".") -> list:
             if num_atoms <= 1:
                 continue
 
-            print(f"  Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})")
+            print(f"Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})", flush=True)
 
             xyz_content = [str(num_atoms)]
             comment = f"Residue: {res_name}, Chain: {chain_id}, ResID: {res_id}, Source: {os.path.basename(pdb_file_path)}"
@@ -537,6 +539,12 @@ def extract_nonstandard_res(pdb_file_path: str, output_dir: str = ".") -> list:
                 f.write("\n")
 
             generated_files.append(output_path)
-            print(f"    -> Successfully wrote {num_atoms} atoms to {output_path}")
+            print(f"Successfully wrote {num_atoms} atoms to {os.path.splitext(output_path)[0]}", flush=True)
 
+    if sdf:
+        for xyz_file in generated_files:
+            sdf_file = os.path.splitext(xyz_file)[0] + ".sdf"
+            xyz_to_sdf(xyz_file, sdf_file, sanitize=True, kekulize=False)
+            os.remove(xyz_file)
+        generated_files = [os.path.splitext(f)[0] + ".sdf" for f in generated_files]
     return generated_files
