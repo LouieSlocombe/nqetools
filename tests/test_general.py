@@ -1,10 +1,11 @@
+import os
 import sys
 import time
+from subprocess import Popen
 
 import ase.build
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.calculators.nwchem import NWChem
@@ -14,7 +15,6 @@ from ase.io import write, read
 from ase.optimize import BFGS
 from ase.visualize import view
 from mace.calculators import mace_anicc, mace_off, mace_omol
-from subprocess import Popen
 
 import nqetools as nqe
 
@@ -589,3 +589,20 @@ def test_ase_eiqmmm():
     )
 
     print(atoms.get_potential_energy())
+
+
+def test_xyz_to_sdf():
+    print(flush=True)
+
+    atoms = molecule('H2O')
+    print(atoms.positions)
+    write('water.xyz', atoms)
+    nqe.xyz_to_sdf('water.xyz', 'water.sdf', default_charge=0)
+    # Read back the SDF file and check it has the same positions
+    atoms_sdf = read('water.sdf')
+    print(atoms_sdf.positions)
+
+    comparison = [np.allclose(a, b, rtol=0.001) for a, b in zip(atoms.get_positions(), atoms_sdf.get_positions())]
+    assert all(comparison)
+    os.remove('water.sdf')
+    os.remove('water.xyz')

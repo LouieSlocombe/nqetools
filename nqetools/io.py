@@ -8,6 +8,8 @@ import xml.etree.ElementTree as et
 import ase.io
 import numpy as np
 from ipi.utils.io import read_file
+from rdkit import Chem
+from rdkit.Chem import rdDetermineBonds
 
 from .conversions import convert_atom_list_bohr_to_angstrom, eV_to_kJpermol
 
@@ -331,9 +333,142 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
             transformed_data = np.array([1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
         else:
             transformed_data = np.array([1.0, 1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data[:,
-                                                                                                       :3].T.reshape(3,
-                                                                                                                     bins,
-                                                                                                                     bins)
+            :3].T.reshape(3,
+                          bins,
+                          bins)
         fes_arrays.append(transformed_data)
 
     return fes_arrays
+
+
+def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=False):
+    def _parse_charge_from_comment(comment, fallback):
+        # Try to extract an integer charge from the comment line
+        if comment is None:
+            return fallback
+        m = re.search(r'charge\s*[:=]?\s*([+-]?\d+)', comment, flags=re.I)
+        if m:
+            try:
+                return int(m.group(1))
+            except ValueError:
+                pass
+        # also catch patterns like "q=+1" or just "+1"
+        m = re.search(r'(?:q\s*[:=])\s*([+-]?\d+)', comment, flags=re.I)
+        if m:
+            try:
+                return int(m.group(1))
+            except ValueError:
+                pass
+        m = re.search(r'(^|\s)([+-]\d+)(\s|$)', comment)
+        if m:
+            try:
+                return int(m.group(2))
+            except ValueError:
+                pass
+        return fallback
+
+    def _read_xyz_frames(path):
+        frames = []
+        with open(path, 'r', encoding='utf-8') as fh:
+            lines = [ln.rstrip('\n') for ln in fh]
+        i = 0
+        n_total = len(lines)
+        while i < n_total:
+            # Skip blank lines between frames
+            while i < n_total and not lines[i].strip():
+                i += 1
+            if i >= n_total:
+                break
+            try:
+                n = int(lines[i].strip())
+            except ValueError:
+                raise ValueError(f"Expected atom count at line {i + 1}, got: {lines[i]!r}")
+            i += 1
+            if i >= n_total:
+                raise ValueError("Unexpected EOF after atom count.")
+            comment = lines[i]
+            i += 1
+            if i + n > n_total:
+                raise ValueError("Unexpected EOF in atom coordinate block.")
+            block = lines[i:i + n]
+            i += n
+            frames.append((comment, block))
+        if not frames:
+            raise ValueError("No XYZ frames found.")
+        return frames
+
+    def _frame_to_mol(comment, coord_lines, name_fallback):
+        # Build an atom-only molecule with a 3D conformer
+        rw = Chem.RWMol()
+        conf = Chem.Conformer(len(coord_lines))
+        symbols = []
+        for idx, line in enumerate(coord_lines):
+            parts = line.split()
+            if len(parts) < 4:
+                raise ValueError(f"Bad XYZ atom line (needs 'El x y z'): {line!r}")
+            sym = parts[0]
+            try:
+                x, y, z = map(float, parts[1:4])
+            except ValueError:
+                raise ValueError(f"Bad XYZ coordinates on line: {line!r}")
+            a = Chem.Atom(sym)
+            atom_idx = rw.AddAtom(a)
+            conf.SetAtomPosition(atom_idx, (x, y, z))
+            symbols.append(sym)
+
+        mol = rw.GetMol()
+        conf.Set3D(True)
+        mol.AddConformer(conf, assignId=True)
+
+        # Set a name: prefer comment, else filename fallback
+        title = (comment or "").strip() or name_fallback
+        if title:
+            mol.SetProp("_Name", title)
+
+        return mol
+
+    frames = _read_xyz_frames(xyz_path)
+    base_name = os.path.splitext(os.path.basename(xyz_path))[0]
+
+    writer = Chem.SDWriter(sdf_path)
+    if writer is None:
+        raise IOError(f"Could not open SDF writer for: {sdf_path}")
+
+    n_written = 0
+    for idx, (comment, coord_lines) in enumerate(frames, start=1):
+        name_fallback = f"{base_name}_{idx}" if len(frames) > 1 else base_name
+        mol = _frame_to_mol(comment, coord_lines, name_fallback)
+
+        # Determine total charge to use in bonding inference
+        total_charge = _parse_charge_from_comment(comment, default_charge)
+
+        # Infer bonds from 3D geometry
+        rdDetermineBonds.DetermineBonds(mol, charge=total_charge)
+
+        # (Optional) sanitize
+        if sanitize:
+            try:
+                Chem.SanitizeMol(mol)
+            except Exception:
+                # Try a softer sanitize to still write something useful
+                Chem.SanitizeMol(
+                    mol,
+                    sanitizeOps=Chem.SanitizeFlags.SANITIZE_FINDRADICALS |
+                                Chem.SanitizeFlags.SANITIZE_SETAROMATICITY |
+                                Chem.SanitizeFlags.SANITIZE_SYMMRINGS
+                )
+
+        # (Optional) kekulize before writing to SDF
+        if kekulize:
+            try:
+                Chem.Kekulize(mol, clearAromaticFlags=True)
+            except Exception:
+                # Non-fatal; keep aromatic flags if kekulization fails
+                pass
+
+        # Write the molecule (with 3D conformer) to SDF
+        writer.write(mol)
+        n_written += 1
+
+    writer.close()
+    return n_written
