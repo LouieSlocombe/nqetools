@@ -7,7 +7,9 @@ import xml.etree.ElementTree as et
 
 import ase.io
 import numpy as np
+import openmm.unit as unit
 from ipi.utils.io import read_file
+from openmm.app import PDBFile
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
 
@@ -472,3 +474,69 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
 
     writer.close()
     return n_written
+
+
+def extract_nonstandard_res(pdb_file_path: str, output_dir: str = ".") -> list:
+    pdb = PDBFile(pdb_file_path)
+
+    topology = pdb.getTopology()
+    positions_quantity = pdb.getPositions(asNumpy=True)
+    positions_angstrom = positions_quantity.value_in_unit(unit.angstrom)
+    manual_standard_residues = {
+        # Standard 20 protein residues
+        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
+        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
+        # Standard DNA residues (desoxy)
+        'DA', 'DC', 'DG', 'DT',
+        # Standard RNA residues (ribo)
+        'A', 'C', 'G', 'U', 'RA', 'RC', 'RG', 'RU',
+        # Common alternative protonation states for Histidine
+        'HID', 'HIE', 'HIP',
+        # Common synonyms
+        'ADE', 'CYT', 'GUA', 'THY', 'URA',
+        # Water
+        'HOH', 'WAT', 'SOL'
+    }
+
+    residues_to_ignore = manual_standard_residues.copy()
+    generated_files = []
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for residue in topology.residues():
+        if residue.name not in residues_to_ignore:
+
+            res_name = residue.name
+            res_id = residue.id
+            chain_id = residue.chain.id
+
+            safe_res_name = "".join(c for c in res_name if c.isalnum())
+            filename = f"{safe_res_name}_{chain_id}_{res_id}.xyz"
+            output_path = os.path.join(output_dir, filename)
+
+            atoms_in_residue = list(residue.atoms())
+            num_atoms = len(atoms_in_residue)
+
+            if num_atoms <= 1:
+                continue
+
+            print(f"  Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})")
+
+            xyz_content = [str(num_atoms)]
+            comment = f"Residue: {res_name}, Chain: {chain_id}, ResID: {res_id}, Source: {os.path.basename(pdb_file_path)}"
+            xyz_content.append(comment)
+
+            for atom in atoms_in_residue:
+                element = atom.element.symbol
+                pos = positions_angstrom[atom.index]
+                xyz_line = f"{element:<2}   {pos[0]:>12.6f} {pos[1]:>12.6f} {pos[2]:>12.6f}"
+                xyz_content.append(xyz_line)
+
+            with open(output_path, 'w') as f:
+                f.write("\n".join(xyz_content))
+                f.write("\n")
+
+            generated_files.append(output_path)
+            print(f"    -> Successfully wrote {num_atoms} atoms to {output_path}")
+
+    return generated_files

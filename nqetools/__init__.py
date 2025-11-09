@@ -68,7 +68,8 @@ from .io import (read_ipi_xyz,
                  find_nqetools_path,
                  search_fes_files,
                  load_fes_data,
-                 xyz_to_sdf)
+                 xyz_to_sdf,
+                 extract_nonstandard_res)
 from .openmm import (fix_pdb,
                      zero_velocities,
                      write_multimodel_pdb,
