@@ -606,3 +606,15 @@ def test_xyz_to_sdf():
     assert all(comparison)
     os.remove('water.sdf')
     os.remove('water.xyz')
+
+
+def test_extract_nonstandard_res():
+    print(flush=True)
+    input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
+    generated_files = nqe.extract_nonstandard_res(input_pdb, '.')
+    assert len(generated_files) == 2, "Generated files do not match expected files"
+    atoms_sdf = read(generated_files[1])
+    view(atoms_sdf)
+
+    for file in generated_files:
+        os.remove(file)
