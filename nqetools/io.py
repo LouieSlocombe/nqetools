@@ -470,6 +470,8 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
 
         # Write the molecule (with 3D conformer) to SDF
         writer.write(mol)
+        smi = Chem.MolToSmiles(mol, allBondsExplicit=True, allHsExplicit=True)
+        print(f"SMI: {smi}")
         n_written += 1
 
     writer.close()
