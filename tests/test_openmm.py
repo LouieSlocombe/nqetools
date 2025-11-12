@@ -168,18 +168,28 @@ def test_get_non_standard_residues():
 
 
 def test_openmm_ff_param():
-    smi = "c1ccccc1"
-    smi = '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]'
-    input_pdb = "benzene.pdb"
-    mol = Chem.MolFromSmiles(smi)
-    mol = Chem.AddHs(mol)
+    # smi = "c1ccccc1"
+    # smi = '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]'
+    # input_pdb = "benzene.pdb"
+    # mol = Chem.MolFromSmiles(smi)
+    # mol = Chem.AddHs(mol)
+    #
+    # # Write a pdb file for the molecule
+    # Chem.MolToPDBFile(mol, input_pdb)
+    #
+    # mol = Chem.MolFromPDBFile(input_pdb)
 
-    # Write a pdb file for the molecule
-    Chem.MolToPDBFile(mol, input_pdb)
+    input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
+    non_standard_mols = get_non_standard_residues(input_pdb)
+    for mol in non_standard_mols:
+        Chem.SanitizeMol(mol)
+        print(Chem.MolToSmiles(mol, isomericSmiles=True))
 
-    mol = Chem.MolFromPDBFile(input_pdb)
+    # write sdf files for each non-standard residue
+    for i, mol in enumerate(non_standard_mols):
+        Chem.MolToMolFile(mol, f"non_standard_{i}.sdf")
 
-    molecule = [Molecule.from_rdkit(mol)]
+    # molecule = [Molecule.from_rdkit(mol) for mol in non_standard_mols]
 
     # Create an OpenFF Molecule object for benzene from SMILES
 
@@ -187,6 +197,8 @@ def test_openmm_ff_param():
     # Create the GAFF template generator
 
     # molecules = Molecule.from_file("molecules.sdf")
+    molecule = [Molecule.from_file(f"non_standard_{i}.sdf", allow_undefined_stereo=True) for i in
+                range(len(non_standard_mols))]
 
     gaff = GAFFTemplateGenerator(molecules=molecule)
     # Create an OpenMM ForceField object with AMBER ff14SB and TIP3P with compatible ions
@@ -259,6 +271,19 @@ def test_openmm_ff_param_gt_wobble():
     #
     # n_atoms = modeller.topology.getNumAtoms()
     # print(f"System has {n_atoms} atoms.")
+
+
+def test_openff():
+    from openff.toolkit import Molecule, Topology
+
+    smis = [
+        '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]',
+        '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[c](-[C](-[H])(-[H])-[H]):[c](=[O]):[n](-[H]):[c]:2=[O])-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]']
+
+    mols = [Molecule.from_smiles(smi) for smi in smis]
+    complex = Topology.from_pdb("tests/data/pdb/gt_wob_solv.pdb", unique_molecules=mols)
+
+    complex.visualize()
 
 
 def test_openmm_contraints():
