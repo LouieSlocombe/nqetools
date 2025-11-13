@@ -660,3 +660,68 @@ def clean_pdb_ions(pdb_input_path: str, ions_to_remove: List[str], pdb_output_pa
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
     print(f"Cleaned PDB saved to: {pdb_output_path}")
     return sorted(list(all_found_ion_types))
+
+
+def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
+    print(f"Loading PDB from: {pdb_file_path}")
+
+    # Load the PDB file
+    # PDBFile can take a file path or a file-like object
+    try:
+        pdb = PDBFile(pdb_file_path)
+    except Exception as e:
+        print(f"Error loading PDB file: {e}")
+        return None
+
+    print("Successfully loaded PDB. Modifying topology...")
+
+    # Get the topology and positions from the loaded PDB
+    topology = pdb.topology
+    positions = pdb.positions
+
+    # Keep track of which residues were changed
+    changed_residues = {}
+
+    # Iterate over all residues in the topology
+    for residue in topology.residues():
+        if residue.name in relabel_map:
+            original_name = residue.name
+            new_name = relabel_map[original_name]
+
+            # Update the residue name
+            residue.name = new_name
+
+            # Track the change for logging
+            change_key = (original_name, new_name)
+            if change_key not in changed_residues:
+                changed_residues[change_key] = 0
+            changed_residues[change_key] += 1
+
+    # Print a summary of changes
+    if changed_residues:
+        print("Relabeling complete. Summary of changes:")
+        for (old, new), count in changed_residues.items():
+            print(f"  - Relabeled {count} residues from '{old}' to '{new}'")
+    else:
+        print("No residues found matching the relabel map. Topology is unchanged.")
+
+    # Save the modified PDB to the output file
+    print(f"Saving modified topology and positions...")
+    try:
+        if isinstance(output_file, str):
+            # If it's a string, it's a path. Open it and write.
+            with open(output_file, 'w') as f:
+                PDBFile.writeFile(topology, positions, f)
+            print(f"Successfully saved modified PDB to: {output_file}")
+        else:
+            # Assume it's a file-like object (like io.StringIO or an open file handle)
+            PDBFile.writeFile(topology, positions, output_file)
+            print(f"Successfully wrote modified PDB to file-like object.")
+
+    except Exception as e:
+        print(f"Error writing modified PDB file: {e}")
+        return None  # Return None on save failure
+
+    # The 'pdb' object now has its topology modified.
+    # We return it for convenience.
+    return pdb

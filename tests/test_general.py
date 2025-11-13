@@ -670,3 +670,20 @@ def test_clean_pdb_ions():
     ion_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in rm_ions]
     assert len(ion_lines) == 0, "Ions were not removed from the PDB file"
     os.remove(output_pdb)
+
+def test_relabel_residues_in_pdb():
+    print(flush=True)
+    input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
+    output_pdb = 'relabelled_gt_wob_solv.pdb'
+    residue_map = {'DGN': 'DG', 'DTN': 'DT'}
+
+    nqe.relabel_residues_in_pdb(input_pdb, residue_map, output_pdb)
+
+    with open(output_pdb, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        # check the residue map has been applied
+        if line.startswith('HETATM'):
+            res_name = line[17:20].strip()
+            assert res_name not in residue_map.keys(), f"Residue {res_name} was not relabelled"
+    os.remove(output_pdb)
