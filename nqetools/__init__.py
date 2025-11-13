@@ -74,7 +74,9 @@ from .openmm import (fix_pdb,
                      zero_velocities,
                      write_multimodel_pdb,
                      centroid_positions,
-                     init_beads)
+                     init_beads,
+                     md_workflow,
+                     md_analysis)
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,
