@@ -553,7 +553,7 @@ def extract_nonstandard_res(pdb_file_path: str,
 
 
 def get_non_standard_residues(pdb_file):
-    STANDARD_RESIDUES = {
+    standard_residues = {
         # Standard 20 protein residues
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
         'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
@@ -580,11 +580,42 @@ def get_non_standard_residues(pdb_file):
     non_standard_mols = []
     for residue_key, fragment_mol in mols_by_residue.items():
         res_name = residue_key.split('_')[0].strip()
-        if res_name not in STANDARD_RESIDUES:
+        if res_name not in standard_residues:
             print(f"  > Found non-standard residue: {residue_key}")
             print(Chem.MolToSmiles(fragment_mol))
             non_standard_mols.append(fragment_mol)
         else:
             print(f"  - Skipping standard residue: {residue_key}")
 
+    return non_standard_mols
+
+
+def list_non_standard_residues(pdb_file):
+    standard_residues = {
+        # Standard 20 protein residues
+        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
+        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
+        # Standard DNA residues (desoxy)
+        'DA', 'DC', 'DG', 'DT',
+        # Standard RNA residues (ribo)
+        'A', 'C', 'G', 'U', 'RA', 'RC', 'RG', 'RU',
+        # Common alternative protonation states for Histidine
+        'HID', 'HIE', 'HIP',
+        # Common synonyms
+        'ADE', 'CYT', 'GUA', 'THY', 'URA',
+        # Water
+        'HOH', 'WAT', 'SOL',
+        # Ions
+        'NA', 'CL', 'K', 'MG', 'CA',
+        'Na+', 'Cl-', 'K+', 'Mg2+', 'Ca2+'
+    }
+
+    mol = Chem.MolFromPDBFile(pdb_file, sanitize=False, removeHs=False)
+    mols_by_residue = Chem.SplitMolByPDBResidues(mol)
+
+    non_standard_mols = []
+    for residue_key, fragment_mol in mols_by_residue.items():
+        res_name = residue_key.split('_')[0].strip()
+        if res_name not in standard_residues:
+            non_standard_mols.append(residue_key)
     return non_standard_mols

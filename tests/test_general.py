@@ -626,6 +626,20 @@ def test_extract_nonstandard_res():
 
 
 def test_get_non_standard_residues():
+    print(flush=True)
     pdb_file = "tests/data/pdb/gt_wob_solv.pdb"
     non_standard_mols = nqe.get_non_standard_residues(pdb_file)
     assert len(non_standard_mols) == 2
+
+
+def test_list_non_standard_residues():
+    print(flush=True)
+    pdb_file = "tests/data/pdb/gt_wob_solv.pdb"
+    non_standard_residues = nqe.list_non_standard_residues(pdb_file)
+    print(non_standard_residues, flush=True)
+    assert non_standard_residues == ['DGN', 'DTN']
+
+    pdb_file = "tests/data/pdb/gt_wob_pol.pdb"
+    non_standard_residues = nqe.list_non_standard_residues(pdb_file)
+    print(non_standard_residues, flush=True)
+    assert non_standard_residues == ['DC3', 'DC5', 'DG3', 'DG5', 'GTP']
