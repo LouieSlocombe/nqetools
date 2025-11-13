@@ -162,7 +162,7 @@ def get_non_standard_residues(pdb_file):
 
 
 def test_get_non_standard_residues():
-    pdb_file = "tests/data/pdb/gt_wob_solv.pdb"
+    pdb_file = "tests/data/pdb/gt_wob_pol_clean.pdb"
     non_standard_mols = get_non_standard_residues(pdb_file)
     assert len(non_standard_mols) == 2
 
@@ -238,7 +238,7 @@ def test_openmm_ff_param_gt_wobble():
     )
     # Register the GAFF template generator
     # forcefield.registerTemplateGenerator(gaff.generator)
-    forcefield.registerTemplateGenerator(smirnoff.generator)
+    # forcefield.registerTemplateGenerator(smirnoff.generator)
     pdbfile = PDBFile(input_pdb)
 
     system = forcefield.createSystem(pdbfile.topology)
@@ -273,6 +273,44 @@ def test_openmm_ff_param_gt_wobble():
     # print(f"System has {n_atoms} atoms.")
 
 
+def test_openmm_gt_wobble():
+    input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
+    clean_pdb = "tests/data/pdb/gt_wob_pol_clean.pdb"
+
+    # fix the pdb
+    nqe.fix_pdb(input_pdb, clean_pdb)
+
+    pdb = app.PDBFile(clean_pdb)
+    forcefield = app.ForceField("amber14-all.xml",
+                                "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    # Solvate
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        boxShape='dodecahedron')
+
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=app.HBonds
+    )
+    # --- Integrator & Simulation ---
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin,  # temperature (not used by minimizer but fine to define)
+        1.0 / unit.picosecond,  # friction
+        0.002 * unit.picoseconds  # timestep
+    )
+
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    sim = app.Simulation(modeller.topology, system, integrator, platform)
+    sim.context.setPositions(modeller.positions)
+    state = sim.context.getState(getEnergy=True)
+    print("Initial potential energy:", state.getPotentialEnergy())
+    sim.minimizeEnergy(maxIterations=500)
+
+
 def test_openff():
     from openff.toolkit import Molecule, Topology
 
@@ -286,7 +324,7 @@ def test_openff():
     complex.visualize()
 
 
-def test_openmm_contraints():
+def test_openmm_constraints():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")  # must have coordinates
     forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")  # or your choice
 
