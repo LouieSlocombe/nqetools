@@ -116,57 +116,6 @@ def test_openmm_ml_mixed_system():
     simulation.step(1_000)
 
 
-def get_non_standard_residues(pdb_file):
-    """
-    Loads a PDB file and returns a list of RDKit Mol objects
-    for each non-standard residue (e.g., ligands, water, ions).
-    """
-
-    # 1. Define all "standard" residue names for proteins and nucleic acids
-    # We will filter *out* everything in this set.
-    STANDARD_RESIDUES = {
-        # Standard 20 protein residues
-        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
-        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
-        # Standard DNA residues (desoxy)
-        'DA', 'DC', 'DG', 'DT',
-        # Standard RNA residues (ribo)
-        'A', 'C', 'G', 'U', 'RA', 'RC', 'RG', 'RU',
-        # Common alternative protonation states for Histidine
-        'HID', 'HIE', 'HIP',
-        # Common synonyms
-        'ADE', 'CYT', 'GUA', 'THY', 'URA',
-        # Water
-        'HOH', 'WAT', 'SOL',
-        # Ions
-        'NA', 'CL', 'K', 'MG', 'CA',
-        'Na+', 'Cl-', 'K+', 'Mg2+', 'Ca2+'
-    }
-
-    mol = Chem.MolFromPDBFile(pdb_file, sanitize=False, removeHs=False)
-    mols_by_residue = Chem.SplitMolByPDBResidues(mol)
-
-    print(f"\n--- Found {len(mols_by_residue)} total residue fragments ---")
-
-    non_standard_mols = []
-    for residue_key, fragment_mol in mols_by_residue.items():
-        res_name = residue_key.split('_')[0].strip()
-        if res_name not in STANDARD_RESIDUES:
-            print(f"  > Found non-standard residue: {residue_key}")
-            print(Chem.MolToSmiles(fragment_mol))
-            non_standard_mols.append(fragment_mol)
-        else:
-            print(f"  - Skipping standard residue: {residue_key}")
-
-    return non_standard_mols
-
-
-def test_get_non_standard_residues():
-    pdb_file = "tests/data/pdb/gt_wob_pol_clean.pdb"
-    non_standard_mols = get_non_standard_residues(pdb_file)
-    assert len(non_standard_mols) == 2
-
-
 def test_openmm_ff_param():
     # smi = "c1ccccc1"
     # smi = '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]'
@@ -180,7 +129,7 @@ def test_openmm_ff_param():
     # mol = Chem.MolFromPDBFile(input_pdb)
 
     input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
-    non_standard_mols = get_non_standard_residues(input_pdb)
+    non_standard_mols = nqe.get_non_standard_residues(input_pdb)
     for mol in non_standard_mols:
         Chem.SanitizeMol(mol)
         print(Chem.MolToSmiles(mol, isomericSmiles=True))

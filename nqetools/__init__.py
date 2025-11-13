@@ -69,7 +69,8 @@ from .io import (read_ipi_xyz,
                  search_fes_files,
                  load_fes_data,
                  xyz_to_sdf,
-                 extract_nonstandard_res)
+                 extract_nonstandard_res,
+                 get_non_standard_residues)
 from .openmm import (fix_pdb,
                      zero_velocities,
                      write_multimodel_pdb,

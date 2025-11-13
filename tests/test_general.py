@@ -623,3 +623,9 @@ def test_extract_nonstandard_res():
     for file in generated_files:
         print(file, flush=True)
         os.remove(file)
+
+
+def test_get_non_standard_residues():
+    pdb_file = "tests/data/pdb/gt_wob_solv.pdb"
+    non_standard_mols = nqe.get_non_standard_residues(pdb_file)
+    assert len(non_standard_mols) == 2
