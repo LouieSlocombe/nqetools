@@ -643,3 +643,30 @@ def test_list_non_standard_residues():
     non_standard_residues = nqe.list_non_standard_residues(pdb_file)
     print(non_standard_residues, flush=True)
     assert non_standard_residues == ['DC3', 'DC5', 'DG3', 'DG5', 'GTP']
+
+
+def test_clean_pdb_ions():
+    print(flush=True)
+    input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
+    output_pdb = 'cleaned_gt_wob_solv.pdb'
+    rm_ions = ['Na+', 'Cl-']
+
+    nqe.clean_pdb_ions(input_pdb, rm_ions, output_pdb)
+
+    with open(output_pdb, 'r') as f:
+        lines = f.readlines()
+    ion_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in rm_ions]
+    assert len(ion_lines) == 0, "Ions were not removed from the PDB file"
+    os.remove(output_pdb)
+
+    input_pdb = 'tests/data/pdb/gt_wob_pol.pdb'
+    output_pdb = 'cleaned_gt_wob_pol.pdb'
+    rm_ions = ['Na+', 'Cl-', 'NA']
+
+    nqe.clean_pdb_ions(input_pdb, rm_ions, output_pdb)
+
+    with open(output_pdb, 'r') as f:
+        lines = f.readlines()
+    ion_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in rm_ions]
+    assert len(ion_lines) == 0, "Ions were not removed from the PDB file"
+    os.remove(output_pdb)

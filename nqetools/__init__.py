@@ -71,7 +71,8 @@ from .io import (read_ipi_xyz,
                  xyz_to_sdf,
                  extract_nonstandard_res,
                  get_non_standard_residues,
-                 list_non_standard_residues)
+                 list_non_standard_residues,
+                 clean_pdb_ions)
 from .openmm import (fix_pdb,
                      zero_velocities,
                      write_multimodel_pdb,

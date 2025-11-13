@@ -4,12 +4,13 @@ import os
 import re
 import shutil
 import xml.etree.ElementTree as et
+from typing import List
 
 import ase.io
 import numpy as np
 import openmm.unit as unit
 from ipi.utils.io import read_file
-from openmm.app import PDBFile
+from openmm.app import PDBFile, Modeller
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
 
@@ -619,3 +620,43 @@ def list_non_standard_residues(pdb_file):
         if res_name not in standard_residues:
             non_standard_mols.append(residue_key)
     return non_standard_mols
+
+
+def clean_pdb_ions(pdb_input_path: str, ions_to_remove: List[str], pdb_output_path: str) -> List[str]:
+    pdb = PDBFile(pdb_input_path)
+    modeller = Modeller(pdb.topology, pdb.positions)
+    # Prepare a case-insensitive set of ions to remove
+    ions_to_remove_upper = {ion.upper() for ion in ions_to_remove}
+
+    all_found_ion_types = set()
+    residues_to_delete = []
+
+    print("Scanning residues...")
+    for res in modeller.topology.residues():
+        res_name_upper = res.name.upper()
+
+        # Skip common water models
+        if res_name_upper in ['HOH', 'WAT']:
+            continue
+
+        # Use a heuristic to identify ions: they are monatomic (1 atom per residue)
+        if len(list(res.atoms())) == 1:
+            all_found_ion_types.add(res.name)  # Store original case
+
+            # Check if this ion is in our removal list
+            if res_name_upper in ions_to_remove_upper:
+                residues_to_delete.append(res)
+
+    print(f"-> Found all potential ion types: {sorted(list(all_found_ion_types))}")
+    print(f"-> Will remove {len(residues_to_delete)} residues matching: {ions_to_remove}")
+
+    if residues_to_delete:
+        modeller.delete(residues_to_delete)
+        print(f"Successfully removed {len(residues_to_delete)} ion residues.")
+    else:
+        print("No matching ion residues found to remove.")
+
+    with open(pdb_output_path, 'w') as f:
+        PDBFile.writeFile(modeller.topology, modeller.positions, f)
+    print(f"Cleaned PDB saved to: {pdb_output_path}")
+    return sorted(list(all_found_ion_types))
