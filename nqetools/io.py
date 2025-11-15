@@ -622,7 +622,7 @@ def list_non_standard_residues(pdb_file):
     return non_standard_mols
 
 
-def clean_pdb_ions(pdb_input_path: str, ions_to_remove: List[str], pdb_output_path: str) -> List[str]:
+def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output_path: str) -> List[str]:
     pdb = PDBFile(pdb_input_path)
     modeller = Modeller(pdb.topology, pdb.positions)
     # Prepare a case-insensitive set of ions to remove
@@ -725,3 +725,25 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
     # The 'pdb' object now has its topology modified.
     # We return it for convenience.
     return pdb
+
+
+def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
+    if water_names is None:
+        water_names = {"HOH", "WAT"}
+
+    pdb = PDBFile(input_pdb)
+    modeller = Modeller(pdb.topology, pdb.positions)
+
+    residues_to_delete = [res for res in modeller.topology.residues()
+                          if res.name in water_names]
+
+    print(f"Found {len(residues_to_delete)} water residues to delete.")
+
+    if residues_to_delete:
+        modeller.delete(residues_to_delete)
+        print("Successfully deleted water residues.")
+    else:
+        print("No matching water residues found to delete.")
+
+    with open(output_pdb, 'w') as f:
+        PDBFile.writeFile(modeller.topology, modeller.positions, f)

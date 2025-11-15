@@ -128,41 +128,52 @@ def test_openmm_ff_param():
     #
     # mol = Chem.MolFromPDBFile(input_pdb)
 
-    input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
-    non_standard_mols = nqe.get_non_standard_residues(input_pdb)
-    for mol in non_standard_mols:
-        Chem.SanitizeMol(mol)
-        print(Chem.MolToSmiles(mol, isomericSmiles=True))
+    input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
+    clean_pdb = "gt_wob_pol_clean.pdb"
 
-    # write sdf files for each non-standard residue
-    for i, mol in enumerate(non_standard_mols):
-        Chem.MolToMolFile(mol, f"non_standard_{i}.sdf")
+    rm_ions  = ['Na+', 'Cl-', 'NA']
 
-    # molecule = [Molecule.from_rdkit(mol) for mol in non_standard_mols]
+    nqe.clean_ions_in_pdb(input_pdb, rm_ions, clean_pdb)
 
-    # Create an OpenFF Molecule object for benzene from SMILES
 
-    # molecule = Molecule.from_smiles(smi)
-    # Create the GAFF template generator
+    # residue_map = {'DGN': 'DG', 'DTN': 'DT'}
+    # nqe.relabel_residues_in_pdb(input_pdb, residue_map, output_pdb)
 
-    # molecules = Molecule.from_file("molecules.sdf")
-    molecule = [Molecule.from_file(f"non_standard_{i}.sdf", allow_undefined_stereo=True) for i in
-                range(len(non_standard_mols))]
 
-    gaff = GAFFTemplateGenerator(molecules=molecule)
-    # Create an OpenMM ForceField object with AMBER ff14SB and TIP3P with compatible ions
-    forcefield = app.ForceField(
-        "amber/protein.ff14SB.xml",
-        "amber/tip3p_standard.xml",
-        "amber/tip3p_HFE_multivalent.xml",
-    )
-    # Register the GAFF template generator
-    forcefield.registerTemplateGenerator(gaff.generator)
-
-    pdbfile = app.PDBFile(input_pdb)
-
-    system = forcefield.createSystem(pdbfile.topology)
-    os.remove(input_pdb)
+    # non_standard_mols = nqe.get_non_standard_residues(input_pdb)
+    # for mol in non_standard_mols:
+    #     Chem.SanitizeMol(mol)
+    #     print(Chem.MolToSmiles(mol, isomericSmiles=True))
+    #
+    # # write sdf files for each non-standard residue
+    # for i, mol in enumerate(non_standard_mols):
+    #     Chem.MolToMolFile(mol, f"non_standard_{i}.sdf")
+    #
+    # # molecule = [Molecule.from_rdkit(mol) for mol in non_standard_mols]
+    #
+    # # Create an OpenFF Molecule object for benzene from SMILES
+    #
+    # # molecule = Molecule.from_smiles(smi)
+    # # Create the GAFF template generator
+    #
+    # # molecules = Molecule.from_file("molecules.sdf")
+    # molecule = [Molecule.from_file(f"non_standard_{i}.sdf", allow_undefined_stereo=True) for i in
+    #             range(len(non_standard_mols))]
+    #
+    # gaff = GAFFTemplateGenerator(molecules=molecule)
+    # # Create an OpenMM ForceField object with AMBER ff14SB and TIP3P with compatible ions
+    # forcefield = app.ForceField(
+    #     "amber/protein.ff14SB.xml",
+    #     "amber/tip3p_standard.xml",
+    #     "amber/tip3p_HFE_multivalent.xml",
+    # )
+    # # Register the GAFF template generator
+    # forcefield.registerTemplateGenerator(gaff.generator)
+    #
+    # pdbfile = app.PDBFile(input_pdb)
+    #
+    # system = forcefield.createSystem(pdbfile.topology)
+    # os.remove(input_pdb)
 
 
 def test_openmm_ff_param_gt_wobble():

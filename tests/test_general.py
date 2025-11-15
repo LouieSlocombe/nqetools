@@ -651,7 +651,7 @@ def test_clean_pdb_ions():
     output_pdb = 'cleaned_gt_wob_solv.pdb'
     rm_ions = ['Na+', 'Cl-']
 
-    nqe.clean_pdb_ions(input_pdb, rm_ions, output_pdb)
+    nqe.clean_ions_in_pdb(input_pdb, rm_ions, output_pdb)
 
     with open(output_pdb, 'r') as f:
         lines = f.readlines()
@@ -663,7 +663,7 @@ def test_clean_pdb_ions():
     output_pdb = 'cleaned_gt_wob_pol.pdb'
     rm_ions = ['Na+', 'Cl-', 'NA']
 
-    nqe.clean_pdb_ions(input_pdb, rm_ions, output_pdb)
+    nqe.clean_ions_in_pdb(input_pdb, rm_ions, output_pdb)
 
     with open(output_pdb, 'r') as f:
         lines = f.readlines()
