@@ -671,6 +671,7 @@ def test_clean_pdb_ions():
     assert len(ion_lines) == 0, "Ions were not removed from the PDB file"
     os.remove(output_pdb)
 
+
 def test_relabel_residues_in_pdb():
     print(flush=True)
     input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
@@ -686,4 +687,18 @@ def test_relabel_residues_in_pdb():
         if line.startswith('HETATM'):
             res_name = line[17:20].strip()
             assert res_name not in residue_map.keys(), f"Residue {res_name} was not relabelled"
+    os.remove(output_pdb)
+
+
+def test_remove_water_residues_in_pdb():
+    print(flush=True)
+    input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
+    output_pdb = 'nowater_gt_wob_solv.pdb'
+
+    nqe.remove_water_residues_in_pdb(input_pdb, output_pdb)
+
+    with open(output_pdb, 'r') as f:
+        lines = f.readlines()
+    water_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in ['HOH', 'WAT']]
+    assert len(water_lines) == 0, "Water residues were not removed from the PDB file"
     os.remove(output_pdb)
