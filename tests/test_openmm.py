@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from sys import stdout
-
+import MDAnalysis as mda
 from openff.toolkit.topology import Molecule
 from openmm import openmm, app, unit
 from openmm.app import ForceField
@@ -9,8 +9,10 @@ from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmml import MLPotential
 from rdkit import Chem
 from rdkit.Chem import AllChem
-
+import rdkit.Chem.Draw as Draw
 import nqetools as nqe
+from rdkit.Chem import rdDepictor
+from pdbfixer import PDBFixer
 
 
 def rdkit_to_openff_manual(rdmol: Chem.Mol) -> Molecule:
@@ -539,6 +541,72 @@ def test_split():
     #
     # pdbfile = PDBFile("gt_wob_pol_clean.pdb")
     # system = forcefield.createSystem(pdbfile.topology)
+
+
+def fix_pdb(file_in, file_out, ph=7.0):
+    fixer = PDBFixer(filename=file_in)
+    fixer.findMissingResidues()
+    fixer.findNonstandardResidues()
+    fixer.replaceNonstandardResidues()
+    # fixer.removeHeterogens(True)
+    fixer.findMissingAtoms()
+    fixer.addMissingAtoms()
+    fixer.addMissingHydrogens(ph)
+    app.PDBFile.writeFile(fixer.topology, fixer.positions, open(file_out, 'w'))
+    return None
+
+
+def test_mdanalysis():
+    print(flush=True)
+    input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
+    clean_pdb = "gt_wob_pol_clean.pdb"
+
+    rm_ions = ['Na+', 'Cl-', 'NA']
+    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
+
+    # nqe.remove_water_residues_in_pdb(input_pdb, clean_pdb)
+    # nqe.clean_ions_in_pdb(clean_pdb, rm_ions, clean_pdb)
+    # nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
+    # #fix_pdb(clean_pdb, clean_pdb)
+
+    u = mda.Universe(clean_pdb)
+    elements = mda.topology.guessers.guess_types(u.atoms.names)
+    u.add_TopologyAttr('elements', elements)
+    lig = u.select_atoms("resname LIG")
+    mol = lig.convert_to("RDKIT")
+    # get the charge of the molecule
+    print(Chem.GetFormalCharge(mol))
+    # get the number of atoms and bonds
+    print(mol.GetNumAtoms(), mol.GetNumBonds())
+    # print the formula of the molecule
+    print(Chem.rdMolDescriptors.CalcMolFormula(mol))
+    # Get the smiles of the molecule
+    print(Chem.MolToSmiles(mol, isomericSmiles=True, allHsExplicit=True))
+
+    # write to sdf file
+    Chem.MolToMolFile(mol, "gtp.sdf", kekulize=False)
+
+    img = Draw.MolToImage(mol, size=(700, 500))
+    img.save("ligand_rdkit.png")
+    # draw 2d structure of the molecule
+    rdDepictor.Compute2DCoords(mol)
+    rdDepictor.StraightenDepiction(mol)
+    img = Draw.MolToImage(mol, size=(700, 500))
+    img.save("ligand_rdkit_2d.png")
+
+    lig_mol = Molecule.from_rdkit(mol)
+    print(lig_mol.n_atoms, lig_mol.n_bonds)
+    # get the smiles of the molecule
+    print(lig_mol.to_smiles(isomeric=True, explicit_hydrogens=True))
+
+    gaff = GAFFTemplateGenerator(molecules=lig_mol)
+    forcefield = ForceField(
+        'amber/ff14SB.xml',
+    )
+    forcefield.registerTemplateGenerator(gaff.generator)
+
+    pdbfile = app.PDBFile("gt_wob_pol_clean.pdb")
+    system = forcefield.createSystem(pdbfile.topology)
 
 
 def test_openmm_constraints():
