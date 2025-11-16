@@ -2,13 +2,75 @@ import os
 from pathlib import Path
 from sys import stdout
 
-from openff.toolkit import Molecule
+from openff.toolkit.topology import Molecule
 from openmm import openmm, app, unit
+from openmm.app import ForceField
 from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmml import MLPotential
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 import nqetools as nqe
+
+
+def rdkit_to_openff_manual(rdmol: Chem.Mol) -> Molecule:
+    rdkit_bond_type_map = {
+        Chem.BondType.SINGLE: 1,
+        Chem.BondType.DOUBLE: 2,
+        Chem.BondType.TRIPLE: 3,
+        Chem.BondType.AROMATIC: 1.5,
+    }
+    rdkit_bond_stereo_map = {
+        Chem.BondStereo.STEREOCIS: 'Cis',
+        Chem.BondStereo.STEREOE: 'E',
+        Chem.BondStereo.STEREOTRANS: 'Trans',
+        Chem.BondStereo.STEREOZ: 'Z',
+        Chem.BondStereo.STEREOANY: None,
+        Chem.BondStereo.STEREONONE: None,
+    }
+    rdkit_chiral_tag_map = {
+        Chem.ChiralType.CHI_TETRAHEDRAL_CCW: 'S',
+        Chem.ChiralType.CHI_TETRAHEDRAL_CW: 'R',
+        Chem.ChiralType.CHI_UNSPECIFIED: None,
+    }
+
+    Chem.AssignStereochemistryFrom3D(rdmol)
+    AllChem.DetectBondStereochemistry(rdmol)
+
+    offmol = Molecule()
+    for rdatom in rdmol.GetAtoms():
+        atomic_num = rdatom.GetAtomicNum()
+        formal_charge = rdatom.GetFormalCharge()
+        is_aromatic = rdatom.GetIsAromatic()
+        chiral_tag = rdatom.GetChiralTag()
+        atom_stereo = rdkit_chiral_tag_map.get(chiral_tag, None)
+        offmol.add_atom(
+            atomic_number=atomic_num,
+            formal_charge=formal_charge,
+            is_aromatic=is_aromatic,
+            stereochemistry=atom_stereo
+        )
+    for rdbond in rdmol.GetBonds():
+        idx1 = rdbond.GetBeginAtomIdx()
+        idx2 = rdbond.GetEndAtomIdx()
+        is_aromatic = rdbond.GetIsAromatic()
+        rd_bond_type = rdbond.GetBondType()
+        bond_order = rdkit_bond_type_map.get(rd_bond_type)
+        if bond_order is None:
+            raise ValueError(f"Unsupported RDKit bond type: {rd_bond_type}")
+        rd_bond_stereo = rdbond.GetStereo()
+        bond_stereo = rdkit_bond_stereo_map.get(rd_bond_stereo, None)
+        offmol.add_bond(
+            atom1=idx1,
+            atom2=idx2,
+            bond_order=bond_order,
+            is_aromatic=is_aromatic,
+            stereochemistry=bond_stereo
+        )
+    if rdmol.GetNumConformers() > 0:
+        conformer = rdmol.GetConformer(0)
+        offmol.add_conformer(conformer.GetPositions() * 1.0)
+    return offmol
 
 
 def test_openmm_ml():
@@ -433,8 +495,7 @@ def test_same():
 
 
 def test_split():
-    from openff.toolkit.topology import Molecule
-    from openmm.app import ForceField
+    print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
     clean_pdb = "gt_wob_pol_clean.pdb"
 
@@ -442,7 +503,10 @@ def test_split():
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
 
     smi = '[H]-[O]-[C@@]1(-[H])-[C](-[H])(-[H])-[C@](-[H])(-[N]2-[CH](-[H])-[NH]-[C@@H]3-[CH]-2-[NH]-[C@H](-[N](-[H])-[H])-[N](-[H])-[C@H]-3-[OH])-[O]-[C@]-1(-[H])-[C](-[H])(-[H])-[O]-[P-](-[O-])(-[O-])-[O]-[P-](-[O-])(-[O-])-[O]-[P-](-[O-])(-[O-])-[O-]'
-
+    smi = 'C1=NC2=C(N1[C@H]3[C@@H]([C@@H]([C@H](O3)COP(=O)([O-])OP(=O)([O-])OP(=O)([O-])[O-])O)O)N=C(NC2=O)N'
+    mol = Chem.MolFromSmiles(smi)
+    lig_mol = rdkit_to_openff_manual(mol)
+    print(lig_mol.n_bonds, lig_mol.n_atoms)
 
     nqe.clean_ions_in_pdb(input_pdb, rm_ions, clean_pdb)
     nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
@@ -451,39 +515,30 @@ def test_split():
     non_standard_mols = nqe.get_non_standard_residues(clean_pdb)
     # write sdf files for each non-standard residue
     for i, mol in enumerate(non_standard_mols):
-        # print the number of atoms and bonds
-        #Chem.SanitizeMol(mol)
         print(f"Non-standard residue {i}: {mol.GetNumAtoms()} atoms, {mol.GetNumBonds()} bonds")
-
-
-        print(Chem.MolToSmiles(mol, isomericSmiles=True, allBondsExplicit=True, allHsExplicit=True,canonical=True))
-        print(Chem.MolToInchi(mol))
+        print(Chem.MolToSmiles(mol, isomericSmiles=True, allBondsExplicit=True, allHsExplicit=True, canonical=True))
         Chem.MolToMolFile(mol, f"non_standard_{i}.sdf", kekulize=False)
-
-    # nqe.fix_pdb(clean_pdb, clean_pdb)
-    lig_mol = Molecule.from_file('non_standard_0.sdf', allow_undefined_stereo=True, file_format="SDF")
-    print(lig_mol.n_bonds, lig_mol.n_atoms, lig_mol.properties)
-
-    lig_mol = Molecule.from_rdkit(non_standard_mols[0], allow_undefined_stereo=True)
-    print(lig_mol.n_bonds, lig_mol.n_atoms, lig_mol.properties)
-
-
-    lig_mol = Molecule.from_smiles(smi, allow_undefined_stereo=True)
-    print(lig_mol.n_bonds, lig_mol.n_atoms, lig_mol.properties)
-
-    lig_mol = Molecule.from_inchi('InChI=1S/C10H30N5O13P3/c11-10-13-8-7(9(17)14-10)12-3-15(8)6-1-4(16)5(26-6)2-25-30(21,22)28-31(23,24)27-29(18,19)20/h4-10,12-14,16-24,29-31H,1-3,11H2/t4-,5+,6+,7+,8?,9?,10-/m0/s1', allow_undefined_stereo=True)
-    print(lig_mol.n_bonds, lig_mol.n_atoms, lig_mol.properties)
-
-
-    gaff = GAFFTemplateGenerator(molecules=lig_mol)
-    forcefield = ForceField(
-        'amber/ff14SB.xml',
-    )
-    forcefield.registerTemplateGenerator(gaff.generator)
-    from openmm.app import PDBFile
-
-    pdbfile = PDBFile("gt_wob_pol_clean.pdb")
-    system = forcefield.createSystem(pdbfile.topology)
+    #
+    # # nqe.fix_pdb(clean_pdb, clean_pdb)
+    # lig_mol = Molecule.from_file('non_standard_0.sdf', allow_undefined_stereo=True, file_format="SDF")
+    # print(lig_mol.n_bonds, lig_mol.n_atoms, lig_mol.properties)
+    #
+    # lig_mol = Molecule.from_rdkit(non_standard_mols[0], allow_undefined_stereo=True)
+    # print(lig_mol.n_bonds, lig_mol.n_atoms, lig_mol.properties)
+    #
+    #
+    # lig_mol = Molecule.from_smiles(smi, allow_undefined_stereo=False)
+    # print(lig_mol.n_bonds, lig_mol.n_atoms)
+    #
+    # gaff = GAFFTemplateGenerator(molecules=lig_mol)
+    # forcefield = ForceField(
+    #     'amber/ff14SB.xml',
+    # )
+    # forcefield.registerTemplateGenerator(gaff.generator)
+    # from openmm.app import PDBFile
+    #
+    # pdbfile = PDBFile("gt_wob_pol_clean.pdb")
+    # system = forcefield.createSystem(pdbfile.topology)
 
 
 def test_openmm_constraints():
