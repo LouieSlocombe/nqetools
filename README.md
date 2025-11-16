@@ -30,7 +30,7 @@ conda update conda --all -y
 
 Install the basic requirements.
 ```
-conda install pytest numpy scipy matplotlib opt_einsum jax jaxlib ml_dtypes sympy pyfftw chemiscope jupyterlab -y
+conda install pytest numpy scipy matplotlib opt_einsum jax jaxlib ml_dtypes sympy pyfftw chemiscope jupyterlab mdanalysis -y
 ```
 
 ## ASE and Sella

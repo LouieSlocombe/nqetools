@@ -53,6 +53,7 @@ setup(
         'ambertools',
         'pdbfixer',
         'rdkit',
+        'mdanalysis',
         'mace-torch',
         'sella',
         'geodesic_interpolate @ git+https://github.com/LouieSlocombe/geodesic_interpolate.git',
