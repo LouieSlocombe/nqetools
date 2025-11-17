@@ -1012,7 +1012,9 @@ def test_mdanalysis():
     # make the ligand sdf
     make_sdf(clean_pdb, lig_name='LIG')
     molecule = Molecule.from_file('LIG.sdf')
-    molecule.assign_partial_charges(partial_charge_method='am1bcc')
+    molecule.generate_conformers(n_conformers=1)
+    molecule.assign_partial_charges(partial_charge_method='am1bcc',
+                                    use_conformers=molecule.conformers)
 
 
     ligand_ff_topology = molecule.to_topology()
