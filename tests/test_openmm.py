@@ -1,28 +1,23 @@
+import math
 import os
+import re
+from collections import defaultdict
 from pathlib import Path
 from sys import stdout
+import numpy as np
 import MDAnalysis as mda
-from openff.toolkit.topology import Molecule
-from openmm import openmm, app, unit
-from openmm.app import ForceField
-from openmmforcefields.generators import GAFFTemplateGenerator
+import openmm.app as app
+import openmm.unit as unit
+from openff.toolkit import Molecule, ForceField, Topology
+from openff.units import Quantity, unit as off_unit
+from openmm import openmm
+from openmmforcefields.generators import SMIRNOFFTemplateGenerator, GAFFTemplateGenerator, SystemGenerator
 from openmmml import MLPotential
+from pdbfixer import PDBFixer
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import rdkit.Chem.Draw as Draw
+
 import nqetools as nqe
-from rdkit.Chem import rdDepictor
-from pdbfixer import PDBFixer
-
-import re
-import math
-import sys
-from collections import defaultdict
-
-import re
-import math
-import sys
-from collections import defaultdict
 
 
 def create_ligand_xml(mol2_path, frcmod_path, xml_out_path="ligand.xml"):
@@ -639,11 +634,6 @@ def test_openmm_ff_param():
 
 def test_openmm_ff_param_gt_wobble():
     input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
-    from openmm.app import PDBFile
-    from openff.toolkit import Molecule
-    from openmmforcefields.generators import (
-        SMIRNOFFTemplateGenerator,
-    )
 
     smis = [
         '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]',
@@ -660,7 +650,7 @@ def test_openmm_ff_param_gt_wobble():
     # Register the GAFF template generator
     # forcefield.registerTemplateGenerator(gaff.generator)
     # forcefield.registerTemplateGenerator(smirnoff.generator)
-    pdbfile = PDBFile(input_pdb)
+    pdbfile = app.PDBFile(input_pdb)
 
     system = forcefield.createSystem(pdbfile.topology)
 
@@ -733,12 +723,6 @@ def test_openmm_gt_wobble():
 
 
 def test_openff():
-    import openmm.app as app
-    import openmm as mm
-    import openmm.unit as unit
-    from openff.toolkit.topology import Molecule
-    from openmmforcefields.generators import SystemGenerator
-
     print("--- 1. Loading Input Files ---")
     # Load the PDB file containing the entire complex (protein, DNA, ligand)
     # This provides the topology and the initial positions.
@@ -802,7 +786,7 @@ def test_openff():
     print("\n--- 4. Setting up the OpenMM Simulation ---")
     # Set up a standard OpenMM simulation.
     # We'll use a Langevin integrator for NVT dynamics.
-    integrator = mm.LangevinIntegrator(
+    integrator = openmm.LangevinIntegrator(
         300 * unit.kelvin,
         1.0 / unit.picoseconds,
         2.0 * unit.femtoseconds
@@ -851,9 +835,6 @@ def test_openff():
 
 
 def test_same():
-    from openff.toolkit.topology import Molecule, Topology
-    import openmm.app as app
-
     # --- 1. Load your ligand from the SDF file ---
     print("--- Loading from ligand.sdf ---")
     # Use the same stereo flag from our previous fix
@@ -935,13 +916,12 @@ def test_split():
     # print(lig_mol.n_bonds, lig_mol.n_atoms)
     #
     # gaff = GAFFTemplateGenerator(molecules=lig_mol)
-    # forcefield = ForceField(
+    # forcefield = app.ForceField(
     #     'amber/ff14SB.xml',
     # )
     # forcefield.registerTemplateGenerator(gaff.generator)
-    # from openmm.app import PDBFile
     #
-    # pdbfile = PDBFile("gt_wob_pol_clean.pdb")
+    # pdbfile = app.PDBFile("gt_wob_pol_clean.pdb")
     # system = forcefield.createSystem(pdbfile.topology)
 
 
@@ -958,12 +938,58 @@ def fix_pdb(file_in, file_out, ph=7.0):
     return None
 
 
-def test_mdanalysis():
-    import openmm
-    from openmm.app import PDBFile
-    from openff.toolkit import Molecule, ForceField
-    from openff.interchange import Interchange
+def make_sdf(pdb_file, lig_name='LIG'):
+    u = mda.Universe(pdb_file)
+    elements = mda.topology.guessers.guess_types(u.atoms.names)
+    u.add_TopologyAttr('elements', elements)
+    lig = u.select_atoms(f"resname {lig_name}")
+    mol = lig.convert_to("RDKIT")
+    # write to sdf file
+    Chem.MolToMolFile(mol, f"{lig_name}.sdf", kekulize=False)
 
+
+def insert_molecule_and_remove_clashes(
+        topology: Topology,
+        insert: Molecule,
+        ligand: Molecule,
+        radius: Quantity = 1.5 * off_unit.angstrom,
+        keep: list[Molecule] = [],
+) -> Topology:
+    # We'll collect the molecules for the output topology into a list
+    new_top_mols = []
+    # A molecule's positions in a topology are stored as its zeroth conformer
+    insert_coordinates = insert.conformers[0][:, None, :]
+    for molecule in topology.molecules:
+        if any(keep_mol.is_isomorphic_with(molecule) for keep_mol in keep):
+            new_top_mols.append(molecule)
+            continue
+        molecule_coordinates = molecule.conformers[0][None, :, :]
+        diff_matrix = molecule_coordinates - insert_coordinates
+
+        # np.linalg.norm doesn't work on Pint quantities 😢
+        working_unit = off_unit.nanometer
+        distance_matrix = np.linalg.norm(diff_matrix.m_as(working_unit), axis=-1) * working_unit
+
+        if distance_matrix.min() > radius:
+            # This molecule is not clashing, so add it to the topology
+            new_top_mols.append(molecule)
+        else:
+            print(f"Removed {molecule.to_smiles()} molecule")
+
+    # Insert the ligand at the end
+    new_top_mols.append(ligand)
+
+    # This pattern of assembling a topology from a list of molecules
+    # ends up being much more efficient than adding each molecule
+    # to a new topology one at a time
+    new_top = Topology.from_molecules(new_top_mols)
+
+    # Don't forget the box vectors!
+    new_top.box_vectors = topology.box_vectors
+    return new_top
+
+
+def test_mdanalysis():
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
     clean_pdb = "gt_wob_pol_clean.pdb"
@@ -977,23 +1003,77 @@ def test_mdanalysis():
     nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
     fix_pdb(clean_pdb, stripped_pdb)
 
-    protein_ff = ForceField('amber/ff14SB.xml')
-
     print("Loading protein...")
-    pdb = PDBFile('protein.pdb')
-    protein_topology = pdb.topology
-    protein_positions = pdb.positions
+    pdb = app.PDBFile(stripped_pdb)
+    pdb_topology = pdb.topology
+    pdb_positions = pdb.positions
+    print(f"Loaded PDB with {pdb_topology.getNumAtoms()} atoms.")
 
-    ### 2. Load the Ligand (from SDF)
-    print("Loading ligand...")
-    # This loads the ligand and its 3D coordinates from the SDF
-    ligand_molecule = Molecule.from_file('gtp.sdf')
+    # make the ligand sdf
+    make_sdf(clean_pdb, lig_name='LIG')
+    molecule = Molecule.from_file('LIG.sdf')
+    molecule.assign_partial_charges(partial_charge_method='am1bcc')
 
-    from openff.toolkit.topology import Topology as OpenFFTopology
-    protein_off_topology = OpenFFTopology.from_openmm(
-        protein_topology,
-        unique_molecules=[ligand_molecule]  # Tell it to recognize the ligand
-    )
+
+    ligand_ff_topology = molecule.to_topology()
+    ligand_omm_topology = ligand_ff_topology.to_openmm()
+    ligand_positions = ligand_ff_topology.get_positions().to_openmm()
+    print(f"Loaded SDF with {ligand_omm_topology.getNumAtoms()} atoms.")
+
+    modeller = app.Modeller(pdb_topology, pdb_positions)
+    modeller.add(ligand_omm_topology, ligand_positions)
+    combined_topology = modeller.topology
+    combined_positions = modeller.positions
+    print(f"Combined system has {combined_topology.getNumAtoms()} total atoms.")
+
+    print("Saving combined PDB file...")
+    with open('combined_system.pdb', 'w') as f:
+        app.PDBFile.writeFile(combined_topology, combined_positions, f)
+
+
+    with open('combined_system.pdb', 'r') as f:
+        pdb_data = f.read()
+    # open the file and replace 'x' with ' ' to fix formatting issues
+    pdb_data = pdb_data.replace('x', ' ')
+    # replace UNK with LIG
+    pdb_data = pdb_data.replace('UNK', 'LIG')
+    with open('combined_system_fixed.pdb', 'w') as f:
+        f.write(pdb_data)
+
+    forcefield = app.ForceField("amber/ff14SB.xml")
+    gaff = GAFFTemplateGenerator(molecules=molecule, cache="gaff-molecules.json", forcefield='gaff-2.2.20')
+    forcefield.registerTemplateGenerator(gaff.generator)
+    pdbfile = app.PDBFile('combined_system_fixed.pdb')
+    system = forcefield.createSystem(pdbfile.topology)
+
+
+
+    # molecule = Molecule.from_file('LIG.sdf')
+    #
+    # # Create an OpenFF Topology object from the molecule
+    #
+    # topology = Topology.from_molecules(molecule)
+    #
+    # # Load the latest OpenFF force field release: version 2.1.0, codename "Sage"
+    #
+    # forcefield = ForceField('openff-2.1.0.offxml')
+    #
+    # # Create an OpenMM system representing the molecule with SMIRNOFF-applied parameters
+    # openmm_system = forcefield.create_openmm_system(topology)
+    #
+    # # Create an Interchange object for representations in other formats
+    # interchange = forcefield.create_interchange(topology)
+
+    # ### 2. Load the Ligand (from SDF)
+    # print("Loading ligand...")
+    # # This loads the ligand and its 3D coordinates from the SDF
+    # ligand_molecule = Molecule.from_file('LIG.sdf')
+    #
+    #
+    # protein_off_topology = OpenFFTopology.from_openmm(
+    #     protein_topology,
+    #     unique_molecules=[ligand_molecule]
+    # )
 
     # u = mda.Universe(clean_pdb)
     # elements = mda.topology.guessers.guess_types(u.atoms.names)
@@ -1026,7 +1106,7 @@ def test_mdanalysis():
     # print(lig_mol.to_smiles(isomeric=True, explicit_hydrogens=True))
     #
     # gaff = GAFFTemplateGenerator(molecules=lig_mol)
-    # forcefield = ForceField(
+    # forcefield = app.ForceField(
     #     'amber/ff14SB.xml',
     # )
     # forcefield.registerTemplateGenerator(gaff.generator)
@@ -1047,7 +1127,7 @@ def test_create_ligand_xml():
     pdb = app.PDBFile('sqm.pdb')
 
     # 2. Load the force fields
-    forcefield = ForceField('gtp.xml')
+    forcefield = app.ForceField('gtp.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
     system = forcefield.createSystem(
         modeller.topology,
