@@ -159,6 +159,10 @@ def test_mdanalysis():
     with open("minimized.pdb", "w") as f:
         app.PDBFile.writeFile(modeller.topology, min_positions, f)
 
+    os.remove('combined_system.pdb')
+    os.remove('LIG.sdf')
+    os.remove('minimized.pdb')
+
 
 def test_openmm_constraints():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")  # must have coordinates
@@ -591,3 +595,25 @@ def test_openmm_rpmd_mixed():
     print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
     os.remove(out_pdb)
     os.remove(data_out)
+
+
+def test_deuterate():
+    pdb = app.PDBFile('tests/data/pdb/input.pdb')
+    forcefield = app.ForceField('amber14/protein.ff14SB.xml', 'amber14/tip3p.xml')
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.addSolvent(forcefield,
+                        model='tip3p',
+                        padding=1.0 * unit.nanometer)
+
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=app.PME,
+                                     constraints=app.HBonds,
+                                     rigidWater=True)
+    nqe.deuterate(modeller, system)
+
+    integrator = openmm.LangevinIntegrator(300 * unit.kelvin,
+                                           1.0 / unit.picosecond,
+                                           0.002 * unit.picoseconds)
+    simulation = app.Simulation(modeller.topology, system, integrator)
+    simulation.context.setPositions(modeller.positions)
+    simulation.minimizeEnergy()
