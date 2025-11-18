@@ -283,6 +283,22 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
         f.write(pdb_data)
 
 
+def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
+    # Combine ligand and receptor into one pdb
+    pdb = app.PDBFile(input_pdb)
+    molecule = Molecule.from_file(f'{lig_name}.sdf')
+    ligand_ff_topology = molecule.to_topology()
+    ligand_omm_topology = ligand_ff_topology.to_openmm()
+    ligand_positions = ligand_ff_topology.get_positions().to_openmm()
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.add(ligand_omm_topology, ligand_positions)
+    with open(input_pdb, 'w') as f:
+        app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
+    if patch:
+        pdb_patcher(input_pdb, lig_name=lig_name)
+    return None
+
+
 def prepare_lig_system(input_pdb,
                        combined_pdb='combined_system.pdb',
                        rm_ions=None,
@@ -290,37 +306,31 @@ def prepare_lig_system(input_pdb,
                        lig_name='LIG'):
     # clean the pdb
     clean_pdb = 'cleaned.pdb'
-
     nqe.remove_water_residues_in_pdb(input_pdb, clean_pdb)
 
     if rm_ions is not None:
         nqe.clean_ions_in_pdb(clean_pdb, rm_ions, clean_pdb)
     if residue_map is not None:
         nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
-    # Strip out the ligand and fix the pdb
-    nqe.fix_pdb(clean_pdb, combined_pdb)
+
     # Save ligand as sdf
     make_sdf(clean_pdb, lig_name=lig_name)
-    os.remove(clean_pdb)
 
-    # Combine ligand and receptor into one pdb
-    pdb = app.PDBFile(combined_pdb)
-    molecule = Molecule.from_file(f'{lig_name}.sdf')
-    ligand_ff_topology = molecule.to_topology()
-    ligand_omm_topology = ligand_ff_topology.to_openmm()
-    ligand_positions = ligand_ff_topology.get_positions().to_openmm()
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.add(ligand_omm_topology, ligand_positions)
-    with open(combined_pdb, 'w') as f:
-        app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
-    pdb_patcher(combined_pdb)
+    # Strip out the ligand and fix the pdb
+    nqe.fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
+    # Remove the ligand
+    nqe.remove_water_residues_in_pdb(combined_pdb, combined_pdb, water_names={lig_name})
+
+    combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
+    os.remove(clean_pdb)
     return None
 
 
 def prepare_ligand_ff(standard_ff,
                       use_cache=False,
                       cache="gaff-molecules.json",
-                      lig_name='LIG', n_conf=2,
+                      lig_name='LIG',
+                      n_conf=2,
                       pc_methods='mmff94'):
     # mmff94 am1bcc
     if use_cache:
@@ -358,17 +368,6 @@ def test_mdanalysis():
     pdb_topology = pdb.topology
     pdb_positions = pdb.positions
     modeller = app.Modeller(pdb_topology, pdb_positions)
-
-    # molecule = Molecule.from_file('LIG.sdf')
-    # molecule.generate_conformers(n_conformers=2)
-    # molecule.assign_partial_charges(partial_charge_method='mmff94',  # mmff94 am1bcc
-    #                                 use_conformers=molecule.conformers)
-    # gaff = GAFFTemplateGenerator(molecules=molecule, cache="gaff-molecules.json", forcefield='gaff-2.2.20')
-    #
-    # forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
-    # forcefield.registerTemplateGenerator(gaff.generator)
-
-    # forcefield = prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), cache="gaff-molecules.json", lig_name='LIG', n_conf=2, pc_methods='mmff94')
     forcefield = prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"))
 
     # Solvate
