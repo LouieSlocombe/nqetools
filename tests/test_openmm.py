@@ -119,61 +119,6 @@ def test_openmm_ml_mixed_system():
     simulation.step(1_000)
 
 
-def test_openmm_ff_param():
-    # Create an OpenMM ForceField object with AMBER ff14SB and TIP3P with compatible ions
-    forcefield = app.ForceField(
-        "amber/protein.ff14SB.xml",
-        "amber/tip3p_standard.xml",
-        "amber/tip3p_HFE_multivalent.xml",
-        "amber/DNA.OL15.xml",
-    )
-
-    # smi = "c1ccccc1"
-    smi = '[H]O[C@@]1([H])C([H])([H])[C@]([H])(N2C([H])N[C@@H]3C2N[C@H](N([H])[H])N([H])[C@H]3O)O[C@]1([H])C([H])([H])O[PH](O)(O)O[PH](O)(O)O[PH](O)(O)O'
-    # input_pdb = "benzene.pdb"
-    # mol = Chem.MolFromSmiles(smi)
-    # mol = Chem.AddHs(mol)
-    #
-    # # Write a pdb file for the molecule
-    # Chem.MolToPDBFile(mol, input_pdb)
-    #
-    # mol = Chem.MolFromPDBFile(input_pdb)
-
-    input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
-    clean_pdb = "gt_wob_pol_clean.pdb"
-
-    rm_ions = ['Na+', 'Cl-', 'NA']
-    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
-
-    nqe.clean_ions_in_pdb(input_pdb, rm_ions, clean_pdb)
-    nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
-    nqe.remove_water_residues_in_pdb(clean_pdb, clean_pdb)
-    nqe.fix_pdb(input_pdb, clean_pdb)
-
-    non_standard_mols = nqe.get_non_standard_residues(clean_pdb)
-    n_ns = len(non_standard_mols)
-    for mol in non_standard_mols:
-        Chem.SanitizeMol(mol)
-
-    # write sdf files for each non-standard residue
-    for i, mol in enumerate(non_standard_mols):
-        Chem.MolToMolFile(mol, f"non_standard_{i}.sdf")
-    #
-    # # molecule = [Molecule.from_rdkit(mol, allow_undefined_stereo=True) for mol in non_standard_mols]
-    # # molecule = Molecule.from_smiles(smi, allow_undefined_stereo=True)
-    # molecule = [Molecule.from_file(f"non_standard_{i}.sdf", allow_undefined_stereo=True) for i in range(n_ns)]
-    #
-    # # Register the GAFF template generator
-    # gaff = GAFFTemplateGenerator(molecules=molecule)
-    # forcefield.registerTemplateGenerator(gaff.generator)
-
-    pdbfile = app.PDBFile(clean_pdb)
-    system = forcefield.createSystem(pdbfile.topology)
-    os.remove(clean_pdb)
-    # for i in range(n_ns):
-    #     os.remove(f"non_standard_{i}.sdf")
-
-
 def test_openmm_ff_param_gt_wobble():
     input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
 
@@ -319,7 +264,7 @@ def prepare_lig_system(input_pdb,
     # Strip out the ligand and fix the pdb
     nqe.fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
     # Remove the ligand
-    nqe.remove_water_residues_in_pdb(combined_pdb, combined_pdb, water_names={lig_name})
+    nqe.remove_residues_in_pdb(combined_pdb, combined_pdb, names={lig_name})
 
     combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
     os.remove(clean_pdb)
