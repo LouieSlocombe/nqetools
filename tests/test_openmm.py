@@ -2,14 +2,10 @@ import os
 from pathlib import Path
 from sys import stdout
 
-import MDAnalysis as mda
 import openmm.app as app
 import openmm.unit as unit
-from openff.toolkit import Molecule
 from openmm import openmm
-from openmmforcefields.generators import SMIRNOFFTemplateGenerator, GAFFTemplateGenerator
 from openmmml import MLPotential
-from rdkit import Chem
 
 import nqetools as nqe
 
@@ -119,201 +115,20 @@ def test_openmm_ml_mixed_system():
     simulation.step(1_000)
 
 
-def test_openmm_ff_param_gt_wobble():
-    input_pdb = "tests/data/pdb/gt_wob_solv.pdb"
-
-    smis = [
-        '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[n]:[c]3:[c](=[O]):[n](-[H]):[c](-[N](-[H])-[H]):[n]:[c]:3:2)-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]',
-        '[H]-[O]-[C](-[H])(-[H])-[C@@]1(-[H])-[O]-[C@@](-[H])(-[n]2:[c](-[H]):[c](-[C](-[H])(-[H])-[H]):[c](=[O]):[n](-[H]):[c]:2=[O])-[C](-[H])(-[H])-[C@]-1(-[H])-[O]-[H]']
-    m0 = Molecule.from_smiles(smis[0])
-    m1 = Molecule.from_smiles(smis[1])
-    gaff = GAFFTemplateGenerator(molecules=[m0, m1], forcefield="gaff-2.2.20")
-    smirnoff = SMIRNOFFTemplateGenerator(molecules=[m0, m1])
-    forcefield = app.ForceField(
-        "amber/protein.ff14SB.xml",
-        "amber/tip3p_standard.xml",
-        "amber/tip3p_HFE_multivalent.xml",
-    )
-    # Register the GAFF template generator
-    # forcefield.registerTemplateGenerator(gaff.generator)
-    # forcefield.registerTemplateGenerator(smirnoff.generator)
-    pdbfile = app.PDBFile(input_pdb)
-
-    system = forcefield.createSystem(pdbfile.topology)
-
-    # generated_files = nqe.extract_nonstandard_res(input_pdb, '.', sdf=True)
-    # molecules = [Molecule.from_file(f) for f in generated_files]
-    #
-    # gaff = GAFFTemplateGenerator(molecules=molecules, forcefield="gaff-2.2.20")
-    # # Create an OpenMM ForceField object with AMBER ff14SB and TIP3P with compatible ions
-    # forcefield = app.ForceField(
-    #     "amber/protein.ff14SB.xml",
-    #     "amber/tip3p_standard.xml",
-    #     "amber/tip3p_HFE_multivalent.xml",
-    # )
-    # # Register the GAFF template generator
-    # forcefield.registerTemplateGenerator(gaff.generator)
-    # for f in generated_files:
-    #     os.remove(f)
-    #
-    # pdb = app.PDBFile(input_pdb)
-    # system = forcefield.createSystem(pdb.topology, ignoreExternalBonds=True)
-    # modeller = app.Modeller(system.topology, system.positions)
-    # modeller.deleteWater()
-    # modeller.addHydrogens()
-    #
-    # # Solvate
-    # modeller.addSolvent(forcefield,
-    #                     padding=1.0 * unit.nanometer,
-    #                     boxShape='dodecahedron')
-    #
-    # n_atoms = modeller.topology.getNumAtoms()
-    # print(f"System has {n_atoms} atoms.")
-
-
-def test_openmm_gt_wobble():
-    input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
-    clean_pdb = "tests/data/pdb/gt_wob_pol_clean.pdb"
-
-    # fix the pdb
-    nqe.fix_pdb(input_pdb, clean_pdb)
-
-    pdb = app.PDBFile(clean_pdb)
-    forcefield = app.ForceField("amber14-all.xml",
-                                "amber14/tip3pfb.xml")
-
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    # Solvate
-    modeller.addSolvent(forcefield,
-                        padding=1.0 * unit.nanometer,
-                        boxShape='dodecahedron')
-
-    system = forcefield.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=app.HBonds
-    )
-    # --- Integrator & Simulation ---
-    integrator = openmm.LangevinIntegrator(
-        300 * unit.kelvin,  # temperature (not used by minimizer but fine to define)
-        1.0 / unit.picosecond,  # friction
-        0.002 * unit.picoseconds  # timestep
-    )
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    sim = app.Simulation(modeller.topology, system, integrator, platform)
-    sim.context.setPositions(modeller.positions)
-    state = sim.context.getState(getEnergy=True)
-    print("Initial potential energy:", state.getPotentialEnergy())
-    sim.minimizeEnergy(maxIterations=500)
-
-
-def make_sdf(pdb_file, lig_name='LIG'):
-    u = mda.Universe(pdb_file)
-    elements = mda.topology.guessers.guess_types(u.atoms.names)
-    u.add_TopologyAttr('elements', elements)
-    lig = u.select_atoms(f"resname {lig_name}")
-    mol = lig.convert_to("RDKIT")
-    # write to sdf file
-    Chem.MolToMolFile(mol, f"{lig_name}.sdf", kekulize=False)
-
-
-def pdb_patcher(pdb_file, lig_name='LIG'):
-    with open(pdb_file, 'r') as f:
-        pdb_data = f.read()
-    pdb_data = pdb_data.replace('x', ' ')
-    pdb_data = pdb_data.replace('UNK', lig_name)
-    with open(pdb_file, 'w') as f:
-        f.write(pdb_data)
-
-
-def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
-    # Combine ligand and receptor into one pdb
-    pdb = app.PDBFile(input_pdb)
-    molecule = Molecule.from_file(f'{lig_name}.sdf')
-    ligand_ff_topology = molecule.to_topology()
-    ligand_omm_topology = ligand_ff_topology.to_openmm()
-    ligand_positions = ligand_ff_topology.get_positions().to_openmm()
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.add(ligand_omm_topology, ligand_positions)
-    with open(input_pdb, 'w') as f:
-        app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
-    if patch:
-        pdb_patcher(input_pdb, lig_name=lig_name)
-    return None
-
-
-def prepare_lig_system(input_pdb,
-                       combined_pdb='combined_system.pdb',
-                       rm_ions=None,
-                       residue_map=None,
-                       lig_name='LIG'):
-    # clean the pdb
-    clean_pdb = 'cleaned.pdb'
-    nqe.remove_water_residues_in_pdb(input_pdb, clean_pdb)
-
-    if rm_ions is not None:
-        nqe.clean_ions_in_pdb(clean_pdb, rm_ions, clean_pdb)
-    if residue_map is not None:
-        nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
-
-    # Save ligand as sdf
-    make_sdf(clean_pdb, lig_name=lig_name)
-
-    # Strip out the ligand and fix the pdb
-    nqe.fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
-    # Remove the ligand
-    nqe.remove_residues_in_pdb(combined_pdb, combined_pdb, names={lig_name})
-
-    combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
-    os.remove(clean_pdb)
-    return None
-
-
-def prepare_ligand_ff(standard_ff,
-                      use_cache=False,
-                      cache="gaff-molecules.json",
-                      lig_name='LIG',
-                      n_conf=2,
-                      pc_methods='mmff94'):
-    # mmff94 am1bcc
-    if use_cache:
-        if cache is None:
-            cache = "gaff-molecules.json"
-        molecule = Molecule.from_file(f'{lig_name}.sdf')
-        molecule.generate_conformers(n_conformers=n_conf)
-        molecule.assign_partial_charges(partial_charge_method=pc_methods,
-                                        use_conformers=molecule.conformers)
-        gaff = GAFFTemplateGenerator(molecules=molecule,
-                                     cache=cache,
-                                     forcefield='gaff-2.2.20')
-    else:
-        molecule = Molecule.from_file(f'{lig_name}.sdf')
-        molecule.generate_conformers(n_conformers=n_conf)
-        molecule.assign_partial_charges(partial_charge_method=pc_methods,  # mmff94 am1bcc
-                                        use_conformers=molecule.conformers)
-        gaff = GAFFTemplateGenerator(molecules=molecule, forcefield='gaff-2.2.20')
-
-    forcefield = app.ForceField(*standard_ff)
-    forcefield.registerTemplateGenerator(gaff.generator)
-    return forcefield
-
-
 def test_mdanalysis():
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
 
     rm_ions = ['Na+', 'Cl-', 'NA']
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
-    prepare_lig_system(input_pdb, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
+    nqe.prepare_lig_system(input_pdb, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
 
     # Final loading
     pdb = app.PDBFile('combined_system.pdb')
     pdb_topology = pdb.topology
     pdb_positions = pdb.positions
     modeller = app.Modeller(pdb_topology, pdb_positions)
-    forcefield = prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"))
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"))
 
     # Solvate
     modeller.addSolvent(forcefield,
