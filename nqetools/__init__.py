@@ -87,7 +87,8 @@ from .openmm import (fix_pdb,
                      pdb_patcher,
                      combine_sdf_pdb,
                      prepare_lig_system,
-                     prepare_ligand_ff)
+                     prepare_ligand_ff,
+                     deuterate)
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,

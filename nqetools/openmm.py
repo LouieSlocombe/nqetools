@@ -273,3 +273,18 @@ def prepare_ligand_ff(standard_ff,
     forcefield = app.ForceField(*standard_ff)
     forcefield.registerTemplateGenerator(gaff.generator)
     return forcefield
+
+def deuterate(modeller, system, option='all'):
+    deuterium_mass = app.element.deuterium.mass
+    if option == 'all':
+        for atom in modeller.topology.atoms():
+            if atom.element.symbol == 'H':
+                system.setParticleMass(atom.index, deuterium_mass)
+    elif option == 'water':
+        for residue in modeller.topology.residues():
+            if residue.name in ['HOH', 'H2O', 'TIP3', 'WAT']:
+                for atom in residue.atoms():
+                    if atom.element.symbol == 'H':
+                        system.setParticleMass(atom.index, deuterium_mass)
+    else:
+        raise ValueError("Option must be 'all' or 'water'")
