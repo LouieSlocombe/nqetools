@@ -9,12 +9,13 @@ from pdbfixer import PDBFixer
 from .plotting import n_plot
 
 
-def fix_pdb(file_in, file_out, ph=7.0):
+def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
     fixer = PDBFixer(filename=file_in)
     fixer.findMissingResidues()
     fixer.findNonstandardResidues()
     fixer.replaceNonstandardResidues()
-    fixer.removeHeterogens(True)
+    if rm_heterogens:
+        fixer.removeHeterogens(True)
     fixer.findMissingAtoms()
     fixer.addMissingAtoms()
     fixer.addMissingHydrogens(ph)
