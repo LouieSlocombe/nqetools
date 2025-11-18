@@ -1,11 +1,20 @@
+import os
 from sys import stdout
 
+import MDAnalysis as mda
 import matplotlib.pyplot as plt
 import numpy as np
-from openmm import openmm, app, unit
+import openmm.app as app
+import openmm.unit as unit
+from openff.toolkit import Molecule
+from openmm import app
+from openmm import openmm
+from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmtools.integrators import GeodesicBAOABIntegrator
 from pdbfixer import PDBFixer
+from rdkit import Chem
 
+from .io import remove_water_residues_in_pdb, clean_ions_in_pdb, relabel_residues_in_pdb, remove_residues_in_pdb
 from .plotting import n_plot
 
 
@@ -171,3 +180,96 @@ def md_analysis(file_in='md_log.txt'):
     plt.plot(time, volume, lw=2)
     n_plot('Time (ps)', 'Volume (nm^3)')
     plt.show()
+
+
+def make_sdf(pdb_file, lig_name='LIG'):
+    u = mda.Universe(pdb_file)
+    elements = mda.topology.guessers.guess_types(u.atoms.names)
+    u.add_TopologyAttr('elements', elements)
+    lig = u.select_atoms(f"resname {lig_name}")
+    mol = lig.convert_to("RDKIT")
+    # write to sdf file
+    Chem.MolToMolFile(mol, f"{lig_name}.sdf", kekulize=False)
+    return None
+
+
+def pdb_patcher(pdb_file, lig_name='LIG'):
+    with open(pdb_file, 'r') as f:
+        pdb_data = f.read()
+    pdb_data = pdb_data.replace('x', ' ')
+    pdb_data = pdb_data.replace('UNK', lig_name)
+    with open(pdb_file, 'w') as f:
+        f.write(pdb_data)
+    return None
+
+
+def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
+    # Combine ligand and receptor into one pdb
+    pdb = app.PDBFile(input_pdb)
+    molecule = Molecule.from_file(f'{lig_name}.sdf')
+    ligand_ff_topology = molecule.to_topology()
+    ligand_omm_topology = ligand_ff_topology.to_openmm()
+    ligand_positions = ligand_ff_topology.get_positions().to_openmm()
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.add(ligand_omm_topology, ligand_positions)
+    with open(input_pdb, 'w') as f:
+        app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
+    if patch:
+        pdb_patcher(input_pdb, lig_name=lig_name)
+    return None
+
+
+def prepare_lig_system(input_pdb,
+                       combined_pdb='combined_system.pdb',
+                       rm_ions=None,
+                       residue_map=None,
+                       lig_name='LIG'):
+    # clean the pdb
+    clean_pdb = 'cleaned.pdb'
+    remove_water_residues_in_pdb(input_pdb, clean_pdb)
+
+    if rm_ions is not None:
+        clean_ions_in_pdb(clean_pdb, rm_ions, clean_pdb)
+    if residue_map is not None:
+        relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
+
+    # Save ligand as sdf
+    make_sdf(clean_pdb, lig_name=lig_name)
+
+    # Strip out the ligand and fix the pdb
+    fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
+    # Remove the ligand
+    remove_residues_in_pdb(combined_pdb, combined_pdb, names={lig_name})
+
+    combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
+    os.remove(clean_pdb)
+    return None
+
+
+def prepare_ligand_ff(standard_ff,
+                      use_cache=False,
+                      cache="gaff-molecules.json",
+                      lig_name='LIG',
+                      n_conf=10,
+                      pc_methods='mmff94'):
+    # mmff94 am1bcc am1-mulliken
+    if use_cache:
+        if cache is None:
+            cache = "gaff-molecules.json"
+        molecule = Molecule.from_file(f'{lig_name}.sdf')
+        molecule.generate_conformers(n_conformers=n_conf)
+        molecule.assign_partial_charges(partial_charge_method=pc_methods,
+                                        use_conformers=molecule.conformers)
+        gaff = GAFFTemplateGenerator(molecules=molecule,
+                                     cache=cache,
+                                     forcefield='gaff-2.2.20')
+    else:
+        molecule = Molecule.from_file(f'{lig_name}.sdf')
+        molecule.generate_conformers(n_conformers=n_conf)
+        molecule.assign_partial_charges(partial_charge_method=pc_methods,  # mmff94 am1bcc
+                                        use_conformers=molecule.conformers)
+        gaff = GAFFTemplateGenerator(molecules=molecule, forcefield='gaff-2.2.20')
+
+    forcefield = app.ForceField(*standard_ff)
+    forcefield.registerTemplateGenerator(gaff.generator)
+    return forcefield
