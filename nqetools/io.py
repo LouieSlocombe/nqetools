@@ -727,23 +727,27 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
     return pdb
 
 
-def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
-    if water_names is None:
-        water_names = {"HOH", "WAT"}
-
+def remove_residues_in_pdb(input_pdb, output_pdb, names):
     pdb = PDBFile(input_pdb)
     modeller = Modeller(pdb.topology, pdb.positions)
 
     residues_to_delete = [res for res in modeller.topology.residues()
-                          if res.name in water_names]
+                          if res.name in names]
 
-    print(f"Found {len(residues_to_delete)} water residues to delete.")
+    print(f"Found {len(residues_to_delete)} residues to delete.")
 
     if residues_to_delete:
         modeller.delete(residues_to_delete)
-        print("Successfully deleted water residues.")
+        print("Successfully deleted residues.")
     else:
-        print("No matching water residues found to delete.")
+        print("No matching residues found to delete.")
 
     with open(output_pdb, 'w') as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
+
+
+def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
+    if water_names is None:
+        water_names = {"HOH", "WAT"}
+    print(f"Removing water residues.")
+    remove_residues_in_pdb(input_pdb, output_pdb, water_names)

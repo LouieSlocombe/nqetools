@@ -74,6 +74,7 @@ from .io import (read_ipi_xyz,
                  list_non_standard_residues,
                  clean_ions_in_pdb,
                  relabel_residues_in_pdb,
+                 remove_residues_in_pdb,
                  remove_water_residues_in_pdb)
 from .openmm import (fix_pdb,
                      zero_velocities,
