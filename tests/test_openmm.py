@@ -1001,120 +1001,67 @@ def test_mdanalysis():
     nqe.remove_water_residues_in_pdb(input_pdb, clean_pdb)
     nqe.clean_ions_in_pdb(clean_pdb, rm_ions, clean_pdb)
     nqe.relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
-    fix_pdb(clean_pdb, stripped_pdb)
+    nqe.fix_pdb(clean_pdb, stripped_pdb)
 
-    print("Loading protein...")
     pdb = app.PDBFile(stripped_pdb)
-    pdb_topology = pdb.topology
-    pdb_positions = pdb.positions
-    print(f"Loaded PDB with {pdb_topology.getNumAtoms()} atoms.")
-
-    # make the ligand sdf
     make_sdf(clean_pdb, lig_name='LIG')
     molecule = Molecule.from_file('LIG.sdf')
-    molecule.generate_conformers(n_conformers=1)
-    molecule.assign_partial_charges(partial_charge_method='am1bcc',
-                                    use_conformers=molecule.conformers)
-
 
     ligand_ff_topology = molecule.to_topology()
     ligand_omm_topology = ligand_ff_topology.to_openmm()
     ligand_positions = ligand_ff_topology.get_positions().to_openmm()
-    print(f"Loaded SDF with {ligand_omm_topology.getNumAtoms()} atoms.")
 
-    modeller = app.Modeller(pdb_topology, pdb_positions)
+    modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.add(ligand_omm_topology, ligand_positions)
-    combined_topology = modeller.topology
-    combined_positions = modeller.positions
-    print(f"Combined system has {combined_topology.getNumAtoms()} total atoms.")
-
-    print("Saving combined PDB file...")
     with open('combined_system.pdb', 'w') as f:
-        app.PDBFile.writeFile(combined_topology, combined_positions, f)
-
+        app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
 
     with open('combined_system.pdb', 'r') as f:
         pdb_data = f.read()
-    # open the file and replace 'x' with ' ' to fix formatting issues
+
     pdb_data = pdb_data.replace('x', ' ')
-    # replace UNK with LIG
     pdb_data = pdb_data.replace('UNK', 'LIG')
-    with open('combined_system_fixed.pdb', 'w') as f:
+    with open('combined_system.pdb', 'w') as f:
         f.write(pdb_data)
 
-    forcefield = app.ForceField("amber/ff14SB.xml")
+    # Final loading
+    pdb = app.PDBFile('combined_system_fixed.pdb')
+    pdb_topology = pdb.topology
+    pdb_positions = pdb.positions
+    modeller = app.Modeller(pdb_topology, pdb_positions)
+
+    molecule.generate_conformers(n_conformers=1)
+    molecule.assign_partial_charges(partial_charge_method='am1bcc',
+                                    use_conformers=molecule.conformers)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
     gaff = GAFFTemplateGenerator(molecules=molecule, cache="gaff-molecules.json", forcefield='gaff-2.2.20')
     forcefield.registerTemplateGenerator(gaff.generator)
-    pdbfile = app.PDBFile('combined_system_fixed.pdb')
-    system = forcefield.createSystem(pdbfile.topology)
 
+    # Solvate
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        boxShape='dodecahedron')
 
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=app.HBonds
+    )
 
-    # molecule = Molecule.from_file('LIG.sdf')
-    #
-    # # Create an OpenFF Topology object from the molecule
-    #
-    # topology = Topology.from_molecules(molecule)
-    #
-    # # Load the latest OpenFF force field release: version 2.1.0, codename "Sage"
-    #
-    # forcefield = ForceField('openff-2.1.0.offxml')
-    #
-    # # Create an OpenMM system representing the molecule with SMIRNOFF-applied parameters
-    # openmm_system = forcefield.create_openmm_system(topology)
-    #
-    # # Create an Interchange object for representations in other formats
-    # interchange = forcefield.create_interchange(topology)
+    integrator = openmm.LangevinIntegrator(
+        300 * unit.kelvin,
+        1.0 / unit.picosecond,
+        0.002 * unit.picoseconds
+    )
 
-    # ### 2. Load the Ligand (from SDF)
-    # print("Loading ligand...")
-    # # This loads the ligand and its 3D coordinates from the SDF
-    # ligand_molecule = Molecule.from_file('LIG.sdf')
-    #
-    #
-    # protein_off_topology = OpenFFTopology.from_openmm(
-    #     protein_topology,
-    #     unique_molecules=[ligand_molecule]
-    # )
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    sim = app.Simulation(modeller.topology, system, integrator, platform)
+    sim.context.setPositions(modeller.positions)
+    state = sim.context.getState(getEnergy=True)
+    print("Initial potential energy:", state.getPotentialEnergy())
+    sim.minimizeEnergy(maxIterations=500)
 
-    # u = mda.Universe(clean_pdb)
-    # elements = mda.topology.guessers.guess_types(u.atoms.names)
-    # u.add_TopologyAttr('elements', elements)
-    # lig = u.select_atoms("resname LIG")
-    # mol = lig.convert_to("RDKIT")
-    # # get the charge of the molecule
-    # print(Chem.GetFormalCharge(mol))
-    # # get the number of atoms and bonds
-    # print(mol.GetNumAtoms(), mol.GetNumBonds())
-    # # print the formula of the molecule
-    # print(Chem.rdMolDescriptors.CalcMolFormula(mol))
-    # # Get the smiles of the molecule
-    # print(Chem.MolToSmiles(mol, isomericSmiles=True, allHsExplicit=True))
-    #
-    # # write to sdf file
-    # Chem.MolToMolFile(mol, "gtp.sdf", kekulize=False)
-    #
-    # img = Draw.MolToImage(mol, size=(700, 500))
-    # img.save("ligand_rdkit.png")
-    # # draw 2d structure of the molecule
-    # rdDepictor.Compute2DCoords(mol)
-    # rdDepictor.StraightenDepiction(mol)
-    # img = Draw.MolToImage(mol, size=(700, 500))
-    # img.save("ligand_rdkit_2d.png")
-    #
-    # lig_mol = Molecule.from_rdkit(mol)
-    # print(lig_mol.n_atoms, lig_mol.n_bonds)
-    # # get the smiles of the molecule
-    # print(lig_mol.to_smiles(isomeric=True, explicit_hydrogens=True))
-    #
-    # gaff = GAFFTemplateGenerator(molecules=lig_mol)
-    # forcefield = app.ForceField(
-    #     'amber/ff14SB.xml',
-    # )
-    # forcefield.registerTemplateGenerator(gaff.generator)
-    #
-    # pdbfile = app.PDBFile("gt_wob_pol_clean.pdb")
-    # system = forcefield.createSystem(pdbfile.topology)
 
 
 def test_create_ligand_xml():
