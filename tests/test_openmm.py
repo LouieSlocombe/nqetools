@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from sys import stdout
-
+import sys
 import openmm.app as app
 import openmm.unit as unit
 from openmm import openmm
@@ -617,3 +617,69 @@ def test_deuterate():
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(modeller.positions)
     simulation.minimizeEnergy()
+
+
+def test_plumed():
+    from openmmplumed import PlumedForce
+    # os.environ['PLUMED_KERNEL'] = '/home/louie/plumed-2.9.3/src/lib/libplumedKernel.so'
+    # os.environ['LD_LIBRARY_PATH'] = '/home/louie/plumed-2.9.3/src/lib:$LD_LIBRARY_PATH'
+
+
+    TEMPERATURE = 300 * unit.kelvin
+    TIMESTEP = 2.0 * unit.femtosecond
+    FRICTION_COEFF = 1.0 / unit.picosecond
+    PDB_FILE = 'tests/data/pdb/1bpi.pdb'
+    PDB_FILE_clean = '1bpi_clean.pdb'
+    TOTAL_STEPS = 20_0000
+    nqe.fix_pdb(PDB_FILE, PDB_FILE_clean)
+    PDB_FILE = PDB_FILE_clean
+    pdb = app.PDBFile(PDB_FILE)
+    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        model='tip3p')
+
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=app.PME,
+                                     nonbondedCutoff=1.0 * unit.nanometer,
+                                     constraints=app.HBonds,
+                                     ewaldErrorTolerance=0.0005)
+    system.addForce(openmm.MonteCarloBarostat(1.0 * unit.bar, TEMPERATURE, 25))
+
+    with open('tests/plumed.dat', 'r') as f:
+        plumed_script = f.read()
+
+    plumed_script = plumed_script.replace(
+        "{{TEMPERATURE}}",
+        str(TEMPERATURE.value_in_unit(unit.kelvin))
+    )
+
+    system.addForce(PlumedForce(plumed_script))
+    integrator = openmm.LangevinIntegrator(TEMPERATURE,
+                                           FRICTION_COEFF,
+                                           TIMESTEP)
+
+    platform = openmm.Platform.getPlatformByName('CUDA')
+    properties = {'CudaPrecision': 'mixed'}
+    simulation = app.Simulation(modeller.topology, system, integrator, platform, properties)
+
+    simulation.context.setPositions(modeller.positions)
+    simulation.minimizeEnergy()
+
+    simulation.context.setVelocitiesToTemperature(TEMPERATURE)
+    simulation.reporters.append(app.StateDataReporter(sys.stdout,
+                                                      1000,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      progress=True,
+                                                      remainingTime=True,
+                                                      speed=True,
+                                                      totalSteps=TOTAL_STEPS,
+                                                      separator='\t'))
+
+    simulation.reporters.append(app.DCDReporter('trajectory.dcd', 1_000))
+    simulation.reporters.append(app.CheckpointReporter('checkpoint.chk', 5_000))
+    simulation.step(TOTAL_STEPS)
