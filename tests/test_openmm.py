@@ -1,11 +1,13 @@
 import os
+import sys
 from pathlib import Path
 from sys import stdout
-import sys
+
 import openmm.app as app
 import openmm.unit as unit
 from openmm import openmm
 from openmmml import MLPotential
+from openmmplumed import PlumedForce
 
 import nqetools as nqe
 
@@ -115,7 +117,7 @@ def test_openmm_ml_mixed_system():
     simulation.step(1_000)
 
 
-def test_mdanalysis():
+def test_nonstandard_ligand():
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
 
@@ -620,55 +622,58 @@ def test_deuterate():
 
 
 def test_plumed():
-    from openmmplumed import PlumedForce
-    # os.environ['PLUMED_KERNEL'] = '/home/louie/plumed-2.9.3/src/lib/libplumedKernel.so'
-    # os.environ['LD_LIBRARY_PATH'] = '/home/louie/plumed-2.9.3/src/lib:$LD_LIBRARY_PATH'
+    temperature = 300 * unit.kelvin
+    timestep = 2.0 * unit.femtosecond
+    friction_coeff = 1.0 / unit.picosecond
+    total_steps = 100_000
+    pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
+    pdb_out = 'pdb_out.pdb'
 
+    rm_ions = ['Na+', 'Cl-', 'NA']
+    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
+    nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
 
-    TEMPERATURE = 300 * unit.kelvin
-    TIMESTEP = 2.0 * unit.femtosecond
-    FRICTION_COEFF = 1.0 / unit.picosecond
-    PDB_FILE = 'tests/data/pdb/1bpi.pdb'
-    PDB_FILE_clean = '1bpi_clean.pdb'
-    TOTAL_STEPS = 20_0000
-    nqe.fix_pdb(PDB_FILE, PDB_FILE_clean)
-    PDB_FILE = PDB_FILE_clean
-    pdb = app.PDBFile(PDB_FILE)
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    # Final loading
+    pdb = app.PDBFile('combined_system.pdb')
+
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"))
 
     modeller = app.Modeller(pdb.topology, pdb.positions)
+
     modeller.addSolvent(forcefield,
                         padding=1.0 * unit.nanometer,
-                        model='tip3p')
+                        boxShape='dodecahedron')
 
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
-                                     nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=app.HBonds,
-                                     ewaldErrorTolerance=0.0005)
-    system.addForce(openmm.MonteCarloBarostat(1.0 * unit.bar, TEMPERATURE, 25))
-
-    with open('tests/plumed.dat', 'r') as f:
-        plumed_script = f.read()
-
-    plumed_script = plumed_script.replace(
-        "{{TEMPERATURE}}",
-        str(TEMPERATURE.value_in_unit(unit.kelvin))
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=app.HBonds
     )
 
+    system.addForce(openmm.MonteCarloBarostat(1.0 * unit.bar, temperature, 25))
+
+    plumed_script = """c1: COM ATOMS=5740
+c2: COM ATOMS=5226
+dist: DISTANCE ATOMS=c1,c2
+wall: UPPER_WALLS ARG=dist AT=3.5 KAPPA=1000.0 EXP=2
+opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05
+PRINT ARG=dist,opes.bias,wall.bias STRIDE=100 FILE=colvar.dat"""
+
     system.addForce(PlumedForce(plumed_script))
-    integrator = openmm.LangevinIntegrator(TEMPERATURE,
-                                           FRICTION_COEFF,
-                                           TIMESTEP)
+    integrator = openmm.LangevinIntegrator(
+        temperature,
+        friction_coeff,
+        timestep
+    )
 
     platform = openmm.Platform.getPlatformByName('CUDA')
-    properties = {'CudaPrecision': 'mixed'}
-    simulation = app.Simulation(modeller.topology, system, integrator, platform, properties)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
     simulation.context.setPositions(modeller.positions)
     simulation.minimizeEnergy()
 
-    simulation.context.setVelocitiesToTemperature(TEMPERATURE)
+    simulation.context.setVelocitiesToTemperature(temperature)
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       1000,
                                                       step=True,
@@ -677,9 +682,10 @@ def test_plumed():
                                                       progress=True,
                                                       remainingTime=True,
                                                       speed=True,
-                                                      totalSteps=TOTAL_STEPS,
+                                                      totalSteps=total_steps,
                                                       separator='\t'))
 
+    simulation.reporters.append(app.PDBReporter(pdb_out, 1_000))
+
     simulation.reporters.append(app.DCDReporter('trajectory.dcd', 1_000))
-    simulation.reporters.append(app.CheckpointReporter('checkpoint.chk', 5_000))
-    simulation.step(TOTAL_STEPS)
+    simulation.step(total_steps)
