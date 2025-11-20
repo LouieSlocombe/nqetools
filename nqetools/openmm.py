@@ -251,7 +251,8 @@ def prepare_ligand_ff(standard_ff,
                       cache="gaff-molecules.json",
                       lig_name='LIG',
                       n_conf=10,
-                      pc_methods='mmff94'):
+                      pc_methods='mmff94',
+                      gaff_ver='gaff-2.11'): # gaff-2.2.20
     # mmff94 am1bcc am1-mulliken
     if use_cache:
         if cache is None:
@@ -262,13 +263,13 @@ def prepare_ligand_ff(standard_ff,
                                         use_conformers=molecule.conformers)
         gaff = GAFFTemplateGenerator(molecules=molecule,
                                      cache=cache,
-                                     forcefield='gaff-2.2.20')
+                                     forcefield=gaff_ver)
     else:
         molecule = Molecule.from_file(f'{lig_name}.sdf')
         molecule.generate_conformers(n_conformers=n_conf)
         molecule.assign_partial_charges(partial_charge_method=pc_methods,  # mmff94 am1bcc
                                         use_conformers=molecule.conformers)
-        gaff = GAFFTemplateGenerator(molecules=molecule, forcefield='gaff-2.2.20')
+        gaff = GAFFTemplateGenerator(molecules=molecule, forcefield=gaff_ver)
 
     forcefield = app.ForceField(*standard_ff)
     forcefield.registerTemplateGenerator(gaff.generator)
