@@ -1,3 +1,86 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "nqetools"
+version = "0.1.0"
+description = "A centralised set of tools for doing nuclear quantum calculations."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.13"
+license = { text = "MIT" }
+
+authors = [
+  { name = "Louie Slocombe", email = "louies@hotmail.co.uk" },
+]
+
+dependencies = [
+  "numpy",
+  "scipy",
+  "pandas",
+  "matplotlib",
+  "opt_einsum",
+  "jax",
+  "jaxlib",
+  "ml_dtypes",
+  "sympy",
+  "pyfftw",
+  "chemiscope",
+  "ase",
+  "i-pi",
+  "py-plumed",
+  "openmm",
+  "openmm-ml",
+  "torch",
+  "nnpops",
+  "openmm-torch",
+  "openmmforcefields",
+  "openmmtools",
+  "ambertools",
+  "pdbfixer",
+  "rdkit",
+  "mdanalysis",
+  "mace-torch",
+  "sella",
+  "geodesic_interpolate @ git+https://github.com/LouieSlocombe/geodesic_interpolate.git",
+]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Chemistry",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+]
+dev = [
+  "jupyterlab",
+  "pytest",
+]
+notebook = [
+  "jupyterlab",
+]
+
+[project.urls]
+Homepage = "https://github.com/LouieSlocombe/nqetools"
+Repository = "https://github.com/LouieSlocombe/nqetools"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nqetools", "nqetools.*"]
+
+[tool.setuptools.package-data]
+"nqetools" = [
+  "templates/*",
+  "thermostats/*",
+  "opes/*",
+]
