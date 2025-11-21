@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python>=3.13
+  - python>=3.12
   - pip
   - pytest
   - numpy
@@ -34,10 +34,10 @@ dependencies:
   - rdkit
   - mdanalysis
   - pip:
-#    - torch
-    - mace-torch
-    - sella
-#    - cuequivariance
-#    - cuequivariance-torch
-#    - cuequivariance-ops-torch-cu12
-    - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
+      #    - torch
+      - mace-torch
+      - sella
+      #    - cuequivariance
+      #    - cuequivariance-torch
+      #    - cuequivariance-ops-torch-cu12
+      - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
