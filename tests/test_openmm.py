@@ -618,22 +618,51 @@ def test_deuterate():
     simulation.minimizeEnergy()
 
 
+def run_run_plumed_md(directory, pdb_file):
+    pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
+
+
+
+
 def test_plumed():
     temperature = 300 * unit.kelvin
     timestep = 2.0 * unit.femtosecond
     friction_coeff = 1.0 / unit.picosecond
-    total_steps = 100_000
+    total_steps = 10_000
     pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
     pdb_out = 'pdb_out.pdb'
+
+    directory = 'md_plumed'
+    cwd = os.getcwd()
 
     rm_ions = ['Na+', 'Cl-', 'NA']
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
 
-    pdb_data, molecule = nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
+    pdb_data, molecule = nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, rm_files=False)
     forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule)
 
-    modeller = app.Modeller(pdb_data.topology, pdb_data.positions)
+    idx1 = nqe.get_atoms_in_residue('combined_system.pdb', 0, chain_id='F')
+    print(idx1)
+    idx2 = nqe.get_atoms_in_residue('combined_system.pdb', 4, chain_id='B')
+    print(idx2)
 
+
+    # turn the list in to a selection string
+    selection_str1 = ','.join([f'{i}' for i in idx1])
+    selection_str2 = ','.join([f'{i}' for i in idx2])
+    print(selection_str1)
+    print(selection_str2)
+
+
+    # nqe.save_pdb_selection('combined_system.pdb', idx1 + idx2, 'selection.pdb')
+    # Clean the directory if it exists
+    nqe.remove_directory(directory)
+
+    # Make the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+    os.chdir(directory)
+
+    modeller = app.Modeller(pdb_data.topology, pdb_data.positions)
     modeller.addSolvent(forcefield,
                         padding=1.0 * unit.nanometer,
                         boxShape='dodecahedron')
@@ -647,8 +676,8 @@ def test_plumed():
 
     system.addForce(openmm.MonteCarloBarostat(1.0 * unit.bar, temperature, 25))
 
-    plumed_script = """c1: COM ATOMS=5740
-c2: COM ATOMS=5226
+    plumed_script = f"""c1: COM ATOMS={selection_str1}
+c2: COM ATOMS={selection_str2}
 dist: DISTANCE ATOMS=c1,c2
 wall: UPPER_WALLS ARG=dist AT=3.5 KAPPA=1000.0 EXP=2
 opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05
@@ -683,6 +712,8 @@ PRINT ARG=dist,opes.bias,wall.bias STRIDE=100 FILE=colvar.dat"""
 
     simulation.reporters.append(app.DCDReporter('trajectory.dcd', 1_000))
     simulation.step(total_steps)
+
+    os.chdir(cwd)
 
 
 def test_get_atoms_in_residue():
