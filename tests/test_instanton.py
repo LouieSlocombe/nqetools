@@ -225,6 +225,7 @@ def test_ch4hcbe_end_to_end():
     nqe.remove_directory(directory_ts)
     nqe.remove_directory(directory_instanton)
 
+
 def test_ch4hcbe_end_to_end_orca():
     # CBE system
     print(flush=True)
@@ -237,10 +238,10 @@ def test_ch4hcbe_end_to_end_orca():
 
     # Driver
     driver_code = 'ase-orca'
-    driver_settings= {'xc': 'blyp',
-                      'charge': 0,
-                      'multi': 2,
-                      'n_procs': 1,}
+    driver_settings = {'xc': 'blyp',
+                       'charge': 0,
+                       'multi': 2,
+                       'n_procs': 1, }
 
     # Values
     temperature = 300.0
@@ -271,7 +272,7 @@ def test_ch4hcbe_end_to_end_orca():
     nqe.run_phonons(directory_phonon_react,
                     atoms_opti,
                     driver=driver_code,
-                    driver_args=driver_settings,)
+                    driver_args=driver_settings)
 
     # Run transition state optimisation
     output = nqe.run_ts(directory_ts,
@@ -308,10 +309,6 @@ def test_ch4hcbe_end_to_end_orca():
                       tol_force=tol_force,
                       tol_position=tol_position)
 
-
-
-
-
     kappa = nqe.calc_kappa_full(directory_phonon_react,
                                 directory_ts,
                                 directory_instanton,
@@ -325,6 +322,7 @@ def test_ch4hcbe_end_to_end_orca():
     # nqe.remove_directory(directory_phonon_react)
     # nqe.remove_directory(directory_ts)
     # nqe.remove_directory(directory_instanton)
+
 
 def test_ch4hcbe_temperature():
     # CBE system

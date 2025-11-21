@@ -11,60 +11,60 @@ requires-python = ">=3.13"
 license = { text = "MIT" }
 
 authors = [
-  { name = "Louie Slocombe", email = "louies@hotmail.co.uk" },
+    { name = "Louie Slocombe", email = "louies@hotmail.co.uk" },
 ]
 
 dependencies = [
-  "numpy",
-  "scipy",
-  "pandas",
-  "matplotlib",
-  "opt_einsum",
-  "jax",
-  "jaxlib",
-  "ml_dtypes",
-  "sympy",
-  "pyfftw",
-  "chemiscope",
-  "ase",
-  "i-pi",
-  "py-plumed",
-  "openmm",
-  "openmm-ml",
-  "torch",
-  "nnpops",
-  "openmm-torch",
-  "openmmforcefields",
-  "openmmtools",
-  "ambertools",
-  "pdbfixer",
-  "rdkit",
-  "mdanalysis",
-  "mace-torch",
-  "sella",
-  "geodesic_interpolate @ git+https://github.com/LouieSlocombe/geodesic_interpolate.git",
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "opt_einsum",
+    "jax",
+    "jaxlib",
+    "ml_dtypes",
+    "sympy",
+    "pyfftw",
+    "chemiscope",
+    "ase",
+    "i-pi",
+    "py-plumed",
+    "openmm",
+    "openmm-ml",
+    "torch",
+    "nnpops",
+    "openmm-torch",
+    "openmmforcefields",
+    "openmmtools",
+    "ambertools",
+    "pdbfixer",
+    "rdkit",
+    "mdanalysis",
+    "mace-torch",
+    "sella",
+    "geodesic_interpolate @ git+https://github.com/LouieSlocombe/geodesic_interpolate.git",
 ]
 
 classifiers = [
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.13",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
-  "Intended Audience :: Science/Research",
-  "Topic :: Scientific/Engineering :: Chemistry",
-  "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
 ]
 
 [project.optional-dependencies]
 test = [
-  "pytest",
+    "pytest",
 ]
 dev = [
-  "jupyterlab",
-  "pytest",
+    "jupyterlab",
+    "pytest",
 ]
 notebook = [
-  "jupyterlab",
+    "jupyterlab",
 ]
 
 [project.urls]
@@ -80,7 +80,7 @@ include = ["nqetools", "nqetools.*"]
 
 [tool.setuptools.package-data]
 "nqetools" = [
-  "templates/*",
-  "thermostats/*",
-  "opes/*",
+    "templates/*",
+    "thermostats/*",
+    "opes/*",
 ]
