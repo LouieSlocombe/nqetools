@@ -297,16 +297,82 @@ def deuterate(modeller, system, option='all'):
         raise ValueError("Option must be 'all' or 'water'")
 
 
-def get_atoms_in_residue(pdb_file_path, residue_index):
-    pdb = app.PDBFile(pdb_file_path)
-    topology = pdb.topology
-    residues = list(topology.residues())
+def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
+    """
+    Loads a PDB file and returns a list of atom indices for the specified residue index.
+    Optionally filters by chain ID.
 
-    if residue_index < 0 or residue_index >= len(residues):
-        print(f"Error: Residue index {residue_index} is out of bounds.", flush=True)
-        print(f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1}).", flush=True)
+    Args:
+        pdb_file_path (str): Path to the .pdb file.
+        residue_index (int): The 0-based index of the residue.
+                             If chain_id is None: index in the entire topology.
+                             If chain_id is set: index within that specific chain.
+        chain_id (str, optional): The chain ID (e.g., 'A', 'B') to search within.
+
+    Returns:
+        list: A list of integers representing the indices of atoms in the residue.
+              Returns None if the file/chain is not found or index is out of bounds.
+    """
+
+    # 1. Check if file exists
+    if not os.path.exists(pdb_file_path):
+        print(f"Error: File '{pdb_file_path}' not found.")
         return None
 
-    target_residue = residues[residue_index]
-    atom_indices = [atom.index for atom in target_residue.atoms()]
-    return atom_indices
+    try:
+        # 2. Load the PDB file
+        print(f"Loading {pdb_file_path}...")
+        pdb = app.PDBFile(pdb_file_path)
+
+        # 3. Get the topology
+        topology = pdb.topology
+
+        target_residue = None
+
+        if chain_id is not None:
+            # Filter by chain
+            found_chain = None
+            for chain in topology.chains():
+                if chain.id == chain_id:
+                    found_chain = chain
+                    break
+
+            if found_chain is None:
+                available_chains = [c.id for c in topology.chains()]
+                print(f"Error: Chain '{chain_id}' not found. Available chains: {available_chains}")
+                return None
+
+            residues = list(found_chain.residues())
+            if residue_index < 0 or residue_index >= len(residues):
+                print(f"Error: Residue index {residue_index} is out of bounds for Chain {chain_id}.")
+                print(f"Chain {chain_id} contains {len(residues)} residues.")
+                return None
+
+            target_residue = residues[residue_index]
+            print(f"Looking in Chain {chain_id}, Residue Index {residue_index}...")
+
+        else:
+            # Global index behavior
+            residues = list(topology.residues())
+
+            # 5. Validate index
+            if residue_index < 0 or residue_index >= len(residues):
+                print(f"Error: Residue index {residue_index} is out of bounds.")
+                print(f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1}).")
+                return None
+
+            # 6. Get the target residue
+            target_residue = residues[residue_index]
+            print(f"Looking in global topology, Residue Index {residue_index}...")
+
+        # 7. Extract atom indices
+        # residue.atoms() returns a generator
+        atom_indices = [atom.index for atom in target_residue.atoms()]
+
+        print(
+            f"Successfully retrieved residue: {target_residue.name} (Chain: {target_residue.chain.id}, Index: {target_residue.index}, PDB ID: {target_residue.id})")
+        return atom_indices
+
+    except Exception as e:
+        print(f"An error occurred processing the PDB: {e}")
+        return None
