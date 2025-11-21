@@ -376,3 +376,51 @@ def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
     except Exception as e:
         print(f"An error occurred processing the PDB: {e}")
         return None
+
+def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
+    """
+    Loads a PDB, keeps only the atoms specified in atom_indices, and saves to a new file.
+
+    Args:
+        input_pdb_path (str): Path to the source .pdb file.
+        atom_indices (list[int]): List of 0-based atom indices to KEEP.
+        output_pdb_path (str): Path where the new .pdb file will be saved.
+    """
+    if not os.path.exists(input_pdb_path):
+        print(f"Error: Input file '{input_pdb_path}' not found.")
+        return
+
+    try:
+        print(f"Loading {input_pdb_path} for selection...")
+        pdb = app.PDBFile(input_pdb_path)
+
+        # We use Modeller to edit the topology
+        modeller = app.Modeller(pdb.topology, pdb.positions)
+
+        # Create a set for faster lookup
+        keep_indices = set(atom_indices)
+
+        # Identify atoms to DELETE (Modeller deletes, so we invert the selection)
+        atoms_to_delete = []
+        all_atoms = list(modeller.topology.atoms())
+
+        for atom in all_atoms:
+            if atom.index not in keep_indices:
+                atoms_to_delete.append(atom)
+
+        # Perform the deletion
+        num_deleted = len(atoms_to_delete)
+        if num_deleted == len(all_atoms):
+            print("Warning: Your selection is empty! The output PDB will be empty.")
+
+        modeller.delete(atoms_to_delete)
+
+        # Save the result
+        print(f"Writing selection ({len(all_atoms) - num_deleted} atoms) to {output_pdb_path}...")
+        with open(output_pdb_path, 'w') as f:
+            app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
+
+        print("Done.")
+
+    except Exception as e:
+        print(f"Error saving selection: {e}")
