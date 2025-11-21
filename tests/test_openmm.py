@@ -683,3 +683,12 @@ PRINT ARG=dist,opes.bias,wall.bias STRIDE=100 FILE=colvar.dat"""
 
     simulation.reporters.append(app.DCDReporter('trajectory.dcd', 1_000))
     simulation.step(total_steps)
+
+
+def test_get_atoms_in_residue():
+    print(flush=True)
+    input_pdb = 'tests/data/pdb/input.pdb'
+    indexes = nqe.get_atoms_in_residue(input_pdb, 0)
+    print(indexes)
+    ref_indexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    assert indexes == ref_indexes

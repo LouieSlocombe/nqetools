@@ -88,7 +88,8 @@ from .openmm import (fix_pdb,
                      combine_sdf_pdb,
                      prepare_lig_system,
                      prepare_ligand_ff,
-                     deuterate)
+                     deuterate,
+                     get_atoms_in_residue)
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,

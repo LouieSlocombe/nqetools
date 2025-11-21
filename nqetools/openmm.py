@@ -257,7 +257,6 @@ def prepare_ligand_ff(standard_ff,
                       molecule,
                       use_cache=False,
                       cache="gaff-molecules.json",
-                      lig_name='LIG',
                       n_conf=10,
                       pc_methods='mmff94',
                       gaff_ver='gaff-2.11'):  # gaff-2.2.20
@@ -296,3 +295,18 @@ def deuterate(modeller, system, option='all'):
                         system.setParticleMass(atom.index, deuterium_mass)
     else:
         raise ValueError("Option must be 'all' or 'water'")
+
+
+def get_atoms_in_residue(pdb_file_path, residue_index):
+    pdb = app.PDBFile(pdb_file_path)
+    topology = pdb.topology
+    residues = list(topology.residues())
+
+    if residue_index < 0 or residue_index >= len(residues):
+        print(f"Error: Residue index {residue_index} is out of bounds.", flush=True)
+        print(f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1}).", flush=True)
+        return None
+
+    target_residue = residues[residue_index]
+    atom_indices = [atom.index for atom in target_residue.atoms()]
+    return atom_indices
