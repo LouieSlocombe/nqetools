@@ -221,11 +221,11 @@ def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
 
 def prepare_lig_system(input_pdb,
                        combined_pdb='combined_system.pdb',
+                       clean_pdb='cleaned.pdb',
                        rm_ions=None,
                        residue_map=None,
+                       rm_files=True,
                        lig_name='LIG'):
-    # clean the pdb
-    clean_pdb = 'cleaned.pdb'
     remove_water_residues_in_pdb(input_pdb, clean_pdb)
 
     if rm_ions is not None:
@@ -242,22 +242,29 @@ def prepare_lig_system(input_pdb,
     remove_residues_in_pdb(combined_pdb, combined_pdb, names={lig_name})
 
     combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
-    os.remove(clean_pdb)
-    return None
+
+    pdb_data = app.PDBFile(combined_pdb)
+    molecule = Molecule.from_file(f'{lig_name}.sdf')
+
+    if rm_files:
+        os.remove(clean_pdb)
+        os.remove(combined_pdb)
+        os.remove(f'{lig_name}.sdf')
+    return pdb_data, molecule
 
 
 def prepare_ligand_ff(standard_ff,
+                      molecule,
                       use_cache=False,
                       cache="gaff-molecules.json",
                       lig_name='LIG',
                       n_conf=10,
                       pc_methods='mmff94',
-                      gaff_ver='gaff-2.11'): # gaff-2.2.20
+                      gaff_ver='gaff-2.11'):  # gaff-2.2.20
     # mmff94 am1bcc am1-mulliken
     if use_cache:
         if cache is None:
             cache = "gaff-molecules.json"
-        molecule = Molecule.from_file(f'{lig_name}.sdf')
         molecule.generate_conformers(n_conformers=n_conf)
         molecule.assign_partial_charges(partial_charge_method=pc_methods,
                                         use_conformers=molecule.conformers)
@@ -265,7 +272,6 @@ def prepare_ligand_ff(standard_ff,
                                      cache=cache,
                                      forcefield=gaff_ver)
     else:
-        molecule = Molecule.from_file(f'{lig_name}.sdf')
         molecule.generate_conformers(n_conformers=n_conf)
         molecule.assign_partial_charges(partial_charge_method=pc_methods,  # mmff94 am1bcc
                                         use_conformers=molecule.conformers)
@@ -274,6 +280,7 @@ def prepare_ligand_ff(standard_ff,
     forcefield = app.ForceField(*standard_ff)
     forcefield.registerTemplateGenerator(gaff.generator)
     return forcefield
+
 
 def deuterate(modeller, system, option='all'):
     deuterium_mass = app.element.deuterium.mass

@@ -123,14 +123,14 @@ def test_nonstandard_ligand():
 
     rm_ions = ['Na+', 'Cl-', 'NA']
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
-    nqe.prepare_lig_system(input_pdb, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
-
-    # Final loading
-    pdb = app.PDBFile('combined_system.pdb')
-    pdb_topology = pdb.topology
-    pdb_positions = pdb.positions
+    pdb_data, molecule = nqe.prepare_lig_system(input_pdb,
+                                                rm_ions=rm_ions,
+                                                residue_map=residue_map,
+                                                lig_name='LIG')
+    pdb_topology = pdb_data.topology
+    pdb_positions = pdb_data.positions
     modeller = app.Modeller(pdb_topology, pdb_positions)
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"))
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule)
 
     # Solvate
     modeller.addSolvent(forcefield,
@@ -160,9 +160,6 @@ def test_nonstandard_ligand():
     min_positions = sim.context.getState(getPositions=True).getPositions(asNumpy=True)
     with open("minimized.pdb", "w") as f:
         app.PDBFile.writeFile(modeller.topology, min_positions, f)
-
-    os.remove('combined_system.pdb')
-    os.remove('LIG.sdf')
     os.remove('minimized.pdb')
 
 
@@ -631,14 +628,11 @@ def test_plumed():
 
     rm_ions = ['Na+', 'Cl-', 'NA']
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
-    nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
 
-    # Final loading
-    pdb = app.PDBFile('combined_system.pdb')
+    pdb_data, molecule = nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, lig_name='LIG')
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule)
 
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"))
-
-    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller = app.Modeller(pdb_data.topology, pdb_data.positions)
 
     modeller.addSolvent(forcefield,
                         padding=1.0 * unit.nanometer,
