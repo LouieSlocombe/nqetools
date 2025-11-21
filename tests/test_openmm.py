@@ -622,13 +622,11 @@ def run_run_plumed_md(directory, pdb_file):
     pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
 
 
-
-
 def test_plumed():
     temperature = 300 * unit.kelvin
     timestep = 2.0 * unit.femtosecond
     friction_coeff = 1.0 / unit.picosecond
-    total_steps = 10_000
+    total_steps = 20_000
     pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
     pdb_out = 'pdb_out.pdb'
 
@@ -646,13 +644,11 @@ def test_plumed():
     idx2 = nqe.get_atoms_in_residue('combined_system.pdb', 4, chain_id='B')
     print(idx2)
 
-
     # turn the list in to a selection string
     selection_str1 = ','.join([f'{i}' for i in idx1])
     selection_str2 = ','.join([f'{i}' for i in idx2])
     print(selection_str1)
     print(selection_str2)
-
 
     # nqe.save_pdb_selection('combined_system.pdb', idx1 + idx2, 'selection.pdb')
     # Clean the directory if it exists
@@ -680,8 +676,13 @@ def test_plumed():
 c2: COM ATOMS={selection_str2}
 dist: DISTANCE ATOMS=c1,c2
 wall: UPPER_WALLS ARG=dist AT=3.5 KAPPA=1000.0 EXP=2
-opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05
-PRINT ARG=dist,opes.bias,wall.bias STRIDE=100 FILE=colvar.dat"""
+opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05 FILE=HILLS
+PRINT ARG=* STRIDE=100 FILE=COLVAR
+FLUSH STRIDE=1
+"""
+    # Write the PLUMED script to a file
+    with open('plumed.dat', 'w') as f:
+        f.write(plumed_script)
 
     system.addForce(PlumedForce(plumed_script))
     integrator = openmm.LangevinIntegrator(
@@ -714,6 +715,26 @@ PRINT ARG=dist,opes.bias,wall.bias STRIDE=100 FILE=colvar.dat"""
     simulation.step(total_steps)
 
     os.chdir(cwd)
+
+    n_bins = 100
+    cv_limits = [None, None]
+    plot_save = True
+    plot_show = True
+
+    # Run the hills command
+    nqe.run_plumed_hills(directory,
+                         temperature=300,
+                         bins=100,
+                         cv=cv_limits)
+    # Plot the free energy surface convergence
+    fes_arrays_meta_md = nqe.load_fes_data(directory, n_bins)
+    fes_times = nqe.get_fes_times(timestep, total_steps, fes_arrays_meta_md)
+
+    nqe.plot_fes_series_1d(fes_arrays_meta_md,
+                           fes_times,
+                           filename='fes_md',
+                           save=plot_save,
+                           show=plot_show)
 
 
 def test_get_atoms_in_residue():
