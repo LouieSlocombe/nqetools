@@ -848,12 +848,6 @@ def run_relaxation(pdb_filename, output_filename='minimized.pdb'):
     print(f"\nProcess complete. Saved to {output_filename}")
 
 
-import sys
-from openmm.app import *
-from openmm import *
-from openmm.unit import *
-
-
 def run_heating(input_pdb='minimized.pdb', output_pdb='equilibrated.pdb'):
     print(f"Loading {input_pdb}...")
     pdb = PDBFile(input_pdb)
@@ -935,3 +929,84 @@ def run_heating(input_pdb='minimized.pdb', output_pdb='equilibrated.pdb'):
     with open(output_pdb, 'w') as f:
         PDBFile.writeFile(simulation.topology, state.getPositions(), f)
     print(f"Saved equilibrated structure to {output_pdb}")
+
+
+def run_npt(input_pdb='equilibrated.pdb', output_pdb='npt_equilibrated.pdb'):
+    print(f"Loading {input_pdb}...")
+    pdb = PDBFile(input_pdb)
+
+    # 1. Define ForceField
+    forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+
+    modeller = Modeller(pdb.topology, pdb.positions)
+
+    # 2. Create System
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=PME,
+                                     nonbondedCutoff=1 * nanometer,
+                                     constraints=HBonds)
+
+    # --- KEY ADDITION: The Barostat ---
+    # This adds a Monte Carlo Barostat to maintain constant pressure (1 bar).
+    # It attempts to adjust box volume every 25 steps.
+    print("Adding MonteCarloBarostat (1 atm)...")
+    system.addForce(MonteCarloBarostat(1 * bar, 300 * kelvin, 25))
+
+    # 3. Restraints (Optional but Recommended)
+    # We apply WEAK restraints initially to keep the protein stable
+    # while the box volume fluctuates rapidly at the start.
+    restraint = CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
+    # Start with weak restraints (10 kJ/mol/nm^2), significantly weaker than heating
+    restraint.addGlobalParameter("k", 10.0 * kilojoules_per_mole / (nanometer ** 2))
+    restraint.addPerParticleParameter("x0")
+    restraint.addPerParticleParameter("y0")
+    restraint.addPerParticleParameter("z0")
+
+    backbone_names = ['CA', 'C', 'N']
+    atom_indices = []
+    for atom in modeller.topology.atoms():
+        if atom.name in backbone_names:
+            restraint.addParticle(atom.index, modeller.positions[atom.index])
+            atom_indices.append(atom.index)
+    system.addForce(restraint)
+
+    # 4. Integrator
+    integrator = LangevinMiddleIntegrator(300 * kelvin, 1 / picosecond, 0.002 * picoseconds)
+
+    simulation = Simulation(modeller.topology, system, integrator)
+    simulation.context.setPositions(modeller.positions)
+
+    # Re-initialize velocities to 300K since we loaded from PDB
+    simulation.context.setVelocitiesToTemperature(300 * kelvin)
+
+    # 5. Reporters
+    # Note: 'density=True' is crucial here to monitor convergence
+    simulation.reporters.append(StateDataReporter(sys.stdout, 500, step=True,
+                                                  potentialEnergy=True, temperature=True,
+                                                  volume=True, density=True))
+
+    # =========================================================================
+    # PHASE 1: Restrained NPT (Allow box to relax, keep protein hold)
+    # =========================================================================
+    print("\n--- Phase 1: Restrained NPT (Relaxing Density) ---")
+    simulation.step(5000)  # 10 ps
+
+    # =========================================================================
+    # PHASE 2: Unrestrained NPT (Production Ready)
+    # =========================================================================
+    print("\n--- Phase 2: Removing Restraints (Unrestrained NPT) ---")
+    simulation.context.setParameter("k", 0.0)  # Turn off restraints
+
+    # Run long enough for density to flatten out
+    print("Running equilibration for 25000 steps (50 ps)...")
+    simulation.step(25000)
+
+    # 6. Save Output
+    # IMPORTANT: The output PDB will now have different Box Vectors than the input
+    state = simulation.context.getState(getPositions=True, getVelocities=True)
+
+    with open(output_pdb, 'w') as f:
+        PDBFile.writeFile(simulation.topology, state.getPositions(), f)
+
+    print(f"\nDensity equilibration complete. Saved to {output_pdb}")
+    print("Check the terminal output above: Density should have converged to ~1.0 g/mL (for water)")
