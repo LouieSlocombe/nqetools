@@ -11,7 +11,6 @@ from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmtools.integrators import GeodesicBAOABIntegrator
 from pdbfixer import PDBFixer
 from rdkit import Chem
-from scipy.stats import ks_1samp
 
 from .io import remove_water_residues_in_pdb, clean_ions_in_pdb, relabel_residues_in_pdb, remove_residues_in_pdb
 from .plotting import n_plot
@@ -442,13 +441,13 @@ def run_relaxation(pdb_filename,
                    ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
-    print(f"Loading {pdb_filename}...")
+    print(f"Loading {pdb_filename}...", flush=True)
     pdb = app.PDBFile(pdb_filename)
 
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
 
-    print("\n--- Stage 1: Relaxing Hydrogens (Heavy atoms fixed) ---")
+    print("\n--- Stage 1: Relaxing Hydrogens (Heavy atoms fixed) ---", flush=True)
     system_h_only = forcefield.createSystem(modeller.topology,
                                             nonbondedMethod=app.PME,
                                             nonbondedCutoff=1.0 * unit.nanometer,
@@ -467,7 +466,7 @@ def run_relaxation(pdb_filename,
     sim_1.minimizeEnergy(maxIterations=n_1)
 
     current_positions = sim_1.context.getState(getPositions=True).getPositions()
-    print("Stage 1 complete.")
+    print("Stage 1 complete.", flush=True)
 
     system = forcefield.createSystem(modeller.topology,
                                      nonbondedMethod=app.PME,
@@ -489,24 +488,24 @@ def run_relaxation(pdb_filename,
             atom_indices.append(atom.index)
 
     system.addForce(restraint)
-    print(f"Restraints applied to {len(atom_indices)} backbone atoms.")
+    print(f"Restraints applied to {len(atom_indices)} backbone atoms.", flush=True)
     integrator = openmm.LangevinMiddleIntegrator(temperature,
                                                  gamma,
                                                  time_step)
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(current_positions)
 
-    print(f"\n--- Stage 2: Strong Backbone Restraints ({ks_2} kJ/mol/nm^2) ---")
+    print(f"\n--- Stage 2: Strong Backbone Restraints ({ks_2} kJ/mol/nm^2) ---", flush=True)
     k_strong = ks_2 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_strong)
     simulation.minimizeEnergy(maxIterations=n_2)
 
-    print("\n--- Stage 3: Weak Backbone Restraints (10 kJ/mol/nm^2) ---")
+    print("\n--- Stage 3: Weak Backbone Restraints (10 kJ/mol/nm^2) ---", flush=True)
     k_weak = ks_3 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_weak)
     simulation.minimizeEnergy(maxIterations=n_3)
 
-    print("\n--- Stage 4: Unrestrained Relaxation ---")
+    print("\n--- Stage 4: Unrestrained Relaxation ---", flush=True)
     k_vweak = ks_4 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_vweak)
     simulation.minimizeEnergy(maxIterations=n_4)
@@ -514,11 +513,24 @@ def run_relaxation(pdb_filename,
     final_state = simulation.context.getState(getPositions=True)
     with open(output_filename, 'w') as f:
         app.PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)
-    print(f"\nProcess complete. Saved to {output_filename}")
+    print(f"\nProcess complete. Saved to {output_filename}", flush=True)
 
 
-def run_heating(input_pdb='minimized.pdb', output_pdb='equilibrated.pdb'):
-    print(f"Loading {input_pdb}...")
+def run_heating(input_pdb='minimized.pdb',
+                output_pdb='equilibrated.pdb',
+                k1=100.0,
+                backbone_names=None,
+                target_temp=300.0 * unit.kelvin,
+                temp_step=50.0 * unit.kelvin,
+                steps_per_stage=5_000,
+                gamma=1.0 / unit.picosecond,
+                time_step=2.0 * unit.femtoseconds,
+                n_report=1_000,
+                steps_final=10_000):
+    if backbone_names is None:
+        backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+
+    print(f"Loading {input_pdb}...", flush=True)
     pdb = app.PDBFile(input_pdb)
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
@@ -527,14 +539,13 @@ def run_heating(input_pdb='minimized.pdb', output_pdb='equilibrated.pdb'):
                                      nonbondedCutoff=1.0 * unit.nanometer,
                                      constraints=app.HBonds)
 
-    print("Applying backbone restraints for heating...")
+    print("Applying backbone restraints for heating...", flush=True)
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
-    restraint.addGlobalParameter("k", 100.0 * unit.kilojoules_per_mole / (unit.nanometer ** 2))
+    restraint.addGlobalParameter("k", k1 * unit.kilojoules_per_mole / (unit.nanometer ** 2))
     restraint.addPerParticleParameter("x0")
     restraint.addPerParticleParameter("y0")
     restraint.addPerParticleParameter("z0")
 
-    backbone_names = ['CA', 'C', 'N', 'P', 'O3']
     for atom in modeller.topology.atoms():
         if atom.name in backbone_names:
             restraint.addParticle(atom.index, modeller.positions[atom.index])
@@ -542,42 +553,51 @@ def run_heating(input_pdb='minimized.pdb', output_pdb='equilibrated.pdb'):
 
     current_temp = 0 * unit.kelvin
     integrator = openmm.LangevinMiddleIntegrator(current_temp,
-                                                 1.0 / unit.picosecond,
-                                                 0.002 * unit.picoseconds)
+                                                 gamma,
+                                                 time_step)
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(modeller.positions)
 
-    target_temp = 300.0 * unit.kelvin
-    temp_step = 50.0 * unit.kelvin
-    steps_per_stage = 5_000
-
-    print(f"\n--- Starting Gentle Heating (0K -> {target_temp}) ---")
+    print(f"\n--- Starting Gentle Heating (0K -> {target_temp}) ---", flush=True)
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      1_000,
+                                                      n_report,
                                                       step=True,
                                                       potentialEnergy=True,
                                                       temperature=True))
     temp = temp_step
     while temp <= target_temp:
-        print(f"\n-> Heating to {temp}...")
+        print(f"\n-> Heating to {temp}...", flush=True)
         integrator.setTemperature(temp)
         if temp == temp_step:
             simulation.context.setVelocitiesToTemperature(temp)
         simulation.step(steps_per_stage)
         temp += temp_step
-
-    print("\n--- Heating Complete ---")
-
-    print(f"Running final equilibration at {target_temp} for 10000 steps...")
-    simulation.step(10_000)
+    print("\n--- Heating Complete ---", flush=True)
+    print(f"Running final equilibration at {target_temp} for {steps_final} steps...", flush=True)
+    simulation.step(steps_final)
     state = simulation.context.getState(getPositions=True)
     with open(output_pdb, 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
-    print(f"Saved equilibrated structure to {output_pdb}")
+    print(f"Saved equilibrated structure to {output_pdb}", flush=True)
 
 
-def run_npt(input_pdb='equilibrated.pdb', output_pdb='npt_equilibrated.pdb'):
-    print(f"Loading {input_pdb}...")
+def run_npt(input_pdb='equilibrated.pdb',
+            output_pdb='npt_equilibrated.pdb',
+            pressure=1.0 * unit.bar,
+            temperature=300.0 * unit.kelvin,
+            gamma=1.0 / unit.picosecond,
+            time_step=2.0 * unit.femtoseconds,
+            barostat_freq=25,
+            backbone_names=None,
+            k=10.0,
+            n_report=500,
+            n_1=5_000,
+            n_2=25_000,
+            ):
+    if backbone_names is None:
+        backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+
+    print(f"Loading {input_pdb}...", flush=True)
     pdb = app.PDBFile(input_pdb)
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
@@ -586,15 +606,14 @@ def run_npt(input_pdb='equilibrated.pdb', output_pdb='npt_equilibrated.pdb'):
                                      nonbondedCutoff=1 * unit.nanometer,
                                      constraints=app.HBonds)
 
-    print("Adding MonteCarloBarostat (1 atm)...")
-    system.addForce(openmm.MonteCarloBarostat(1.0 * unit.bar, 300.0 * unit.kelvin, 25))
+    print("Adding MonteCarloBarostat...", flush=True)
+    system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
-    restraint.addGlobalParameter("k", 10.0 * unit.kilojoules_per_mole / (unit.nanometer ** 2))
+    restraint.addGlobalParameter("k", k * unit.kilojoules_per_mole / (unit.nanometer ** 2))
     restraint.addPerParticleParameter("x0")
     restraint.addPerParticleParameter("y0")
     restraint.addPerParticleParameter("z0")
 
-    backbone_names = ['CA', 'C', 'N', 'P', 'O3']
     atom_indices = []
     for atom in modeller.topology.atoms():
         if atom.name in backbone_names:
@@ -602,33 +621,30 @@ def run_npt(input_pdb='equilibrated.pdb', output_pdb='npt_equilibrated.pdb'):
             atom_indices.append(atom.index)
     system.addForce(restraint)
 
-    integrator = openmm.LangevinMiddleIntegrator(300.0 * unit.kelvin,
-                                                 1.0 / unit.picosecond,
-                                                 0.002 * unit.picoseconds)
+    integrator = openmm.LangevinMiddleIntegrator(temperature,
+                                                 gamma,
+                                                 time_step)
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(modeller.positions)
-    simulation.context.setVelocitiesToTemperature(300.0 * unit.kelvin)
+    simulation.context.setVelocitiesToTemperature(temperature)
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      500,
+                                                      n_report,
                                                       step=True,
                                                       potentialEnergy=True,
                                                       temperature=True,
                                                       volume=True,
                                                       density=True))
 
-    print("\n--- Phase 1: Restrained NPT (Relaxing Density) ---")
-    simulation.step(5_000)
+    print("\n--- Phase 1: Restrained NPT (Relaxing Density) ---", flush=True)
+    simulation.step(n_1)
 
-    print("\n--- Phase 2: Removing Restraints (Unrestrained NPT) ---")
+    print("\n--- Phase 2: Removing Restraints (Unrestrained NPT) ---", flush=True)
     simulation.context.setParameter("k", 0.0)
-
-    print("Running equilibration for 25000 steps (50 ps)...")
-    simulation.step(25_000)
+    simulation.step(n_2)
 
     state = simulation.context.getState(getPositions=True, getVelocities=True)
 
     with open(output_pdb, 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
-    print(f"\nDensity equilibration complete. Saved to {output_pdb}")
-    print("Check the terminal output above: Density should have converged to ~1.0 g/mL (for water)")
+    print(f"\nDensity equilibration complete. Saved to {output_pdb}", flush=True)
