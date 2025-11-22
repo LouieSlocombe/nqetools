@@ -425,20 +425,20 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
         print(f"Error saving selection: {e}")
 
 
-def run_relaxation(pdb_filename,
-                   output_filename='minimized.pdb',
-                   temperature=300.0 * unit.kelvin,
-                   gamma=1.0 / unit.picosecond,
-                   time_step=4.0 * unit.femtoseconds,
-                   n_1=1_000,
-                   n_2=1_000,
-                   n_3=1_000,
-                   n_4=2_000,
-                   backbone_names=None,
-                   ks_2=100.0,
-                   ks_3=10.0,
-                   ks_4=0.0,
-                   ):
+def run_openmm_relaxation(pdb_filename,
+                          output_filename='minimized.pdb',
+                          temperature=300.0 * unit.kelvin,
+                          gamma=1.0 / unit.picosecond,
+                          time_step=4.0 * unit.femtoseconds,
+                          n_1=1_000,
+                          n_2=1_000,
+                          n_3=1_000,
+                          n_4=2_000,
+                          backbone_names=None,
+                          ks_2=100.0,
+                          ks_3=10.0,
+                          ks_4=0.0,
+                          ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
     print(f"Loading {pdb_filename}...", flush=True)
@@ -516,17 +516,17 @@ def run_relaxation(pdb_filename,
     print(f"\nProcess complete. Saved to {output_filename}", flush=True)
 
 
-def run_heating(input_pdb='minimized.pdb',
-                output_pdb='equilibrated.pdb',
-                k1=100.0,
-                backbone_names=None,
-                target_temp=300.0 * unit.kelvin,
-                temp_step=50.0 * unit.kelvin,
-                steps_per_stage=5_000,
-                gamma=1.0 / unit.picosecond,
-                time_step=2.0 * unit.femtoseconds,
-                n_report=1_000,
-                steps_final=10_000):
+def run_openmm_heating(input_pdb='minimized.pdb',
+                       output_pdb='equilibrated.pdb',
+                       k1=100.0,
+                       backbone_names=None,
+                       target_temp=300.0 * unit.kelvin,
+                       temp_step=50.0 * unit.kelvin,
+                       steps_per_stage=5_000,
+                       gamma=1.0 / unit.picosecond,
+                       time_step=2.0 * unit.femtoseconds,
+                       n_report=1_000,
+                       steps_final=10_000):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
@@ -581,19 +581,19 @@ def run_heating(input_pdb='minimized.pdb',
     print(f"Saved equilibrated structure to {output_pdb}", flush=True)
 
 
-def run_npt(input_pdb='equilibrated.pdb',
-            output_pdb='npt_equilibrated.pdb',
-            pressure=1.0 * unit.bar,
-            temperature=300.0 * unit.kelvin,
-            gamma=1.0 / unit.picosecond,
-            time_step=2.0 * unit.femtoseconds,
-            barostat_freq=25,
-            backbone_names=None,
-            k=10.0,
-            n_report=500,
-            n_1=5_000,
-            n_2=25_000,
-            ):
+def run_openmm_npt(input_pdb='equilibrated.pdb',
+                   output_pdb='npt_equilibrated.pdb',
+                   pressure=1.0 * unit.bar,
+                   temperature=300.0 * unit.kelvin,
+                   gamma=1.0 / unit.picosecond,
+                   time_step=2.0 * unit.femtoseconds,
+                   barostat_freq=25,
+                   backbone_names=None,
+                   k=10.0,
+                   n_report=500,
+                   n_1=5_000,
+                   n_2=25_000,
+                   ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
