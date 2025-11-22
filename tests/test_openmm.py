@@ -624,9 +624,9 @@ def run_run_plumed_md(directory, pdb_file):
 
 def test_plumed():
     temperature = 300 * unit.kelvin
-    timestep = 2.0 * unit.femtosecond
+    timestep = 1.0 * unit.femtosecond
     friction_coeff = 1.0 / unit.picosecond
-    total_steps = 20_000
+    total_steps = 100_000
     pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
     pdb_out = 'pdb_out.pdb'
 
@@ -637,18 +637,12 @@ def test_plumed():
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
 
     pdb_data, molecule = nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, rm_files=False)
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule)
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule, pc_methods= 'am1bcc')
 
     idx1 = nqe.get_atoms_in_residue('combined_system.pdb', 0, chain_id='F')
-    print(idx1)
     idx2 = nqe.get_atoms_in_residue('combined_system.pdb', 4, chain_id='B')
-    print(idx2)
-
-    # turn the list in to a selection string
     selection_str1 = ','.join([f'{i}' for i in idx1])
     selection_str2 = ','.join([f'{i}' for i in idx2])
-    print(selection_str1)
-    print(selection_str2)
 
     # nqe.save_pdb_selection('combined_system.pdb', idx1 + idx2, 'selection.pdb')
     # Clean the directory if it exists
@@ -675,7 +669,7 @@ def test_plumed():
     plumed_script = f"""c1: COM ATOMS={selection_str1}
 c2: COM ATOMS={selection_str2}
 dist: DISTANCE ATOMS=c1,c2
-wall: UPPER_WALLS ARG=dist AT=3.5 KAPPA=1000.0 EXP=2
+wall: UPPER_WALLS ARG=dist AT=8.0 KAPPA=100.0 EXP=2
 opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05 FILE=HILLS
 PRINT ARG=* STRIDE=100 FILE=COLVAR
 FLUSH STRIDE=1
@@ -709,9 +703,9 @@ FLUSH STRIDE=1
                                                       totalSteps=total_steps,
                                                       separator='\t'))
 
-    simulation.reporters.append(app.PDBReporter(pdb_out, 1_000))
+    simulation.reporters.append(app.PDBReporter(pdb_out, 10_000))
 
-    simulation.reporters.append(app.DCDReporter('trajectory.dcd', 1_000))
+    simulation.reporters.append(app.DCDReporter('trajectory.dcd', 10_000))
     simulation.step(total_steps)
 
     os.chdir(cwd)
@@ -724,11 +718,11 @@ FLUSH STRIDE=1
     # Run the hills command
     nqe.run_plumed_hills(directory,
                          temperature=300,
-                         bins=100,
+                         bins=n_bins,
                          cv=cv_limits)
     # Plot the free energy surface convergence
     fes_arrays_meta_md = nqe.load_fes_data(directory, n_bins)
-    fes_times = nqe.get_fes_times(timestep, total_steps, fes_arrays_meta_md)
+    fes_times = nqe.get_fes_times(2.0, total_steps, fes_arrays_meta_md)
 
     nqe.plot_fes_series_1d(fes_arrays_meta_md,
                            fes_times,
