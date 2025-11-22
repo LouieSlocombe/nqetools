@@ -335,10 +335,7 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
         if n_cv == 2:
             transformed_data = np.array([1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
         else:
-            transformed_data = np.array([1.0, 1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis, np.newaxis] * data[:,
-            :3].T.reshape(3,
-                          bins,
-                          bins)
+            transformed_data = np.array([1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
         fes_arrays.append(transformed_data)
 
     return fes_arrays
