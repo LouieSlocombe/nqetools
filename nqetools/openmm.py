@@ -425,11 +425,12 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
         print(f"Error saving selection: {e}")
 
 
-def run_openmm_relaxation(pdb_filename,
+def run_openmm_relaxation(modeller,
+                          forcefield,
                           output_filename='minimized.pdb',
                           temperature=300.0 * unit.kelvin,
                           gamma=1.0 / unit.picosecond,
-                          time_step=4.0 * unit.femtoseconds,
+                          time_step=1.0 * unit.femtoseconds,
                           n_1=1_000,
                           n_2=1_000,
                           n_3=1_000,
@@ -444,18 +445,15 @@ def run_openmm_relaxation(pdb_filename,
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     platform = openmm.Platform.getPlatformByName(platform_name)
-
-    print(f"Loading {pdb_filename}...", flush=True)
-    pdb = app.PDBFile(pdb_filename)
-
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
-    modeller = app.Modeller(pdb.topology, pdb.positions)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
 
     print("\n--- Stage 1: Relaxing Hydrogens (Heavy atoms fixed) ---", flush=True)
     system_h_only = forcefield.createSystem(modeller.topology,
-                                            nonbondedMethod=app.PME,
+                                            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
                                             nonbondedCutoff=1.0 * unit.nanometer,
-                                            constraints=app.HBonds)
+                                            constraints=None,
+                                            rigidWater=False,
+                                            removeCMMotion=True)
 
     # In OpenMM, mass=0 makes the particle immovable (infinite mass)
     for i, atom in enumerate(modeller.topology.atoms()):
@@ -473,9 +471,11 @@ def run_openmm_relaxation(pdb_filename,
     print("Stage 1 complete.", flush=True)
 
     system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
+                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
                                      nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=app.HBonds)
+                                     constraints=None,
+                                     rigidWater=False,
+                                     removeCMMotion=True)
 
     # Define the harmonic restraint force
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
@@ -520,7 +520,8 @@ def run_openmm_relaxation(pdb_filename,
     print(f"\nProcess complete. Saved to {output_filename}", flush=True)
 
 
-def run_openmm_heating(input_pdb='minimized.pdb',
+def run_openmm_heating(modeller,
+                       forcefield,
                        output_pdb='equilibrated.pdb',
                        k1=100.0,
                        backbone_names=None,
@@ -528,7 +529,7 @@ def run_openmm_heating(input_pdb='minimized.pdb',
                        temp_step=50.0 * unit.kelvin,
                        steps_per_stage=5_000,
                        gamma=1.0 / unit.picosecond,
-                       time_step=2.0 * unit.femtoseconds,
+                       time_step=1.0 * unit.femtoseconds,
                        n_report=1_000,
                        steps_final=10_000,
                        platform_name='CPU',
@@ -537,15 +538,13 @@ def run_openmm_heating(input_pdb='minimized.pdb',
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     platform = openmm.Platform.getPlatformByName(platform_name)
-
-    print(f"Loading {input_pdb}...", flush=True)
-    pdb = app.PDBFile(input_pdb)
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
-    modeller = app.Modeller(pdb.topology, pdb.positions)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
+                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
                                      nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=app.HBonds)
+                                     constraints=None,
+                                     rigidWater=False,
+                                     removeCMMotion=True)
 
     print("Applying backbone restraints for heating...", flush=True)
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
@@ -589,7 +588,8 @@ def run_openmm_heating(input_pdb='minimized.pdb',
     print(f"Saved equilibrated structure to {output_pdb}", flush=True)
 
 
-def run_openmm_npt(input_pdb='equilibrated.pdb',
+def run_openmm_npt(modeller,
+                   forcefield,
                    output_pdb='npt_equilibrated.pdb',
                    pressure=1.0 * unit.bar,
                    temperature=300.0 * unit.kelvin,
@@ -607,15 +607,13 @@ def run_openmm_npt(input_pdb='equilibrated.pdb',
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     platform = openmm.Platform.getPlatformByName(platform_name)
-
-    print(f"Loading {input_pdb}...", flush=True)
-    pdb = app.PDBFile(input_pdb)
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
-    modeller = app.Modeller(pdb.topology, pdb.positions)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
-                                     nonbondedCutoff=1 * unit.nanometer,
-                                     constraints=app.HBonds)
+                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+                                     nonbondedCutoff=1.0 * unit.nanometer,
+                                     constraints=None,
+                                     rigidWater=False,
+                                     removeCMMotion=True)
 
     print("Adding MonteCarloBarostat...", flush=True)
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
