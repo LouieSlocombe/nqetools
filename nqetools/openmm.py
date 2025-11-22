@@ -11,6 +11,7 @@ from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmtools.integrators import GeodesicBAOABIntegrator
 from pdbfixer import PDBFixer
 from rdkit import Chem
+from scipy.stats import ks_1samp
 
 from .io import remove_water_residues_in_pdb, clean_ions_in_pdb, relabel_residues_in_pdb, remove_residues_in_pdb
 from .plotting import n_plot
@@ -425,7 +426,22 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
         print(f"Error saving selection: {e}")
 
 
-def run_relaxation(pdb_filename, output_filename='minimized.pdb'):
+def run_relaxation(pdb_filename,
+                   output_filename='minimized.pdb',
+                   temperature=300.0 * unit.kelvin,
+                   gamma=1.0 / unit.picosecond,
+                   time_step=4.0 * unit.femtoseconds,
+                   n_1=1_000,
+                   n_2=1_000,
+                   n_3=1_000,
+                   n_4=2_000,
+                   backbone_names=None,
+                   ks_2=100.0,
+                   ks_3=10.0,
+                   ks_4=0.0,
+                   ):
+    if backbone_names is None:
+        backbone_names = ['CA', 'C', 'N', 'P', 'O3']
     print(f"Loading {pdb_filename}...")
     pdb = app.PDBFile(pdb_filename)
 
@@ -443,19 +459,19 @@ def run_relaxation(pdb_filename, output_filename='minimized.pdb'):
         if atom.element.symbol != 'H':
             system_h_only.setParticleMass(i, 0.0 * unit.dalton)
 
-    integrator_1 = openmm.LangevinMiddleIntegrator(300.0 * unit.kelvin,
-                                                   1.0 / unit.picosecond,
-                                                   0.004 * unit.picoseconds)
+    integrator_1 = openmm.LangevinMiddleIntegrator(temperature,
+                                                   gamma,
+                                                   time_step)
     sim_1 = app.Simulation(modeller.topology, system_h_only, integrator_1)
     sim_1.context.setPositions(modeller.positions)
-    sim_1.minimizeEnergy(maxIterations=1_000)
+    sim_1.minimizeEnergy(maxIterations=n_1)
 
     current_positions = sim_1.context.getState(getPositions=True).getPositions()
     print("Stage 1 complete.")
 
     system = forcefield.createSystem(modeller.topology,
                                      nonbondedMethod=app.PME,
-                                     nonbondedCutoff=1 * unit.nanometer,
+                                     nonbondedCutoff=1.0 * unit.nanometer,
                                      constraints=app.HBonds)
 
     # Define the harmonic restraint force
@@ -464,9 +480,6 @@ def run_relaxation(pdb_filename, output_filename='minimized.pdb'):
     restraint.addPerParticleParameter("x0")
     restraint.addPerParticleParameter("y0")
     restraint.addPerParticleParameter("z0")
-
-    # Identify backbone atoms to restrain
-    backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     atom_indices = []
     for atom in modeller.topology.atoms():
@@ -477,25 +490,26 @@ def run_relaxation(pdb_filename, output_filename='minimized.pdb'):
 
     system.addForce(restraint)
     print(f"Restraints applied to {len(atom_indices)} backbone atoms.")
-    integrator = openmm.LangevinMiddleIntegrator(300.0 * unit.kelvin,
-                                                 1.0 / unit.picosecond,
-                                                 0.004 * unit.picoseconds)
+    integrator = openmm.LangevinMiddleIntegrator(temperature,
+                                                 gamma,
+                                                 time_step)
     simulation = app.Simulation(modeller.topology, system, integrator)
     simulation.context.setPositions(current_positions)
 
-    print("\n--- Stage 2: Strong Backbone Restraints (100 kJ/mol/nm^2) ---")
-    k_strong = 100.0 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    print(f"\n--- Stage 2: Strong Backbone Restraints ({ks_2} kJ/mol/nm^2) ---")
+    k_strong = ks_2 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_strong)
-    simulation.minimizeEnergy(maxIterations=1_000)
+    simulation.minimizeEnergy(maxIterations=n_2)
 
     print("\n--- Stage 3: Weak Backbone Restraints (10 kJ/mol/nm^2) ---")
-    k_weak = 10.0 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    k_weak = ks_3 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_weak)
-    simulation.minimizeEnergy(maxIterations=1_000)
+    simulation.minimizeEnergy(maxIterations=n_3)
 
     print("\n--- Stage 4: Unrestrained Relaxation ---")
-    simulation.context.setParameter("k", 0.0)
-    simulation.minimizeEnergy(maxIterations=2_000)
+    k_vweak = ks_4 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    simulation.context.setParameter("k", k_vweak)
+    simulation.minimizeEnergy(maxIterations=n_4)
 
     final_state = simulation.context.getState(getPositions=True)
     with open(output_filename, 'w') as f:
