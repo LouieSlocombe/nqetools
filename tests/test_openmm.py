@@ -637,7 +637,7 @@ def test_plumed():
     residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
 
     pdb_data, molecule = nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, rm_files=False)
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule, pc_methods= 'am1bcc')
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule, pc_methods='am1bcc')
 
     idx1 = nqe.get_atoms_in_residue('combined_system.pdb', 0, chain_id='F')
     idx2 = nqe.get_atoms_in_residue('combined_system.pdb', 4, chain_id='B')
@@ -738,3 +738,200 @@ def test_get_atoms_in_residue():
     print(indexes)
     ref_indexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     assert indexes == ref_indexes
+
+
+def run_relaxation(pdb_filename, output_filename='minimized.pdb'):
+    print(f"Loading {pdb_filename}...")
+    pdb = PDBFile(pdb_filename)
+
+    # 1. Define ForceField (Standard Amber14 + TIP3P water)
+    # You can change these XMLs to match your specific system (e.g., charmm36)
+    forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+
+    modeller = Modeller(pdb.topology, pdb.positions)
+
+    # =========================================================================
+    # STAGE 1: Relax Hydrogens Only (Heavy Atoms Fixed)
+    # =========================================================================
+    print("\n--- Stage 1: Relaxing Hydrogens (Heavy atoms fixed) ---")
+
+    # Create a temporary system for Stage 1
+    system_h_only = forcefield.createSystem(modeller.topology,
+                                            nonbondedMethod=PME,
+                                            nonbondedCutoff=1 * nanometer,
+                                            constraints=HBonds)
+
+    # Iterate through particles and set mass to 0 for non-Hydrogens
+    # In OpenMM, mass=0 makes the particle immovable (infinite mass)
+    for i, atom in enumerate(modeller.topology.atoms()):
+        if atom.element.symbol != 'H':
+            system_h_only.setParticleMass(i, 0 * dalton)
+
+    # Create integrator (Integrator is required even for minimization)
+    integrator_1 = LangevinMiddleIntegrator(300 * kelvin, 1 / picosecond, 0.004 * picoseconds)
+    sim_1 = Simulation(modeller.topology, system_h_only, integrator_1)
+    sim_1.context.setPositions(modeller.positions)
+
+    # Minimize
+    sim_1.minimizeEnergy(maxIterations=1000)
+
+    # Get the new positions to carry over to the next stage
+    current_positions = sim_1.context.getState(getPositions=True).getPositions()
+    print("Stage 1 complete.")
+
+    # =========================================================================
+    # PREPARATION FOR STAGES 2, 3, & 4
+    # =========================================================================
+    # Create the REAL system with correct masses
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=PME,
+                                     nonbondedCutoff=1 * nanometer,
+                                     constraints=HBonds)
+
+    # Define the harmonic restraint force
+    # k * (r - r0)^2 where r0 is the starting position
+    restraint = CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
+    restraint.addGlobalParameter("k", 0.0)  # Initialize with 0, we will change this
+    restraint.addPerParticleParameter("x0")
+    restraint.addPerParticleParameter("y0")
+    restraint.addPerParticleParameter("z0")
+
+    # Identify backbone atoms to restrain (Protein Backbone usually CA, C, N)
+    # Note: Extend this list if you have nucleic acids (e.g., "P", "O3'")
+    backbone_names = ['CA', 'C', 'N']
+
+    atom_indices = []
+    for atom in modeller.topology.atoms():
+        if atom.name in backbone_names:
+            # We anchor the restraint to the position resulting from Stage 1
+            pos = current_positions[atom.index]
+            restraint.addParticle(atom.index, [pos.x, pos.y, pos.z])
+            atom_indices.append(atom.index)
+
+    system.addForce(restraint)
+    print(f"Restraints applied to {len(atom_indices)} backbone atoms.")
+
+    # Create new Simulation context
+    integrator = LangevinMiddleIntegrator(300 * kelvin, 1 / picosecond, 0.004 * picoseconds)
+    simulation = Simulation(modeller.topology, system, integrator)
+    simulation.context.setPositions(current_positions)
+
+    # =========================================================================
+    # STAGE 2: Relax All with STRONG Backbone Restraints
+    # =========================================================================
+    print("\n--- Stage 2: Strong Backbone Restraints (100 kJ/mol/nm^2) ---")
+    k_strong = 100.0 * kilojoules_per_mole / (nanometer ** 2)
+    simulation.context.setParameter("k", k_strong)
+    simulation.minimizeEnergy(maxIterations=1000)
+
+    # =========================================================================
+    # STAGE 3: Relax All with WEAK Backbone Restraints
+    # =========================================================================
+    print("\n--- Stage 3: Weak Backbone Restraints (10 kJ/mol/nm^2) ---")
+    k_weak = 10.0 * kilojoules_per_mole / (nanometer ** 2)
+    simulation.context.setParameter("k", k_weak)
+    simulation.minimizeEnergy(maxIterations=1000)
+
+    # =========================================================================
+    # STAGE 4: Relax All (Unrestrained)
+    # =========================================================================
+    print("\n--- Stage 4: Unrestrained Relaxation ---")
+    simulation.context.setParameter("k", 0.0)
+    simulation.minimizeEnergy(maxIterations=2000)  # Allow more iterations for final cleanup
+
+    # =========================================================================
+    # Save Result
+    # =========================================================================
+    final_state = simulation.context.getState(getPositions=True)
+    with open(output_filename, 'w') as f:
+        PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)
+    print(f"\nProcess complete. Saved to {output_filename}")
+
+
+import sys
+from openmm.app import *
+from openmm import *
+from openmm.unit import *
+
+
+def run_heating(input_pdb='minimized.pdb', output_pdb='equilibrated.pdb'):
+    print(f"Loading {input_pdb}...")
+    pdb = PDBFile(input_pdb)
+
+    # 1. Define ForceField (Must match the minimization step)
+    forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+
+    modeller = Modeller(pdb.topology, pdb.positions)
+
+    # 2. Create System
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=PME,
+                                     nonbondedCutoff=1 * nanometer,
+                                     constraints=HBonds)
+
+    # 3. Add Harmonic Restraints to Backbone
+    # It is standard practice to restrain the backbone while heating to prevent
+    # thermal shock from unfolding the protein before the solvent equilibrates.
+    print("Applying backbone restraints for heating...")
+    restraint = CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
+    restraint.addGlobalParameter("k", 100.0 * kilojoules_per_mole / (nanometer ** 2))
+    restraint.addPerParticleParameter("x0")
+    restraint.addPerParticleParameter("y0")
+    restraint.addPerParticleParameter("z0")
+
+    backbone_names = ['CA', 'C', 'N']
+    for atom in modeller.topology.atoms():
+        if atom.name in backbone_names:
+            restraint.addParticle(atom.index, modeller.positions[atom.index])
+    system.addForce(restraint)
+
+    # 4. Integrator
+    # Start at 0 Kelvin. We will ramp this up.
+    # Time step: 2.0 femtoseconds (standard with HBonds constraints)
+    current_temp = 0 * kelvin
+    integrator = LangevinMiddleIntegrator(current_temp, 1 / picosecond, 0.002 * picoseconds)
+
+    simulation = Simulation(modeller.topology, system, integrator)
+    simulation.context.setPositions(modeller.positions)
+
+    # 5. Heating Protocol
+    # We will heat from 50K to 300K in steps of 50K
+    # At each step, we run for 5000 steps (10 ps)
+    target_temp = 300 * kelvin
+    temp_step = 50 * kelvin
+    steps_per_stage = 5000  # 10 picoseconds per stage
+
+    print(f"\n--- Starting Gentle Heating (0K -> {target_temp}) ---")
+
+    # Add a reporter to track progress in the terminal
+    simulation.reporters.append(StateDataReporter(sys.stdout, 1000, step=True,
+                                                  potentialEnergy=True, temperature=True))
+
+    temp = temp_step
+    while temp <= target_temp:
+        print(f"\n-> Heating to {temp}...")
+
+        # A. Set the integrator's target temperature
+        integrator.setTemperature(temp)
+
+        # B. If this is the very first step (coming from 0K), we must
+        # initialize velocities. Otherwise, the thermostat handles it.
+        if temp == temp_step:
+            simulation.context.setVelocitiesToTemperature(temp)
+
+        # C. Run dynamics
+        simulation.step(steps_per_stage)
+
+        temp += temp_step
+
+    print("\n--- Heating Complete ---")
+
+    # 6. Optional: Short equilibration at final temp
+    print(f"Running final equilibration at {target_temp} for 10000 steps...")
+    simulation.step(10000)
+
+    # 7. Save Output
+    state = simulation.context.getState(getPositions=True)
+    with open(output_pdb, 'w') as f:
+        PDBFile.writeFile(simulation.topology, state.getPositions(), f)
+    print(f"Saved equilibrated structure to {output_pdb}")
