@@ -438,9 +438,13 @@ def run_openmm_relaxation(pdb_filename,
                           ks_2=100.0,
                           ks_3=10.0,
                           ks_4=0.0,
+                          platform_name='CPU',
                           ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+
+    platform = openmm.Platform.getPlatformByName(platform_name)
+
     print(f"Loading {pdb_filename}...", flush=True)
     pdb = app.PDBFile(pdb_filename)
 
@@ -461,7 +465,7 @@ def run_openmm_relaxation(pdb_filename,
     integrator_1 = openmm.LangevinMiddleIntegrator(temperature,
                                                    gamma,
                                                    time_step)
-    sim_1 = app.Simulation(modeller.topology, system_h_only, integrator_1)
+    sim_1 = app.Simulation(modeller.topology, system_h_only, integrator_1, platform)
     sim_1.context.setPositions(modeller.positions)
     sim_1.minimizeEnergy(maxIterations=n_1)
 
@@ -492,7 +496,7 @@ def run_openmm_relaxation(pdb_filename,
     integrator = openmm.LangevinMiddleIntegrator(temperature,
                                                  gamma,
                                                  time_step)
-    simulation = app.Simulation(modeller.topology, system, integrator)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(current_positions)
 
     print(f"\n--- Stage 2: Strong Backbone Restraints ({ks_2} kJ/mol/nm^2) ---", flush=True)
@@ -526,9 +530,13 @@ def run_openmm_heating(input_pdb='minimized.pdb',
                        gamma=1.0 / unit.picosecond,
                        time_step=2.0 * unit.femtoseconds,
                        n_report=1_000,
-                       steps_final=10_000):
+                       steps_final=10_000,
+                       platform_name='CPU',
+                       ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+
+    platform = openmm.Platform.getPlatformByName(platform_name)
 
     print(f"Loading {input_pdb}...", flush=True)
     pdb = app.PDBFile(input_pdb)
@@ -555,7 +563,7 @@ def run_openmm_heating(input_pdb='minimized.pdb',
     integrator = openmm.LangevinMiddleIntegrator(current_temp,
                                                  gamma,
                                                  time_step)
-    simulation = app.Simulation(modeller.topology, system, integrator)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
 
     print(f"\n--- Starting Gentle Heating (0K -> {target_temp}) ---", flush=True)
@@ -593,9 +601,12 @@ def run_openmm_npt(input_pdb='equilibrated.pdb',
                    n_report=500,
                    n_1=5_000,
                    n_2=25_000,
+                   platform_name='CPU',
                    ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+
+    platform = openmm.Platform.getPlatformByName(platform_name)
 
     print(f"Loading {input_pdb}...", flush=True)
     pdb = app.PDBFile(input_pdb)
@@ -624,7 +635,7 @@ def run_openmm_npt(input_pdb='equilibrated.pdb',
     integrator = openmm.LangevinMiddleIntegrator(temperature,
                                                  gamma,
                                                  time_step)
-    simulation = app.Simulation(modeller.topology, system, integrator)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
