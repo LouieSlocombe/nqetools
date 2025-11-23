@@ -13,6 +13,7 @@ import nqetools as nqe
 
 
 def test_openmm_ml():
+    print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = MLPotential('mace-off23-small')
     modeller = app.Modeller(pdb.topology, pdb.positions)
@@ -97,39 +98,12 @@ def test_nonstandard_ligand():
     pdb_topology = pdb_data.topology
     pdb_positions = pdb_data.positions
     modeller = app.Modeller(pdb_topology, pdb_positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
     forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule)
 
-    # Solvate
-    modeller.addSolvent(forcefield,
-                        padding=1.0 * unit.nanometer,
-                        boxShape='dodecahedron')
-
-    system = forcefield.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=app.HBonds
-    )
-
-    integrator = openmm.LangevinIntegrator(
-        300 * unit.kelvin,
-        1.0 / unit.picosecond,
-        0.002 * unit.picoseconds
-    )
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    sim = app.Simulation(modeller.topology, system, integrator, platform)
-    sim.context.setPositions(modeller.positions)
-    state = sim.context.getState(getEnergy=True)
-    print("Initial potential energy:", state.getPotentialEnergy())
-    sim.minimizeEnergy(maxIterations=500)
-    # write minimized structure
-    min_positions = sim.context.getState(getPositions=True).getPositions(asNumpy=True)
-    with open("minimized.pdb", "w") as f:
-        app.PDBFile.writeFile(modeller.topology, min_positions, f)
+    nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA')
     os.remove('minimized.pdb')
-
-
 
 
 def test_openmm_rpmd():
