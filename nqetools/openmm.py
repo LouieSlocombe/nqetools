@@ -8,6 +8,7 @@ import openmm.unit as unit
 from openff.toolkit import Molecule
 from openmm import openmm, app
 from openmmforcefields.generators import GAFFTemplateGenerator
+from openmmplumed import PlumedForce
 from openmmtools.integrators import GeodesicBAOABIntegrator
 from pdbfixer import PDBFixer
 from rdkit import Chem
@@ -708,6 +709,56 @@ def run_openmm_npt(modeller,
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
     print(f"\nDensity equilibration complete. Saved to {output_pdb}", flush=True)
+
+
+def run_plumed_production(modeller,
+                          forcefield,
+                          plumed_script_path,
+                          pressure=1.0 * unit.bar,
+                          temperature=300.0 * unit.kelvin,
+                          gamma=1.0 / unit.picosecond,
+                          time_step=2.0 * unit.femtoseconds,
+                          barostat_freq=25,
+                          n_report=1_000,
+                          steps=500_000,
+                          output_prefix='prod',
+                          platform_name='CPU'):
+    platform = openmm.Platform.getPlatformByName(platform_name)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+                                     nonbondedCutoff=1.0 * unit.nanometer,
+                                     constraints=None,
+                                     rigidWater=False,
+                                     removeCMMotion=True)
+
+    system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
+
+    with open(plumed_script_path, 'r') as f:
+        script_content = f.read()
+
+    plumed_force = PlumedForce(script_content)
+    system.addForce(plumed_force)
+    integrator = openmm.LangevinMiddleIntegrator(temperature,
+                                                 gamma,
+                                                 time_step)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+    simulation.context.setPositions(modeller.positions)
+    simulation.context.setVelocitiesToTemperature(temperature)
+    simulation.reporters.append(app.DCDReporter(f'{output_prefix}.dcd', n_report))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log', n_report,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      density=True,
+                                                      speed=True))
+    simulation.reporters.append(app.CheckpointReporter(f'{output_prefix}.chk', n_report * 10))
+    print(f"Starting production run for {steps} steps...", flush=True)
+    simulation.step(steps)
+    print("Production run complete.", flush=True)
+    state = simulation.context.getState(getPositions=True, getVelocities=True)
+    with open(f'{output_prefix}.pdb', 'w') as f:
+        app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
 
 def run_rpmd_equilibration(modeller,
