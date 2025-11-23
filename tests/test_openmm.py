@@ -85,6 +85,38 @@ def test_openmm_ml_mixed_system():
     simulation.step(1_000)
 
 
+def test_prepare_ligand_ff():
+    print(flush=True)
+    input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
+    cache_name = "gaff-molecules.json"
+    rm_ions = ['Na+', 'Cl-', 'NA']
+    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
+    pdb_data, molecule = nqe.prepare_lig_system(input_pdb,
+                                                rm_ions=rm_ions,
+                                                residue_map=residue_map,
+                                                lig_name='LIG')
+    modeller = app.Modeller(pdb_data.topology, pdb_data.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+    nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"),
+                          molecule,
+                          gen_cache=True,
+                          use_cache=False,
+                          cache=cache_name)
+
+    # Check that the cache files were created
+    assert os.path.exists(cache_name)
+
+    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"),
+                                       molecule,
+                                       gen_cache=False,
+                                       use_cache=True,
+                                       cache=cache_name)
+    forcefield.createSystem(modeller.topology)
+
+    os.remove(cache_name)
+
+
 def test_nonstandard_ligand():
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
