@@ -68,6 +68,36 @@ def get_thermal_de_broglie_wavelength(mass, temperature):
     return lambda_meters * unit.meter
 
 
+def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=0.1):
+    system = simulation.system
+    n_atoms = system.getNumParticles()
+
+    masses_val = np.array([system.getParticleMass(i).value_in_unit(unit.dalton)
+                           for i in range(n_atoms)])
+    masses_quantity = masses_val * unit.dalton
+
+    lambdas = get_thermal_de_broglie_wavelength(masses_quantity, temperature)
+    lambdas_nm = lambdas.value_in_unit(unit.nanometer)
+
+    if not unit.is_quantity(positions):
+        positions = positions * unit.nanometer
+    pos0 = positions.value_in_unit(unit.nanometer)
+
+    rng = np.random.default_rng(0)
+
+    # 4. Initialize Beads
+    print(f"Initializing {n_beads} beads scaled by thermal wavelengths...")
+    print(f"Max Lambda (lightest atom): {np.max(lambdas_nm):.4f} nm")
+    print(f"Min Lambda (heaviest atom): {np.min(lambdas_nm):.4f} nm")
+
+    for b in range(n_beads):
+        noise = rng.normal(size=(n_atoms, 3)) * lambdas_nm[:, np.newaxis] * scale_factor
+        bead_pos = pos0 + noise
+        simulation.integrator.setPositions(b, bead_pos * unit.nanometer)
+
+    simulation.context.setVelocitiesToTemperature(temperature)
+
+
 def init_beads(modeller, simulation, n_beads, perturb=0.002):
     rng = np.random.default_rng(0)
     pos0 = modeller.positions
