@@ -11,6 +11,7 @@ from openmmforcefields.generators import GAFFTemplateGenerator
 from openmmtools.integrators import GeodesicBAOABIntegrator
 from pdbfixer import PDBFixer
 from rdkit import Chem
+from scipy import constants
 
 from .io import remove_water_residues_in_pdb, clean_ions_in_pdb, relabel_residues_in_pdb, remove_residues_in_pdb
 from .plotting import n_plot
@@ -46,6 +47,25 @@ def centroid_positions(simulation, n_atoms, n_beads):
         acc += r.value_in_unit(unit.nanometer)
     acc /= n_beads
     return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer
+
+
+def get_thermal_de_broglie_wavelength(mass, temperature):
+    if unit.is_quantity(mass):
+        mass_amu = mass.value_in_unit(unit.dalton)
+    else:
+        mass_amu = mass
+
+    if unit.is_quantity(temperature):
+        temp_k = temperature.value_in_unit(unit.kelvin)
+    else:
+        temp_k = temperature
+
+    mass_kg = mass_amu * constants.atomic_mass
+
+    h = constants.h
+    k_b = constants.k
+    lambda_meters = h / np.sqrt(2 * np.pi * mass_kg * k_b * temp_k)
+    return lambda_meters * unit.meter
 
 
 def init_beads(modeller, simulation, n_beads, perturb=0.002):
