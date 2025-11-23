@@ -527,10 +527,10 @@ def run_openmm_heating(modeller,
                        backbone_names=None,
                        target_temp=300.0 * unit.kelvin,
                        temp_step=50.0 * unit.kelvin,
-                       steps_per_stage=5_000,
                        gamma=1.0 / unit.picosecond,
                        time_step=1.0 * unit.femtoseconds,
                        n_report=1_000,
+                       steps_per_stage=5_000,
                        steps_final=10_000,
                        platform_name='CPU',
                        ):
@@ -582,6 +582,7 @@ def run_openmm_heating(modeller,
     print("\n--- Heating Complete ---", flush=True)
     print(f"Running final equilibration at {target_temp} for {steps_final} steps...", flush=True)
     simulation.step(steps_final)
+
     state = simulation.context.getState(getPositions=True)
     with open(output_pdb, 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
