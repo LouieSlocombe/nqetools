@@ -782,3 +782,31 @@ def test_run_openmm_npt():
                         boxShape=box_shape)
     nqe.run_openmm_npt(modeller, forcefield)
     os.remove('npt_equilibrated.pdb')
+
+
+def test_eq_workflow():
+    padding = 1.5
+    box_shape = 'dodecahedron'
+    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+
+    pdb = app.PDBFile("tests/data/pdb/input.pdb")
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+    modeller.addSolvent(forcefield,
+                        padding=padding * unit.nanometer,
+                        boxShape=box_shape)
+
+    nqe.run_openmm_relaxation(modeller, forcefield)
+
+    pdb = app.PDBFile("minimized.pdb")
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    nqe.run_openmm_heating(modeller, forcefield)
+
+    pdb = app.PDBFile("equilibrated.pdb")
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    nqe.run_openmm_npt(modeller, forcefield)
+
+    os.remove('minimized.pdb')
+    os.remove('equilibrated.pdb')
+    os.remove('npt_equilibrated.pdb')
