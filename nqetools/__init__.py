@@ -93,7 +93,8 @@ from .openmm import (fix_pdb,
                      save_pdb_selection,
                      run_openmm_relaxation,
                      run_openmm_heating,
-                     run_openmm_npt)
+                     run_openmm_npt,
+                     run_rpmd_equilibration)
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,

@@ -658,3 +658,58 @@ def run_openmm_npt(modeller,
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
     print(f"\nDensity equilibration complete. Saved to {output_pdb}", flush=True)
+
+
+def run_rpmd_equilibration(modeller,
+                           forcefield,
+                           output_prefix='rpmd_ready',
+                           num_beads=32,
+                           temperature=300 * unit.kelvin,
+                           pressure=1 * unit.bar,
+                           barostat_freq=25,
+                           friction=1.0 / unit.picosecond,
+                           safe_timestep=0.5 * unit.femtoseconds,
+                           production_timestep=1.0 * unit.femtoseconds,
+                           n_report=1_000,
+                           n_1=2_000,
+                           n_2=10_000,
+                           platform_name='CPU'):
+    platform = openmm.Platform.getPlatformByName(platform_name)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+                                     nonbondedCutoff=1.0 * unit.nanometer,
+                                     constraints=None,
+                                     rigidWater=False,
+                                     removeCMMotion=True)
+
+    system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
+    integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, safe_timestep)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+
+    simulation.context.setPositions(modeller.positions)
+    simulation.context.setVelocitiesToTemperature(temperature)
+    simulation.reporters.append(app.StateDataReporter(sys.stdout,
+                                                      n_report,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      temperature=True,
+                                                      volume=True,
+                                                      speed=True))
+
+    print("\n--- Stage 1: Bead Expansion  ---", flush=True)
+    simulation.step(n_1)
+
+    print(f"\n--- Stage 2: Relaxation at full timestep ({production_timestep}) ---", flush=True)
+    integrator.setStepSize(production_timestep)
+    simulation.step(n_2)
+
+    print("\n--- Saving State ---", flush=True)
+    simulation.saveCheckpoint(f'{output_prefix}.chk')  # simulation.loadCheckpoint('rpmd_ready.chk')
+    state = simulation.context.getState(getPositions=True)
+    with open(f'{output_prefix}_centroid.pdb', 'w') as f:
+        app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
+
+    print(f"Saved checkpoint to {output_prefix}.chk (Use this to start production)", flush=True)
+    print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
