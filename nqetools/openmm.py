@@ -713,3 +713,98 @@ def run_rpmd_equilibration(modeller,
 
     print(f"Saved checkpoint to {output_prefix}.chk (Use this to start production)", flush=True)
     print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
+
+
+def run_contracted_rpmd(modeller,
+                        forcefield,
+                        checkpoint_file='rpmd_ready.chk',
+                        steps=100_000,
+                        platform_name='CPU'):
+    platform = openmm.Platform.getPlatformByName(platform_name)
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(modeller.topology,
+                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+                                     nonbondedCutoff=1.0 * unit.nanometer,
+                                     constraints=None,
+                                     rigidWater=False,
+                                     removeCMMotion=True)
+
+    system.addForce(openmm.MonteCarloBarostat(1 * bar, 300 * kelvin, 25))
+
+    # =========================================================================
+    # FORCE GROUP ASSIGNMENT
+    # =========================================================================
+    # We must assign specific forces to specific integer groups (0-31).
+    # Group 0: Bonded Forces (Cheap) -> 32 copies (Implicit default)
+    # Group 1: Nonbonded Direct Space (Expensive) -> 8 copies
+    # Group 2: PME Reciprocal Space (Very Expensive) -> 1 copy
+
+    print("Assigning force groups for contraction...")
+
+    for force in system.getForces():
+        # Check for NonbondedForce (Handles VdW + Coulomb)
+        if isinstance(force, NonbondedForce):
+            # Set the Direct Space calculation to Group 1
+            force.setForceGroup(1)
+            # Set the Reciprocal Space (PME) calculation to Group 2
+            force.setReciprocalSpaceForceGroup(2)
+            print(f"  - {force.__class__.__name__}: Direct->Group 1, Reciprocal->Group 2")
+
+        # Check for Bonded Forces (HarmonicBond, Angle, Torsion, etc.)
+        # We typically leave these in Group 0 (default)
+        elif isinstance(force, (HarmonicBondForce, HarmonicAngleForce,
+                                PeriodicTorsionForce, RBTorsionForce,
+                                CMAPTorsionForce)):
+            force.setForceGroup(0)
+            print(f"  - {force.__class__.__name__}: Group 0")
+
+        # Barostat and others
+        else:
+            force.setForceGroup(0)
+
+    # =========================================================================
+    # CONFIGURE INTEGRATOR WITH CONTRACTIONS
+    # =========================================================================
+    num_beads = 32
+    temperature = 300 * kelvin
+    friction = 1.0 / picosecond
+    timestep = 0.002 * picoseconds  # 2.0 fs (Stable for contracted RPMD usually)
+
+    # Define the contraction dictionary: { ForceGroup : NumCopies }
+    # Note: NumCopies must be a divisor of num_beads (32).
+    # Valid divisors for 32: 1, 2, 4, 8, 16, 32.
+    contractions = {
+        1: 8,  # Nonbonded Direct Space (calculate on every 4th bead)
+        2: 1  # PME Reciprocal Space (calculate only on centroid)
+    }
+    # Group 0 is not in the dict, so it defaults to num_beads (32)
+
+    print(f"\nInitializing RPMDIntegrator with contractions: {contractions}")
+    integrator = RPMDIntegrator(num_beads, temperature, friction, timestep, contractions)
+    simulation = Simulation(modeller.topology, system, integrator, platform, prop)
+
+    # 4. Load Checkpoint (Crucial for RPMD)
+    if not os.path.exists(checkpoint_file):
+        print(f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.")
+        return
+
+    print(f"Loading state from {checkpoint_file}...")
+    simulation.loadCheckpoint(checkpoint_file)
+
+    # 5. Reporters
+    # We report speed to see the benefit of contraction
+    simulation.reporters.append(StateDataReporter(sys.stdout, 1000, step=True,
+                                                  potentialEnergy=True,
+                                                  temperature=True,
+                                                  speed=True,
+                                                  remainingTime=True,
+                                                  totalSteps=steps))
+
+    simulation.reporters.append(DCDReporter('rpmd_production.dcd', 1000))
+    simulation.reporters.append(CheckpointReporter('rpmd_production.chk', 10000))
+
+    # 6. Run
+    print(f"\nStarting Production Run ({steps} steps)...")
+    simulation.step(steps)
+    print("Done.")
