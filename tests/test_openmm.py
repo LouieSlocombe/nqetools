@@ -14,46 +14,13 @@ import nqetools as nqe
 
 def test_openmm_ml():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    potential = MLPotential('mace-off23-small')
-
+    forcefield = MLPotential('mace-off23-small')
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = potential.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-
-    # Run langevin dynamics at 300K for 1000 steps
-    integrator = openmm.LangevinIntegrator(300 * unit.kelvin,
-                                           1.0 / unit.picoseconds,
-                                           1.0 * unit.femtosecond)
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology,
-                                system,
-                                integrator,
-                                platform)
-    simulation.context.setPositions(modeller.positions)
-    simulation.reporters.append(
-        app.StateDataReporter(
-            stdout,
-            100,
-            step=True,
-            potentialEnergy=True,
-            temperature=True,
-            speed=True
-        )
-    )
-
-    # Set the velocities to 300K and run 1000 steps
-    simulation.context.setVelocitiesToTemperature(300 * unit.kelvin)
-    simulation.step(1_000)
+    nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA')
+    os.remove('minimized.pdb')
 
 
 def test_openmm_ml_mixed_system():
