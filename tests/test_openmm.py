@@ -513,14 +513,7 @@ def test_deuterate():
                                      nonbondedMethod=app.PME,
                                      constraints=app.HBonds,
                                      rigidWater=True)
-    nqe.deuterate(modeller, system)
-
-    integrator = openmm.LangevinIntegrator(300 * unit.kelvin,
-                                           1.0 / unit.picosecond,
-                                           0.002 * unit.picoseconds)
-    simulation = app.Simulation(modeller.topology, system, integrator)
-    simulation.context.setPositions(modeller.positions)
-    simulation.minimizeEnergy()
+    nqe.deuterate_system(modeller, system)
 
 
 def test_plumed():
@@ -642,65 +635,75 @@ def test_get_atoms_in_residue():
 
 
 def test_run_openmm_relaxation():
+    print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
-    # Solvate
-    padding = 1.5
-    box_shape = 'dodecahedron'
+
     modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+                        padding=1.5 * unit.nanometer,
+                        boxShape='dodecahedron')
     nqe.run_openmm_relaxation(modeller, forcefield)
     os.remove('minimized.pdb')
 
 
 def test_run_openmm_heating():
+    print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
-    # Solvate
-    padding = 1.5
-    box_shape = 'dodecahedron'
+
     modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+                        padding=1.5 * unit.nanometer,
+                        boxShape='dodecahedron')
     nqe.run_openmm_heating(modeller, forcefield)
     os.remove('equilibrated.pdb')
 
 
-def test_run_openmm_npt():
+def test_run_openmm_heating_deuterate():
+    print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    padding = 1.5
-    box_shape = 'dodecahedron'
     modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+                        padding=1.5 * unit.nanometer,
+                        boxShape='dodecahedron')
+    nqe.run_openmm_heating(modeller, forcefield, deuterate=True)
+    os.remove('equilibrated.pdb')
+
+
+def test_run_openmm_npt():
+    print(flush=True)
+    pdb = app.PDBFile("tests/data/pdb/input.pdb")
+    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    modeller.addSolvent(forcefield,
+                        padding=1.5 * unit.nanometer,
+                        boxShape='dodecahedron')
     nqe.run_openmm_npt(modeller, forcefield)
     os.remove('npt_equilibrated.pdb')
 
 
 def test_eq_workflow():
-    padding = 1.5
-    box_shape = 'dodecahedron'
+    print(flush=True)
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
-
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
     modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+                        padding=1.5 * unit.nanometer,
+                        boxShape='dodecahedron')
 
     nqe.run_openmm_relaxation(modeller, forcefield)
 
