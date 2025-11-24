@@ -336,7 +336,7 @@ def prepare_ligand_ff(standard_ff,
     return forcefield
 
 
-def deuterate(modeller, system, option='all'):
+def deuterate_system(modeller, system, option='all'):
     deuterium_mass = app.element.deuterium.mass
     if option == 'all':
         for atom in modeller.topology.atoms():
@@ -590,6 +590,8 @@ def run_openmm_heating(modeller,
                        steps_per_stage=5_000,
                        steps_final=10_000,
                        platform_name='CPU',
+                       deuterate=False,
+                       deuterate_option='water',
                        ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
@@ -602,6 +604,9 @@ def run_openmm_heating(modeller,
                                      constraints=None,
                                      rigidWater=False,
                                      removeCMMotion=True)
+    if deuterate:
+        print("Deuterating system...", flush=True)
+        deuterate_system(modeller, system, option=deuterate_option)
 
     print("Applying backbone restraints for heating...", flush=True)
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
@@ -660,6 +665,8 @@ def run_openmm_npt(modeller,
                    n_1=5_000,
                    n_2=25_000,
                    platform_name='CPU',
+                   deuterate=False,
+                   deuterate_option='water',
                    ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
@@ -672,6 +679,9 @@ def run_openmm_npt(modeller,
                                      constraints=None,
                                      rigidWater=False,
                                      removeCMMotion=True)
+    if deuterate:
+        print("Deuterating system...", flush=True)
+        deuterate_system(modeller, system, option=deuterate_option)
 
     print("Adding MonteCarloBarostat...", flush=True)
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
@@ -728,7 +738,9 @@ def run_plumed_production(modeller,
                           n_report=1_000,
                           steps=500_000,
                           output_prefix='prod',
-                          platform_name='CPU'):
+                          platform_name='CPU',
+                          deuterate=False,
+                          deuterate_option='water'):
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(modeller.topology,
@@ -737,6 +749,10 @@ def run_plumed_production(modeller,
                                      constraints=None,
                                      rigidWater=False,
                                      removeCMMotion=True)
+
+    if deuterate:
+        print("Deuterating system...", flush=True)
+        deuterate_system(modeller, system, option=deuterate_option)
 
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
 
@@ -780,7 +796,9 @@ def run_rpmd_equilibration(modeller,
                            n_report=1_000,
                            n_1=2_000,
                            n_2=10_000,
-                           platform_name='CPU'):
+                           platform_name='CPU',
+                           deuterate=False,
+                           deuterate_option='water'):
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(modeller.topology,
@@ -789,6 +807,10 @@ def run_rpmd_equilibration(modeller,
                                      constraints=None,
                                      rigidWater=False,
                                      removeCMMotion=True)
+
+    if deuterate:
+        print("Deuterating system...", flush=True)
+        deuterate_system(modeller, system, option=deuterate_option)
 
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
     integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, safe_timestep)
@@ -834,7 +856,9 @@ def run_contracted_rpmd(modeller,
                         steps=100_000,
                         n_report=1_000,
                         contractions=None,
-                        platform_name='CPU'):
+                        platform_name='CPU',
+                        deuterate=False,
+                        deuterate_option='water'):
     platform = openmm.Platform.getPlatformByName(platform_name)
 
     if contractions is None:
@@ -853,6 +877,10 @@ def run_contracted_rpmd(modeller,
                                      constraints=None,
                                      rigidWater=False,
                                      removeCMMotion=True)
+
+    if deuterate:
+        print("Deuterating system...", flush=True)
+        deuterate_system(modeller, system, option=deuterate_option)
 
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
 
