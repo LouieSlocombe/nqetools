@@ -336,20 +336,70 @@ def prepare_ligand_ff(standard_ff,
     return forcefield
 
 
-def deuterate_system(modeller, system, option='all'):
+def deuterate_system(topology, system, option='all', target_resname=None):
     deuterium_mass = app.element.deuterium.mass
+
+    protein_residues = {
+        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
+        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP',
+        'TYR', 'VAL', 'HID', 'HIE', 'HIP', 'CYX', 'LYN', 'ASH', 'GLH',
+        'ACE', 'NME', 'NAC'
+    }
+
+    dna_residues = {
+        'DA', 'DC', 'DG', 'DT',
+        'DA5', 'DC5', 'DG5', 'DT5',  # 5' terminals
+        'DA3', 'DC3', 'DG3', 'DT3'  # 3' terminals
+    }
+
+    rna_residues = {
+        'A', 'C', 'G', 'U',
+        'RA', 'RC', 'RG', 'RU',  # Common in Amber force fields
+        'A5', 'C5', 'G5', 'U5',  # 5' terminals
+        'A3', 'C3', 'G3', 'U3'  # 3' terminals
+    }
+
+    water_residues = {'HOH', 'H2O', 'TIP3', 'WAT', 'SOL'}
+
+    nucleic_residues = dna_residues.union(rna_residues)
+
+    target_residues = set()
     if option == 'all':
-        for atom in modeller.topology.atoms():
-            if atom.element.symbol == 'H':
-                system.setParticleMass(atom.index, deuterium_mass)
+        pass
     elif option == 'water':
-        for residue in modeller.topology.residues():
-            if residue.name in ['HOH', 'H2O', 'TIP3', 'WAT']:
-                for atom in residue.atoms():
-                    if atom.element.symbol == 'H':
-                        system.setParticleMass(atom.index, deuterium_mass)
+        target_residues = water_residues
+    elif option == 'protein':
+        target_residues = protein_residues
+    elif option == 'dna':
+        target_residues = dna_residues
+    elif option == 'rna':
+        target_residues = rna_residues
+    elif option == 'nucleic':
+        target_residues = nucleic_residues
+    elif option == 'ligand':
+        if target_resname is None:
+            raise ValueError("If option is 'ligand', you must provide a 'target_resname'.")
+        target_residues = {target_resname}
     else:
-        raise ValueError("Option must be 'all' or 'water'")
+        raise ValueError("Option must be 'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'")
+
+    if option == 'all':
+        for atom in topology.atoms():
+            if atom.element and atom.element.symbol == 'H':
+                system.setParticleMass(atom.index, deuterium_mass)
+    else:
+        found_target = False
+        for residue in topology.residues():
+            if residue.name in target_residues:
+                found_target = True
+                for atom in residue.atoms():
+                    if atom.element and atom.element.symbol == 'H':
+                        system.setParticleMass(atom.index, deuterium_mass)
+
+        if not found_target and option == 'ligand':
+            print(f"Warning: No ligand named '{target_resname}' was found.")
+        elif not found_target and option != 'all':
+            print(f"Warning: No residues matching option '{option}' were found.")
 
 
 def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
