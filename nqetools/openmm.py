@@ -336,7 +336,7 @@ def prepare_ligand_ff(standard_ff,
     return forcefield
 
 
-def deuterate_system(topology, system, option='all', target_resname=None):
+def deuterate_system(modeller, system, option='all', target_resname=None):
     deuterium_mass = app.element.deuterium.mass
 
     protein_residues = {
@@ -384,12 +384,12 @@ def deuterate_system(topology, system, option='all', target_resname=None):
         raise ValueError("Option must be 'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'")
 
     if option == 'all':
-        for atom in topology.atoms():
+        for atom in modeller.topology.atoms():
             if atom.element and atom.element.symbol == 'H':
                 system.setParticleMass(atom.index, deuterium_mass)
     else:
         found_target = False
-        for residue in topology.residues():
+        for residue in modeller.topology.residues():
             if residue.name in target_residues:
                 found_target = True
                 for atom in residue.atoms():

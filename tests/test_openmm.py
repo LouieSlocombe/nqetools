@@ -525,12 +525,12 @@ def test_deuterate_system():
     mass_before = _get_total_mass(system)
 
     h_count = 0
-    for atom in pdb.topology.atoms():
+    for atom in modeller.topology.atoms():
         if atom.element.symbol == 'H':
             h_count += 1
 
     print(f"--- Applying Deuteration to {h_count} Hydrogens (Option='water') ---")
-    nqe.deuterate_system(pdb.topology, system, option='all')
+    nqe.deuterate_system(modeller, system, option='all')
 
     mass_after = _get_total_mass(system)
     print(f"{'Mass Before':<20} | {mass_before.value_in_unit(unit.dalton):.4f} Da")
