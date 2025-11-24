@@ -501,7 +501,15 @@ def test_openmm_rpmd_mixed():
     os.remove(data_out)
 
 
-def test_deuterate():
+def _get_total_mass(system):
+    total_mass = 0.0 * unit.dalton
+    for i in range(system.getNumParticles()):
+        total_mass += system.getParticleMass(i)
+    return total_mass
+
+
+def test_deuterate_system():
+    print(flush=True)
     pdb = app.PDBFile('tests/data/pdb/input.pdb')
     forcefield = app.ForceField('amber14/protein.ff14SB.xml', 'amber14/tip3p.xml')
     modeller = app.Modeller(pdb.topology, pdb.positions)
@@ -513,7 +521,44 @@ def test_deuterate():
                                      nonbondedMethod=app.PME,
                                      constraints=app.HBonds,
                                      rigidWater=True)
-    nqe.deuterate_system(modeller, system)
+
+    mass_before = _get_total_mass(system)
+
+    h_count = 0
+    for atom in pdb.topology.atoms():
+        if atom.element.symbol == 'H':
+            h_count += 1
+
+    print(f"--- Applying Deuteration to {h_count} Hydrogens (Option='water') ---")
+    nqe.deuterate_system(pdb.topology, system, option='all')
+
+    mass_after = _get_total_mass(system)
+    print(f"{'Mass Before':<20} | {mass_before.value_in_unit(unit.dalton):.4f} Da")
+    print(f"{'Mass After':<20} | {mass_after.value_in_unit(unit.dalton):.4f} Da")
+    # print the number of hydrogens
+    print(f"{'Number of Hydrogens':<20} | {h_count}")
+
+    mass_H = app.element.hydrogen.mass
+    mass_D = app.element.deuterium.mass
+    mass_delta_per_atom = mass_D - mass_H
+    expected_increase = mass_delta_per_atom * h_count
+
+    print(f"\n{'METRIC':<20} | {'VALUE':<15}")
+    print("-" * 40)
+    print(f"{'Mass Before':<20} | {mass_before.value_in_unit(unit.dalton):.4f} Da")
+    print(f"{'Mass After':<20} | {mass_after.value_in_unit(unit.dalton):.4f} Da")
+    print("-" * 40)
+    print(f"{'Actual Increase':<20} | {(mass_after - mass_before).value_in_unit(unit.dalton):.4f} Da")
+    print(f"{'Expected Increase':<20} | {expected_increase.value_in_unit(unit.dalton):.4f} Da")
+
+    # Assertion Check
+    tolerance = 1e-3
+    diff = abs((mass_after - mass_before) - expected_increase).value_in_unit(unit.dalton)
+
+    if diff < tolerance:
+        print("\n[SUCCESS] The system mass increased exactly as expected.")
+    else:
+        print("\n[FAILURE] The mass change did not match theoretical expectations.")
 
 
 def test_plumed():
