@@ -19,6 +19,28 @@ from .plotting import n_plot
 
 
 def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
+    """Fixes a PDB file using PDBFixer.
+
+    This function processes a PDB file to correct common issues like
+    missing residues, non-standard residues, missing atoms, and missing
+    hydrogens.
+
+    Parameters
+    ----------
+    file_in : str
+        Path to the input PDB file.
+    file_out : str
+        Path to write the fixed PDB file.
+    ph : float, optional
+        The pH to use when adding missing hydrogens. Default is 7.0.
+    rm_heterogens : bool, optional
+        If True, remove heterogen atoms like water, ions, and ligands.
+        Default is True.
+
+    Returns
+    -------
+    None
+    """
     fixer = PDBFixer(filename=file_in)
     fixer.findMissingResidues()
     fixer.findNonstandardResidues()
@@ -33,24 +55,98 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
 
 
 def zero_velocities(n_atoms):
+    """
+    Generates a list of zero velocity vectors for a given number of atoms.
+
+    Parameters
+    ----------
+    n_atoms : int
+        The number of atoms for which zero velocity vectors are to be created.
+
+    Returns
+    -------
+    list of openmm.Vec3
+        A list of zero velocity vectors, each scaled by the unit of nanometer/picosecond.
+    """
     return [openmm.Vec3(0, 0, 0) for _ in range(n_atoms)] * (unit.nanometer / unit.picosecond)
 
 
 def write_multimodel_pdb(topology, positions, fh, model_index):
+    """
+    Writes a single model to a multi-model PDB file.
+
+    This function appends a model to an existing PDB file, allowing the creation
+    of a multi-model PDB file. Each model is identified by a unique index.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+        The topology of the system to be written.
+    positions : openmm.unit.Quantity
+        The atomic positions to be written, with units of length.
+    fh : file-like object
+        An open file handle where the PDB model will be written.
+    model_index : int
+        The index of the model to be written, used to distinguish models in the PDB file.
+
+    Returns
+    -------
+    None
+    """
     app.PDBFile.writeModel(topology, positions, fh, modelIndex=model_index)
 
 
 def centroid_positions(simulation, n_atoms, n_beads):
-    acc = np.zeros((n_atoms, 3), dtype=float)
+    """
+    Computes the centroid positions of atoms across multiple beads in a simulation.
+
+    This function calculates the average positions of atoms over a specified number
+    of beads in a ring-polymer molecular dynamics (RPMD) simulation.
+
+    Parameters
+    ----------
+    simulation : openmm.app.Simulation
+        The OpenMM simulation object containing the integrator and system state.
+    n_atoms : int
+        The number of atoms in the system.
+    n_beads : int
+        The number of beads in the RPMD simulation.
+
+    Returns
+    -------
+    list of openmm.Vec3
+        A list of centroid positions for each atom, with units of nanometers.
+    """
+    acc = np.zeros((n_atoms, 3), dtype=float)  # Initialize accumulator for positions.
     for b in range(n_beads):
-        state = simulation.integrator.getState(b, getPositions=True)
-        r = state.getPositions(asNumpy=True)
-        acc += r.value_in_unit(unit.nanometer)
-    acc /= n_beads
-    return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer
+        state = simulation.integrator.getState(b, getPositions=True)  # Get state for bead `b`.
+        r = state.getPositions(asNumpy=True)  # Extract positions as a NumPy array.
+        acc += r.value_in_unit(unit.nanometer)  # Accumulate positions in nanometers.
+    acc /= n_beads  # Compute the average positions across all beads.
+    return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer  # Return centroid positions.
 
 
 def get_thermal_de_broglie_wavelength(mass, temperature):
+    """
+    Calculates the thermal de Broglie wavelength for a given mass and temperature.
+
+    The thermal de Broglie wavelength is a quantum mechanical property that
+    characterizes the wave-like behavior of particles at a given temperature.
+
+    Parameters
+    ----------
+    mass : openmm.unit.Quantity or float
+        The mass of the particle. If a `Quantity`, it should have units of daltons.
+        If a float, it is assumed to be in atomic mass units (amu).
+    temperature : openmm.unit.Quantity or float
+        The temperature of the system. If a `Quantity`, it should have units of kelvin.
+        If a float, it is assumed to be in kelvin.
+
+    Returns
+    -------
+    openmm.unit.Quantity
+        The thermal de Broglie wavelength with units of meters.
+    """
     if unit.is_quantity(mass):
         mass_amu = mass.value_in_unit(unit.dalton)
     else:
@@ -70,36 +166,87 @@ def get_thermal_de_broglie_wavelength(mass, temperature):
 
 
 def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=0.1):
+    """
+    Initializes bead positions for a ring-polymer molecular dynamics (RPMD) simulation.
+
+    This function perturbs the initial positions of atoms in the system to create
+    multiple beads, scaled by the thermal de Broglie wavelength of each atom.
+
+    Parameters
+    ----------
+    simulation : openmm.app.Simulation
+        The OpenMM simulation object containing the system and integrator.
+    positions : openmm.unit.Quantity or np.ndarray
+        The initial atomic positions. If not a Quantity, it is assumed to be in nanometers.
+    n_beads : int
+        The number of beads to initialize for the RPMD simulation.
+    temperature : openmm.unit.Quantity
+        The temperature of the system, used to calculate the thermal de Broglie wavelength.
+    scale_factor : float, optional
+        A scaling factor applied to the thermal wavelength perturbation. Default is 0.1.
+
+    Returns
+    -------
+    None
+    """
     system = simulation.system
     n_atoms = system.getNumParticles()
 
+    # Get the masses of all particles in daltons.
     masses_val = np.array([system.getParticleMass(i).value_in_unit(unit.dalton)
                            for i in range(n_atoms)])
     masses_quantity = masses_val * unit.dalton
 
+    # Calculate the thermal de Broglie wavelength for each particle.
     lambdas = get_thermal_de_broglie_wavelength(masses_quantity, temperature)
     lambdas_nm = lambdas.value_in_unit(unit.nanometer)
 
+    # Ensure positions are in the correct unit (nanometers).
     if not unit.is_quantity(positions):
         positions = positions * unit.nanometer
     pos0 = positions.value_in_unit(unit.nanometer)
 
+    # Initialize a random number generator with a fixed seed.
     rng = np.random.default_rng(0)
 
-    # 4. Initialize Beads
+    # Log information about the thermal wavelengths.
     print(f"Initializing {n_beads} beads scaled by thermal wavelengths...")
     print(f"Max Lambda (lightest atom): {np.max(lambdas_nm):.4f} nm")
     print(f"Min Lambda (heaviest atom): {np.min(lambdas_nm):.4f} nm")
 
+    # Perturb the positions for each bead.
     for b in range(n_beads):
         noise = rng.normal(size=(n_atoms, 3)) * lambdas_nm[:, np.newaxis] * scale_factor
         bead_pos = pos0 + noise
         simulation.integrator.setPositions(b, bead_pos * unit.nanometer)
 
+    # Set the velocities of the system to match the target temperature.
     simulation.context.setVelocitiesToTemperature(temperature)
 
 
 def init_beads(modeller, simulation, n_beads, perturb=0.002):
+    """
+    Initializes bead positions and velocities for a ring-polymer molecular dynamics (RPMD) simulation.
+
+    This function perturbs the initial positions of atoms to create multiple beads
+    and sets their velocities to zero.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        The OpenMM modeller object containing the system topology and positions.
+    simulation : openmm.app.Simulation
+        The OpenMM simulation object containing the integrator and system state.
+    n_beads : int
+        The number of beads to initialize for the RPMD simulation.
+    perturb : float, optional
+        The magnitude of the random perturbation applied to the initial positions.
+        Default is 0.002.
+
+    Returns
+    -------
+    None
+    """
     rng = np.random.default_rng(0)
     pos0 = modeller.positions
     n_atoms = len(pos0)
@@ -232,6 +379,24 @@ def md_analysis(file_in='md_log.txt'):
 
 
 def make_sdf(pdb_file, lig_name='LIG'):
+    """
+    Converts a ligand from a PDB file to an SDF file.
+
+    This function reads a PDB file, extracts the ligand specified by its residue name,
+    and writes it to an SDF file. The ligand's atomic elements are guessed and added
+    to the topology before conversion.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Path to the input PDB file.
+    lig_name : str, optional
+        Residue name of the ligand to extract. Default is 'LIG'.
+
+    Returns
+    -------
+    None
+    """
     u = mda.Universe(pdb_file)
     elements = mda.topology.guessers.guess_types(u.atoms.names)
     u.add_TopologyAttr('elements', elements)
@@ -243,6 +408,24 @@ def make_sdf(pdb_file, lig_name='LIG'):
 
 
 def pdb_patcher(pdb_file, lig_name='LIG'):
+    """
+    Modifies a PDB file to replace placeholder residue names and characters.
+
+    This function reads a PDB file, replaces occurrences of the character 'x' with a space,
+    and changes the residue name 'UNK' to the specified ligand name. The modified PDB
+    content is then written back to the same file.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Path to the PDB file to be modified.
+    lig_name : str, optional
+        The new residue name to replace 'UNK'. Default is 'LIG'.
+
+    Returns
+    -------
+    None
+    """
     with open(pdb_file, 'r') as f:
         pdb_data = f.read()
     pdb_data = pdb_data.replace('x', ' ')
@@ -253,6 +436,26 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
 
 
 def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
+    """
+    Combines a ligand from an SDF file with a receptor from a PDB file into a single PDB file.
+
+    This function reads a receptor structure from a PDB file and a ligand structure from an SDF file,
+    then combines them into a single PDB file. Optionally, it can patch the resulting PDB file to
+    replace placeholder residue names and characters.
+
+    Parameters
+    ----------
+    input_pdb : str
+        Path to the input PDB file containing the receptor structure.
+    lig_name : str, optional
+        Residue name of the ligand to be added. Default is 'LIG'.
+    patch : bool, optional
+        If True, applies the `pdb_patcher` function to the combined PDB file. Default is True.
+
+    Returns
+    -------
+    None
+    """
     # Combine ligand and receptor into one pdb
     pdb = app.PDBFile(input_pdb)
     molecule = Molecule.from_file(f'{lig_name}.sdf')
@@ -275,6 +478,38 @@ def prepare_lig_system(input_pdb,
                        residue_map=None,
                        rm_files=True,
                        lig_name='LIG'):
+    """
+    Prepares a ligand-receptor system for molecular simulations.
+
+    This function processes a PDB file to clean up water residues, optionally remove ions,
+    relabel residues, and extract the ligand. The ligand is saved as an SDF file, and the
+    cleaned receptor and ligand are combined into a single PDB file. Temporary files can
+    optionally be removed after processing.
+
+    Parameters
+    ----------
+    input_pdb : str
+        Path to the input PDB file containing the ligand-receptor system.
+    combined_pdb : str, optional
+        Path to save the combined ligand-receptor PDB file. Default is 'combined_system.pdb'.
+    clean_pdb : str, optional
+        Path to save the cleaned PDB file. Default is 'cleaned.pdb'.
+    rm_ions : set of str, optional
+        A set of ion residue names to remove from the PDB file. Default is None.
+    residue_map : dict, optional
+        A mapping of residue names to relabel in the PDB file. Default is None.
+    rm_files : bool, optional
+        If True, removes intermediate files generated during processing. Default is True.
+    lig_name : str, optional
+        Residue name of the ligand to extract. Default is 'LIG'.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - pdb_data (openmm.app.PDBFile): The combined ligand-receptor PDB data.
+        - molecule (openff.toolkit.Molecule): The ligand molecule object.
+    """
     remove_water_residues_in_pdb(input_pdb, clean_pdb)
 
     if rm_ions is not None:
@@ -310,6 +545,38 @@ def prepare_ligand_ff(standard_ff,
                       n_conf=10,
                       pc_methods='mmff94',
                       gaff_ver='gaff-2.11'):  # gaff-2.2.20
+    """
+    Prepares a ligand-specific force field using the General Amber Force Field (GAFF).
+
+    This function generates or loads GAFF parameters for a given molecule and integrates
+    them into a standard force field. It supports caching of GAFF parameters for faster
+    reuse and allows the generation of conformers and assignment of partial charges.
+
+    Parameters
+    ----------
+    standard_ff : list of str
+        A list of file paths or names of the standard force field XML files.
+    molecule : openff.toolkit.Molecule
+        The molecule for which GAFF parameters are to be prepared.
+    gen_cache : bool, optional
+        If True, generates a cache file for the GAFF parameters. Default is False.
+    use_cache : bool, optional
+        If True, loads GAFF parameters from the specified cache file. Default is False.
+    cache : str, optional
+        Path to the cache file for GAFF parameters. Default is 'gaff-molecules.json'.
+    n_conf : int, optional
+        The number of conformers to generate for the molecule. Default is 10.
+    pc_methods : str, optional
+        The method to use for assigning partial charges. Default is 'mmff94'.
+        Other options include 'am1bcc' and 'am1-mulliken'.
+    gaff_ver : str, optional
+        The version of the General Amber Force Field to use. Default is 'gaff-2.11'.
+
+    Returns
+    -------
+    openmm.app.ForceField
+        The prepared force field object with GAFF parameters integrated.
+    """
     # mmff94 am1bcc am1-mulliken
 
     if use_cache:
@@ -337,8 +604,44 @@ def prepare_ligand_ff(standard_ff,
 
 
 def deuterate_system(modeller, system, option='all', target_resname=None):
+    """
+    Replaces hydrogen atoms with deuterium in a molecular system.
+
+    This function modifies the masses of hydrogen atoms in the system to the mass of deuterium
+    based on the specified option. It supports deuteration of all hydrogens, or specific subsets
+    such as water, protein, DNA, RNA, nucleic acids, or a specific ligand.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        The OpenMM modeller object containing the system topology and positions.
+    system : openmm.System
+        The OpenMM system object to be modified.
+    option : str, optional
+        Specifies the subset of the system to deuterate. Options include:
+        'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'. Default is 'all'.
+    target_resname : str, optional
+        The residue name of the ligand to deuterate. Required if `option` is 'ligand'.
+
+    Raises
+    ------
+    ValueError
+        If `option` is 'ligand' and `target_resname` is not provided.
+        If `option` is not one of the supported values.
+
+    Notes
+    -----
+    - If `option` is 'all', all hydrogen atoms in the system are deuterated.
+    - If `option` is 'ligand' and no residues match `target_resname`, a warning is printed.
+    - If no residues match the specified `option`, a warning is printed.
+
+    Returns
+    -------
+    None
+    """
     deuterium_mass = app.element.deuterium.mass
 
+    # Define residue sets for different options
     protein_residues = {
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
         'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP',
@@ -363,6 +666,7 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
 
     nucleic_residues = dna_residues.union(rna_residues)
 
+    # Determine target residues based on the option
     target_residues = set()
     if option == 'all':
         pass
@@ -383,11 +687,13 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
     else:
         raise ValueError("Option must be 'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'")
 
+    # Deuterate all hydrogens if option is 'all'
     if option == 'all':
         for atom in modeller.topology.atoms():
             if atom.element and atom.element.symbol == 'H':
                 system.setParticleMass(atom.index, deuterium_mass)
     else:
+        # Deuterate hydrogens in the specified residue set
         found_target = False
         for residue in modeller.topology.residues():
             if residue.name in target_residues:
@@ -396,6 +702,7 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
                     if atom.element and atom.element.symbol == 'H':
                         system.setParticleMass(atom.index, deuterium_mass)
 
+        # Print warnings if no matching residues are found
         if not found_target and option == 'ligand':
             print(f"Warning: No ligand named '{target_resname}' was found.")
         elif not found_target and option != 'all':
@@ -404,132 +711,119 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
 
 def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
     """
-    Loads a PDB file and returns a list of atom indices for the specified residue index.
-    Optionally filters by chain ID.
+    Retrieves the atom indices of a specific residue in a PDB file.
 
-    Args:
-        pdb_file_path (str): Path to the .pdb file.
-        residue_index (int): The 0-based index of the residue.
-                             If chain_id is None: index in the entire topology.
-                             If chain_id is set: index within that specific chain.
-        chain_id (str, optional): The chain ID (e.g., 'A', 'B') to search within.
+    This function reads a PDB file, identifies the specified residue by its index
+    and optionally its chain ID, and returns the indices of all atoms in that residue.
 
-    Returns:
-        list: A list of integers representing the indices of atoms in the residue.
-              Returns None if the file/chain is not found or index is out of bounds.
+    Parameters
+    ----------
+    pdb_file_path : str
+        Path to the PDB file to be read.
+    residue_index : int
+        The index of the residue whose atom indices are to be retrieved.
+    chain_id : str, optional
+        The ID of the chain containing the residue. If None, the residue is
+        searched in the global topology. Default is None.
+
+    Returns
+    -------
+    list of int or None
+        A list of atom indices in the specified residue. Returns None if the
+        residue or chain is not found, or if the residue index is out of bounds.
+
+    Notes
+    -----
+    - If `chain_id` is provided, the residue is searched within the specified chain.
+    - If `chain_id` is None, the residue is searched in the global topology.
+    - Prints error messages if the chain or residue index is invalid.
     """
+    pdb = app.PDBFile(pdb_file_path)
+    topology = pdb.topology
+    if chain_id is not None:
+        found_chain = None
+        for chain in topology.chains():
+            if chain.id == chain_id:
+                found_chain = chain
+                break
 
-    # 1. Check if file exists
-    if not os.path.exists(pdb_file_path):
-        print(f"Error: File '{pdb_file_path}' not found.")
-        return None
+        if found_chain is None:
+            available_chains = [c.id for c in topology.chains()]
+            print(f"Error: Chain '{chain_id}' not found. Available chains: {available_chains}")
+            return None
 
-    try:
-        # 2. Load the PDB file
-        print(f"Loading {pdb_file_path}...")
-        pdb = app.PDBFile(pdb_file_path)
+        residues = list(found_chain.residues())
+        if residue_index < 0 or residue_index >= len(residues):
+            print(f"Error: Residue index {residue_index} is out of bounds for Chain {chain_id}.")
+            print(f"Chain {chain_id} contains {len(residues)} residues.")
+            return None
 
-        # 3. Get the topology
-        topology = pdb.topology
+        target_residue = residues[residue_index]
+        print(f"Looking in Chain {chain_id}, Residue Index {residue_index}...")
 
-        target_residue = None
+    else:
+        residues = list(topology.residues())
 
-        if chain_id is not None:
-            # Filter by chain
-            found_chain = None
-            for chain in topology.chains():
-                if chain.id == chain_id:
-                    found_chain = chain
-                    break
+        if residue_index < 0 or residue_index >= len(residues):
+            print(f"Error: Residue index {residue_index} is out of bounds.")
+            print(f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1}).")
+            return None
 
-            if found_chain is None:
-                available_chains = [c.id for c in topology.chains()]
-                print(f"Error: Chain '{chain_id}' not found. Available chains: {available_chains}")
-                return None
+        target_residue = residues[residue_index]
+        print(f"Looking in global topology, Residue Index {residue_index}...")
 
-            residues = list(found_chain.residues())
-            if residue_index < 0 or residue_index >= len(residues):
-                print(f"Error: Residue index {residue_index} is out of bounds for Chain {chain_id}.")
-                print(f"Chain {chain_id} contains {len(residues)} residues.")
-                return None
+    atom_indices = [atom.index for atom in target_residue.atoms()]
 
-            target_residue = residues[residue_index]
-            print(f"Looking in Chain {chain_id}, Residue Index {residue_index}...")
-
-        else:
-            # Global index behavior
-            residues = list(topology.residues())
-
-            # 5. Validate index
-            if residue_index < 0 or residue_index >= len(residues):
-                print(f"Error: Residue index {residue_index} is out of bounds.")
-                print(f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1}).")
-                return None
-
-            # 6. Get the target residue
-            target_residue = residues[residue_index]
-            print(f"Looking in global topology, Residue Index {residue_index}...")
-
-        # 7. Extract atom indices
-        # residue.atoms() returns a generator
-        atom_indices = [atom.index for atom in target_residue.atoms()]
-
-        print(
-            f"Successfully retrieved residue: {target_residue.name} (Chain: {target_residue.chain.id}, Index: {target_residue.index}, PDB ID: {target_residue.id})")
-        return atom_indices
-
-    except Exception as e:
-        print(f"An error occurred processing the PDB: {e}")
-        return None
+    print(
+        f"Successfully retrieved residue: {target_residue.name} (Chain: {target_residue.chain.id}, Index: {target_residue.index}, PDB ID: {target_residue.id})")
+    return atom_indices
 
 
 def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
     """
-    Loads a PDB, keeps only the atoms specified in atom_indices, and saves to a new file.
+    Saves a subset of atoms from a PDB file to a new PDB file.
 
-    Args:
-        input_pdb_path (str): Path to the source .pdb file.
-        atom_indices (list[int]): List of 0-based atom indices to KEEP.
-        output_pdb_path (str): Path where the new .pdb file will be saved.
+    This function reads a PDB file, selects a subset of atoms based on their indices,
+    and writes the selected atoms to a new PDB file. Atoms not in the specified indices
+    are removed from the output.
+
+    Parameters
+    ----------
+    input_pdb_path : str
+        Path to the input PDB file.
+    atom_indices : list of int
+        A list of atom indices to keep in the output PDB file.
+    output_pdb_path : str
+        Path to save the output PDB file containing the selected atoms.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    - If the selection is empty, a warning is printed, and the output PDB file will be empty.
+    - The atom indices should correspond to the indices in the input PDB file.
     """
-    if not os.path.exists(input_pdb_path):
-        print(f"Error: Input file '{input_pdb_path}' not found.")
-        return
+    pdb = app.PDBFile(input_pdb_path)
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    keep_indices = set(atom_indices)
+    atoms_to_delete = []
+    all_atoms = list(modeller.topology.atoms())
 
-    try:
-        print(f"Loading {input_pdb_path} for selection...")
-        pdb = app.PDBFile(input_pdb_path)
+    for atom in all_atoms:
+        if atom.index not in keep_indices:
+            atoms_to_delete.append(atom)
 
-        # We use Modeller to edit the topology
-        modeller = app.Modeller(pdb.topology, pdb.positions)
+    num_deleted = len(atoms_to_delete)
+    if num_deleted == len(all_atoms):
+        print("Warning: Your selection is empty! The output PDB will be empty.")
 
-        # Create a set for faster lookup
-        keep_indices = set(atom_indices)
+    modeller.delete(atoms_to_delete)
 
-        # Identify atoms to DELETE (Modeller deletes, so we invert the selection)
-        atoms_to_delete = []
-        all_atoms = list(modeller.topology.atoms())
-
-        for atom in all_atoms:
-            if atom.index not in keep_indices:
-                atoms_to_delete.append(atom)
-
-        # Perform the deletion
-        num_deleted = len(atoms_to_delete)
-        if num_deleted == len(all_atoms):
-            print("Warning: Your selection is empty! The output PDB will be empty.")
-
-        modeller.delete(atoms_to_delete)
-
-        # Save the result
-        print(f"Writing selection ({len(all_atoms) - num_deleted} atoms) to {output_pdb_path}...")
-        with open(output_pdb_path, 'w') as f:
-            app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
-
-        print("Done.")
-
-    except Exception as e:
-        print(f"Error saving selection: {e}")
+    print(f"Writing selection ({len(all_atoms) - num_deleted} atoms) to {output_pdb_path}...")
+    with open(output_pdb_path, 'w') as f:
+        app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
 
 
 def run_openmm_relaxation(modeller,
