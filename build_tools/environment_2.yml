@@ -1,4 +1,4 @@
-name: nqetools2
+name: nqetools
 channels:
   - conda-forge
   - defaults
@@ -21,23 +21,19 @@ dependencies:
   - ase
   - pyfftw
   - i-pi
-  #- py-plumed
-  - openmm
-  - openmm-ml
   - pytorch
   - nnpops
+  - openmm
+  - openmm-ml
   - openmm-torch
   - openmmforcefields
   - openmmtools
+  - openmm-plumed
   - ambertools
   - pdbfixer
   - rdkit
   - mdanalysis
   - pip:
-      #    - torch
       - mace-torch
       - sella
-      #    - cuequivariance
-      #    - cuequivariance-torch
-      #    - cuequivariance-ops-torch-cu12
       - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
