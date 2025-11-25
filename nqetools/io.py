@@ -342,8 +342,48 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
 
 
 def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=False):
+    """
+    Converts an XYZ file to an SDF file, optionally inferring bonds, sanitizing, and kekulizing the molecules.
+
+    This function reads molecular structures from an XYZ file, processes them into RDKit molecule objects,
+    and writes them to an SDF file. It supports optional charge parsing, bond inference, molecule sanitization,
+    and kekulization.
+
+    Parameters
+    ----------
+    xyz_path : str
+        Path to the input XYZ file.
+    sdf_path : str
+        Path to the output SDF file.
+    default_charge : int, optional
+        Default charge to use for bond inference if no charge is specified in the XYZ file. Default is 0.
+    sanitize : bool, optional
+        If True, sanitizes the RDKit molecule objects before writing. Default is True.
+    kekulize : bool, optional
+        If True, kekulizes the RDKit molecule objects before writing. Default is False.
+
+    Returns
+    -------
+    int
+        The number of molecules successfully written to the SDF file.
+    """
+
     def _parse_charge_from_comment(comment, fallback):
-        # Try to extract an integer charge from the comment line
+        """
+        Extracts an integer charge from the comment line of an XYZ frame.
+
+        Parameters
+        ----------
+        comment : str
+            The comment line from the XYZ file.
+        fallback : int
+            The fallback charge to use if no charge is found in the comment.
+
+        Returns
+        -------
+        int
+            The extracted charge or the fallback value.
+        """
         if comment is None:
             return fallback
         m = re.search(r'charge\s*[:=]?\s*([+-]?\d+)', comment, flags=re.I)
@@ -352,7 +392,6 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
                 return int(m.group(1))
             except ValueError:
                 pass
-        # also catch patterns like "q=+1" or just "+1"
         m = re.search(r'(?:q\s*[:=])\s*([+-]?\d+)', comment, flags=re.I)
         if m:
             try:
@@ -368,13 +407,25 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         return fallback
 
     def _read_xyz_frames(path):
+        """
+        Reads molecular frames from an XYZ file.
+
+        Parameters
+        ----------
+        path : str
+            Path to the XYZ file.
+
+        Returns
+        -------
+        list of tuple
+            A list of tuples, each containing the comment line and atom block for a frame.
+        """
         frames = []
         with open(path, 'r', encoding='utf-8') as fh:
             lines = [ln.rstrip('\n') for ln in fh]
         i = 0
         n_total = len(lines)
         while i < n_total:
-            # Skip blank lines between frames
             while i < n_total and not lines[i].strip():
                 i += 1
             if i >= n_total:
@@ -398,7 +449,23 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         return frames
 
     def _frame_to_mol(comment, coord_lines, name_fallback):
-        # Build an atom-only molecule with a 3D conformer
+        """
+        Converts a single XYZ frame to an RDKit molecule object.
+
+        Parameters
+        ----------
+        comment : str
+            The comment line from the XYZ frame.
+        coord_lines : list of str
+            The atom coordinate lines from the XYZ frame.
+        name_fallback : str
+            A fallback name for the molecule if no name is found in the comment.
+
+        Returns
+        -------
+        rdkit.Chem.Mol
+            The RDKit molecule object.
+        """
         rw = Chem.RWMol()
         conf = Chem.Conformer(len(coord_lines))
         symbols = []
@@ -420,7 +487,6 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         conf.Set3D(True)
         mol.AddConformer(conf, assignId=True)
 
-        # Set a name: prefer comment, else filename fallback
         title = (comment or "").strip() or name_fallback
         if title:
             mol.SetProp("_Name", title)
@@ -439,18 +505,14 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         name_fallback = f"{base_name}_{idx}" if len(frames) > 1 else base_name
         mol = _frame_to_mol(comment, coord_lines, name_fallback)
 
-        # Determine total charge to use in bonding inference
         total_charge = _parse_charge_from_comment(comment, default_charge)
 
-        # Infer bonds from 3D geometry
         rdDetermineBonds.DetermineBonds(mol, charge=total_charge)
 
-        # (Optional) sanitize
         if sanitize:
             try:
                 Chem.SanitizeMol(mol)
             except Exception:
-                # Try a softer sanitize to still write something useful
                 Chem.SanitizeMol(
                     mol,
                     sanitizeOps=Chem.SanitizeFlags.SANITIZE_FINDRADICALS |
@@ -458,15 +520,12 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
                                 Chem.SanitizeFlags.SANITIZE_SYMMRINGS
                 )
 
-        # (Optional) kekulize before writing to SDF
         if kekulize:
             try:
                 Chem.Kekulize(mol, clearAromaticFlags=True)
             except Exception:
-                # Non-fatal; keep aromatic flags if kekulization fails
                 pass
 
-        # Write the molecule (with 3D conformer) to SDF
         writer.write(mol)
         smi = Chem.MolToSmiles(mol, allBondsExplicit=True, allHsExplicit=True)
         print(f"SMI: {smi}")
@@ -479,11 +538,35 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
 def extract_nonstandard_res(pdb_file_path: str,
                             output_dir: str = ".",
                             sdf: bool = False) -> list:
+    """
+    Extracts non-standard residues from a PDB file and saves them as XYZ files.
+
+    This function identifies residues in a PDB file that are not part of a predefined
+    set of standard residues. Each non-standard residue is saved as a separate XYZ file
+    in the specified output directory. Optionally, the XYZ files can be converted to SDF format.
+
+    Parameters
+    ----------
+    pdb_file_path : str
+        Path to the input PDB file.
+    output_dir : str, optional
+        Directory where the extracted residue files will be saved. Default is the current directory.
+    sdf : bool, optional
+        If True, converts the extracted XYZ files to SDF format. Default is False.
+
+    Returns
+    -------
+    list
+        A list of file paths for the generated XYZ or SDF files.
+    """
     pdb = PDBFile(pdb_file_path)
 
+    # Extract topology and positions from the PDB file
     topology = pdb.getTopology()
     positions_quantity = pdb.getPositions(asNumpy=True)
     positions_angstrom = positions_quantity.value_in_unit(unit.angstrom)
+
+    # Define a set of standard residues to ignore
     manual_standard_residues = {
         # Standard 20 protein residues
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
@@ -503,27 +586,35 @@ def extract_nonstandard_res(pdb_file_path: str,
     residues_to_ignore = manual_standard_residues.copy()
     generated_files = []
 
+    # Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
+    # Iterate through residues in the topology
     for residue in topology.residues():
         if residue.name not in residues_to_ignore:
 
+            # Extract residue details
             res_name = residue.name
             res_id = residue.id
             chain_id = residue.chain.id
 
+            # Generate a safe filename for the residue
             safe_res_name = "".join(c for c in res_name if c.isalnum())
             filename = f"{safe_res_name}_{chain_id}_{res_id}.xyz"
             output_path = os.path.join(output_dir, filename)
 
+            # Get atoms in the residue
             atoms_in_residue = list(residue.atoms())
             num_atoms = len(atoms_in_residue)
 
+            # Skip residues with 1 or fewer atoms
             if num_atoms <= 1:
                 continue
 
+            # Log the found non-standard residue
             print(f"Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})", flush=True)
 
+            # Prepare XYZ file content
             xyz_content = [str(num_atoms)]
             comment = f"Residue: {res_name}, Chain: {chain_id}, ResID: {res_id}, Source: {os.path.basename(pdb_file_path)}"
             xyz_content.append(comment)
@@ -534,6 +625,7 @@ def extract_nonstandard_res(pdb_file_path: str,
                 xyz_line = f"{element:<2}   {pos[0]:>12.6f} {pos[1]:>12.6f} {pos[2]:>12.6f}"
                 xyz_content.append(xyz_line)
 
+            # Write the XYZ file
             with open(output_path, 'w') as f:
                 f.write("\n".join(xyz_content))
                 f.write("\n")
@@ -541,16 +633,36 @@ def extract_nonstandard_res(pdb_file_path: str,
             generated_files.append(output_path)
             print(f"Successfully wrote {num_atoms} atoms to {os.path.splitext(output_path)[0]}", flush=True)
 
+    # Optionally convert XYZ files to SDF format
     if sdf:
         for xyz_file in generated_files:
             sdf_file = os.path.splitext(xyz_file)[0] + ".sdf"
             xyz_to_sdf(xyz_file, sdf_file, sanitize=True, kekulize=False)
             os.remove(xyz_file)
         generated_files = [os.path.splitext(f)[0] + ".sdf" for f in generated_files]
+
     return generated_files
 
 
 def get_non_standard_residues(pdb_file):
+    """
+    Identifies non-standard residues in a PDB file.
+
+    This function reads a PDB file, splits it into residues, and compares each residue
+    against a predefined set of standard residues. Residues not in the standard set
+    are considered non-standard and are returned as RDKit molecule objects.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Path to the input PDB file.
+
+    Returns
+    -------
+    list
+        A list of RDKit molecule objects representing non-standard residues.
+    """
+    # Define a set of standard residues, including protein, DNA, RNA, water, and common ions
     standard_residues = {
         # Standard 20 protein residues
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
@@ -570,25 +682,48 @@ def get_non_standard_residues(pdb_file):
         'Na+', 'Cl-', 'K+', 'Mg2+', 'Ca2+'
     }
 
+    # Load the PDB file without sanitization or hydrogen removal
     mol = Chem.MolFromPDBFile(pdb_file, sanitize=False, removeHs=False)
+    # Split the molecule into residues
     mols_by_residue = Chem.SplitMolByPDBResidues(mol)
 
     print(f"\n--- Found {len(mols_by_residue)} total residue fragments ---")
 
     non_standard_mols = []
+    # Iterate through residues and identify non-standard ones
     for residue_key, fragment_mol in mols_by_residue.items():
+        # Extract the residue name from the residue key
         res_name = residue_key.split('_')[0].strip()
         if res_name not in standard_residues:
+            # Log non-standard residues
             print(f"  > Found non-standard residue: {residue_key}")
             print(Chem.MolToSmiles(fragment_mol))
             non_standard_mols.append(fragment_mol)
         else:
+            # Log standard residues being skipped
             print(f"  - Skipping standard residue: {residue_key}")
 
     return non_standard_mols
 
 
 def list_non_standard_residues(pdb_file):
+    """
+    Identifies and lists non-standard residues in a PDB file.
+
+    This function reads a PDB file, splits it into residues, and compares each residue
+    against a predefined set of standard residues. Residues not in the standard set
+    are considered non-standard and are returned.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Path to the input PDB file.
+
+    Returns
+    -------
+    list
+        A list of residue keys representing non-standard residues.
+    """
     standard_residues = {
         # Standard 20 protein residues
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
@@ -608,10 +743,13 @@ def list_non_standard_residues(pdb_file):
         'Na+', 'Cl-', 'K+', 'Mg2+', 'Ca2+'
     }
 
+    # Load the PDB file without sanitization or hydrogen removal
     mol = Chem.MolFromPDBFile(pdb_file, sanitize=False, removeHs=False)
+    # Split the molecule into residues
     mols_by_residue = Chem.SplitMolByPDBResidues(mol)
 
     non_standard_mols = []
+    # Iterate through residues and identify non-standard ones
     for residue_key, fragment_mol in mols_by_residue.items():
         res_name = residue_key.split('_')[0].strip()
         if res_name not in standard_residues:
@@ -620,75 +758,96 @@ def list_non_standard_residues(pdb_file):
 
 
 def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output_path: str) -> List[str]:
+    """
+    Removes specified ion residues from a PDB file and saves the cleaned structure.
+
+    This function identifies ion residues in a PDB file based on their names and removes
+    those that match the provided list. The cleaned PDB structure is then saved to the
+    specified output file. A list of all ion types found in the input file is returned.
+
+    Parameters
+    ----------
+    pdb_input_path : str
+        Path to the input PDB file.
+    ions_to_remove : list of str
+        A list of ion residue names to remove from the PDB file.
+    pdb_output_path : str
+        Path to save the cleaned PDB file.
+
+    Returns
+    -------
+    list of str
+        A sorted list of all ion residue types found in the input PDB file.
+    """
     pdb = PDBFile(pdb_input_path)
     modeller = Modeller(pdb.topology, pdb.positions)
-    # Prepare a case-insensitive set of ions to remove
     ions_to_remove_upper = {ion.upper() for ion in ions_to_remove}
-
     all_found_ion_types = set()
     residues_to_delete = []
 
-    print("Scanning residues...")
+    # Iterate through residues in the topology
     for res in modeller.topology.residues():
         res_name_upper = res.name.upper()
-
-        # Skip common water models
+        # Skip water residues
         if res_name_upper in ['HOH', 'WAT']:
             continue
-
-        # Use a heuristic to identify ions: they are monatomic (1 atom per residue)
+        # Identify single-atom residues as potential ions
         if len(list(res.atoms())) == 1:
-            all_found_ion_types.add(res.name)  # Store original case
-
-            # Check if this ion is in our removal list
+            all_found_ion_types.add(res.name)
             if res_name_upper in ions_to_remove_upper:
                 residues_to_delete.append(res)
 
+    # Log the found ion types and residues to remove
     print(f"-> Found all potential ion types: {sorted(list(all_found_ion_types))}")
     print(f"-> Will remove {len(residues_to_delete)} residues matching: {ions_to_remove}")
 
+    # Remove the identified residues
     if residues_to_delete:
         modeller.delete(residues_to_delete)
         print(f"Successfully removed {len(residues_to_delete)} ion residues.")
     else:
         print("No matching ion residues found to remove.")
 
+    # Save the cleaned PDB structure to the output file
     with open(pdb_output_path, 'w') as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
     print(f"Cleaned PDB saved to: {pdb_output_path}")
+
     return sorted(list(all_found_ion_types))
 
 
 def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
-    print(f"Loading PDB from: {pdb_file_path}")
+    """
+    Relabels residues in a PDB file based on a provided mapping and saves the modified structure.
 
-    # Load the PDB file
-    # PDBFile can take a file path or a file-like object
-    try:
-        pdb = PDBFile(pdb_file_path)
-    except Exception as e:
-        print(f"Error loading PDB file: {e}")
-        return None
+    This function reads a PDB file, updates the residue names according to the `relabel_map`,
+    and writes the modified structure to an output file. A summary of changes is printed.
 
-    print("Successfully loaded PDB. Modifying topology...")
+    Parameters
+    ----------
+    pdb_file_path : str
+        Path to the input PDB file.
+    relabel_map : dict
+        A dictionary mapping original residue names (keys) to new residue names (values).
+    output_file : str or file-like object
+        Path to the output PDB file or a file-like object where the modified structure will be saved.
 
-    # Get the topology and positions from the loaded PDB
+    Returns
+    -------
+    PDBFile
+        The modified PDB structure.
+    """
+    pdb = PDBFile(pdb_file_path)
     topology = pdb.topology
     positions = pdb.positions
-
-    # Keep track of which residues were changed
     changed_residues = {}
 
-    # Iterate over all residues in the topology
+    # Iterate through residues and relabel if they match the relabel_map
     for residue in topology.residues():
         if residue.name in relabel_map:
             original_name = residue.name
             new_name = relabel_map[original_name]
-
-            # Update the residue name
             residue.name = new_name
-
-            # Track the change for logging
             change_key = (original_name, new_name)
             if change_key not in changed_residues:
                 changed_residues[change_key] = 0
@@ -702,48 +861,79 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
     else:
         print("No residues found matching the relabel map. Topology is unchanged.")
 
-    # Save the modified PDB to the output file
+    # Save the modified topology and positions to the output file
     print(f"Saving modified topology and positions...")
-    try:
-        if isinstance(output_file, str):
-            # If it's a string, it's a path. Open it and write.
-            with open(output_file, 'w') as f:
-                PDBFile.writeFile(topology, positions, f)
-            print(f"Successfully saved modified PDB to: {output_file}")
-        else:
-            # Assume it's a file-like object (like io.StringIO or an open file handle)
-            PDBFile.writeFile(topology, positions, output_file)
-            print(f"Successfully wrote modified PDB to file-like object.")
+    if isinstance(output_file, str):
+        with open(output_file, 'w') as f:
+            PDBFile.writeFile(topology, positions, f)
+        print(f"Successfully saved modified PDB to: {output_file}")
+    else:
+        PDBFile.writeFile(topology, positions, output_file)
+        print(f"Successfully wrote modified PDB to file-like object.")
 
-    except Exception as e:
-        print(f"Error writing modified PDB file: {e}")
-        return None  # Return None on save failure
-
-    # The 'pdb' object now has its topology modified.
-    # We return it for convenience.
     return pdb
 
 
 def remove_residues_in_pdb(input_pdb, output_pdb, names):
+    """
+    Removes specific residues from a PDB file and writes the modified structure to a new file.
+
+    Parameters
+    ----------
+    input_pdb : str
+        Path to the input PDB file.
+    output_pdb : str
+        Path to the output PDB file where the modified structure will be saved.
+    names : list of str
+        A list of residue names to be removed from the PDB file.
+
+    Returns
+    -------
+    None
+    """
+    # Load the PDB file
     pdb = PDBFile(input_pdb)
     modeller = Modeller(pdb.topology, pdb.positions)
 
+    # Identify residues to delete based on the provided names
     residues_to_delete = [res for res in modeller.topology.residues()
                           if res.name in names]
 
     print(f"Found {len(residues_to_delete)} residues to delete.")
 
+    # Delete the identified residues if any are found
     if residues_to_delete:
         modeller.delete(residues_to_delete)
         print("Successfully deleted residues.")
     else:
         print("No matching residues found to delete.")
 
+    # Write the modified structure to the output PDB file
     with open(output_pdb, 'w') as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
 
 
 def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
+    """Removes water residues from a PDB file.
+
+    This function identifies and removes residues considered to be water from a PDB file
+    and writes the resulting structure to a new PDB file. It is a convenience wrapper
+    around `remove_residues_in_pdb`.
+
+    Parameters
+    ----------
+    input_pdb : str
+        Path to the input PDB file.
+    output_pdb : str
+        Path to the output PDB file for the cleaned structure.
+    water_names : set of str, optional
+        A set of residue names to be treated as water. If None, defaults to
+        `{"HOH", "WAT"}`.
+
+    Returns
+    -------
+    None
+    """
     if water_names is None:
         water_names = {"HOH", "WAT"}
     print(f"Removing water residues.")
