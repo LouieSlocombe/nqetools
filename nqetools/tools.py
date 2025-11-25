@@ -1,18 +1,19 @@
 import glob
 import inspect
-import ipi
-import numpy as np
 import os
 import sys
 import textwrap
 import time
+from typing import List
+from typing import Set
+
+import ipi
+import numpy as np
 from ase.atoms import Atoms
 from ase.build import minimize_rotation_and_translation
 from ase.constraints import FixAtoms
 from ase.neighborlist import NeighborList, natural_cutoffs
 from ase.optimize import BFGS
-from typing import List
-from typing import Set
 
 
 def add_ipi_paths(base: str = None) -> None:
@@ -657,6 +658,23 @@ def convert_code_to_string(code):
 
 
 def get_distance(atoms: Atoms, idx1: int, idx2: int) -> float:
+    """
+    Calculate the Euclidean distance between two atoms in an ASE Atoms object.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object containing the atomic structure.
+    idx1 : int
+        The index of the first atom.
+    idx2 : int
+        The index of the second atom.
+
+    Returns
+    -------
+    float
+        The Euclidean distance between the two specified atoms.
+    """
     pos1 = atoms.positions[idx1]
     pos2 = atoms.positions[idx2]
     return np.linalg.norm(pos1 - pos2)
@@ -808,6 +826,25 @@ def combine_without_overlaps(
 
 
 def largest_bonded_cluster_indices(atoms: Atoms) -> List[int]:
+    """
+    Finds the indices of the largest bonded cluster of atoms in an ASE Atoms object.
+
+    This function uses ASE's NeighborList to determine bonded groups of atoms based on
+    natural covalent radii. It identifies all connected components (clusters) of atoms
+    and returns the indices of the atoms in the largest cluster. If there are ties in
+    cluster size, the cluster with the smallest index is chosen.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object containing the atomic structure.
+
+    Returns
+    -------
+    List[int]
+        A sorted list of indices representing the largest bonded cluster of atoms.
+        Returns an empty list if the input Atoms object is empty.
+    """
     n = len(atoms)
     if n == 0:
         return []
