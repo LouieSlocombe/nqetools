@@ -25,6 +25,39 @@ def nwchem_calc_preset(directory=None,
                        disp=None,
                        solv=None,
                        host=None):
+    """
+    Create and configure an NWChem calculator preset for quantum chemistry calculations.
+
+    This function sets up the input parameters for an NWChem calculation, including
+    the directory, charge, exchange-correlation functional, basis set, dispersion
+    corrections, solvent effects, and other options.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory where the calculation will be performed. Defaults to a temporary directory.
+    task : str, optional
+        The specific task to perform (e.g., 'energy', 'optimize'). Default is None.
+    charge : int, optional
+        Total charge of the system. Default is 0.
+    xc : str, optional
+        Exchange-correlation functional to use. Default is 'B3LYP'.
+    multiplicity : int, optional
+        Spin multiplicity of the system. Default is 1.
+    basis_set : str, optional
+        Basis set to use for the calculation. Default is '6-311++G**'.
+    disp : str, optional
+        Dispersion correction method to use ('XDM' or 'D3'). Default is None.
+    solv : str, optional
+        Solvent model to use ('WATER' or 'PROTEIN'). Default is None.
+    host : str, optional
+        Path to a Unix socket for distributed calculations. Default is None.
+
+    Returns
+    -------
+    NWChem
+        Configured NWChem calculator object.
+    """
     if directory is None:
         directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
 
@@ -154,7 +187,7 @@ def orca_calc_preset(orca_path=None,
 
     # Configure QM/MM atom list for QM/XTB2 calculations
     if atom_list is not None and calc_type == 'QM/XTB2':
-        atom_list = '{'+atom_list+'}'
+        atom_list = '{' + atom_list + '}'
         inpt_xtb = f'''
         %QMMM QMATOMS {atom_list} END END
                    '''
@@ -201,7 +234,7 @@ def orca_calc_preset(orca_path=None,
         charge=charge,
         mult=multiplicity,
         directory=directory,
-        orcasimpleinput=inpt_simple+ ' EnGrad',
+        orcasimpleinput=inpt_simple + ' EnGrad',
         orcablocks=inpt_blocks
     )
     return calc
@@ -220,8 +253,50 @@ def qchem_calc_preset(charge=0,
                       neo_preset="PB4-D",
                       neo_isotope="1",
                       scf_algorithm="DIIS",  # DIIS GDM DIIS_GDM
-                      solv_extra=None
-                      ):
+                      solv_extra=None):
+    """
+    Create and configure a Q-Chem calculator preset for quantum chemistry calculations.
+
+    This function sets up the input parameters for a Q-Chem calculation, including
+    charge, multiplicity, exchange-correlation functional, basis set, solvent effects,
+    dispersion corrections, and other advanced options.
+
+    Parameters
+    ----------
+    charge : int, optional
+        Total charge of the system. Default is 0.
+    multiplicity : int, optional
+        Spin multiplicity of the system. Default is 1.
+    xc : str, optional
+        Exchange-correlation functional to use. Default is "BLYP".
+    basis : str, optional
+        Basis set to use for the calculation. Default is "6-311G**".
+    f_fast : bool, optional
+        Whether to enable fast exchange-correlation calculations. Default is False.
+    f_solv : bool, optional
+        Whether to include solvent effects in the calculation. Default is False.
+    f_disp : bool, optional
+        Whether to include dispersion corrections in the calculation. Default is False.
+    f_neo : bool, optional
+        Whether to enable NEO (Nuclear-Electronic Orbital) calculations. Default is False.
+    neo_idx : list, optional
+        List of indices for NEO calculations. Default is None.
+    neo_epc : str, optional
+        EPC (Electron-Proton Correlation) method for NEO calculations. Default is "epc19".
+    neo_preset : str, optional
+        Preset for NEO calculations. Default is "PB4-D".
+    neo_isotope : str, optional
+        Isotope for NEO calculations. Default is "1".
+    scf_algorithm : str, optional
+        SCF algorithm to use. Default is "DIIS".
+    solv_extra : str, optional
+        Additional solvent options for the calculation. Default is None.
+
+    Returns
+    -------
+    QChem
+        Configured Q-Chem calculator object.
+    """
     if neo_idx is None:
         neo_idx = [0]
     inpt_dict = {
@@ -883,6 +958,64 @@ def calculate_free_energy(atoms,
                           n_procs=10,
                           use_ccsd=False,
                           ccsd_energy=None):
+    """
+    Calculate the Gibbs free energy of a molecule using the ORCA quantum chemistry package.
+
+    This function sets up and performs a vibrational frequency calculation for a molecule
+    represented by an ASE `Atoms` object. It supports various options, including geometry
+    optimization, solvent effects, dispersion corrections, and CCSD energy calculations.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        An ASE `Atoms` object representing the molecule.
+    charge : int, optional
+        Total charge of the molecule. Default is 0.
+    multiplicity : int, optional
+        Spin multiplicity of the molecule. Default is 1.
+    temperature : float, optional
+        Temperature in Kelvin for the calculation. Default is None.
+    pressure : float, optional
+        Pressure in atm for the calculation. Default is None.
+    orca_path : str, optional
+        Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
+    xc : str, optional
+        Exchange-correlation functional to use. Default is 'r2SCAN-3c'.
+    basis_set : str, optional
+        Basis set to use for the calculation. Default is 'def2-QZVP'.
+    opt : bool, optional
+        Whether to perform geometry optimization. Default is False.
+    tight_opt : bool, optional
+        Whether to use tight geometry optimization criteria. Default is False.
+    tight_scf : bool, optional
+        Whether to use tight SCF convergence criteria. Default is False.
+    f_solv : bool, optional
+        Whether to include solvent effects in the calculation. Default is False.
+    f_disp : bool, optional
+        Whether to include dispersion corrections in the calculation. Default is False.
+    n_procs : int, optional
+        Number of processors to use for the calculation. Default is 10.
+    use_ccsd : bool, optional
+        Whether to use CCSD energy for the calculation. Default is False.
+    ccsd_energy : float, optional
+        Precomputed CCSD energy in eV. If None, it will be calculated if `use_ccsd` is True. Default is None.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - energy : float
+            The Gibbs free energy in eV.
+        - enthalpy : float
+            The enthalpy in eV.
+        - entropy : float
+            The entropy in eV.
+
+    Raises
+    ------
+    ValueError
+        If the CCSD energy calculation fails or the ORCA setup is incorrect.
+    """
     # Determine the ORCA path
     orca_path = os.path.abspath(orca_path or os.getenv('ORCA_PATH', 'orca'))
 
@@ -901,23 +1034,23 @@ def calculate_free_energy(atoms,
     # Set up the %thermo block for this temperature and pressure
     if temperature is not None and pressure is None:
         blocks_extra = f'''
-                                  %freq
-                                      Temp {temperature}
-                                  end
-                                  '''
+                                                            %freq
+                                                                Temp {temperature}
+                                                            end
+                                                            '''
     elif pressure is not None and temperature is None:
         blocks_extra = f'''
-                                          %freq
-                                              Pressure {pressure}
-                                          end
-                                          '''
+                                                                    %freq
+                                                                        Pressure {pressure}
+                                                                    end
+                                                                    '''
     elif pressure is None and temperature is not None:
         blocks_extra = f'''
-                                          %freq
-                                              Temp {temperature}
-                                              Pressure {pressure}
-                                          end
-                                          '''
+                                                                    %freq
+                                                                        Temp {temperature}
+                                                                        Pressure {pressure}
+                                                                    end
+                                                                    '''
     else:
         blocks_extra = None
 
