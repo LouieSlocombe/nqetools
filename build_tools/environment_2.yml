@@ -1,0 +1,43 @@
+name: nqetools2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pytest
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - opt_einsum
+  - jax
+  - jaxlib
+  - ml_dtypes
+  - sympy
+  - pyfftw
+  - chemiscope
+  - jupyterlab
+  - ase
+  - pyfftw
+  - i-pi
+  #- py-plumed
+  - openmm
+  - openmm-ml
+  - pytorch
+  - nnpops
+  - openmm-torch
+  - openmmforcefields
+  - openmmtools
+  - ambertools
+  - pdbfixer
+  - rdkit
+  - mdanalysis
+  - pip:
+      #    - torch
+      - mace-torch
+      - sella
+      #    - cuequivariance
+      #    - cuequivariance-torch
+      #    - cuequivariance-ops-torch-cu12
+      - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
