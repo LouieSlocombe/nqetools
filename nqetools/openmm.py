@@ -1084,8 +1084,8 @@ def run_openmm_npt(modeller,
                    pressure=1.0 * unit.bar,
                    temperature=300.0 * unit.kelvin,
                    gamma=1.0 / unit.picosecond,
-                   time_step=2.0 * unit.femtoseconds,
-                   barostat_freq=25,
+                   time_step=1.0 * unit.femtoseconds,
+                   barostat_freq=50,
                    backbone_names=None,
                    k=10.0,
                    n_report=500,
@@ -1186,22 +1186,103 @@ def run_openmm_npt(modeller,
     print(f"\nDensity equilibration complete. Saved to {output_pdb}", flush=True)
 
 
-def run_plumed_production(modeller,
-                          forcefield,
-                          plumed_script_path,
-                          pressure=1.0 * unit.bar,
-                          temperature=300.0 * unit.kelvin,
-                          gamma=1.0 / unit.picosecond,
-                          time_step=2.0 * unit.femtoseconds,
-                          barostat_freq=25,
-                          n_report=1_000,
-                          steps=500_000,
-                          output_prefix='prod',
-                          platform_name='CPU',
-                          deuterate=False,
-                          deuterate_option='water',
-                          potential=None,
-                          ml_idx=None):
+def run_openmm_prod(modeller,
+                    forcefield,
+                    pressure=1.0 * unit.bar,
+                    temperature=300.0 * unit.kelvin,
+                    gamma=1.0 / unit.picosecond,
+                    time_step=1.0 * unit.femtoseconds,
+                    barostat_freq=50,
+                    n_report=1_000,
+                    steps=500_000,
+                    output_prefix='prod',
+                    platform_name='CPU',
+                    deuterate=False,
+                    deuterate_option='water',
+                    potential=None,
+                    ml_idx=None):
+    if potential is not None and ml_idx is not None:
+        print("Adding ML potential to the system...", flush=True)
+        run_mixed = True
+        platform_name = 'CUDA'  # Force CUDA for mixed potential
+    else:
+        run_mixed = False
+
+    platform = openmm.Platform.getPlatformByName(platform_name)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+
+    if run_mixed:
+        mm_system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+        system = potential.createMixedSystem(
+            modeller.topology,
+            mm_system,
+            ml_idx,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+    else:
+        system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+
+    if deuterate:
+        print("Deuterating system...", flush=True)
+        deuterate_system(modeller, system, option=deuterate_option)
+
+    system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
+    integrator = openmm.LangevinMiddleIntegrator(temperature,
+                                                 gamma,
+                                                 time_step)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+    simulation.context.setPositions(modeller.positions)
+    simulation.context.setVelocitiesToTemperature(temperature)
+    simulation.reporters.append(app.DCDReporter(f'{output_prefix}.dcd', n_report))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log', n_report,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      density=True,
+                                                      speed=True))
+    simulation.reporters.append(app.CheckpointReporter(f'{output_prefix}.chk', n_report * 10))
+    print(f"Starting production run for {steps} steps...", flush=True)
+    simulation.step(steps)
+    print("Production run complete.", flush=True)
+    state = simulation.context.getState(getPositions=True, getVelocities=True)
+    with open(f'{output_prefix}.pdb', 'w') as f:
+        app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
+
+
+def run_openmm_prod_plumed(modeller,
+                           forcefield,
+                           plumed_script_path,
+                           pressure=1.0 * unit.bar,
+                           temperature=300.0 * unit.kelvin,
+                           gamma=1.0 / unit.picosecond,
+                           time_step=1.0 * unit.femtoseconds,
+                           barostat_freq=50,
+                           n_report=1_000,
+                           steps=500_000,
+                           output_prefix='prod',
+                           platform_name='CPU',
+                           deuterate=False,
+                           deuterate_option='water',
+                           potential=None,
+                           ml_idx=None):
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
@@ -1280,7 +1361,7 @@ def run_rpmd_equilibration(modeller,
                            num_beads=32,
                            temperature=300 * unit.kelvin,
                            pressure=1 * unit.bar,
-                           barostat_freq=25,
+                           barostat_freq=50,
                            friction=1.0 / unit.picosecond,
                            safe_timestep=0.5 * unit.femtoseconds,
                            production_timestep=1.0 * unit.femtoseconds,
@@ -1340,7 +1421,7 @@ def run_contracted_rpmd(modeller,
                         num_beads=32,
                         temperature=300 * unit.kelvin,
                         pressure=1 * unit.bar,
-                        barostat_freq=25,
+                        barostat_freq=50,
                         friction=1.0 / unit.picosecond,
                         timestep=0.5 * unit.femtoseconds,
                         checkpoint_file='rpmd_ready.chk',
