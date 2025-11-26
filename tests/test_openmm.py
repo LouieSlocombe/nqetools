@@ -820,3 +820,41 @@ def test_rpmd_quantum_spread_reporter():
     plt.show()
 
     os.remove("quantum_spread.txt")
+
+
+def test_rpmd_bead_reporter():
+    pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
+    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    n_beads = 4
+    integrator = openmm.RPMDIntegrator(n_beads,
+                                       300 * unit.kelvin,
+                                       1.0 / unit.picosecond,
+                                       0.5 * unit.femtosecond)
+
+    simulation = app.Simulation(pdb.topology, system, integrator)
+
+    for i in range(n_beads):
+        integrator.setPositions(i, pdb.positions)
+
+    simulation.reporters.append(nqe.RPMDBeadReporter(
+        topology=modeller.topology,
+        file_base_name="out",
+        reportInterval=10,
+        num_beads=n_beads,
+    ))
+
+    simulation.step(100)
+    for i in range(n_beads):
+        os.remove(f'out_bead_{i}.pdb')

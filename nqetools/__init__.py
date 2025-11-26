@@ -99,7 +99,8 @@ from .openmm import (fix_pdb,
                      run_plumed_production,
                      run_rpmd_equilibration,
                      run_contracted_rpmd,
-                     RPMDQuantumSpreadReporter)
+                     RPMDQuantumSpreadReporter,
+                     RPMDBeadReporter)
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,

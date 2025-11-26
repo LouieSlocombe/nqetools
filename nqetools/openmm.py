@@ -1380,3 +1380,74 @@ class RPMDQuantumSpreadReporter(object):
 
     def __del__(self):
         self._out.close()
+
+
+class RPMDBeadReporter(object):
+    """
+    A custom reporter for OpenMM that saves the trajectory of EVERY individual
+    bead in an RPMD simulation to separate PDB files.
+    """
+
+    def __init__(self, file_base_name, reportInterval, num_beads, topology):
+        """
+        args:
+            file_base_name (str): Prefix for files (e.g., 'output' -> 'output_bead_0.pdb')
+            reportInterval (int): How often to write frames (steps)
+            num_beads (int): Number of beads in the RPMD integrator
+            topology (Topology): The system topology
+        """
+        self._reportInterval = reportInterval
+        self._num_beads = num_beads
+        self._topology = topology
+        self._next_frame_index = 0
+
+        # Create a list of open file handles, one for each bead
+        self._files = []
+        for i in range(num_beads):
+            filename = f"{file_base_name}_bead_{i}.pdb"
+            f = open(filename, 'w')
+            # Write the PDB Header for each file
+            app.PDBFile.writeHeader(topology, f)
+            self._files.append(f)
+
+    def describeNextReport(self, simulation):
+        """
+        Tells the Simulation when the next report is due.
+        """
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+    def report(self, simulation, state):
+        """
+        Called by the Simulation to generate the report.
+        """
+        # We must access the integrator specifically to get bead positions
+        integrator = simulation.integrator
+
+        # Loop through every bead
+        for i in range(self._num_beads):
+            # getState(bead_index, ...) is specific to RPMDIntegrator
+            # Note: enforcePeriodicBox must match your system settings
+            bead_state = integrator.getState(i, getPositions=True, enforcePeriodicBox=True)
+            positions = bead_state.getPositions()
+
+            # Write the frame (Model) to the specific bead's file
+            app.PDBFile.writeModel(self._topology, positions, self._files[i], self._next_frame_index)
+
+            # Flush periodically to ensure data is written to disk
+            if self._next_frame_index % 10 == 0:
+                self._files[i].flush()
+
+        self._next_frame_index += 1
+
+    def __del__(self):
+        """
+        Cleanup: Close all file handles when the reporter is destroyed.
+        """
+        for f in self._files:
+            try:
+                # Write footer before closing to ensure valid PDB syntax
+                app.PDBFile.writeFooter(self._topology, f)
+                f.close()
+            except:
+                pass
