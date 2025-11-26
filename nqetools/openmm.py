@@ -850,6 +850,7 @@ def run_openmm_relaxation(modeller,
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
+        platform_name = 'CUDA'  # Force CUDA for mixed potential
     else:
         run_mixed = False
 
@@ -987,18 +988,49 @@ def run_openmm_heating(modeller,
                        platform_name='CPU',
                        deuterate=False,
                        deuterate_option='water',
+                       potential=None,
+                       ml_idx=None,
                        ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
+    if potential is not None and ml_idx is not None:
+        print("Adding ML potential to the system...", flush=True)
+        run_mixed = True
+        platform_name = 'CUDA'  # Force CUDA for mixed potential
+    else:
+        run_mixed = False
+
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-                                     nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=None,
-                                     rigidWater=False,
-                                     removeCMMotion=True)
+    if run_mixed:
+        mm_system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+        system = potential.createMixedSystem(
+            modeller.topology,
+            mm_system,
+            ml_idx,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+    else:
+        system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
     if deuterate:
         print("Deuterating system...", flush=True)
         deuterate_system(modeller, system, option=deuterate_option)
@@ -1062,18 +1094,50 @@ def run_openmm_npt(modeller,
                    platform_name='CPU',
                    deuterate=False,
                    deuterate_option='water',
+                   potential=None,
+                   ml_idx=None,
                    ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
+    if potential is not None and ml_idx is not None:
+        print("Adding ML potential to the system...", flush=True)
+        run_mixed = True
+        platform_name = 'CUDA'  # Force CUDA for mixed potential
+    else:
+        run_mixed = False
+
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-                                     nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=None,
-                                     rigidWater=False,
-                                     removeCMMotion=True)
+
+    if run_mixed:
+        mm_system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+        system = potential.createMixedSystem(
+            modeller.topology,
+            mm_system,
+            ml_idx,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+    else:
+        system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
     if deuterate:
         print("Deuterating system...", flush=True)
         deuterate_system(modeller, system, option=deuterate_option)
