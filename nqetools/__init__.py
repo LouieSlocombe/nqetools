@@ -101,7 +101,8 @@ from .openmm import (fix_pdb,
                      run_contracted_rpmd,
                      RPMDQuantumSpreadReporter,
                      RPMDBeadReporter,
-                     RPMDCentroidReporter)
+                     RPMDCentroidReporter,
+                     count_dna_and_estimate_charge)
 from .pathway import (get_neb_path,
                       stitch_path,
                       resample_path,

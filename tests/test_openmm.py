@@ -756,3 +756,11 @@ def test_rpmd_centroid_reporter():
 
     simulation.step(100)
     os.remove('centroid.pdb')
+
+
+def test_count_dna_and_estimate_charge():
+    print(flush=True)
+    pdb = app.PDBFile("tests/data/pdb/gt_wob_pol.pdb")
+    est_charge = nqe.count_dna_and_estimate_charge(pdb.topology)
+    print(f"Estimated net charge: {est_charge}")
+    assert est_charge == -6

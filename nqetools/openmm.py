@@ -1614,3 +1614,22 @@ class RPMDCentroidReporter(object):
             self._out.close()
         except:
             pass
+
+
+def count_dna_and_estimate_charge(topology):
+    dna_residue_names = {
+        "DA", "DC", "DG", "DT",  # internal
+        "DA5", "DC5", "DG5", "DT5",  # 5'-terminal
+        "DA3", "DC3", "DG3", "DT3",  # 3'-terminal
+    }
+
+    num_dna_residues = 0
+
+    for residue in topology.residues():
+        if residue.name.strip() in dna_residue_names:
+            num_dna_residues += 1
+
+    # Estimate: -1 e per nucleotide
+    estimated_charge = -num_dna_residues
+
+    return estimated_charge
