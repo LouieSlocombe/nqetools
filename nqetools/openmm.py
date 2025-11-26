@@ -1451,3 +1451,51 @@ class RPMDBeadReporter(object):
                 f.close()
             except:
                 pass
+
+
+class RPMDCentroidReporter(object):
+    """
+    A custom reporter that calculates the centroid (average position) of all beads
+    and writes it to a single PDB file.
+    """
+
+    def __init__(self, file_name, reportInterval, num_beads, topology):
+        self._reportInterval = reportInterval
+        self._num_beads = num_beads
+        self._topology = topology
+        self._next_frame_index = 0
+        self._out = open(file_name, 'w')
+        app.PDBFile.writeHeader(topology, self._out)
+
+    def describeNextReport(self, simulation):
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+    def report(self, simulation, state):
+        integrator = simulation.integrator
+
+        # Get first bead to initialize sum
+        # We use asNumpy=True for vector efficiency, though OpenMM Quantities also support math.
+        sum_pos = integrator.getState(0, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
+
+        # Sum positions of remaining beads
+        for i in range(1, self._num_beads):
+            pos = integrator.getState(i, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
+            sum_pos += pos
+
+        # Calculate Average
+        centroid_pos = sum_pos / self._num_beads
+
+        # Write to file
+        app.PDBFile.writeModel(self._topology, centroid_pos, self._out, self._next_frame_index)
+        self._next_frame_index += 1
+
+        if self._next_frame_index % 10 == 0:
+            self._out.flush()
+
+    def __del__(self):
+        try:
+            app.PDBFile.writeFooter(self._topology, self._out)
+            self._out.close()
+        except:
+            pass
