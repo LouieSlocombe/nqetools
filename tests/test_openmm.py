@@ -1,6 +1,5 @@
 import os
 import sys
-from pathlib import Path
 from sys import stdout
 
 import numpy as np
@@ -138,372 +137,6 @@ def test_nonstandard_ligand():
 
     nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA')
     os.remove('minimized.pdb')
-
-
-def test_openmm_rpmd():
-    # Simple run parameters
-    n_steps = 1_000
-    report_every = 100
-    data_out = 'md_log.txt'
-    in_pdb = "tests/data/pdb/input_aaa.pdb"
-    out_pdb = Path("centroid_trajectory.pdb")
-    n_beads = 2
-    temperature = 300.0 * unit.kelvin
-    friction = 1.0 / unit.picosecond
-    dt = 0.5 * unit.femtosecond
-
-    pdb = app.PDBFile(in_pdb)
-    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
-
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.deleteWater()
-    modeller.addHydrogens()
-
-    n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms.")
-
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = forcefield.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-
-    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
-    integrator.setApplyThermostat(True)
-    integrator.setRandomNumberSeed(2025)
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology, system, integrator, platform)
-
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-
-    simulation.reporters.append(app.StateDataReporter(data_out,
-                                                      report_every,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
-
-    # Initialize each bead with the input coordinates + tiny random jiggle
-    nqe.init_beads(modeller, simulation, n_beads)
-
-    # Prepare multi-MODEL PDB (centroid coordinates)
-    with open(out_pdb, "w") as fh:
-        app.PDBFile.writeHeader(modeller.topology, fh)
-        # write initial centroid (model 0)
-        centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-        nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=0)
-
-        # Integrate and save snapshots
-        for step in range(1, n_steps + 1):
-            simulation.step(1)
-
-            if step % report_every == 0:
-                centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-                nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=step // report_every)
-
-        app.PDBFile.writeFooter(modeller.topology, fh)
-    print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
-    os.remove(out_pdb)
-    os.remove(data_out)
-
-
-def test_openmm_qtb():
-    # Simple run parameters
-    n_steps = 1_000
-    report_every = 100
-    in_pdb = "tests/data/pdb/input_aaa.pdb"
-    n_beads = 2
-    temperature = 300.0 * unit.kelvin
-    friction = 1.0 / unit.picosecond
-    dt = 0.5 * unit.femtosecond
-
-    pdb = app.PDBFile(in_pdb)
-    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
-
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.deleteWater()
-    modeller.addHydrogens()
-
-    n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms.")
-
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = forcefield.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-
-    integrator = openmm.QTBIntegrator(n_beads, temperature, friction, dt)
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology, system, integrator, platform)
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-
-    simulation.step(n_steps)
-
-
-def test_openmm_rpmd_solvated():
-    # Simple run parameters
-    n_steps = 200
-    report_every = 100
-    data_out = 'md_log.txt'
-    in_pdb = "tests/data/pdb/input_aaa.pdb"
-    out_pdb = Path("centroid_trajectory.pdb")
-    n_beads = 2
-    temperature = 300.0 * unit.kelvin
-    friction = 1.0 / unit.picosecond
-    dt = 0.5 * unit.femtosecond
-
-    pdb = app.PDBFile(in_pdb)
-    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
-
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.deleteWater()
-    modeller.addHydrogens()
-
-    # Solvate
-    modeller.addSolvent(forcefield,
-                        padding=1.0 * unit.nanometer,
-                        boxShape='dodecahedron')
-
-    n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms.")
-
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = forcefield.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=0.5 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-
-    k = 1000.0 * unit.kilojoule_per_mole / unit.nanometer ** 2  # typical strong restraint for minimization
-    restraint = openmm.CustomExternalForce("0.5 * k * periodicdistance(x, y, z, x0, y0, z0)^2")
-    restraint.addGlobalParameter("k", k)
-    restraint.addPerParticleParameter("x0")
-    restraint.addPerParticleParameter("y0")
-    restraint.addPerParticleParameter("z0")
-
-    # Select backbone atoms (N, CA, C) and add them with their reference coordinates
-    bb_indices = []
-    for atom, pos in zip(modeller.topology.atoms(), modeller.positions):
-        if atom.name in ("N", "CA", "C"):
-            idx = atom.index
-            bb_indices.append(idx)
-            restraint.addParticle(idx, [pos.x, pos.y, pos.z])
-
-    system.addForce(restraint)
-
-    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
-    integrator.setApplyThermostat(True)
-    integrator.setRandomNumberSeed(2025)
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology, system, integrator, platform)
-
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-
-    simulation.reporters.append(app.StateDataReporter(data_out,
-                                                      report_every,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
-
-    # Initialize each bead with the input coordinates + tiny random jiggle
-    nqe.init_beads(modeller, simulation, n_beads)
-
-    # Prepare multi-MODEL PDB (centroid coordinates)
-    with open(out_pdb, "w") as fh:
-        app.PDBFile.writeHeader(modeller.topology, fh)
-        # write initial centroid (model 0)
-        centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-        nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=0)
-
-        # Integrate and save snapshots
-        for step in range(1, n_steps + 1):
-            simulation.step(1)
-
-            if step % report_every == 0:
-                centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-                nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=step // report_every)
-
-        app.PDBFile.writeFooter(modeller.topology, fh)
-    print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
-    os.remove(out_pdb)
-    os.remove(data_out)
-
-
-def test_openmm_rpmd_ml():
-    # Simple run parameters
-    n_steps = 200
-    report_every = 100
-    data_out = 'md_log.txt'
-    in_pdb = "tests/data/pdb/input_aaa.pdb"
-    out_pdb = Path("centroid_trajectory.pdb")
-    n_beads = 2
-    temperature = 300.0 * unit.kelvin
-    friction = 1.0 / unit.picosecond
-    dt = 0.5 * unit.femtosecond
-
-    pdb = app.PDBFile(in_pdb)
-    potential = MLPotential('mace-off23-small')
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.deleteWater()
-    modeller.addHydrogens()
-
-    n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms.")
-
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    system = potential.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-
-    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
-    integrator.setApplyThermostat(True)
-    integrator.setRandomNumberSeed(2025)
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology, system, integrator, platform)
-
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-
-    simulation.reporters.append(app.StateDataReporter(data_out,
-                                                      report_every,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
-
-    # Initialize each bead with the input coordinates + tiny random jiggle
-    nqe.init_beads(modeller, simulation, n_beads)
-
-    # Prepare multi-MODEL PDB (centroid coordinates)
-    with open(out_pdb, "w") as fh:
-        app.PDBFile.writeHeader(modeller.topology, fh)
-        # write initial centroid (model 0)
-        centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-        nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=0)
-
-        # Integrate and save snapshots
-        for step in range(1, n_steps + 1):
-            simulation.step(1)
-
-            if step % report_every == 0:
-                centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-                nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=step // report_every)
-
-        app.PDBFile.writeFooter(modeller.topology, fh)
-    print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
-    os.remove(out_pdb)
-    os.remove(data_out)
-
-
-def test_openmm_rpmd_mixed():
-    print(flush=True)
-    # Simple run parameters
-    n_steps = 200
-    report_every = 100
-    in_pdb = "tests/data/pdb/input_aaa.pdb"
-    n_beads = 4
-    temperature = 300.0 * unit.kelvin
-    friction = 1.0 / unit.picosecond
-    dt = 0.5 * unit.femtosecond
-
-    padding = 1.5
-    box_shape = 'dodecahedron'
-
-    pdb = app.PDBFile(in_pdb)
-    potential = MLPotential('mace-off23-small')
-    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
-
-    modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.deleteWater()
-    modeller.addHydrogens()
-
-    modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
-
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    mm_system = forcefield.createSystem(modeller.topology,
-                                        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-                                        nonbondedCutoff=1.0 * unit.nanometer,
-                                        constraints=None,
-                                        rigidWater=False,
-                                        removeCMMotion=True)
-
-    chains = list(modeller.topology.chains())
-    ml_atoms = [atom.index for atom in chains[0].atoms()]
-    n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms", flush=True)
-    print(f"Number of ML atoms: {len(ml_atoms)}", flush=True)
-    print(f"Number of MM atoms: {n_atoms - len(ml_atoms)}", flush=True)
-
-    system = potential.createMixedSystem(modeller.topology,
-                                         mm_system,
-                                         ml_atoms)
-
-    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology, system, integrator, platform)
-
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-
-    nqe.init_beads(modeller, simulation, n_beads)
-    simulation.step(n_steps)
 
 
 def _get_total_mass(system):
@@ -770,6 +403,240 @@ def test_eq_workflow():
     os.remove('npt_equilibrated.pdb')
 
 
+def test_openmm_rpmd():
+    # Simple run parameters
+    n_steps = 1_000
+    report_every = 100
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    n_beads = 2
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    nqe.init_beads(modeller, simulation, n_beads)
+    simulation.step(n_steps)
+
+
+def test_openmm_qtb():
+    # Simple run parameters
+    n_steps = 1_000
+    report_every = 100
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    n_beads = 2
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms.")
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    integrator = openmm.QTBIntegrator(n_beads, temperature, friction, dt)
+
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    simulation.step(n_steps)
+
+
+def test_openmm_rpmd_solvated():
+    # Simple run parameters
+    n_steps = 200
+    report_every = 100
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    n_beads = 2
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    # Solvate
+    modeller.addSolvent(forcefield,
+                        padding=1.0 * unit.nanometer,
+                        boxShape='dodecahedron')
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=0.5 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    nqe.init_beads(modeller, simulation, n_beads)
+    simulation.step(n_steps)
+
+
+def test_openmm_rpmd_ml():
+    # Simple run parameters
+    n_steps = 200
+    report_every = 100
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    n_beads = 2
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    potential = MLPotential('mace-off23-small')
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = potential.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    nqe.init_beads(modeller, simulation, n_beads)
+    simulation.step(n_steps)
+
+
+def test_openmm_rpmd_mixed():
+    print(flush=True)
+    # Simple run parameters
+    n_steps = 200
+    report_every = 100
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    n_beads = 4
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    padding = 1.5
+    box_shape = 'dodecahedron'
+
+    pdb = app.PDBFile(in_pdb)
+    potential = MLPotential('mace-off23-small')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    modeller.addSolvent(forcefield,
+                        padding=padding * unit.nanometer,
+                        boxShape=box_shape)
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    mm_system = forcefield.createSystem(modeller.topology,
+                                        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+                                        nonbondedCutoff=1.0 * unit.nanometer,
+                                        constraints=None,
+                                        rigidWater=False,
+                                        removeCMMotion=True)
+
+    chains = list(modeller.topology.chains())
+    ml_atoms = [atom.index for atom in chains[0].atoms()]
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms", flush=True)
+    print(f"Number of ML atoms: {len(ml_atoms)}", flush=True)
+    print(f"Number of MM atoms: {n_atoms - len(ml_atoms)}", flush=True)
+
+    system = potential.createMixedSystem(modeller.topology,
+                                         mm_system,
+                                         ml_atoms)
+
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
+
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    nqe.init_beads(modeller, simulation, n_beads)
+    simulation.step(n_steps)
+
+
 def test_rpmd_quantum_spread_reporter():
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
@@ -845,8 +712,7 @@ def test_rpmd_bead_reporter():
 
     simulation = app.Simulation(pdb.topology, system, integrator)
 
-    for i in range(n_beads):
-        integrator.setPositions(i, pdb.positions)
+    nqe.init_beads(modeller, simulation, n_beads)
 
     simulation.reporters.append(nqe.RPMDBeadReporter(
         topology=modeller.topology,
@@ -883,8 +749,7 @@ def test_rpmd_centroid_reporter():
 
     simulation = app.Simulation(pdb.topology, system, integrator)
 
-    for i in range(n_beads):
-        integrator.setPositions(i, pdb.positions)
+    nqe.init_beads(modeller, simulation, n_beads)
 
     simulation.reporters.append(nqe.RPMDCentroidReporter(
         topology=modeller.topology,
