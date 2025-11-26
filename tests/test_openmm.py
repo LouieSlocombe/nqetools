@@ -220,6 +220,50 @@ def test_openmm_rpmd():
     os.remove(data_out)
 
 
+def test_openmm_qtb():
+    # Simple run parameters
+    n_steps = 1_000
+    report_every = 100
+    in_pdb = "tests/data/pdb/input_aaa.pdb"
+    n_beads = 2
+    temperature = 300.0 * unit.kelvin
+    friction = 1.0 / unit.picosecond
+    dt = 0.5 * unit.femtosecond
+
+    pdb = app.PDBFile(in_pdb)
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms.")
+
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    integrator = openmm.QTBIntegrator(n_beads, temperature, friction, dt)
+
+    platform = openmm.Platform.getPlatformByName("CUDA")
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+    simulation.reporters.append(app.StateDataReporter(stdout,
+                                                      report_every,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True,
+                                                      speed=True))
+
+    simulation.step(n_steps)
+
+
 def test_openmm_rpmd_solvated():
     # Simple run parameters
     n_steps = 200
