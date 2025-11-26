@@ -42,11 +42,21 @@ def test_openmm_ml_mixed_system():
                         padding=padding * unit.nanometer,
                         boxShape=box_shape)
 
-    mm_system = forcefield.createSystem(modeller.topology)
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
+    # nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA', potential=potential, ml_idx=ml_atoms)
+    # os.remove('minimized.pdb')
+
     has_box = modeller.topology.getUnitCellDimensions() is not None
+    mm_system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
     system = potential.createMixedSystem(
         modeller.topology,
         mm_system,

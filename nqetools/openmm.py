@@ -841,20 +841,50 @@ def run_openmm_relaxation(modeller,
                           ks_3=10.0,
                           ks_4=0.0,
                           platform_name='CPU',
+                          potential=None,
+                          ml_idx=None,
                           ):
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+
+    if potential is not None and ml_idx is not None:
+        print("Adding ML potential to the system...", flush=True)
+        run_mixed = True
+    else:
+        run_mixed = False
 
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
 
     print("\n--- Stage 1: Relaxing Hydrogens (Heavy atoms fixed) ---", flush=True)
-    system_h_only = forcefield.createSystem(modeller.topology,
-                                            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-                                            nonbondedCutoff=1.0 * unit.nanometer,
-                                            constraints=None,
-                                            rigidWater=False,
-                                            removeCMMotion=True)
+    if run_mixed:
+        mm_system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+        system_h_only = potential.createMixedSystem(
+            modeller.topology,
+            mm_system,
+            ml_idx,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+    else:
+        system_h_only = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
 
     # In OpenMM, mass=0 makes the particle immovable (infinite mass)
     for i, atom in enumerate(modeller.topology.atoms()):
@@ -870,13 +900,34 @@ def run_openmm_relaxation(modeller,
 
     current_positions = sim_1.context.getState(getPositions=True).getPositions()
     print("Stage 1 complete.", flush=True)
-
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-                                     nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=None,
-                                     rigidWater=False,
-                                     removeCMMotion=True)
+    if run_mixed:
+        mm_system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+        system = potential.createMixedSystem(
+            modeller.topology,
+            mm_system,
+            ml_idx,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
+    else:
+        system = forcefield.createSystem(
+            modeller.topology,
+            nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+            nonbondedCutoff=1.0 * unit.nanometer,
+            constraints=None,
+            rigidWater=False,
+            removeCMMotion=True,
+        )
 
     # Define the harmonic restraint force
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
