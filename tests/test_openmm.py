@@ -402,6 +402,7 @@ def test_openmm_rpmd_ml():
 
 
 def test_openmm_rpmd_mixed():
+    print(flush=True)
     # Simple run parameters
     n_steps = 200
     report_every = 100
@@ -429,22 +430,25 @@ def test_openmm_rpmd_mixed():
                         boxShape=box_shape)
 
     n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms.")
+    print(f"System has {n_atoms} atoms.", flush=True)
 
-    mm_system = forcefield.createSystem(modeller.topology)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    mm_system = forcefield.createSystem(modeller.topology,
+                                        nonbondedMethod=app.PME,
+                                        nonbondedCutoff=1.0 * unit.nanometers,
+                                        rigidWater=False,
+                                        constraints=None,
+                                        ewaldErrorTolerance=0.0005)
+
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
-    has_box = modeller.topology.getUnitCellDimensions() is not None
     system = potential.createMixedSystem(
         modeller.topology,
         mm_system,
         ml_atoms,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
+        interpolate=True,
+        removeConstraints=True,
     )
     # system = potential.createSystem(
     #     modeller.topology,
@@ -460,7 +464,8 @@ def test_openmm_rpmd_mixed():
     integrator.setRandomNumberSeed(2025)
 
     platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology, system, integrator, platform)
+    properties = {'DeviceIndex': '0,1'}
+    simulation = app.Simulation(modeller.topology, system, integrator, platform, properties)
 
     simulation.reporters.append(app.StateDataReporter(stdout,
                                                       report_every,
