@@ -406,10 +406,8 @@ def test_openmm_rpmd_mixed():
     # Simple run parameters
     n_steps = 200
     report_every = 100
-    data_out = 'md_log.txt'
     in_pdb = "tests/data/pdb/input_aaa.pdb"
-    out_pdb = Path("centroid_trajectory.pdb")
-    n_beads = 2
+    n_beads = 4
     temperature = 300.0 * unit.kelvin
     friction = 1.0 / unit.picosecond
     dt = 0.5 * unit.femtosecond
@@ -429,43 +427,29 @@ def test_openmm_rpmd_mixed():
                         padding=padding * unit.nanometer,
                         boxShape=box_shape)
 
-    n_atoms = modeller.topology.getNumAtoms()
-    print(f"System has {n_atoms} atoms.", flush=True)
-
     has_box = modeller.topology.getUnitCellDimensions() is not None
     mm_system = forcefield.createSystem(modeller.topology,
-                                        nonbondedMethod=app.PME,
-                                        nonbondedCutoff=1.0 * unit.nanometers,
-                                        rigidWater=False,
+                                        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+                                        nonbondedCutoff=1.0 * unit.nanometer,
                                         constraints=None,
-                                        ewaldErrorTolerance=0.0005)
+                                        rigidWater=False,
+                                        removeCMMotion=True)
 
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
+    n_atoms = modeller.topology.getNumAtoms()
+    print(f"System has {n_atoms} atoms", flush=True)
+    print(f"Number of ML atoms: {len(ml_atoms)}", flush=True)
+    print(f"Number of MM atoms: {n_atoms - len(ml_atoms)}", flush=True)
 
-    system = potential.createMixedSystem(
-        modeller.topology,
-        mm_system,
-        ml_atoms,
-        interpolate=True,
-        removeConstraints=True,
-    )
-    # system = potential.createSystem(
-    #     modeller.topology,
-    #     nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-    #     nonbondedCutoff=1.0 * unit.nanometer,
-    #     constraints=None,
-    #     rigidWater=False,
-    #     removeCMMotion=True,
-    # )
+    system = potential.createMixedSystem(modeller.topology,
+                                         mm_system,
+                                         ml_atoms)
 
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
-    integrator.setApplyThermostat(True)
-    integrator.setRandomNumberSeed(2025)
 
     platform = openmm.Platform.getPlatformByName("CUDA")
-    properties = {'DeviceIndex': '0,1'}
-    simulation = app.Simulation(modeller.topology, system, integrator, platform, properties)
+    simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
     simulation.reporters.append(app.StateDataReporter(stdout,
                                                       report_every,
@@ -474,38 +458,8 @@ def test_openmm_rpmd_mixed():
                                                       temperature=True,
                                                       speed=True))
 
-    simulation.reporters.append(app.StateDataReporter(data_out,
-                                                      report_every,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
-
-    # Initialize each bead with the input coordinates + tiny random jiggle
     nqe.init_beads(modeller, simulation, n_beads)
-
-    # Prepare multi-MODEL PDB (centroid coordinates)
-    with open(out_pdb, "w") as fh:
-        app.PDBFile.writeHeader(modeller.topology, fh)
-        # write initial centroid (model 0)
-        centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-        nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=0)
-
-        # Integrate and save snapshots
-        for step in range(1, n_steps + 1):
-            simulation.step(1)
-
-            if step % report_every == 0:
-                centroid = nqe.centroid_positions(simulation, n_atoms, n_beads)
-                nqe.write_multimodel_pdb(modeller.topology, centroid, fh, model_index=step // report_every)
-
-        app.PDBFile.writeFooter(modeller.topology, fh)
-    print(f"\nWrote centroid trajectory to: {out_pdb.resolve()}")
-    os.remove(out_pdb)
-    os.remove(data_out)
+    simulation.step(n_steps)
 
 
 def _get_total_mass(system):
