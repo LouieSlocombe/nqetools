@@ -3,8 +3,10 @@ import sys
 from pathlib import Path
 from sys import stdout
 
+import numpy as np
 import openmm.app as app
 import openmm.unit as unit
+from matplotlib import pyplot as plt
 from openmm import openmm
 from openmmml import MLPotential
 from openmmplumed import PlumedForce
@@ -763,3 +765,152 @@ def test_eq_workflow():
     os.remove('minimized.pdb')
     os.remove('equilibrated.pdb')
     os.remove('npt_equilibrated.pdb')
+
+
+def calculate_quantum_spread(integrator, atom_indices=None):
+    """
+    Calculates the root-mean-square distance of beads from the ring polymer centroid.
+    This is a measure of quantum delocalization (quantum spread).
+
+    Parameters
+    ----------
+    integrator : openmm.RPMDIntegrator
+        The integrator running the simulation.
+    atom_indices : list of int, optional
+        List of atom indices to calculate the spread for.
+        If None, calculates for ALL atoms (can be memory intensive).
+
+    Returns
+    -------
+    spreads : openmm.unit.Quantity (numpy array)
+        An array of shape (n_selected_atoms,) containing the quantum Rg
+        for each selected atom in nanometers.
+    """
+    num_beads = integrator.getNumCopies()
+    all_bead_positions = []
+    for i in range(num_beads):
+        state = integrator.getState(copy=i, getPositions=True)
+        pos = state.getPositions(asNumpy=True).value_in_unit(unit.nanometers)
+        if atom_indices is not None:
+            pos = pos[atom_indices]
+        all_bead_positions.append(pos)
+
+    # Convert to numpy array for vector math
+    coords = np.array(all_bead_positions)
+    # Calculate Centroid (average position across beads)
+    centroid = np.mean(coords, axis=0)
+    # Calculate Squared Distance of each bead from the Centroid
+    diff = coords - centroid
+    sq_dist = np.sum(diff ** 2, axis=2)  # Sum x,y,z components -> (n_beads, n_atoms)
+    # Average over beads (Mean Squared Displacement from Centroid)
+    mean_sq_dist = np.mean(sq_dist, axis=0)
+    quantum_rg = np.sqrt(mean_sq_dist)
+    return quantum_rg * unit.nanometers
+
+
+class RPMDQuantumSpreadReporter(object):
+    """
+    A Reporter class to log the quantum spread (delocalization) of specific atoms
+    during an RPMD simulation.
+    """
+
+    def __init__(self, file, reportInterval, atom_indices, names=None):
+        """
+        Parameters
+        ----------
+        file : str
+            Filename to write to.
+        reportInterval : int
+            The interval (in steps) at which to write frames.
+        atom_indices : list of int
+            The indices of the atoms to monitor (e.g., the transferring proton).
+        names : list of str, optional
+            Names for the columns (e.g., ["Proton_H1", "Donor_N"]).
+            If None, uses indices.
+        """
+        self._reportInterval = reportInterval
+        self._atom_indices = atom_indices
+        self._out = open(file, 'w')
+
+        # Header
+        if names:
+            header = "Step\t" + "\t".join([f"Rg_{n}(nm)" for n in names])
+        else:
+            header = "Step\t" + "\t".join([f"Rg_Atom{i}(nm)" for i in atom_indices])
+        self._out.write(header + "\n")
+
+    def describeNextReport(self, simulation):
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+    def report(self, simulation, state):
+        # We need access to the integrator to get bead positions, not just the simulation state
+        integrator = simulation.integrator
+
+        # Calculate spreads using the helper function defined above
+        # Note: This requires the helper function to be available or methodized
+        spreads = calculate_quantum_spread(integrator, self._atom_indices)
+
+        # Write to file
+        step = simulation.currentStep
+        spread_values = spreads.value_in_unit(unit.nanometers)
+
+        line = f"{step}"
+        for val in spread_values:
+            line += f"\t{val:.6f}"
+        self._out.write(line + "\n")
+        self._out.flush()
+
+    def __del__(self):
+        self._out.close()
+
+
+def test_rpmd_quantum_spread_reporter():
+    pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")  # Replace with your PDB
+    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    has_box = modeller.topology.getUnitCellDimensions() is not None
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
+
+    n_beads = 64
+    integrator = openmm.RPMDIntegrator(n_beads,
+                                       300 * unit.kelvin,
+                                       1.0 / unit.picosecond,
+                                       0.5 * unit.femtosecond)
+
+    simulation = app.Simulation(pdb.topology, system, integrator)
+
+    for i in range(n_beads):
+        integrator.setPositions(i, pdb.positions)
+    nqe.init_beads(modeller, simulation, n_beads)
+
+    atoms_to_watch = [0, 1]
+    atom_names = ["Atom0", "Atom1"]
+
+    # 4. Attach the custom reporter
+    simulation.reporters.append(RPMDQuantumSpreadReporter(
+        file="quantum_spread.txt",
+        reportInterval=1,
+        atom_indices=atoms_to_watch,
+        names=atom_names
+    ))
+
+    print("Running RPMD with Quantum Spread reporting...")
+    simulation.step(500)
+    print("Done. Check 'quantum_spread.txt'.")
+    data = np.loadtxt("quantum_spread.txt", skiprows=1, delimiter='\t')
+
+    plt.plot(data[:, 0], data[:, 1], label='Atom0')
+    plt.plot(data[:, 0], data[:, 2], label='Atom1')
+    plt.xlabel('Step')
+    plt.ylabel('Quantum Rg (nm)')
+    plt.legend()
+    plt.show()
