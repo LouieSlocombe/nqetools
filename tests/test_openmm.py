@@ -30,7 +30,6 @@ def test_openmm_ml_mixed_system():
     forcefield = app.ForceField('amber14-all.xml',
                                 'amber14/tip3pfb.xml')
     potential = MLPotential('mace-off23-small')
-
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
@@ -45,55 +44,12 @@ def test_openmm_ml_mixed_system():
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
-    # nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA', potential=potential, ml_idx=ml_atoms)
-    # os.remove('minimized.pdb')
-
-    has_box = modeller.topology.getUnitCellDimensions() is not None
-    mm_system = forcefield.createSystem(
-        modeller.topology,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-    system = potential.createMixedSystem(
-        modeller.topology,
-        mm_system,
-        ml_atoms,
-        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-        nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=None,
-        rigidWater=False,
-        removeCMMotion=True,
-    )
-
-    # Run langevin dynamics at 300K for 1000 steps
-    integrator = openmm.LangevinIntegrator(300 * unit.kelvin,
-                                           1.0 / unit.picoseconds,
-                                           1.0 * unit.femtosecond)
-
-    platform = openmm.Platform.getPlatformByName("CUDA")
-    simulation = app.Simulation(modeller.topology,
-                                system,
-                                integrator,
-                                platform)
-
-    simulation.context.setPositions(modeller.positions)
-    simulation.reporters.append(
-        app.StateDataReporter(
-            stdout,
-            100,
-            step=True,
-            potentialEnergy=True,
-            temperature=True,
-            speed=True
-        )
-    )
-
-    # Set the velocities to 300K and run 1000 steps
-    simulation.context.setVelocitiesToTemperature(300 * unit.kelvin)
-    simulation.step(1_000)
+    nqe.run_openmm_relaxation(modeller,
+                              forcefield,
+                              platform_name='CUDA',
+                              potential=potential,
+                              ml_idx=ml_atoms)
+    os.remove('minimized.pdb')
 
 
 def test_prepare_ligand_ff():
@@ -407,6 +363,36 @@ def test_eq_workflow():
     pdb = app.PDBFile("equilibrated.pdb")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     nqe.run_openmm_npt(modeller, forcefield)
+
+    os.remove('minimized.pdb')
+    os.remove('equilibrated.pdb')
+    os.remove('npt_equilibrated.pdb')
+
+
+def test_eq_workflow_mixed():
+    print(flush=True)
+
+    pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
+    forcefield = app.ForceField('amber14-all.xml',
+                                'amber14/tip3pfb.xml')
+    potential = MLPotential('mace-off23-small')
+    modeller = app.Modeller(pdb.topology, pdb.positions)
+    modeller.deleteWater()
+    modeller.addHydrogens()
+
+    # Solvate
+    padding = 2.0
+    box_shape = 'dodecahedron'
+    modeller.addSolvent(forcefield,
+                        padding=padding * unit.nanometer,
+                        boxShape=box_shape)
+
+    chains = list(modeller.topology.chains())
+    ml_atoms = [atom.index for atom in chains[0].atoms()]
+
+    nqe.run_openmm_relaxation(modeller, forcefield, potential=potential, ml_idx=ml_atoms)
+    nqe.run_openmm_heating(modeller, forcefield, potential=potential, ml_idx=ml_atoms)
+    nqe.run_openmm_npt(modeller, forcefield, potential=potential, ml_idx=ml_atoms)
 
     os.remove('minimized.pdb')
     os.remove('equilibrated.pdb')
