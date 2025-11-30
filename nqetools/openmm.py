@@ -1277,22 +1277,22 @@ def run_openmm_prod(modeller,
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
 
-def run_rpmd_equilibration(modeller,
-                           forcefield,
-                           output_prefix='rpmd_ready',
-                           num_beads=32,
-                           temperature=300 * unit.kelvin,
-                           pressure=1 * unit.bar,
-                           barostat_freq=50,
-                           friction=1.0 / unit.picosecond,
-                           safe_timestep=0.5 * unit.femtoseconds,
-                           production_timestep=1.0 * unit.femtoseconds,
-                           n_report=1_000,
-                           n_1=2_000,
-                           n_2=10_000,
-                           platform_name='CPU',
-                           deuterate=False,
-                           deuterate_option='water'):
+def run_openmm_rpmd_equilibration(modeller,
+                                  forcefield,
+                                  output_prefix='rpmd_ready',
+                                  num_beads=32,
+                                  temperature=300 * unit.kelvin,
+                                  pressure=1 * unit.bar,
+                                  barostat_freq=50,
+                                  friction=1.0 / unit.picosecond,
+                                  safe_timestep=0.5 * unit.femtoseconds,
+                                  production_timestep=1.0 * unit.femtoseconds,
+                                  n_report=1_000,
+                                  n_1=2_000,
+                                  n_2=10_000,
+                                  platform_name='CPU',
+                                  deuterate=False,
+                                  deuterate_option='water'):
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(modeller.topology,
@@ -1338,21 +1338,21 @@ def run_rpmd_equilibration(modeller,
     print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
 
 
-def run_contracted_rpmd(modeller,
-                        forcefield,
-                        num_beads=32,
-                        temperature=300 * unit.kelvin,
-                        pressure=1 * unit.bar,
-                        barostat_freq=50,
-                        friction=1.0 / unit.picosecond,
-                        timestep=0.5 * unit.femtoseconds,
-                        checkpoint_file='rpmd_ready.chk',
-                        steps=100_000,
-                        n_report=1_000,
-                        contractions=None,
-                        platform_name='CPU',
-                        deuterate=False,
-                        deuterate_option='water'):
+def run_openmm_rpmd_contracted(modeller,
+                               forcefield,
+                               num_beads=32,
+                               temperature=300 * unit.kelvin,
+                               pressure=1 * unit.bar,
+                               barostat_freq=50,
+                               friction=1.0 / unit.picosecond,
+                               timestep=0.5 * unit.femtoseconds,
+                               checkpoint_file='rpmd_ready.chk',
+                               steps=100_000,
+                               n_report=1_000,
+                               contractions=None,
+                               platform_name='CPU',
+                               deuterate=False,
+                               deuterate_option='water'):
     platform = openmm.Platform.getPlatformByName(platform_name)
 
     if contractions is None:
