@@ -764,3 +764,83 @@ def test_count_dna_and_estimate_charge():
     est_charge = nqe.count_dna_and_estimate_charge(pdb.topology)
     print(f"Estimated net charge: {est_charge}")
     assert est_charge == -6
+
+def test_fep():
+    print(flush=True)
+    from openmmtools import testsystems, alchemy
+    import copy
+    from pymbar import MBAR
+
+    print("Creating test system...")
+    host_guest = testsystems.HostGuestVacuum()
+    system = host_guest.system
+    positions = host_guest.positions
+    topology = host_guest.topology
+
+    ligand_atoms = [atom.index for atom in topology.atoms() if atom.residue.name == 'B2']
+    factory = alchemy.AbsoluteAlchemicalFactory(consistent_exceptions=False)
+    alchemical_region = alchemy.AlchemicalRegion(alchemical_atoms=ligand_atoms)
+    alchemical_system = factory.create_alchemical_system(system, alchemical_region)
+
+
+    lambda_electrostatics = [1.0, 0.75, 0.5, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    lambda_sterics = [1.0, 1.0, 1.0, 1.0, 1.0, 0.75, 0.5, 0.25, 0.1, 0.0]
+    n_steps = len(lambda_electrostatics)
+    alchemical_state = alchemy.AlchemicalState.from_system(alchemical_system)
+
+
+    temperature = 300 * unit.kelvin
+
+    integrator = openmm.LangevinIntegrator(temperature, 1.0 / unit.picosecond, 2.0 * unit.femtoseconds)
+    context = openmm.Context(alchemical_system, integrator)
+    context.setPositions(positions)
+
+    openmm.LocalEnergyMinimizer.minimize(context)
+
+    # Storage for energy differences (u_kln)
+    # u_kln[k, l] is the reduced potential energy of snapshot from state k evaluated at state l
+    u_kln = np.zeros([n_steps, n_steps])
+
+    print("Starting Alchemical FEP...")
+
+    for k in range(n_steps):
+        print(f"Sampling Window {k + 1}/{n_steps} (Elec: {lambda_electrostatics[k]}, VdW: {lambda_sterics[k]})")
+        alchemical_state.lambda_electrostatics = lambda_electrostatics[k]
+        alchemical_state.lambda_sterics = lambda_sterics[k]
+        alchemical_state.apply_to_context(context)
+        integrator.step(500)
+        # In production, you would run this much longer (e.g., ns scale) and save many frames
+        production_steps = 100_000
+        integrator.step(production_steps)
+
+        # D. Energy Evaluation (Cross-calculations for MBAR)
+        # We take the current configuration (x_k) and calculate its energy
+        # at ALL other lambda states (l=0...N).
+        current_pos = context.getState(getPositions=True).getPositions()
+
+        for l in range(n_steps):
+            temp_state = copy.deepcopy(alchemical_state)
+            temp_state.lambda_electrostatics = lambda_electrostatics[l]
+            temp_state.lambda_sterics = lambda_sterics[l]
+            temp_state.apply_to_context(context)
+            energy = context.getState(getEnergy=True).getPotentialEnergy()
+            kT = unit.MOLAR_GAS_CONSTANT_R * temperature
+
+            # 2. Strip units safely by converting both to kJ/mol
+            energy_val = energy.value_in_unit(unit.kilojoules_per_mole)
+            kT_val = kT.value_in_unit(unit.kilojoules_per_mole)
+
+            # 3. Calculate reduced potential (dimensionless float)
+            u_kln[k, l] = energy_val / kT_val
+
+        # Reset context back to state k for the next loop iteration continuity
+        alchemical_state.lambda_electrostatics = lambda_electrostatics[k]
+        alchemical_state.lambda_sterics = lambda_sterics[k]
+        alchemical_state.apply_to_context(context)
+
+    print("Analyzing with MBAR...")
+    mbar = MBAR(u_kln, [1] * n_steps)
+    result = mbar.compute_free_energy_differences()
+    delta_f = result['Delta_f'][0, -1]
+    delta_f_error = result['dDelta_f'][0, -1]
+    print(f"Free Energy Difference (Complex Leg): {delta_f:.3f} +/- {delta_f_error:.3f} kT")
