@@ -1340,6 +1340,7 @@ def run_openmm_rpmd_equilibration(modeller,
 
 def run_openmm_rpmd_contracted(modeller,
                                forcefield,
+                               plumed_script_path=None,
                                num_beads=32,
                                temperature=300 * unit.kelvin,
                                pressure=1 * unit.bar,
@@ -1377,6 +1378,15 @@ def run_openmm_rpmd_contracted(modeller,
         deuterate_system(modeller, system, option=deuterate_option)
 
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
+
+    if plumed_script_path is not None:
+        print(f"Adding PLUMED bias from {plumed_script_path}...", flush=True)
+
+        with open(plumed_script_path, 'r') as f:
+            script_content = f.read()
+
+        plumed_force = PlumedForce(script_content)
+        system.addForce(plumed_force)
 
     # We must assign specific forces to specific integer groups (0-31).
     # Group 0: Bonded Forces (Cheap) -> 32 copies (Implicit default)
