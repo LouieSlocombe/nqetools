@@ -765,11 +765,13 @@ def test_count_dna_and_estimate_charge():
     print(f"Estimated net charge: {est_charge}")
     assert est_charge == -6
 
+
 def test_fep():
+    # https://openmm.github.io/openmm-cookbook/latest/notebooks/tutorials/Alchemical_free_energy_calculations.html
     print(flush=True)
     from openmmtools import testsystems, alchemy
     import copy
-    from pymbar import MBAR
+    from pymbar import MBAR, timeseries
 
     print("Creating test system...")
     host_guest = testsystems.HostGuestVacuum()
@@ -782,12 +784,10 @@ def test_fep():
     alchemical_region = alchemy.AlchemicalRegion(alchemical_atoms=ligand_atoms)
     alchemical_system = factory.create_alchemical_system(system, alchemical_region)
 
-
     lambda_electrostatics = [1.0, 0.75, 0.5, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     lambda_sterics = [1.0, 1.0, 1.0, 1.0, 1.0, 0.75, 0.5, 0.25, 0.1, 0.0]
     n_steps = len(lambda_electrostatics)
     alchemical_state = alchemy.AlchemicalState.from_system(alchemical_system)
-
 
     temperature = 300 * unit.kelvin
 
@@ -839,6 +839,20 @@ def test_fep():
         alchemical_state.apply_to_context(context)
 
     print("Analyzing with MBAR...")
+    N_k = np.zeros([n_steps], np.int32)  # number of uncorrelated samples
+    for k in range(n_steps):
+        [nequil, g, Neff_max] = timeseries.detect_equilibration(u_kln[k, k, :])
+        indices = timeseries.subsample_correlated_data(u_kln[k, k, :], g=g)
+        N_k[k] = len(indices)
+        u_kln[k, :, 0:N_k[k]] = u_kln[k, :, indices].T
+
+    # Compute free energy differences
+    mbar = MBAR(u_kln, N_k)
+    results = mbar.compute_free_energy_differences(compute_uncertainty=True)
+
+    print("Free energy change to insert a particle = ", results['Delta_f'][n_steps - 1, 0])
+    print("Statistical uncertainty = ", results['dDelta_f'][n_steps - 1, 0])
+
     mbar = MBAR(u_kln, [1] * n_steps)
     result = mbar.compute_free_energy_differences()
     delta_f = result['Delta_f'][0, -1]
