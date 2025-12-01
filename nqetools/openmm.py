@@ -314,13 +314,11 @@ def md_workflow(file_in,
 
     # Setup reporting
     simulation.reporters.append(app.PDBReporter(file_out, report_pdb))
-
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       report_std,
                                                       step=True,
                                                       potentialEnergy=True,
                                                       temperature=True))
-
     simulation.reporters.append(app.StateDataReporter(data_out,
                                                       report_data,
                                                       step=True,
@@ -828,7 +826,7 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
 
 def run_openmm_relaxation(modeller,
                           forcefield,
-                          output_filename='minimized.pdb',
+                          output_prefix='minimized',
                           temperature=300.0 * unit.kelvin,
                           gamma=1.0 / unit.picosecond,
                           time_step=1.0 * unit.femtoseconds,
@@ -836,6 +834,7 @@ def run_openmm_relaxation(modeller,
                           n_2=1_000,
                           n_3=1_000,
                           n_4=2_000,
+                          n_report=100,
                           backbone_names=None,
                           ks_2=100.0,
                           ks_3=10.0,
@@ -952,6 +951,22 @@ def run_openmm_relaxation(modeller,
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(current_positions)
 
+    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
+    simulation.reporters.append(app.StateDataReporter(sys.stdout,
+                                                      n_report,
+                                                      step=True,
+                                                      potentialEnergy=True,
+                                                      temperature=True))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
+                                                      temperature=True,
+                                                      volume=True))
+
     print(f"\n--- Stage 2: Strong Backbone Restraints ({ks_2} kJ/mol/nm^2) ---", flush=True)
     k_strong = ks_2 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_strong)
@@ -968,14 +983,14 @@ def run_openmm_relaxation(modeller,
     simulation.minimizeEnergy(maxIterations=n_4)
 
     final_state = simulation.context.getState(getPositions=True)
-    with open(output_filename, 'w') as f:
+    with open(output_prefix + '.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)
-    print(f"\nProcess complete. Saved to {output_filename}", flush=True)
+    print(f"\nProcess complete. Saved to {output_prefix}", flush=True)
 
 
 def run_openmm_heating(modeller,
                        forcefield,
-                       output_pdb='equilibrated.pdb',
+                       output_prefix='equilibrate',
                        k1=100.0,
                        backbone_names=None,
                        target_temp=300.0 * unit.kelvin,
@@ -1055,11 +1070,22 @@ def run_openmm_heating(modeller,
     simulation.context.setPositions(modeller.positions)
 
     print(f"\n--- Starting Gentle Heating (0K -> {target_temp}) ---", flush=True)
+    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
                                                       temperature=True))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
+                                                      temperature=True,
+                                                      volume=True))
+
     temp = temp_step
     while temp <= target_temp:
         print(f"\n-> Heating to {temp}...", flush=True)
@@ -1073,14 +1099,14 @@ def run_openmm_heating(modeller,
     simulation.step(steps_final)
 
     state = simulation.context.getState(getPositions=True)
-    with open(output_pdb, 'w') as f:
+    with open(output_prefix + '.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
-    print(f"Saved equilibrated structure to {output_pdb}", flush=True)
+    print(f"Saved equilibrated structure to {output_prefix}", flush=True)
 
 
 def run_openmm_npt(modeller,
                    forcefield,
-                   output_pdb='npt_equilibrated.pdb',
+                   output_prefix='npt_equilibrated',
                    pressure=1.0 * unit.bar,
                    temperature=300.0 * unit.kelvin,
                    gamma=1.0 / unit.picosecond,
@@ -1163,13 +1189,22 @@ def run_openmm_npt(modeller,
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
+
+    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
+                                                      temperature=True))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
                                                       temperature=True,
-                                                      volume=True,
-                                                      density=True))
+                                                      volume=True))
 
     print("\n--- Phase 1: Restrained NPT (Relaxing Density) ---", flush=True)
     simulation.step(n_1)
@@ -1180,10 +1215,10 @@ def run_openmm_npt(modeller,
 
     state = simulation.context.getState(getPositions=True, getVelocities=True)
 
-    with open(output_pdb, 'w') as f:
+    with open(output_prefix, 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
-    print(f"\nDensity equilibration complete. Saved to {output_pdb}", flush=True)
+    print(f"\nDensity equilibration complete. Saved to {output_prefix}", flush=True)
 
 
 def run_openmm_prod(modeller,
@@ -1261,13 +1296,23 @@ def run_openmm_prod(modeller,
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
-    simulation.reporters.append(app.DCDReporter(f'{output_prefix}.dcd', n_report))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log', n_report,
+
+    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
+    simulation.reporters.append(app.StateDataReporter(sys.stdout,
+                                                      n_report,
                                                       step=True,
                                                       potentialEnergy=True,
+                                                      temperature=True))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
                                                       temperature=True,
-                                                      density=True,
-                                                      speed=True))
+                                                      volume=True))
+
     simulation.reporters.append(app.CheckpointReporter(f'{output_prefix}.chk', n_report * 10))
     print(f"Starting production run for {steps} steps...", flush=True)
     simulation.step(steps)
