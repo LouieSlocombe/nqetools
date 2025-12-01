@@ -956,7 +956,8 @@ def run_openmm_relaxation(modeller,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
-                                                      temperature=True))
+                                                      temperature=True,
+                                                      speed=True))
     simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
                                                       n_report,
                                                       step=True,
@@ -982,8 +983,9 @@ def run_openmm_relaxation(modeller,
     simulation.context.setParameter("k", k_vweak)
     simulation.minimizeEnergy(maxIterations=n_4)
 
-    final_state = simulation.context.getState(getPositions=True)
-    with open(output_prefix + '.pdb', 'w') as f:
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    final_state = simulation.context.getState(getPositions=True, getVelocities=True)
+    with open(f'{output_prefix}.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)
     print(f"\nProcess complete. Saved to {output_prefix}", flush=True)
 
@@ -1075,7 +1077,8 @@ def run_openmm_heating(modeller,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
-                                                      temperature=True))
+                                                      temperature=True,
+                                                      speed=True))
     simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
                                                       n_report,
                                                       step=True,
@@ -1098,8 +1101,9 @@ def run_openmm_heating(modeller,
     print(f"Running final equilibration at {target_temp} for {steps_final} steps...", flush=True)
     simulation.step(steps_final)
 
-    state = simulation.context.getState(getPositions=True)
-    with open(output_prefix + '.pdb', 'w') as f:
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    state = simulation.context.getState(getPositions=True, getVelocities=True)
+    with open(f'{output_prefix}.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
     print(f"Saved equilibrated structure to {output_prefix}", flush=True)
 
@@ -1195,7 +1199,8 @@ def run_openmm_npt(modeller,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
-                                                      temperature=True))
+                                                      temperature=True,
+                                                      speed=True))
     simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
                                                       n_report,
                                                       step=True,
@@ -1213,9 +1218,9 @@ def run_openmm_npt(modeller,
     simulation.context.setParameter("k", 0.0)
     simulation.step(n_2)
 
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-
-    with open(output_prefix, 'w') as f:
+    with open(f'{output_prefix}.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
     print(f"\nDensity equilibration complete. Saved to {output_prefix}", flush=True)
@@ -1302,7 +1307,8 @@ def run_openmm_prod(modeller,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
-                                                      temperature=True))
+                                                      temperature=True,
+                                                      speed=True))
     simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
                                                       n_report,
                                                       step=True,
@@ -1317,6 +1323,8 @@ def run_openmm_prod(modeller,
     print(f"Starting production run for {steps} steps...", flush=True)
     simulation.step(steps)
     print("Production run complete.", flush=True)
+
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
     state = simulation.context.getState(getPositions=True, getVelocities=True)
     with open(f'{output_prefix}.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
@@ -1327,11 +1335,10 @@ def run_openmm_rpmd_equilibration(modeller,
                                   output_prefix='rpmd_ready',
                                   num_beads=32,
                                   temperature=300 * unit.kelvin,
-                                  pressure=1 * unit.bar,
+                                  pressure=1.0 * unit.bar,
                                   barostat_freq=50,
                                   friction=1.0 / unit.picosecond,
-                                  safe_timestep=0.5 * unit.femtoseconds,
-                                  production_timestep=1.0 * unit.femtoseconds,
+                                  timestep=0.5 * unit.femtoseconds,
                                   n_report=1_000,
                                   n_1=2_000,
                                   n_2=10_000,
@@ -1352,47 +1359,55 @@ def run_openmm_rpmd_equilibration(modeller,
         deuterate_system(modeller, system, option=deuterate_option)
 
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
-    integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, safe_timestep)
+    integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, timestep)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
-
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
+
+    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
-                                                      kineticEnergy=True,
                                                       temperature=True,
-                                                      volume=True,
                                                       speed=True))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
+                                                      temperature=True,
+                                                      volume=True))
 
     print("\n--- Stage 1: Bead Expansion  ---", flush=True)
+    integrator.setStepSize(timestep * 0.5)
     simulation.step(n_1)
 
-    print(f"\n--- Stage 2: Relaxation at full timestep ({production_timestep}) ---", flush=True)
-    integrator.setStepSize(production_timestep)
+    print(f"\n--- Stage 2: Relaxation at full timestep ({timestep}) ---", flush=True)
+    integrator.setStepSize(timestep)
     simulation.step(n_2)
 
     print("\n--- Saving State ---", flush=True)
-    simulation.saveCheckpoint(f'{output_prefix}.chk')  # simulation.loadCheckpoint('rpmd_ready.chk')
-    state = simulation.context.getState(getPositions=True)
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    state = simulation.context.getState(getPositions=True, getVelocities=True)
     with open(f'{output_prefix}_centroid.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
-
-    print(f"Saved checkpoint to {output_prefix}.chk (Use this to start production)", flush=True)
     print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
 
 
 def run_openmm_rpmd_contracted(modeller,
                                forcefield,
                                plumed_script_path=None,
+                               checkpoint_file='rpmd_ready.chk',
+                               output_prefix='prod_contracted',
                                num_beads=32,
                                temperature=300 * unit.kelvin,
-                               pressure=1 * unit.bar,
+                               pressure=1.0 * unit.bar,
                                barostat_freq=50,
                                friction=1.0 / unit.picosecond,
                                timestep=0.5 * unit.femtoseconds,
-                               checkpoint_file='rpmd_ready.chk',
                                steps=100_000,
                                n_report=1_000,
                                contractions=None,
@@ -1438,7 +1453,7 @@ def run_openmm_rpmd_contracted(modeller,
     # Group 1: Nonbonded Direct Space (Expensive) -> 8 copies
     # Group 2: PME Reciprocal Space (Very Expensive) -> 1 copy
 
-    print("Assigning force groups for contraction...")
+    print("Assigning force groups for contraction...", flush=True)
 
     for force in system.getForces():
         # Check for NonbondedForce (Handles VdW + Coulomb)
@@ -1462,15 +1477,15 @@ def run_openmm_rpmd_contracted(modeller,
         else:
             force.setForceGroup(0)
 
-    print(f"\nInitializing RPMDIntegrator with contractions: {contractions}")
+    print(f"\nInitializing RPMDIntegrator with contractions: {contractions}", flush=True)
     integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, timestep, contractions)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
     if not os.path.exists(checkpoint_file):
-        print(f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.")
+        print(f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.", flush=True)
         return
 
-    print(f"Loading state from {checkpoint_file}...")
+    print(f"Loading state from {checkpoint_file}...", flush=True)
     simulation.loadCheckpoint(checkpoint_file)
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       n_report,
@@ -1486,7 +1501,14 @@ def run_openmm_rpmd_contracted(modeller,
 
     print(f"\nStarting Production Run ({steps} steps)...")
     simulation.step(steps)
-    print("Done.")
+    print("Done.", flush=True)
+
+    print("\n--- Saving State ---", flush=True)
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    state = simulation.context.getState(getPositions=True, getVelocities=True)
+    with open(f'{output_prefix}_centroid.pdb', 'w') as f:
+        app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
+    print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
 
 
 def run_openmm_rpmd_prod(modeller,
