@@ -1333,7 +1333,7 @@ def run_openmm_prod(modeller,
 def run_openmm_rpmd_equilibration(modeller,
                                   forcefield,
                                   output_prefix='rpmd_ready',
-                                  num_beads=32,
+                                  n_beads=32,
                                   temperature=300 * unit.kelvin,
                                   pressure=1.0 * unit.bar,
                                   barostat_freq=50,
@@ -1344,7 +1344,8 @@ def run_openmm_rpmd_equilibration(modeller,
                                   n_2=10_000,
                                   platform_name='CPU',
                                   deuterate=False,
-                                  deuterate_option='water'):
+                                  deuterate_option='water',
+                                  atoms_to_watch=None):
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(modeller.topology,
@@ -1359,12 +1360,32 @@ def run_openmm_rpmd_equilibration(modeller,
         deuterate_system(modeller, system, option=deuterate_option)
 
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
-    integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, timestep)
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, timestep)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
 
-    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
+    if atoms_to_watch is not None:
+        simulation.reporters.append(RPMDQuantumSpreadReporter(
+            file=f'{output_prefix}_spread.log',
+            reportInterval=n_report,
+            atom_indices=atoms_to_watch,
+        ))
+
+    simulation.reporters.append(RPMDCentroidReporter(
+        topology=modeller.topology,
+        file_name=f"{output_prefix}_centroid.pdb",
+        reportInterval=n_report,
+        num_beads=n_beads,
+    ))
+
+    simulation.reporters.append(RPMDBeadReporter(
+        topology=modeller.topology,
+        file_base_name=output_prefix,
+        reportInterval=n_report,
+        num_beads=n_beads,
+    ))
+
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       n_report,
                                                       step=True,
@@ -1402,7 +1423,7 @@ def run_openmm_rpmd_contracted(modeller,
                                plumed_script_path=None,
                                checkpoint_file='rpmd_ready.chk',
                                output_prefix='prod_contracted',
-                               num_beads=32,
+                               n_beads=32,
                                temperature=300 * unit.kelvin,
                                pressure=1.0 * unit.bar,
                                barostat_freq=50,
@@ -1413,7 +1434,8 @@ def run_openmm_rpmd_contracted(modeller,
                                contractions=None,
                                platform_name='CPU',
                                deuterate=False,
-                               deuterate_option='water'):
+                               deuterate_option='water',
+                               atoms_to_watch=None):
     platform = openmm.Platform.getPlatformByName(platform_name)
 
     if contractions is None:
@@ -1478,7 +1500,7 @@ def run_openmm_rpmd_contracted(modeller,
             force.setForceGroup(0)
 
     print(f"\nInitializing RPMDIntegrator with contractions: {contractions}", flush=True)
-    integrator = openmm.RPMDIntegrator(num_beads, temperature, friction, timestep, contractions)
+    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, timestep, contractions)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
     if not os.path.exists(checkpoint_file):
@@ -1487,17 +1509,43 @@ def run_openmm_rpmd_contracted(modeller,
 
     print(f"Loading state from {checkpoint_file}...", flush=True)
     simulation.loadCheckpoint(checkpoint_file)
+
+    if atoms_to_watch is not None:
+        simulation.reporters.append(RPMDQuantumSpreadReporter(
+            file=f'{output_prefix}_spread.log',
+            reportInterval=n_report,
+            atom_indices=atoms_to_watch,
+        ))
+
+    simulation.reporters.append(RPMDCentroidReporter(
+        topology=modeller.topology,
+        file_name=f"{output_prefix}_centroid.pdb",
+        reportInterval=n_report,
+        num_beads=n_beads,
+    ))
+
+    simulation.reporters.append(RPMDBeadReporter(
+        topology=modeller.topology,
+        file_base_name=output_prefix,
+        reportInterval=n_report,
+        num_beads=n_beads,
+    ))
+
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       n_report,
                                                       step=True,
                                                       potentialEnergy=True,
                                                       temperature=True,
-                                                      speed=True,
-                                                      remainingTime=True,
-                                                      totalSteps=steps))
-
-    simulation.reporters.append(app.DCDReporter('rpmd_production.dcd', n_report))
-    simulation.reporters.append(app.CheckpointReporter('rpmd_production.chk', n_report))
+                                                      speed=True))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
+                                                      temperature=True,
+                                                      volume=True))
 
     print(f"\nStarting Production Run ({steps} steps)...")
     simulation.step(steps)
@@ -1514,6 +1562,9 @@ def run_openmm_rpmd_contracted(modeller,
 def run_openmm_rpmd_prod(modeller,
                          forcefield,
                          plumed_script_path=None,
+                         checkpoint_file='rpmd_ready.chk',
+                         output_prefix='prod',
+                         n_beads=32,
                          pressure=1.0 * unit.bar,
                          temperature=300.0 * unit.kelvin,
                          gamma=1.0 / unit.picosecond,
@@ -1521,12 +1572,12 @@ def run_openmm_rpmd_prod(modeller,
                          barostat_freq=50,
                          n_report=1_000,
                          steps=500_000,
-                         output_prefix='prod',
                          platform_name='CPU',
                          deuterate=False,
                          deuterate_option='water',
                          potential=None,
-                         ml_idx=None):
+                         ml_idx=None,
+                         atoms_to_watch=None):
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
@@ -1584,19 +1635,55 @@ def run_openmm_rpmd_prod(modeller,
                                        gamma,
                                        time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
-    simulation.context.setPositions(modeller.positions)
-    simulation.context.setVelocitiesToTemperature(temperature)
-    simulation.reporters.append(app.DCDReporter(f'{output_prefix}.dcd', n_report))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log', n_report,
+    if not os.path.exists(checkpoint_file):
+        print(f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.", flush=True)
+        return
+
+    print(f"Loading state from {checkpoint_file}...", flush=True)
+    simulation.loadCheckpoint(checkpoint_file)
+
+    if atoms_to_watch is not None:
+        simulation.reporters.append(RPMDQuantumSpreadReporter(
+            file=f'{output_prefix}_spread.log',
+            reportInterval=n_report,
+            atom_indices=atoms_to_watch,
+        ))
+
+    simulation.reporters.append(RPMDCentroidReporter(
+        topology=modeller.topology,
+        file_name=f"{output_prefix}_centroid.pdb",
+        reportInterval=n_report,
+        num_beads=n_beads,
+    ))
+
+    simulation.reporters.append(RPMDBeadReporter(
+        topology=modeller.topology,
+        file_base_name=output_prefix,
+        reportInterval=n_report,
+        num_beads=n_beads,
+    ))
+
+    simulation.reporters.append(app.StateDataReporter(sys.stdout,
+                                                      n_report,
                                                       step=True,
                                                       potentialEnergy=True,
                                                       temperature=True,
-                                                      density=True,
                                                       speed=True))
-    simulation.reporters.append(app.CheckpointReporter(f'{output_prefix}.chk', n_report * 10))
+    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
+                                                      n_report,
+                                                      step=True,
+                                                      time=True,
+                                                      potentialEnergy=True,
+                                                      kineticEnergy=True,
+                                                      totalEnergy=True,
+                                                      temperature=True,
+                                                      volume=True))
+
     print(f"Starting production run for {steps} steps...", flush=True)
     simulation.step(steps)
     print("Production run complete.", flush=True)
+
+    simulation.saveCheckpoint(f'{output_prefix}.chk')
     state = simulation.context.getState(getPositions=True, getVelocities=True)
     with open(f'{output_prefix}.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)

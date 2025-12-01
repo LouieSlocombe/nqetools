@@ -654,10 +654,9 @@ def test_rpmd_quantum_spread_reporter():
                                        1.0 / unit.picosecond,
                                        0.5 * unit.femtosecond)
 
-    simulation = app.Simulation(pdb.topology, system, integrator)
-
+    simulation = app.Simulation(modeller.topology, system, integrator)
     for i in range(n_beads):
-        integrator.setPositions(i, pdb.positions)
+        integrator.setPositions(i, modeller.positions)
     nqe.init_beads(modeller, simulation, n_beads)
 
     atoms_to_watch = [0, 1]
@@ -675,8 +674,8 @@ def test_rpmd_quantum_spread_reporter():
     print("Done. Check 'quantum_spread.txt'.")
     data = np.loadtxt("quantum_spread.txt", skiprows=1, delimiter='\t')
 
-    plt.plot(data[:, 0], data[:, 1], label='Atom0')
-    plt.plot(data[:, 0], data[:, 2], label='Atom1')
+    plt.plot(data[:, 0], data[:, 1], label=atom_names[0])
+    plt.plot(data[:, 0], data[:, 2], label=atom_names[1])
     plt.xlabel('Step')
     plt.ylabel('Quantum Rg (nm)')
     plt.legend()
@@ -706,7 +705,7 @@ def test_rpmd_bead_reporter():
                                        1.0 / unit.picosecond,
                                        0.5 * unit.femtosecond)
 
-    simulation = app.Simulation(pdb.topology, system, integrator)
+    simulation = app.Simulation(modeller.topology, system, integrator)
 
     nqe.init_beads(modeller, simulation, n_beads)
 
@@ -743,7 +742,7 @@ def test_rpmd_centroid_reporter():
                                        1.0 / unit.picosecond,
                                        0.5 * unit.femtosecond)
 
-    simulation = app.Simulation(pdb.topology, system, integrator)
+    simulation = app.Simulation(modeller.topology, system, integrator)
 
     nqe.init_beads(modeller, simulation, n_beads)
 
