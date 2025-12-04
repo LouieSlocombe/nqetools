@@ -475,6 +475,7 @@ def prepare_lig_system(input_pdb,
                        rm_ions=None,
                        residue_map=None,
                        rm_files=True,
+                       save_lig_sdf=False,
                        lig_name='LIG'):
     """
     Prepares a ligand-receptor system for molecular simulations.
@@ -500,6 +501,8 @@ def prepare_lig_system(input_pdb,
         If True, removes intermediate files generated during processing. Default is True.
     lig_name : str, optional
         Residue name of the ligand to extract. Default is 'LIG'.
+    save_lig_sdf: str, optional
+        If True, saves the ligand as an SDF file. Default is False.
 
     Returns
     -------
@@ -521,7 +524,7 @@ def prepare_lig_system(input_pdb,
     # Strip out the ligand and fix the pdb
     fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
     # Remove the ligand
-    remove_residues_in_pdb(combined_pdb, combined_pdb, names={lig_name})
+    remove_residues_in_pdb(combined_pdb, combined_pdb, names=[lig_name])
 
     combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
 
@@ -531,6 +534,7 @@ def prepare_lig_system(input_pdb,
     if rm_files:
         os.remove(clean_pdb)
         os.remove(combined_pdb)
+    if not save_lig_sdf:
         os.remove(f'{lig_name}.sdf')
     return pdb_data, molecule
 
