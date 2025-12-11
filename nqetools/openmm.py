@@ -834,37 +834,30 @@ def run_openmm_relaxation(modeller,
                           temperature=300.0 * unit.kelvin,
                           gamma=1.0 / unit.picosecond,
                           time_step=1.0 * unit.femtoseconds,
+                          n_1=1_000,
                           n_2=1_000,
-                          n_3=1_000,
-                          n_4=2_000,
-                          n_report=100,
+                          n_3=2_000,
                           backbone_names=None,
-                          ks_2=100.0,
-                          ks_3=10.0,
-                          ks_4=0.0,
+                          ks_1=100.0,
+                          ks_2=10.0,
+                          ks_3=0.0,
                           platform_name='CPU',
                           potential=None,
                           ml_idx=None,
                           ):
-    """
-    Runs OpenMM relaxation skipping the heavy-atom fixing stage.
-    Starts directly with restrained backbone minimization.
-    """
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
     platform = openmm.Platform.getPlatformByName(platform_name)
     has_box = modeller.topology.getUnitCellDimensions() is not None
 
-    # --- System Creation ---
-    # We create the main system immediately since we aren't doing the H-only step
     if run_mixed:
         mm_system = forcefield.createSystem(
             modeller.topology,
@@ -894,11 +887,7 @@ def run_openmm_relaxation(modeller,
             removeCMMotion=True,
         )
 
-    # Use initial positions from the modeller
     current_positions = modeller.positions
-
-    # --- Restraint Setup ---
-    # Define the harmonic restraint force
     restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
     restraint.addGlobalParameter("k", 0.0)
     restraint.addPerParticleParameter("x0")
@@ -908,59 +897,33 @@ def run_openmm_relaxation(modeller,
     atom_indices = []
     for atom in modeller.topology.atoms():
         if atom.name in backbone_names:
-            # We use the initial positions for the restraint anchors
             pos = current_positions[atom.index]
             restraint.addParticle(atom.index, [pos.x, pos.y, pos.z])
             atom_indices.append(atom.index)
 
     system.addForce(restraint)
     print(f"Restraints applied to {len(atom_indices)} backbone atoms.", flush=True)
-
-    # --- Simulation Setup ---
     integrator = openmm.LangevinMiddleIntegrator(temperature,
                                                  gamma,
                                                  time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(current_positions)
 
-    # Reporters
-    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
-
-    # --- Stage 2: Strong Backbone Restraints ---
-    print(f"\n--- Stage 2: Strong Backbone Restraints ({ks_2} kJ/mol/nm^2) ---", flush=True)
-    k_strong = ks_2 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    print(f"\n--- Stage 1: Strong Backbone Restraints ({ks_1} kJ/mol/nm^2) ---", flush=True)
+    k_strong = ks_1 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
     simulation.context.setParameter("k", k_strong)
+    simulation.minimizeEnergy(maxIterations=n_1)
+
+    print("\n--- Stage 2: Weak Backbone Restraints (10 kJ/mol/nm^2) ---", flush=True)
+    k_weak = ks_2 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    simulation.context.setParameter("k", k_weak)
     simulation.minimizeEnergy(maxIterations=n_2)
 
-    # --- Stage 3: Weak Backbone Restraints ---
-    print("\n--- Stage 3: Weak Backbone Restraints (10 kJ/mol/nm^2) ---", flush=True)
-    k_weak = ks_3 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
-    simulation.context.setParameter("k", k_weak)
+    print("\n--- Stage 3: Unrestrained Relaxation ---", flush=True)
+    k_vweak = ks_3 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    simulation.context.setParameter("k", k_vweak)
     simulation.minimizeEnergy(maxIterations=n_3)
 
-    # --- Stage 4: Unrestrained Relaxation ---
-    print("\n--- Stage 4: Unrestrained Relaxation ---", flush=True)
-    k_vweak = ks_4 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
-    simulation.context.setParameter("k", k_vweak)
-    simulation.minimizeEnergy(maxIterations=n_4)
-
-    # --- Output ---
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
     final_state = simulation.context.getState(getPositions=True, getVelocities=True)
     with open(f'{output_prefix}.pdb', 'w') as f:
         app.PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)

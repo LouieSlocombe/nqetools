@@ -44,11 +44,7 @@ def test_openmm_ml_mixed_system():
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
-    nqe.run_openmm_relaxation(modeller,
-                              forcefield,
-                              platform_name='CUDA',
-                              potential=potential,
-                              ml_idx=ml_atoms)
+    nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA', potential=potential, ml_idx=ml_atoms)
     os.remove('minimized.pdb')
 
 
