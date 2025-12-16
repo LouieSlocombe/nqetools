@@ -1,0 +1,14 @@
+name: nqetools_alt
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.13
+  - pip
+  - pytest
+  - openmm
+  - openmm-torch
+  - openmm-ml
+  #- openmmforcefields
+  - openmmtools
+  - openmm-plumed
