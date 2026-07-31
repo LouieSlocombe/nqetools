@@ -217,7 +217,7 @@ def get_final_xyz(directory, sub="*FINAL_*.xyz"):
     return l_n0[0]
 
 
-def get_final_hess(directory, sub=f"*FINAL.hess*"):
+def get_final_hess(directory, sub="*FINAL.hess*"):
     """
     Retrieves the final Hessian file from a directory.
 
@@ -862,14 +862,14 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
         print("No residues found matching the relabel map. Topology is unchanged.")
 
     # Save the modified topology and positions to the output file
-    print(f"Saving modified topology and positions...")
+    print("Saving modified topology and positions...")
     if isinstance(output_file, str):
         with open(output_file, 'w') as f:
             PDBFile.writeFile(topology, positions, f)
         print(f"Successfully saved modified PDB to: {output_file}")
     else:
         PDBFile.writeFile(topology, positions, output_file)
-        print(f"Successfully wrote modified PDB to file-like object.")
+        print("Successfully wrote modified PDB to file-like object.")
 
     return pdb
 
@@ -936,5 +936,5 @@ def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
     """
     if water_names is None:
         water_names = {"HOH", "WAT"}
-    print(f"Removing water residues.")
+    print("Removing water residues.")
     remove_residues_in_pdb(input_pdb, output_pdb, water_names)

@@ -347,7 +347,6 @@ def md_analysis(file_in='md_log.txt'):
     # Analysis
     data = np.loadtxt(file_in, delimiter=',')
 
-    step = data[:, 0]
     time = data[:, 1]
     potential_energy = data[:, 2]
     kinetic_energy = data[:, 3]

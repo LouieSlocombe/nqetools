@@ -811,8 +811,6 @@ def test_fep():
         # D. Energy Evaluation (Cross-calculations for MBAR)
         # We take the current configuration (x_k) and calculate its energy
         # at ALL other lambda states (l=0...N).
-        current_pos = context.getState(getPositions=True).getPositions()
-
         for l in range(n_steps):
             temp_state = copy.deepcopy(alchemical_state)
             temp_state.lambda_electrostatics = lambda_electrostatics[l]

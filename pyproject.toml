@@ -84,3 +84,12 @@ include = ["nqetools", "nqetools.*"]
     "thermostats/*",
     "opes/*",
 ]
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"nqetools/__init__.py" = ["F401"]

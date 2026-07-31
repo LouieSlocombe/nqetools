@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 from itertools import chain
@@ -11,10 +12,31 @@ from .io import (write_xml,
                  get_final_hess,
                  write_xyz,
                  read_ipi_xyz,
-                 remove_directory)
+                 remove_directory,
+                 find_nqetools_path)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp, round_sf
-from .xml_parse import *
+from .xml_parse import (append_properties,
+                         update_cell,
+                         update_checkpoint_stride,
+                         update_driver,
+                         update_dynamics_splitting,
+                         update_file,
+                         update_hessian,
+                         update_mass,
+                         update_motion_fix_com,
+                         update_nbeads,
+                         update_open_paths,
+                         update_optimiser,
+                         update_stride,
+                         update_temperature,
+                         update_timestep,
+                         update_title,
+                         update_tol,
+                         update_total_steps,
+                         add_plumed_xml,
+                         add_thermostat_section,
+                         add_trajectory_centroid)
 import multiprocessing
 
 
@@ -114,7 +136,7 @@ def run_ipi(directory,
 
 
 def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None):
-    print(f'Running plumed hills', flush=True)
+    print('Running plumed hills', flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
 
@@ -154,12 +176,12 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
     with open(os.path.join(directory, "plumed.dat"), "r") as file:
         subprocess.run(command.split(), stdin=file, text=True)
 
-    print(f"Plumed hills run complete\n", flush=True)
+    print("Plumed hills run complete\n", flush=True)
     return None
 
 
 def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
-    print(f'Running plumed OPES hills', flush=True)
+    print('Running plumed OPES hills', flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
 
@@ -192,7 +214,7 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
             bins_values = str(bins)
             command += f' --min {min_values} --max {max_values} --bin {bins_values}'
 
-    command += f' --all_stored'
+    command += ' --all_stored'
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
@@ -200,7 +222,7 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
 
     # change back to the original directory
     os.chdir(cwd)
-    print(f"Plumed OPES hills run complete\n", flush=True)
+    print("Plumed OPES hills run complete\n", flush=True)
     return None
 
 
@@ -238,7 +260,7 @@ def run_instanton_post_process(directory,
 
     # Change back to the original directory
     os.chdir(cwd)
-    print(f"Thermo/Instanton post-processing complete\n", flush=True)
+    print("Thermo/Instanton post-processing complete\n", flush=True)
     return None
 
 
@@ -254,7 +276,7 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
     # Change the number of beads from 40 to 80 in input.xml
     # Change the hessian shape from (18,18) to (18,1440) in input.xml dof * new_n_beads
 
-    print(f'Running the instanton interpolation', flush=True)
+    print('Running the instanton interpolation', flush=True)
     # Keep track of the current directory
     cwd = os.getcwd()
 
@@ -281,8 +303,8 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
             print(f"Error: {result.stderr}", flush=True)
 
     # Rename the new hessian and instanton geometry files to hessian.dat and init.xyz, respectively
-    os.system(f'cp hess0 hessian.dat')
-    os.system(f'cp init0 init.xyz')
+    os.system('cp hess0 hessian.dat')
+    os.system('cp init0 init.xyz')
 
     # Copy the input.xml file from input/instanton/40/
     os.system(f'cp {os.path.join(directory_old, "input.xml")} input.xml')
@@ -301,7 +323,7 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
 
     # Change back to the original directory
     os.chdir(cwd)
-    print(f"Instanton interpolation complete\n", flush=True)
+    print("Instanton interpolation complete\n", flush=True)
     return None
 
 
@@ -423,7 +445,7 @@ def run_optimise(directory,
     # Load the structure
     atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
-    print(f"Minimisation complete\n", flush=True)
+    print("Minimisation complete\n", flush=True)
     return atoms_out, output_data, output_desc
 
 
@@ -791,7 +813,7 @@ def prep_phonons_xml(directory,
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
-        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/PHO.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), "templates/PHO.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -871,7 +893,7 @@ def run_phonons(directory,
     driver = prep_driver(atoms, directory, driver, driver_args)
     # Run the phonons
     run_ipi(directory, server, driver, f"{outfile}.out")
-    print(f"Phonons complete\n", flush=True)
+    print("Phonons complete\n", flush=True)
     return None
 
 
@@ -893,7 +915,7 @@ def prep_ts_xml(directory,
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
-        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/TS.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), "templates/TS.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -985,7 +1007,7 @@ def run_ts(directory,
     # Load the structure
     atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
     output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
-    print(f"TS search complete\n", flush=True)
+    print("TS search complete\n", flush=True)
     return atoms_out, output_data, output_desc
 
 
@@ -1013,7 +1035,7 @@ def prep_instanton_xml(directory,
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
-        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/INST.xml"))
+        tree = et.parse(os.path.join(find_nqetools_path(), "templates/INST.xml"))
     root = tree.getroot()
 
     # Add in the properties to be tracked
@@ -1129,5 +1151,5 @@ def run_instanton(directory,
 
     # Run the instanton
     run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
-    print(f"Instanton complete\n", flush=True)
+    print("Instanton complete\n", flush=True)
     return None

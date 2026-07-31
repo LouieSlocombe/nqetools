@@ -86,7 +86,7 @@ atoms = read('{in_file}', 0)
         in_str += f"qm_calc = mace_{qm_model_type}(device='{device}')\n"
 
     # Configure the MM calculator
-    in_str += f"\n# Set up MM calculator\n"
+    in_str += "\n# Set up MM calculator\n"
     if mm_model_type in ["off", "mp", "omol"]:
         in_str += f"mm_calc = mace_{mm_model_type}(model='{mm_model}', device='{device}', default_dtype='{default_dtype}', enable_cueq={enable_cueq})\n"
     else:  # For anicc
@@ -113,7 +113,7 @@ def write_cp2k_driver():
     # /home/louie/anaconda3/envs/ipi_env/bin/cp2k.ssmp
     # https://github.com/i-pi/i-pi/tree/main/examples/clients/cp2k/npt_classical
 
-    raise ValueError(f"Driver cp2k is not recognized.")
+    raise ValueError("Driver cp2k is not recognized.")
 
 
 def write_ase_nwchem_driver(
