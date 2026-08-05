@@ -6,7 +6,6 @@ import nqetools as nqe
 def test_plumed_zundel_mtd_pos():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
-    # build the molecule
     atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
 
     directory = "mace_md"
@@ -23,7 +22,6 @@ def test_plumed_zundel_mtd_pos():
 def test_plumed_mtd_pos():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
-    # build the molecule
     atoms = ase.build.molecule('H2O')
     atoms.center(vacuum=5.0)
 
@@ -41,7 +39,6 @@ def test_plumed_mtd_pos():
 def test_plumed_mtd_pos_pimd():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
-    # build the molecule
     atoms = ase.build.molecule('H2O')
     atoms.center(vacuum=5.0)
     directory = "mace_md"
@@ -59,7 +56,6 @@ def test_plumed_mtd_pos_pimd():
 def test_plumed_opes_pos():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
-    # build the molecule
     atoms = ase.build.molecule('H2O')
     atoms.center(vacuum=5.0)
 
@@ -76,7 +72,6 @@ def test_plumed_opes_pos():
 def test_plumed_mtd_dist():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
-    # build the molecule
     atoms = ase.build.molecule('H2O')
     atoms.center(vacuum=5.0)
 
@@ -93,7 +88,6 @@ def test_plumed_mtd_dist():
 def test_plumed_opes_dist():
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
-    # build the molecule
     atoms = ase.build.molecule('H2O')
     atoms.center(vacuum=5.0)
 

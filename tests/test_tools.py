@@ -7,17 +7,14 @@ import nqetools as nqe
 
 def test_cluster_atoms():
     print(flush=True)
-    # Create an example Atoms object (for instance, two separate water molecules)
 
     water = molecule("H2O")
     # Translate the second water molecule so it does not overlap with the first.
     water2 = water.copy()
     water2.translate([5, 0, 0])
 
-    # Combine into a single Atoms object.
     combined = water + water2
 
-    # Cluster the atoms.
     clusters = nqe.cluster_atoms(combined)
     print(f"Found {len(clusters)} clusters:", flush=True)
     for i, cluster in enumerate(clusters):
@@ -32,23 +29,19 @@ def test_move_clusters_to_distance():
 
     idx1 = 0
     idx2 = 0
-    target_distance = 10.0  # Desired distance between the target atoms
+    target_distance = 10.0
 
-    # Create two water molecules as clusters
     water1 = molecule("H2O")
     water2 = molecule("H2O")
 
-    # Translate the second water molecule to an arbitrary initial position
-    water2.translate([2, 0, 0])  # Initial separation of 2 Angstroms
+    water2.translate([2, 0, 0])  # initial separation of 2 Angstroms
 
-    # Move the clusters so that the target atoms are at a new separation distance
     moved_atoms = nqe.move_clusters_to_distance(water1, water2,
                                                 index1=idx1,
                                                 index2=idx2,
                                                 target_distance=target_distance)
     view(moved_atoms)
 
-    # Check the distance between the target atoms
     distance = moved_atoms.get_distance(idx1, idx2 + len(water1))
     assert round(distance, 2) == target_distance
 
@@ -61,22 +54,18 @@ def test_move_to_distances():
 
     distances = [2.0, 10.0]
 
-    # Create an example Atoms object (for instance, two separate water molecules)
     water = molecule("H2O")
     # Translate the second water molecule so it does not overlap with the first.
     water2 = water.copy()
     water2.translate([5, 0, 0])
 
-    # Combine into a single Atoms object.
     combined = water + water2
 
-    # Move the clusters so that the target atoms are at a new separation distance
     moved_atoms = nqe.move_to_distances(combined,
                                         index1,
                                         index2,
                                         distances)
 
-    # Check the distance between the target atoms
     distance1 = moved_atoms[0].get_distance(index1, index2)
     distance2 = moved_atoms[1].get_distance(index1, index2)
     assert round(distance1, 2) == distances[0]
@@ -99,12 +88,6 @@ def test_convert_code_to_string():
     function from the `nqetools` module to convert the `add` function into its string
     representation. The result is then compared to the expected string representation
     using an assertion.
-
-    Asserts:
-        The string representation of the `add` function matches the expected string.
-
-    Prints:
-        Flushes the output to ensure any print statements are immediately visible.
     """
     print(flush=True)
 
@@ -148,14 +131,12 @@ def test_combine_without_overlaps():
 
 def test_largest_bonded_cluster_indices():
     print(flush=True)
-    # Create an example Atoms object (for instance, two separate water molecules)
 
     water = molecule("H2O")
     # Translate the second water molecule so it does not overlap with the first.
     water2 = molecule("H2")
     water2.translate([5, 0, 0])
 
-    # Combine into a single Atoms object.
     combined = water + water2
 
     indices = nqe.largest_bonded_cluster_indices(combined)

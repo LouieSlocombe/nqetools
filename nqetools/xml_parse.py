@@ -55,12 +55,9 @@ def append_properties(root, prop_list):
     None
     """
     for properties in root.iter('properties'):
-        # Load current properties
         current_props = properties.text.split(',')
         current_props = [prop.strip().strip('[').strip(']').strip('\n').strip() for prop in current_props]
-        # Append new properties
         updated_props = current_props + prop_list
-        # Update the properties text
         properties.text = list_to_string(updated_props)
     return None
 
@@ -185,7 +182,6 @@ def update_driver(root, atoms, f_driver):
     -------
     None
     """
-    # Check if the driver is valid
     assert f_driver in ["zundel", "cbe", "mace", "ase-mace","ase-qmmm-mace", "ase-nwchem", "ase-orca", "nwchem"]
     f_pbcs = has_pbc(atoms)
     if f_driver == "zundel":
@@ -321,7 +317,6 @@ def update_title(root, title):
     -------
     None
     """
-    # Change the title
     for rank in root.iter('output'):
         rank.set('prefix', title)
     return None
@@ -341,7 +336,6 @@ def update_total_steps(root, total_steps):
     -------
     None
     """
-    # Find the total_steps element and update its text
     for rank in root.iter('total_steps'):
         rank.text = str(total_steps)
     return None
@@ -361,7 +355,6 @@ def update_optimiser(root, optimiser_mode):
     -------
     None
     """
-    # Find the optimiser element and update its mode attribute
     for rank in root.iter('optimizer'):
         rank.set('mode', optimiser_mode)
     return None
@@ -593,18 +586,14 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
     -------
     None
     """
-    # Get the ffplumed section
     ffplumed = et.Element('ffplumed', {'name': 'plumed'})
 
-    # Add the file element
     file_element = et.SubElement(ffplumed, 'file', {'mode': 'xyz', 'units': 'angstrom', 'cell_units': 'angstrom'})
     file_element.text = file_name
 
-    # Add the plumedplumed_datdat element
     plumed_dat_element = et.SubElement(ffplumed, 'plumed_dat')
     plumed_dat_element.text = plumed_dat
 
-    # Add the plumed_extras element
     if plumed_extras is not None:
         plumed_plumed_extras_element = et.SubElement(ffplumed, 'plumed_extras')
         plumed_plumed_extras_element.text = list_to_string(plumed_extras)
@@ -634,17 +623,13 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
     -------
     None
     """
-    # Get the bias section
     bias = et.Element('bias')
 
-    # Create the force sub-element with the specified attributes
     force = et.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
     if plumed_extras is not None:
-        # Add the plumed_extras element
         plumed_extras_element = et.SubElement(force, 'interpolate_extras')
         plumed_extras_element.text = list_to_string(plumed_extras)
 
-    # Properly insert the bias section
     for ensemble in root.iter('ensemble'):
         for temperature in ensemble.iter('temperature'):
             index = list(ensemble).index(temperature)
@@ -670,19 +655,15 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
     -------
     None
     """
-    # Update the plumed file
     add_plumed_ff_section(root,
                           plumed_extras=plumed_extras,
                           file_name=file_name,
                           plumed_dat=plumed_dat)
-    # Add the bias section
     add_plumed_bias_section(root,
                             plumed_extras=plumed_extras,
                             nbeads=1)
-    # Add the smotion section
     add_plumed_smotion_section(root)
 
-    # Add the trajectory element
     add_trajectory_plumed_extras(root, plumed_extras)
     return None
 
@@ -714,14 +695,11 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
     """
     output_element = root.find(".//output")
     if output_element is not None:
-        # Check for existing trajectory with same filename
         existing_traj = output_element.find(f".//trajectory[@filename='{filename}']")
         if existing_traj is not None:
-            # Update existing trajectory
             existing_traj.set('stride', str(stride))
             existing_traj.text = text
         else:
-            # Create and append new trajectory element
             new_trajectory = et.Element('trajectory', {
                 'filename': filename,
                 'stride': str(stride)
@@ -749,11 +727,9 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
     -------
     None
     """
-    # Get the path to the thermostat XML files
     if xml_path is None:
         xml_path = os.path.join(find_nqetools_path(), "thermostats")
 
-    # Parse the XML file
     tree = et.parse(os.path.join(xml_path, thermostat + ".xml"))
 
     # Remove existing thermostat section
@@ -762,7 +738,6 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
         if parent is not None:
             parent.remove(thermostat)
 
-    # Add thermostat section to the root
     for thermostat in tree.iter('thermostat'):
         for rank in root.iter('dynamics'):
             rank.append(thermostat)
@@ -778,7 +753,7 @@ def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> Non
         The root element of the XML tree.
     splitting : str, optional
         The new splitting value. Default is "baoab".
-                             Valid values are: ["baoab", "obabo"].
+        Valid values are: ["baoab", "obabo"].
 
     Returns
     -------
@@ -808,7 +783,7 @@ def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
     ----------
     root : ElementTree.Element
         The root element of the XML tree.
-    fixcom : bool, optional
+    fix_com : bool, optional
         Whether to fix the centre of mass. Default is False.
 
     Returns

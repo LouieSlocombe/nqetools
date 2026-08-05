@@ -1862,14 +1862,12 @@ class RPMDBeadReporter(object):
             self._files.append(f)
 
     def describeNextReport(self, simulation):
-        """Tells the Simulation when the next report is due.
-        """
+        """Tells the Simulation when the next report is due."""
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
         return (steps, False, False, False, False)
 
     def report(self, simulation, state):
-        """Called by the Simulation to generate the report.
-        """
+        """Called by the Simulation to generate the report."""
         # We must access the integrator specifically to get bead positions
         integrator = simulation.integrator
 
@@ -1888,8 +1886,7 @@ class RPMDBeadReporter(object):
         self._next_frame_index += 1
 
     def __del__(self):
-        """Cleanup: Close all file handles when the reporter is destroyed.
-        """
+        """Cleanup: Close all file handles when the reporter is destroyed."""
         for f in self._files:
             try:
                 # Write footer before closing to ensure valid PDB syntax

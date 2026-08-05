@@ -191,7 +191,6 @@ def plot_fes_series_1d(fes_arrays: list[np.ndarray],
     if slices is None:
         slices = np.arange(len(fes_arrays))
 
-    # If there are more than max_times, select only the last max_times
     if len(slices) > max_slices:
         fes_arrays = fes_arrays[-max_slices:]
         slices = slices[-max_slices:]
@@ -454,15 +453,12 @@ def plot_neb(images,
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
 
-    # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
     energies -= min(energies)
 
-    # Get the path
     path = get_neb_path(images)
 
     if smooth:
@@ -471,12 +467,10 @@ def plot_neb(images,
         energies_smooth = spl(path_smooth)
         ax.scatter(path, energies)
 
-        # Plot both spline and scatter points
         ax.plot(path_smooth, energies_smooth, '-', lw=2, label=label)
     else:
         ax.plot(path, energies, 'o-', lw=2, label=label)
 
-    # Add labels and formatting
     ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
 
     if save:
@@ -500,17 +494,14 @@ def plot_sella(images,
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Attach the calculator to the images
     for image in images:
         image.calc = copy.copy(calc)
 
-    # Get the energy
     energies = np.array([i.get_potential_energy() for i in images])
 
     # Shift the graph so the minimum energy is zero
     energies -= min(energies)
 
-    # Get the path
     path = get_neb_path(images)
 
     if smooth:
@@ -519,12 +510,10 @@ def plot_sella(images,
         energies_smooth = spl(path_smooth)
         plt.scatter(path, energies, c='k')
 
-        # Plot both spline and scatter points
         ax.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
     else:
         ax.plot(path, energies, 'o-', c='k', lw=2)
 
-    # Add labels and formatting
     ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
 
     if save:
@@ -546,16 +535,12 @@ def plot_arrhenius(temperatures: list[float],
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
 
-    # Calculate ln(k)
     ln_rates = np.log(rates)
 
-    # Plot data
     ax.plot(inv_temp, ln_rates, 'o-', c='black', lw=2)
 
-    # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -577,14 +562,11 @@ def plot_arrhenius_2(temperatures: list[float],
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
 
-    # Plot data
     ax.plot(inv_temp, np.log(rates_c), 'o-', c='black', lw=2, label="Classical")
     ax.plot(inv_temp, np.log(rates_q), 'o-', c='red', lw=2, label="Quantum")
     ax.legend()
-    # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -605,10 +587,8 @@ def plot_kappa_temperature(temperatures: list[float],
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Plot data
     ax.plot(temperatures, kappa, 'o-', c='black', lw=2)
 
-    # Labels and formatting
     ax_plot(fig, ax, r"Temperature (K)", r"$\kappa$")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -629,13 +609,10 @@ def plot_kappa_temperature_inv(temperatures: list[float],
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
 
-    # Plot data
     ax.plot(inv_temp, kappa, 'o-', c='black', lw=2)
 
-    # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"$\kappa$")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -656,13 +633,10 @@ def plot_kie_temperature(temperatures: list[float],
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Convert temperatures to 1/T (in K^-1)
     inv_temp = [1000.0 / t for t in temperatures]  # Multiply by 1000 for better scale
 
-    # Plot data
     ax.plot(inv_temp, kie, 'o-', c='black', lw=2)
 
-    # Labels and formatting
     ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"KIE")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -684,10 +658,8 @@ def plot_bead_convergence(n_beads: list[float],
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Plot data
     ax.plot(n_beads, kappa, 'o-', c='black', lw=2)
 
-    # Labels and formatting
     ax_plot(fig, ax, r"Number of Beads", r"$\kappa$")
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
@@ -710,12 +682,10 @@ def _load_plumed_colvar(path,
     if not header.startswith(prefix):
         raise ValueError("First line must start with '#! FIELDS'.")
 
-    # Extract column names after '#! FIELDS'
     names = header[len(prefix):].strip().split()
     if not names:
         raise ValueError("No column names found after '#! FIELDS'.")
 
-    # Validate requested columns
     if x not in names:
         raise ValueError(f"x-axis column '{x}' not found. Available: {names}")
     if field not in names:
@@ -756,10 +726,8 @@ def plot_plumed_field(path,
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
-    # Plot data
     ax.plot(x_vals, y_vals, 'o-', c='black', lw=2)
 
-    # Labels and formatting
     ax_plot(fig, ax, x, field)
     if save:
         plt.savefig(f"{filename}.png", dpi=600)

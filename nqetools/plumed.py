@@ -73,7 +73,6 @@ def prep_plumed(atoms, plumed_type, plumed_args):
         return write_plumed_opes_2pt_1d_coord_com(**plumed_args)
 
     elif plumed_type == 'custom':
-        # Write the input file
         with open(os.path.join(plumed_args['directory'], "plumed.dat"), "w") as f:
             f.write(plumed_args['input'])
         return plumed_args['output']
@@ -106,7 +105,6 @@ mtd: METAD ARG=q.x PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACT
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['q.x', 'mtd.bias']
@@ -141,7 +139,6 @@ opes: {opes_command} ARG=q.x PACE={pace} BARRIER={barrier} TEMP={temperature} ST
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['q.x', 'opes.bias']
@@ -205,7 +202,6 @@ uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc', 'mtd.bias']
@@ -270,7 +266,6 @@ uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc', 'opes.bias']
@@ -311,7 +306,6 @@ mtd: METAD ARG=d1,d2 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={height} FIL
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'mtd.bias']
@@ -353,7 +347,6 @@ opes: {opes_command} ARG=d1,d2 PACE={pace} BARRIER={barrier} TEMP={temperature} 
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'opes.bias']
@@ -386,7 +379,6 @@ mtd: METAD ARG=d1 PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACTO
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'mtd.bias']
@@ -423,7 +415,6 @@ opes: {opes_command} ARG=d1 PACE={pace} BARRIER={barrier} TEMP={temperature} STA
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'opes.bias']
@@ -460,7 +451,6 @@ mtd: METAD ARG=diff PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFAC
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'diff', 'mtd.bias']
@@ -501,7 +491,6 @@ opes: {opes_command} ARG=diff PACE={pace} BARRIER={barrier} TEMP={temperature} S
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'diff', 'opes.bias']
@@ -553,7 +542,6 @@ mtd: METAD ARG=diff1,diff2 PACE={pace} SIGMA={sigma[0]},{sigma[1]} HEIGHT={heigh
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'd3', 'd4', 'diff1', 'diff2', 'mtd.bias']
@@ -606,7 +594,6 @@ opes: {opes_command} ARG=diff1,diff2 PACE={pace} BARRIER={barrier} TEMP={tempera
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d1', 'd2', 'd3', 'd4', 'diff1', 'diff2', 'opes.bias']
@@ -659,7 +646,6 @@ mtd:   METAD ARG=dc PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFAC
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c1.lessthan', 'c2.lessthan', 'dc', 'mtd.bias']
@@ -716,7 +702,6 @@ opes: {opes_command} ARG=dc PACE={pace} BARRIER={barrier} TEMP={temperature} STA
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c1.lessthan', 'c2.lessthan', 'dc', 'opes.bias']
@@ -778,7 +763,6 @@ mtd:   METAD ARG=dc1,dc2 PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BI
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'c4.lessthan', 'dc1', 'dc2', 'mtd.bias']
@@ -844,7 +828,6 @@ opes: {opes_command} ARG=dc1,dc2  PACE={pace} BARRIER={barrier} TEMP={temperatur
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c1.lessthan', 'c2.lessthan', 'c3.lessthan', 'c4.lessthan', 'dc1', 'dc2', 'opes.bias']
@@ -897,7 +880,6 @@ mtd: METAD ARG=dc1 PACE={pace} SIGMA={sigma} HEIGHT={height} FILE=HILLS BIASFACT
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c1.lessthan', 'c2.lessthan', 'dc1', 'mtd.bias']
@@ -954,7 +936,6 @@ opes: {opes_command} ARG=dc1  PACE={pace} BARRIER={barrier} TEMP={temperature} S
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['c1.lessthan', 'c2.lessthan', 'dc1', 'opes.bias']
@@ -1026,7 +1007,6 @@ uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc1', 'mtd.bias']
@@ -1099,7 +1079,6 @@ uwall: UPPER_WALLS ARG=d AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d', 'c1.lessthan', 'c2.lessthan', 'dc1', 'opes.bias']
@@ -1184,7 +1163,6 @@ FLUSH STRIDE=1
 
     """
 
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['dc1', 'opes.bias']
@@ -1308,7 +1286,6 @@ upperwall: UPPER_WALLS ARG=d12 AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d12', 'opes.bias', 'upperwall.bias']
@@ -1357,7 +1334,6 @@ upperwall: UPPER_WALLS ARG=d_da AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d_dh', 'd_ah', 'diff', 'opes.bias', 'upperwall.bias']
@@ -1586,7 +1562,6 @@ upperwall2: UPPER_WALLS ARG=d_da2 AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d_dh1', 'd_ah1', 'diff1', 'd_dh2', 'd_ah2', 'diff2', 'opes.bias', 'upperwall1.bias', 'upperwall2.bias']
@@ -1710,7 +1685,6 @@ upperwall2: UPPER_WALLS ARG=d_da2 AT={d_upper} KAPPA={kappa}
 PRINT ARG=* STRIDE={stride} FILE=COLVAR
 FLUSH STRIDE=1
     """
-    # Write the input file
     with open(os.path.join(directory, "plumed.dat"), "w") as f:
         f.write(impt)
     return ['d_dh1', 'd_ah1', 'diff1', 'd_dh2', 'd_ah2', 'diff2', 'pt_cv', 'opes.bias', 'upperwall1.bias',

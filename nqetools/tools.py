@@ -62,10 +62,8 @@ def rm_ipi_tmp(tmp_dir: str = "/tmp") -> None:
     -------
     None
     """
-    # Search for files starting with 'ipi_'
     files = glob.glob(os.path.join(tmp_dir, 'ipi_*'))
 
-    # Remove each file found
     for file in files:
         if os.path.exists(file):
             try:
@@ -129,14 +127,11 @@ def add_hydrogen_halfway(atoms, index1, index2):
         The updated Atoms object with the hydrogen atom added.
     """
     atoms = atoms.copy()
-    # Get the positions of the two atoms
     pos1 = atoms.positions[index1]
     pos2 = atoms.positions[index2]
 
-    # Calculate the midpoint
     midpoint = (pos1 + pos2) / 2.0
 
-    # Add a hydrogen atom at the midpoint
     atoms += Atoms('H', positions=[midpoint])
 
     return atoms
@@ -162,14 +157,11 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
         The updated Atoms object with the atom moved.
     """
     atoms = atoms.copy()
-    # Get the positions of the target atoms
     pos1 = atoms.positions[target_index1]
     pos2 = atoms.positions[target_index2]
 
-    # Calculate the midpoint
     midpoint = (pos1 + pos2) / 2.0
 
-    # Move the atom to the midpoint
     atoms.positions[atom_index] = midpoint
 
     return atoms
@@ -199,23 +191,17 @@ def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc,
     Atoms
         The optimised Atoms object without any constraints.
     """
-    # Move the atom to be halfway between the two target atoms
     atoms = move_atom_halfway(atoms, atom_index, target_index1, target_index2)
 
-    # Fix the positions of the three atoms
     constraint = FixAtoms(indices=[atom_index, target_index1, target_index2])
     atoms.set_constraint(constraint)
 
-    # Set the calculator
     atoms.set_calculator(calc)
 
-    # Perform the geometry optimisation
     BFGS(atoms).run(fmax=fmax)
 
-    # Get the final configuration
     atoms = atoms[-1]
 
-    # Remove the constraints
     atoms.set_constraint()
 
     return atoms
@@ -241,18 +227,14 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
         The updated Atoms object with the hydrogen atom added.
     """
     atoms = atoms.copy()
-    # Get the positions of the two atoms
     pos1 = atoms.positions[index1]
     pos2 = atoms.positions[index2]
 
-    # Calculate the direction vector from atom1 to atom2
     direction = pos2 - pos1
     direction /= np.linalg.norm(direction)  # Normalise the direction vector
 
-    # Calculate the position of the hydrogen atom
     hydrogen_position = pos1 + direction * distance
 
-    # Add a hydrogen atom at the calculated position
     atoms += Atoms('H', positions=[hydrogen_position])
 
     return atoms
@@ -278,17 +260,14 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
         The updated Atoms object with the swapped bonding configuration.
     """
     atoms = atoms.copy()
-    # Get the positions of the donor, hydrogen, and acceptor atoms
     donor_pos = atoms.positions[donor_index]
     hydrogen_pos = atoms.positions[hydrogen_index]
     acceptor_pos = atoms.positions[acceptor_index]
 
-    # Calculate the new position for the hydrogen atom
     direction = acceptor_pos - donor_pos
     direction /= np.linalg.norm(direction)  # Normalise the direction vector
     new_hydrogen_pos = acceptor_pos - direction * np.linalg.norm(hydrogen_pos - donor_pos)
 
-    # Update the position of the hydrogen atom
     atoms.positions[hydrogen_index] = new_hydrogen_pos
 
     return atoms
@@ -356,7 +335,6 @@ def align_mols(atoms1, atoms2):
     atoms2 = atoms2.copy()
     atoms1.center()
     atoms2.center()
-    # Minimise the rotation and translation
     minimize_rotation_and_translation(atoms1, atoms2)
     return atoms1, atoms2
 
@@ -378,14 +356,12 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
         The rotated (aligned) Atoms object.
     """
 
-    # Map axis strings to direction vectors
     directions = {
         'x': np.array([1.0, 0.0, 0.0]),
         'y': np.array([0.0, 1.0, 0.0]),
         'z': np.array([0.0, 0.0, 1.0]),
     }
 
-    # Validate the requested axis
     if axis not in directions:
         raise ValueError("axis must be one of 'x', 'y', or 'z'")
 
@@ -393,14 +369,11 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     atoms = atoms.copy()
     atoms.center()
 
-    # Compute principal axes
     # evalues are sorted ascending, so evecs[2] is the axis with the largest eigenvalue
     evalues, evecs = atoms.get_moments_of_inertia(vectors=True)
 
-    # This is the principal axis with the largest moment of inertia
     principal_axis = evecs[2]
 
-    # Rotate the Atoms so that 'principal_axis' aligns with the chosen axis
     target_vector = directions[axis]
     atoms.rotate(principal_axis, target_vector, center='COM')
 
@@ -465,7 +438,6 @@ def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     """
     cutoffs = natural_cutoffs(atoms)
 
-    # Adjust cutoffs by a factor
     cutoffs = [cutoff * multi for cutoff in cutoffs]
 
     nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
@@ -505,14 +477,12 @@ def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
     Returns
     -------
     tuple[list[int], list[int]]
-        Two lists containing the indices of atoms
-                               in each of the two non-hydrogen clusters.
+        Two lists containing the indices of atoms in each of the two
+        non-hydrogen clusters.
     """
-    # Cluster all atoms
     clusters = cluster_atoms(atoms)
     assert len(clusters) == 2
 
-    # Get indices of atoms in each cluster
     idx1 = [i for i in clusters[0] if atoms.get_chemical_symbols()[i] != "H"]
     idx2 = [i for i in clusters[1] if atoms.get_chemical_symbols()[i] != "H"]
 
@@ -537,7 +507,6 @@ def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
         A new ASE Atoms object with atoms reindexed by clusters.
     """
     clusters = cluster_atoms(atoms)
-    # Rejoin the clusters into a single Atoms object
     joined_atoms = clusters[0]
     for cluster in clusters[1:]:
         joined_atoms += cluster
@@ -588,28 +557,23 @@ def move_clusters_to_distance(cluster1: Atoms,
     Atoms
         A new Atoms object containing both clusters, repositioned.
     """
-    # Get the current positions of the target atoms
     pos1 = cluster1.positions[index1]
     pos2 = cluster2.positions[index2]
 
-    # Compute the vector from atom1 to atom2
     vec = np.subtract(pos2, pos1)
     current_distance = np.linalg.norm(vec)
 
     if current_distance == 0:
         raise ValueError("The selected atoms are at the same position; cannot determine a valid direction.")
 
-    # Normalise the vector
     unit_vec = vec / float(current_distance)
 
-    # Compute the shift needed to achieve the target distance
     shift = (np.subtract(target_distance, current_distance)) / 2
 
     # Move clusters in opposite directions along the vector
-    cluster1.positions -= shift * unit_vec  # Move cluster1 backward
-    cluster2.positions += shift * unit_vec  # Move cluster2 forward
+    cluster1.positions -= shift * unit_vec
+    cluster2.positions += shift * unit_vec
 
-    # Combine the moved clusters into a single Atoms object
     combined_atoms = cluster1 + cluster2
 
     return combined_atoms
@@ -641,7 +605,6 @@ def move_to_distances(atoms: Atoms,
     list[ase.Atoms]
         A list of ASE Atoms objects, each representing the clusters moved to the specified distances.
     """
-    # Split the atoms into two clusters
     clusters = cluster_atoms(atoms)
     if len(clusters) != 2:
         raise ValueError("The input Atoms object must contain exactly two clusters.")
@@ -651,7 +614,6 @@ def move_to_distances(atoms: Atoms,
     # Adjust index2 to account for the second cluster's indices
     index2 = index2 - len(cluster2)
 
-    # Move the clusters to the specified distances
     moved_atoms_list = []
     for distance in distances:
         moved_atoms = move_clusters_to_distance(cluster1, cluster2, index1, index2, distance)
@@ -684,7 +646,6 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
     # Total time in ps (convert fs to ps by dividing by 1000)
     total_time = (timestep * total_steps) / 1000.0
 
-    # Calculate time points evenly spaced across the simulation
     time_points = [i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
                    for i in range(n_arrays)]
 
@@ -717,19 +678,14 @@ def make_dimer(atoms, translate=None, angle=180, axis='z'):
     if translate is None:
         translate = [0.0, 3.4, 0.0]
 
-    # Center the first molecule
     atoms.center()
 
-    # Make a copy
     atoms2 = atoms.copy()
 
-    # Rotate the second molecule
     atoms2.rotate(angle, axis, rotate_cell=False)
 
-    # Translate the second molecule
     atoms2.translate(translate)
 
-    # Combine the two molecules
     combined = atoms + atoms2
     return combined
 
@@ -812,7 +768,6 @@ def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> List[List[int]]:
     nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
     nl.update(atoms)
 
-    # Build adjacency list
     adj = [[] for _ in range(len(atoms))]
     for i in range(len(atoms)):
         indices, offsets = nl.get_neighbors(i)

@@ -34,7 +34,6 @@ def test_openmm_ml_mixed_system():
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    # Solvate
     padding = 1.5
     box_shape = 'dodecahedron'
     modeller.addSolvent(forcefield,
@@ -67,7 +66,6 @@ def test_prepare_ligand_ff():
                           use_cache=False,
                           cache=cache_name)
 
-    # Check that the cache files were created
     assert os.path.exists(cache_name)
 
     forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"),
@@ -135,7 +133,6 @@ def test_deuterate_system():
     mass_after = _get_total_mass(system)
     print(f"{'Mass Before':<20} | {mass_before.value_in_unit(unit.dalton):.4f} Da")
     print(f"{'Mass After':<20} | {mass_after.value_in_unit(unit.dalton):.4f} Da")
-    # print the number of hydrogens
     print(f"{'Number of Hydrogens':<20} | {h_count}")
 
     mass_H = app.element.hydrogen.mass
@@ -151,7 +148,6 @@ def test_deuterate_system():
     print(f"{'Actual Increase':<20} | {(mass_after - mass_before).value_in_unit(unit.dalton):.4f} Da")
     print(f"{'Expected Increase':<20} | {expected_increase.value_in_unit(unit.dalton):.4f} Da")
 
-    # Assertion Check
     tolerance = 1e-3
     diff = abs((mass_after - mass_before) - expected_increase).value_in_unit(unit.dalton)
 
@@ -183,11 +179,8 @@ def test_plumed():
     selection_str1 = ','.join([f'{i}' for i in idx1])
     selection_str2 = ','.join([f'{i}' for i in idx2])
 
-    # nqe.save_pdb_selection('combined_system.pdb', idx1 + idx2, 'selection.pdb')
-    # Clean the directory if it exists
     nqe.remove_directory(directory)
 
-    # Make the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
     os.chdir(directory)
 
@@ -213,7 +206,6 @@ opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05 FILE=HILLS
 PRINT ARG=* STRIDE=100 FILE=COLVAR
 FLUSH STRIDE=1
 """
-    # Write the PLUMED script to a file
     with open('plumed.dat', 'w') as f:
         f.write(plumed_script)
 
@@ -254,7 +246,6 @@ FLUSH STRIDE=1
     plot_save = True
     plot_show = True
 
-    # Run the hills command
     nqe.run_plumed_hills(directory,
                          temperature=300,
                          bins=n_bins,
@@ -376,7 +367,6 @@ def test_eq_workflow_mixed():
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    # Solvate
     padding = 2.0
     box_shape = 'dodecahedron'
     modeller.addSolvent(forcefield,
@@ -396,7 +386,6 @@ def test_eq_workflow_mixed():
 
 
 def test_openmm_rpmd():
-    # Simple run parameters
     n_steps = 1_000
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -438,7 +427,6 @@ def test_openmm_rpmd():
 
 
 def test_openmm_qtb():
-    # Simple run parameters
     n_steps = 1_000
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -482,7 +470,6 @@ def test_openmm_qtb():
 
 
 def test_openmm_rpmd_solvated():
-    # Simple run parameters
     n_steps = 200
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -498,7 +485,6 @@ def test_openmm_rpmd_solvated():
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    # Solvate
     modeller.addSolvent(forcefield,
                         padding=1.0 * unit.nanometer,
                         boxShape='dodecahedron')
@@ -528,7 +514,6 @@ def test_openmm_rpmd_solvated():
 
 
 def test_openmm_rpmd_ml():
-    # Simple run parameters
     n_steps = 200
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -570,7 +555,6 @@ def test_openmm_rpmd_ml():
 
 def test_openmm_rpmd_mixed():
     print(flush=True)
-    # Simple run parameters
     n_steps = 200
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -808,9 +792,9 @@ def test_fep():
         production_steps = 100_000
         integrator.step(production_steps)
 
-        # D. Energy Evaluation (Cross-calculations for MBAR)
-        # We take the current configuration (x_k) and calculate its energy
-        # at ALL other lambda states (l=0...N).
+        # Energy evaluation (cross-calculations for MBAR): take the current
+        # configuration (x_k) and calculate its energy at ALL other lambda
+        # states (l=0...N).
         for l in range(n_steps):
             temp_state = copy.deepcopy(alchemical_state)
             temp_state.lambda_electrostatics = lambda_electrostatics[l]
@@ -819,11 +803,11 @@ def test_fep():
             energy = context.getState(getEnergy=True).getPotentialEnergy()
             kT = unit.MOLAR_GAS_CONSTANT_R * temperature
 
-            # 2. Strip units safely by converting both to kJ/mol
+            # Strip units safely by converting both to kJ/mol
             energy_val = energy.value_in_unit(unit.kilojoules_per_mole)
             kT_val = kT.value_in_unit(unit.kilojoules_per_mole)
 
-            # 3. Calculate reduced potential (dimensionless float)
+            # Calculate reduced potential (dimensionless float)
             u_kln[k, l] = energy_val / kT_val
 
         # Reset context back to state k for the next loop iteration continuity
@@ -839,7 +823,6 @@ def test_fep():
         N_k[k] = len(indices)
         u_kln[k, :, 0:N_k[k]] = u_kln[k, :, indices].T
 
-    # Compute free energy differences
     mbar = MBAR(u_kln, N_k)
     results = mbar.compute_free_energy_differences(compute_uncertainty=True)
 
