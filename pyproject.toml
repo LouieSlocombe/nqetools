@@ -83,6 +83,7 @@ include = ["nqetools", "nqetools.*"]
     "templates/*",
     "thermostats/*",
     "opes/*",
+    "instanton_tools/*",
 ]
 
 [tool.ruff]
