@@ -1207,11 +1207,10 @@ def plumed_input_dpt(
         temp: float = 300.0,
         stride: int = 100,
 ):
-    """
-    Writes a PLUMED input file for metadynamics to study double proton transfer.
+    """Writes a PLUMED input file for metadynamics to study double proton transfer.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     output_file : str
         Name of the output PLUMED input file.
     h1_index : int

@@ -93,8 +93,7 @@ def test_get_fes_times():
 
 
 def test_convert_code_to_string():
-    """
-    Tests the conversion of a Python function to its string representation.
+    """Tests the conversion of a Python function to its string representation.
 
     This function defines a simple `add` function and uses the `convert_code_to_string`
     function from the `nqetools` module to convert the `add` function into its string

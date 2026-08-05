@@ -25,8 +25,7 @@ def nwchem_calc_preset(directory=None,
                        disp=None,
                        solv=None,
                        host=None):
-    """
-    Create and configure an NWChem calculator preset for quantum chemistry calculations.
+    """Create and configure an NWChem calculator preset for quantum chemistry calculations.
 
     This function sets up the input parameters for an NWChem calculation, including
     the directory, charge, exchange-correlation functional, basis set, dispersion
@@ -111,11 +110,10 @@ def orca_calc_preset(orca_path=None,
                      calc_extra=None,
                      blocks_extra=None,
                      scf_option=None):
-    """
-    Create and configure an ORCA calculator preset for quantum chemistry calculations.
+    """Create and configure an ORCA calculator preset for quantum chemistry calculations.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     orca_path : str, optional
         Path to the ORCA executable. If None, it will attempt to read from the environment variable 'ORCA_PATH'.
     directory : str, optional
@@ -145,28 +143,23 @@ def orca_calc_preset(orca_path=None,
     scf_option : str, optional
         Additional SCF options to include in the ORCA input. Default is None.
 
-    Returns:
-    --------
+    Returns
+    -------
     ORCA
         Configured ORCA calculator object.
     """
     if orca_path is None:
-        # Try and read the path from the environment
         orca_path = os.environ.get('ORCA_PATH')
     if directory is None:
-        # Create a temporary directory for the calculation
         directory = os.path.join(tempfile.mkdtemp(), 'orca')
 
-    # Create an ORCA profile with the specified command
     profile = OrcaProfile(command=orca_path)
 
-    # Configure the number of processors
     if n_procs > 1:
         inpt_procs = '%pal nprocs {} end'.format(n_procs)
     else:
         inpt_procs = ''
 
-    # Configure the solvent model
     if f_solv is not None and f_solv is not False:
         if f_solv:
             f_solv = 'WATER'
@@ -177,7 +170,6 @@ def orca_calc_preset(orca_path=None,
     else:
         inpt_solv = ''
 
-    # Configure the dispersion correction
     if f_disp is None or f_disp is False:
         inpt_disp = ''
     else:
@@ -185,7 +177,6 @@ def orca_calc_preset(orca_path=None,
             f_disp = 'D4'
         inpt_disp = f_disp
 
-    # Configure QM/MM atom list for QM/XTB2 calculations
     if atom_list is not None and calc_type == 'QM/XTB2':
         atom_list = '{' + atom_list + '}'
         inpt_xtb = f'''
@@ -194,14 +185,11 @@ def orca_calc_preset(orca_path=None,
     else:
         inpt_xtb = ''
 
-    # Add any additional input blocks
     if blocks_extra is None:
         blocks_extra = ''
 
-    # Combine all input blocks
     inpt_blocks = inpt_procs + inpt_solv + blocks_extra
 
-    # Configure the main calculation input based on the calculation type
     if calc_type == 'DFT':
         inpt_simple = '{} {} {}'.format(xc, inpt_disp, basis_set)
     elif calc_type == 'MP2':
@@ -220,15 +208,12 @@ def orca_calc_preset(orca_path=None,
         elif calc_type == 'MP2' or calc_type == 'CCSD':
             inpt_simple = 'UKS ' + inpt_simple
 
-    # Add the SCF option if provided
     if scf_option is not None:
         inpt_simple += ' ' + scf_option
 
-    # Add any extra calculation options
     if calc_extra is not None:
         inpt_simple += ' ' + calc_extra
 
-    # Create and return the ORCA calculator object
     calc = ORCA(
         profile=profile,
         charge=charge,
@@ -254,8 +239,7 @@ def qchem_calc_preset(charge=0,
                       neo_isotope="1",
                       scf_algorithm="DIIS",  # DIIS GDM DIIS_GDM
                       solv_extra=None):
-    """
-    Create and configure a Q-Chem calculator preset for quantum chemistry calculations.
+    """Create and configure a Q-Chem calculator preset for quantum chemistry calculations.
 
     This function sets up the input parameters for a Q-Chem calculation, including
     charge, multiplicity, exchange-correlation functional, basis set, solvent effects,
@@ -317,7 +301,6 @@ def qchem_calc_preset(charge=0,
 
     if f_disp:
         inpt_dict.update({'dft_d': 'D4'})
-        # inpt_dict.update({'dft_d': 'D3_BJ'})
 
     if f_fast:
         inpt_dict.update({'fast_xc': 'True'})
@@ -330,7 +313,6 @@ def qchem_calc_preset(charge=0,
         inpt_dict.update({'neo_preset': neo_preset})
         inpt_dict.update({'neo_idx': neo_idx})
         inpt_dict.update({'neo_isotope': neo_isotope})
-    # Add solvent extra
     if solv_extra is not None and f_solv is True:
         return QChem(solv_extra=solv_extra, **inpt_dict)
     else:
@@ -404,15 +386,14 @@ def optimise_atoms(atoms,
                    f_solv=False,
                    f_disp=False,
                    n_procs=10):
-    """
-    Optimise the geometry of a molecule using the ORCA quantum chemistry package.
+    """Optimise the geometry of a molecule using the ORCA quantum chemistry package.
 
     This function sets up an ORCA calculation to optimise the geometry of a molecule
     represented by an ASE `Atoms` object. It supports various calculation options,
     including tight optimisation, solvent effects, and dispersion corrections.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     atoms : ase.Atoms
         An ASE `Atoms` object representing the molecule to be optimised.
     charge : int, optional
@@ -436,43 +417,34 @@ def optimise_atoms(atoms,
     n_procs : int, optional
         Number of processors to use for the calculation. Default is 10.
 
-    Returns:
-    --------
+    Returns
+    -------
     ase.Atoms
         An ASE `Atoms` object representing the optimised geometry of the molecule.
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the ORCA path cannot be determined or the calculation fails.
     """
-    # Determine the ORCA path
     if orca_path is None:
-        # Try to read the path from the environment variable
         orca_path = os.environ.get('ORCA_PATH')
     else:
-        # Convert the provided path to an absolute path
         orca_path = os.path.abspath(orca_path)
 
     if tight_opt:
-        # Set up geometry optimization and frequency calculation parameters
         opt_option = 'TIGHTOPT'
     else:
-        # Set up frequency calculation parameters only
         opt_option = 'OPT'
 
     if tight_scf:
-        # Set up tight SCF convergence parameters
         calc_extra = f'{opt_option} TIGHTSCF'
     else:
-        # Use default SCF convergence parameters
         calc_extra = f'{opt_option}'
 
-    # Create a temporary working directory
     with tempfile.TemporaryDirectory() as temp_dir:
         orca_file = os.path.join(temp_dir, "orca.xyz")
 
-        # Set up the ORCA calculator with the specified parameters
         calc = orca_calc_preset(orca_path=orca_path,
                                 directory=temp_dir,
                                 charge=charge,
@@ -483,30 +455,26 @@ def optimise_atoms(atoms,
                                 f_solv=f_solv,
                                 f_disp=f_disp,
                                 calc_extra=calc_extra)
-        # Assign the calculator to the molecule
         atoms.calc = calc
 
-        # Trigger the calculation to optimise the geometry
         _ = atoms.get_potential_energy()
 
-        # Load the optimised geometry from the ORCA output file
         return read(orca_file, format="xyz")
 
 
 def load_ir_data(filename):
-    """
-    Load IR spectrum data from ORCA output file into a pandas DataFrame.
+    """Load IR spectrum data from ORCA output file into a pandas DataFrame.
 
     This function reads an ORCA output file containing IR frequency data,
     extracts the relevant information, and returns it as a pandas DataFrame.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filename : str
         Path to the IR frequency output file.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.DataFrame
         A DataFrame containing the following columns:
         - 'Mode': Mode number (int).
@@ -514,16 +482,14 @@ def load_ir_data(filename):
         - 'Epsilon': Epsilon value (float).
         - 'Intensity (km/mol)': Intensity in km/mol (float).
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the IR spectrum data cannot be found in the file.
     """
-    # Read the file
     with open(filename, 'r') as f:
         lines = f.readlines()
 
-    # Find the start of the IR spectrum data
     start_idx = None
     for i, line in enumerate(lines):
         if 'Mode   freq       eps      Int' in line:
@@ -533,14 +499,12 @@ def load_ir_data(filename):
     if start_idx is None:
         raise ValueError("Could not find IR spectrum data in the file")
 
-    # Extract data
     data = []
     for i in range(start_idx, len(lines)):
         line = lines[i].strip()
         if not line or line.startswith('*') or line.startswith('The first'):
             break
 
-        # Parse the line using regex to handle varying whitespace
         match = re.match(r'\s*(\d+):\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)', line)
         if match:
             mode = int(match.group(1))  # Mode number
@@ -549,26 +513,24 @@ def load_ir_data(filename):
             intensity = float(match.group(4))  # Intensity in km/mol
             data.append([mode, freq, eps, intensity])
 
-    # Create DataFrame
     df = pd.DataFrame(data, columns=['Mode', 'Frequency (cm^-1)', 'Epsilon', 'Intensity (km/mol)'])
 
     return df
 
 
 def load_raman_data(filename):
-    """
-    Load Raman spectrum data from ORCA output file into a pandas DataFrame.
+    """Load Raman spectrum data from ORCA output file into a pandas DataFrame.
 
     This function reads an ORCA output file containing Raman frequency data,
     extracts the relevant information, and returns it as a pandas DataFrame.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filename : str
         Path to the Raman frequency output file.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.DataFrame
         A DataFrame containing the following columns:
         - 'Mode': Mode number (int).
@@ -576,16 +538,14 @@ def load_raman_data(filename):
         - 'Intensity (km/mol)': Intensity in km/mol (float).
         - 'Depolarization': Depolarization value (float).
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the Raman spectrum data cannot be found in the file.
     """
-    # Read the file
     with open(filename, 'r') as f:
         lines = f.readlines()
 
-    # Find the start of the Raman spectrum data
     start_idx = None
     for i, line in enumerate(lines):
         if 'Mode    freq (cm**-1)   Activity   Depolarization' in line:
@@ -595,14 +555,12 @@ def load_raman_data(filename):
     if start_idx is None:
         raise ValueError("Could not find Raman spectrum data in the file")
 
-    # Extract data
     data = []
     for i in range(start_idx, len(lines)):
         line = lines[i].strip()
         if not line or line.startswith('The first'):
             break
 
-        # Parse the line using regex to handle varying whitespace
         match = re.match(r'\s*(\d+):\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)', line)
         if match:
             mode = int(match.group(1))  # Mode number
@@ -611,23 +569,21 @@ def load_raman_data(filename):
             depolarization = float(match.group(4))  # Depolarization value
             data.append([mode, freq, activity, depolarization])
 
-    # Create DataFrame
     df = pd.DataFrame(data, columns=['Mode', 'Frequency (cm^-1)', 'Intensity (km/mol)', 'Depolarization'])
 
     return df
 
 
 def load_vib_data(filename):
-    """
-    Load vibrational spectrum data from a file into a pandas DataFrame.
+    """Load vibrational spectrum data from a file into a pandas DataFrame.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filename : str
         Path to the file containing vibrational spectrum data.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.DataFrame
         A DataFrame containing the following columns:
         - 'Mode': Mode number (int).
@@ -635,16 +591,14 @@ def load_vib_data(filename):
         - 'Epsilon': Default value set to 1.0 (float).
         - 'Intensity (km/mol)': Default value set to 1.0 (float).
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the vibrational spectrum data cannot be found in the file.
     """
-    # Read the file
     with open(filename, 'r') as f:
         lines = f.readlines()
 
-    # Find the start of the IR spectrum data
     start_idx = None
     for i, line in enumerate(lines):
         if 'Mode   freq       eps      Int' in line:
@@ -654,14 +608,12 @@ def load_vib_data(filename):
     if start_idx is None:
         raise ValueError("Could not find IR spectrum data in the file")
 
-    # Extract data
     data = []
     for i in range(start_idx, len(lines)):
         line = lines[i].strip()
         if not line or line.startswith('*') or line.startswith('The first'):
             break
 
-        # Parse the line using regex to handle varying whitespace
         match = re.match(r'\s*(\d+):\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)', line)
         if match:
             mode = int(match.group(1))  # Mode number
@@ -670,7 +622,6 @@ def load_vib_data(filename):
             intensity = 1.0  # Default intensity value
             data.append([mode, freq, eps, intensity])
 
-    # Create DataFrame
     df = pd.DataFrame(data, columns=['Mode', 'Frequency (cm^-1)', 'Epsilon', 'Intensity (km/mol)'])
 
     return df
@@ -687,14 +638,13 @@ def calculate_vib_spectrum(atoms,
                            f_solv=False,
                            f_disp=False,
                            n_procs=10):
-    """
-    Calculate vibrational spectrum data using the ORCA quantum chemistry package.
+    """Calculate vibrational spectrum data using the ORCA quantum chemistry package.
 
     This function sets up and performs a vibrational spectrum calculation for a molecule
     represented by an ASE `Atoms` object. It computes IR, Raman, and vibrational spectrum data.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     atoms : ase.Atoms
         An ASE `Atoms` object representing the molecule.
     charge : int, optional
@@ -718,8 +668,8 @@ def calculate_vib_spectrum(atoms,
     n_procs : int, optional
         Number of processors to use for the calculation. Default is 10.
 
-    Returns:
-    --------
+    Returns
+    -------
     tuple
         A tuple containing three pandas DataFrames:
         - data_ir : pd.DataFrame
@@ -729,31 +679,24 @@ def calculate_vib_spectrum(atoms,
         - data_vib : pd.DataFrame
             Vibrational spectrum data.
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the ORCA path cannot be determined or the calculation fails.
     """
-    # Determine the ORCA path
     if orca_path is None:
-        # Try to read the path from the environment variable
         orca_path = os.environ.get('ORCA_PATH')
     else:
-        # Convert the provided path to an absolute path
         orca_path = os.path.abspath(orca_path)
 
     if tight_opt:
-        # Set up geometry optimization and frequency calculation parameters
         opt_option = 'TIGHTOPT'
     else:
-        # Set up frequency calculation parameters only
         opt_option = 'OPT'
 
     if tight_scf:
-        # Set up tight SCF convergence parameters
         calc_extra = f'{opt_option} TIGHTSCF FREQ'
     else:
-        # Use default SCF convergence parameters
         calc_extra = f'{opt_option} FREQ'
 
     blocks_extra = '''
@@ -761,11 +704,9 @@ def calculate_vib_spectrum(atoms,
                               POLAR 1
                           END'''
 
-    # Create a temporary working directory
     with tempfile.TemporaryDirectory() as temp_dir:
         orca_file = os.path.join(temp_dir, 'orca.out')
 
-        # Set up the ORCA calculator with the specified parameters
         calc = orca_calc_preset(orca_path=orca_path,
                                 directory=temp_dir,
                                 charge=charge,
@@ -778,47 +719,39 @@ def calculate_vib_spectrum(atoms,
                                 calc_extra=calc_extra,
                                 blocks_extra=blocks_extra)
 
-        # Attach the calculator to the ASE Atoms object
         atoms.calc = calc
 
-        # Perform the calculation (this will write the output to the ORCA file)
         _ = atoms.get_potential_energy()
 
-        # Load IR spectrum data
         data_ir = load_ir_data(orca_file)
 
-        # Load Raman spectrum data
         data_raman = load_raman_data(orca_file)
 
-        # Load vibrational spectrum data
         data_vib = load_vib_data(orca_file)
 
         return data_ir, data_raman, data_vib
 
 
 def get_total_electrons(atoms: Atoms) -> int:
-    """
-    Calculate the total number of electrons in a molecule.
+    """Calculate the total number of electrons in a molecule.
 
     This function computes the total number of electrons in a molecule
     represented by an ASE `Atoms` object. It sums the atomic numbers (Z)
     of all atoms in the molecule and adjusts for the explicit charge
     provided in the `Atoms.info` dictionary.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     atoms : ase.Atoms
         An ASE `Atoms` object representing the molecule.
 
-    Returns:
-    --------
+    Returns
+    -------
     int
         The total number of electrons in the molecule, corrected for its charge.
     """
-    # Sum atomic numbers (Z) for every atom in the molecule
     n_electrons = int(np.sum(atoms.get_atomic_numbers()))
 
-    # Correct for explicit total charge, if provided in the `Atoms.info` dictionary
     charge = atoms.info.get('charge', 0.0)
     n_electrons -= int(round(charge))
 
@@ -826,24 +759,21 @@ def get_total_electrons(atoms: Atoms) -> int:
 
 
 def round_to_nearest_two(number):
-    """
-    Round a number to the nearest multiple of 2.
+    """Round a number to the nearest multiple of 2.
     If the result would be 0, return 1 instead.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     number : float or int
         The number to be rounded
 
-    Returns:
-    --------
+    Returns
+    -------
     int
         The nearest multiple of 2, or 1 if result would be 0
     """
-    # Round to nearest multiple of 2
     result = round(number / 2) * 2
 
-    # If result is 0, set it to 1
     if result == 0:
         result = 1
 
@@ -856,14 +786,13 @@ def calculate_ccsd_energy(atoms,
                           orca_path=None,
                           basis_set='def2-TZVPP',
                           n_procs=10):
-    """
-    Perform a CCSD (Coupled Cluster Single and Double) energy calculation using the ORCA quantum chemistry package.
+    """Perform a CCSD (Coupled Cluster Single and Double) energy calculation using the ORCA quantum chemistry package.
 
     This function sets up and executes a CCSD energy calculation for a molecule represented by an ASE `Atoms` object.
     It ensures that the number of processors used does not exceed the total number of electrons in the system.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     atoms : ase.Atoms
         An ASE `Atoms` object representing the molecule.
     charge : int, optional
@@ -877,28 +806,24 @@ def calculate_ccsd_energy(atoms,
     n_procs : int, optional
         Number of processors to use for the calculation. Default is 10.
 
-    Returns:
-    --------
+    Returns
+    -------
     float
         The CCSD energy of the molecule in eV.
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the number of processors exceeds the adjusted limit based on the total number of electrons.
     """
-    # If no ORCA path is provided, try to read it from the environment variable
     orca_path = os.path.abspath(orca_path or os.getenv('ORCA_PATH', 'orca'))
 
-    # Get the total number of electrons in the system
     total_electrons = get_total_electrons(atoms)
     # Prevent too many processors being used
     if n_procs > total_electrons:
         n_procs = round_to_nearest_two(total_electrons - 2)
 
-    # Create a temporary directory for the ORCA calculation
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Set up the ORCA calculator with the specified parameters
         calc = orca_calc_preset(orca_path=orca_path,
                                 directory=temp_dir,
                                 calc_type='CCSD',
@@ -906,23 +831,20 @@ def calculate_ccsd_energy(atoms,
                                 multiplicity=multiplicity,
                                 basis_set=basis_set,
                                 n_procs=n_procs)
-        # Attach the ORCA calculator to the ASE Atoms object
         atoms.calc = calc
 
-        # Perform the energy calculation
         return atoms.get_potential_energy()
 
 
 def grab_value(orca_file, term, splitter):
-    """
-    Extract a specific numerical value from an ORCA output file.
+    """Extract a specific numerical value from an ORCA output file.
 
     This function reads an ORCA output file in reverse order, searches for a specific term,
     and extracts the numerical value associated with it. The value is converted from Hartree
     units to eV using the ASE `Hartree` constant.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     orca_file : str
         Path to the ORCA output file.
     term : str
@@ -930,8 +852,8 @@ def grab_value(orca_file, term, splitter):
     splitter : str
         The delimiter used to split the line containing the term.
 
-    Returns:
-    --------
+    Returns
+    -------
     float or None
         The extracted value in eV, or None if the term is not found.
     """
@@ -958,8 +880,7 @@ def calculate_free_energy(atoms,
                           n_procs=10,
                           use_ccsd=False,
                           ccsd_energy=None):
-    """
-    Calculate the Gibbs free energy of a molecule using the ORCA quantum chemistry package.
+    """Calculate the Gibbs free energy of a molecule using the ORCA quantum chemistry package.
 
     This function sets up and performs a vibrational frequency calculation for a molecule
     represented by an ASE `Atoms` object. It supports various options, including geometry
@@ -1016,10 +937,8 @@ def calculate_free_energy(atoms,
     ValueError
         If the CCSD energy calculation fails or the ORCA setup is incorrect.
     """
-    # Determine the ORCA path
     orca_path = os.path.abspath(orca_path or os.getenv('ORCA_PATH', 'orca'))
 
-    # Set optimization flags
     if opt:
         opt_flag = 'TIGHTOPT' if tight_opt else 'OPT'
         if len(atoms) == 1:  # Skip optimization for single atoms
@@ -1027,11 +946,9 @@ def calculate_free_energy(atoms,
     else:
         opt_flag = ''
 
-    # Set SCF flags
     scf_flag = 'TIGHTSCF' if tight_scf else ''
     calc_extra = f'{opt_flag} {scf_flag} FREQ'.strip()
 
-    # Set up the %thermo block for this temperature and pressure
     if temperature is not None and pressure is None:
         blocks_extra = f'''
                                                             %freq
@@ -1054,7 +971,6 @@ def calculate_free_energy(atoms,
     else:
         blocks_extra = None
 
-    # Perform CCSD energy calculation if required and not provided
     if use_ccsd and ccsd_energy is None:
         ccsd_energy = calculate_ccsd_energy(atoms,
                                             orca_path=orca_path,
@@ -1064,11 +980,9 @@ def calculate_free_energy(atoms,
         if ccsd_energy is None:
             raise ValueError("CCSD energy calculation failed. Please check the ORCA setup.")
 
-    # Create a temporary directory for the calculation
     with tempfile.TemporaryDirectory() as temp_dir:
         orca_file = os.path.join(temp_dir, 'orca.out')
 
-        # Set up the ORCA calculator
         calc = orca_calc_preset(orca_path=orca_path,
                                 directory=temp_dir,
                                 charge=charge,
@@ -1082,13 +996,10 @@ def calculate_free_energy(atoms,
                                 blocks_extra=blocks_extra)
         atoms.calc = calc
 
-        # Trigger the calculation
         _ = atoms.get_potential_energy()
 
-        # Extract entropy correction
         entropy = grab_value(orca_file, 'Total entropy correction', '...')
 
-        # Calculate Gibbs free energy based on CCSD or DFT results
         if use_ccsd:
             g_e_ele = grab_value(orca_file, 'G-E(el)', '...')
             g_e_solv = grab_value(orca_file, 'Free-energy (cav+disp)', ':') if f_solv else 0.0
@@ -1111,15 +1022,14 @@ def calculate_hessian(atoms,
                       f_solv=False,
                       f_disp=False,
                       n_procs=10):
-    """
-    Perform a Hessian matrix calculation using the ORCA quantum chemistry package.
+    """Perform a Hessian matrix calculation using the ORCA quantum chemistry package.
 
     This function sets up and executes a Hessian matrix calculation for a molecule
     represented by an ASE `Atoms` object. It optimizes the geometry and computes
     the Hessian matrix, which is used for vibrational analysis.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     atoms : ase.Atoms
         An ASE `Atoms` object representing the molecule.
     charge : int, optional
@@ -1143,8 +1053,8 @@ def calculate_hessian(atoms,
     n_procs : int, optional
         Number of processors to use for the calculation. Default is 10.
 
-    Returns:
-    --------
+    Returns
+    -------
     tuple
         A tuple containing:
         - atoms : ase.Atoms
@@ -1152,37 +1062,28 @@ def calculate_hessian(atoms,
         - hessian_file : str
             Path to the file containing the Hessian matrix.
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the ORCA path cannot be determined or the calculation fails.
     """
-    # Determine the ORCA path
     if orca_path is None:
-        # Try to read the path from the environment variable
         orca_path = os.environ.get('ORCA_PATH')
     else:
-        # Convert the provided path to an absolute path
         orca_path = os.path.abspath(orca_path)
 
     if tight_opt:
-        # Set up geometry optimization and frequency calculation parameters
         opt_option = 'TIGHTOPT'
     else:
-        # Set up frequency calculation parameters only
         opt_option = 'OPT'
 
     if tight_scf:
-        # Set up tight SCF convergence parameters
         calc_extra = f'{opt_option} TIGHTSCF FREQ'
     else:
-        # Use default SCF convergence parameters
         calc_extra = f'{opt_option} FREQ'
 
-    # Create a temporary directory for the ORCA calculation
     with tempfile.TemporaryDirectory() as temp_dir:
 
-        # Set up the ORCA calculator with the specified parameters
         calc = orca_calc_preset(orca_path=orca_path,
                                 directory=temp_dir,
                                 charge=charge,
@@ -1194,44 +1095,39 @@ def calculate_hessian(atoms,
                                 f_disp=f_disp,
                                 calc_extra=calc_extra)
 
-        # Attach the ORCA calculator to the ASE Atoms object
         atoms.calc = calc
 
-        # Perform the energy calculation
         _ = atoms.get_potential_energy()
 
-        # Load the optimized geometry from the ORCA output file
         atoms_file = os.path.join(temp_dir, "orca.xyz")
         hessian_file = os.path.join(temp_dir, "orca.hess")
         return read(atoms_file, format="xyz"), hessian_file
 
 
 def extract_conformer_info(filepath: Union[str, Path]) -> pd.DataFrame:
-    """
-    Extract conformer information from an ORCA output file.
+    """Extract conformer information from an ORCA output file.
 
     This function reads an ORCA output file and parses the ensemble table to extract
     conformer data, including conformer index, energy, and percentage of the total.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filepath : Union[str, Path]
         Path to the ORCA output file containing the ensemble table.
 
-    Returns:
-    --------
+    Returns
+    -------
     pd.DataFrame
         A pandas DataFrame containing the following columns:
         - 'Conformer': Conformer index (int).
         - 'Energy_kcal_mol': Energy in kcal/mol (float).
         - 'Percent_total': Percentage of the total (float).
 
-    Raises:
-    -------
+    Raises
+    ------
     ValueError
         If the ensemble table cannot be located in the file.
     """
-    # Compile a regex pattern to match a data line in the ensemble table
     line_pat = re.compile(
         r"""^\s*
             (?P<conformer>\d+)\s+          # integer index
@@ -1243,26 +1139,20 @@ def extract_conformer_info(filepath: Union[str, Path]) -> pd.DataFrame:
         re.VERBOSE,
     )
 
-    # Compile a regex pattern to locate the table header
     header_pat = re.compile(r"Conformer\s+Energy.*% total", re.I)
 
-    # Initialize variables for parsing
     rows = []
     in_table = False
 
-    # Open the file and read its contents
     with open(filepath, "r", encoding="utf-8", errors="ignore") as fh:
         for line in fh:
-            # Check for the table header to start reading data
             if not in_table and header_pat.search(line):
                 in_table = True  # Start reading on the next lines
                 continue
 
             if in_table:
-                # Stop reading when the table ends
                 if line.strip() == "" or line.strip().startswith("Conformers"):
                     break
-                # Match a data line and extract values
                 m = line_pat.match(line)
                 if m:
                     rows.append(
@@ -1273,13 +1163,11 @@ def extract_conformer_info(filepath: Union[str, Path]) -> pd.DataFrame:
                         )
                     )
 
-    # Raise an error if no data was found
     if not rows:
         raise ValueError(
             "Could not locate ensemble table. Check that the file is complete."
         )
 
-    # Return the extracted data as a pandas DataFrame
     return pd.DataFrame(
         rows, columns=["Conformer", "Energy_kcal_mol", "Percent_total"]
     )
@@ -1290,14 +1178,13 @@ def calculate_goat(atoms,
                    multiplicity=1,
                    orca_path=None,
                    n_procs=10):
-    """
-    Perform a GOAT (Global Optimization of Atomic Topologies) calculation using ORCA.
+    """Perform a GOAT (Global Optimization of Atomic Topologies) calculation using ORCA.
 
     This function sets up and executes a GOAT calculation to optimize molecular conformers
     and extract conformer information from the ORCA output file.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     atoms : ase.Atoms
         ASE Atoms object representing the molecule to be optimized.
     charge : int, optional
@@ -1309,8 +1196,8 @@ def calculate_goat(atoms,
     n_procs : int, optional
         Number of processors to use for the calculation. Default is 10.
 
-    Returns:
-    --------
+    Returns
+    -------
     tuple
         - atoms : list of ase.Atoms
             List of ASE Atoms objects representing the optimized conformers.
@@ -1320,26 +1207,19 @@ def calculate_goat(atoms,
             - 'Energy_kcal_mol': Energy in kcal/mol (float).
             - 'Percent_total': Percentage of the total (float).
     """
-    # Determine the ORCA path
     if orca_path is None:
-        # Try to read the path from the environment variable
         orca_path = os.environ.get('ORCA_PATH')
     else:
-        # Convert the provided path to an absolute path
         orca_path = os.path.abspath(orca_path)
 
-    # Create an ORCA profile with the specified command
     profile = OrcaProfile(command=orca_path)
 
-    # Configure the number of processors
     if n_procs > 1:
         inpt_procs = '%pal nprocs {} end'.format(n_procs)
     else:
         inpt_procs = ''
 
-    # Create a temporary working directory
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create and configure the ORCA calculator object
         calc = ORCA(
             profile=profile,
             charge=charge,
@@ -1348,21 +1228,15 @@ def calculate_goat(atoms,
             orcasimpleinput='GOAT XTB',
             orcablocks=inpt_procs
         )
-        # Assign the calculator to the ASE Atoms object
         atoms.calc = calc
 
-        # Trigger the calculation to optimize the geometry
         _ = atoms.get_potential_energy()
 
-        # Define paths for the output files
-        xyz_file = os.path.join(temp_dir, "orca.finalensemble.xyz")  # Path to the final ensemble file
-        orca_file = os.path.join(temp_dir, "orca.out")  # Path to the ORCA output file
+        xyz_file = os.path.join(temp_dir, "orca.finalensemble.xyz")
+        orca_file = os.path.join(temp_dir, "orca.out")
 
-        # Extract conformer information from the ORCA output file
         df = extract_conformer_info(orca_file)
 
-        # Read the optimized conformers from the ensemble file
         atoms = read(xyz_file, format="xyz", index=':')
 
-        # Return the optimized conformers and conformer information
         return atoms, df

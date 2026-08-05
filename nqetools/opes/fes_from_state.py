@@ -1,8 +1,10 @@
 #! /usr/bin/env python3
+"""Get the FES estimate used by OPES, from a dumped state file (STATE_WFILE). 1D or 2D only.
+
+Usage is similar to ``plumed sum_hills``.
+"""
 
 import argparse
-### Get the FES estimate used by OPES, from a dumped state file (STATE_WFILE). 1D or 2D only ###
-# usage is similar to plumed sum_hills
 import subprocess
 import sys
 

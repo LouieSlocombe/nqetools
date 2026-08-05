@@ -1,14 +1,20 @@
 #! /usr/bin/env python3
+"""Get the FES estimate from reweighting. 1D or 2D only.
 
-### Get the FES estimate from reweighting. 1D or 2D only ###
-# uses a weighted kernel density estimation, so it requires the bandwidth sigma
-# usage is similar to plumed sum_hills
+Uses a weighted kernel density estimation, so it requires the bandwidth sigma.
+Usage is similar to ``plumed sum_hills``.
 
-# NB: in case of multiple walkers one should combine them in a single file
-# when using --stride or --skiprows one should sort them:
-#   sort -gs COLVAR.* > COLVAR
-# when using --blocks it is better to concatenate them:
-#   cat COLVAR.* > COLVAR
+Notes
+-----
+In case of multiple walkers, combine them into a single file first. When
+using --stride or --skiprows, sort them::
+
+    sort -gs COLVAR.* > COLVAR
+
+When using --blocks it is better to concatenate them::
+
+    cat COLVAR.* > COLVAR
+"""
 
 import argparse
 import sys

@@ -6,27 +6,33 @@ from .tools import has_pbc, get_file_extension
 
 
 def list_to_string(l):
-    """
-    Converts a list to a string with brackets and commas.
+    """Converts a list to a string with brackets and commas.
 
-    Parameters:
-    l (list): The list to convert to a string.
+    Parameters
+    ----------
+    l : list
+        The list to convert to a string.
 
-    Returns:
-    str: The string representation of the list.
+    Returns
+    -------
+    str
+        The string representation of the list.
     """
     return '[' + ', '.join(l) + ']'
 
 
 def update_properties(root, prop_list):
-    """
-    Updates the XML tree with properties from a given list.
+    """Updates the XML tree with properties from a given list.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    prop_list (list of str): A list of properties to update in the XML tree.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    prop_list : list of str
+        A list of properties to update in the XML tree.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for properties in root.iter('properties'):
@@ -35,14 +41,17 @@ def update_properties(root, prop_list):
 
 
 def append_properties(root, prop_list):
-    """
-    Loads the current list of properties in the given root and appends a new input prop_list.
+    """Loads the current list of properties in the given root and appends a new input prop_list.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    prop_list (list of str): A list of properties to append to the existing properties in the XML tree.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    prop_list : list of str
+        A list of properties to append to the existing properties in the XML tree.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for properties in root.iter('properties'):
@@ -57,16 +66,21 @@ def append_properties(root, prop_list):
 
 
 def get_masses(atoms, f_deut=False, m_d=2.0141):
-    """
-    Retrieves the masses of atoms, optionally using deuterium masses for hydrogen atoms.
+    """Retrieves the masses of atoms, optionally using deuterium masses for hydrogen atoms.
 
-    Parameters:
-    atoms (object): An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
-    f_deut (bool, optional): Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
-    m_d (float, optional): The mass of deuterium to use if `f_deut` is True. Default is 2.0141.
+    Parameters
+    ----------
+    atoms : object
+        An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
+    f_deut : bool, optional
+        Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
+    m_d : float, optional
+        The mass of deuterium to use if `f_deut` is True. Default is 2.0141.
 
-    Returns:
-    list of str: A list of masses as strings.
+    Returns
+    -------
+    list of str
+        A list of masses as strings.
     """
     if f_deut:
         print("Using deuterium masses.", flush=True)
@@ -78,17 +92,23 @@ def get_masses(atoms, f_deut=False, m_d=2.0141):
 
 
 def update_mass(root, atoms, f_deut=False, m_d=2.0141):
-    """
-    Updates the XML tree with the masses of atoms, optionally using deuterium masses for hydrogen atoms.
+    """Updates the XML tree with the masses of atoms, optionally using deuterium masses for hydrogen atoms.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    atoms (object): An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
-    f_deut (bool, optional): Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
-    m_d (float, optional): The mass of deuterium to use if `f_deut` is True. Default is 2.0141.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    atoms : object
+        An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
+    f_deut : bool, optional
+        Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
+    m_d : float, optional
+        The mass of deuterium to use if `f_deut` is True. Default is 2.0141.
 
-    Returns:
-    list of str: A list of masses as strings.
+    Returns
+    -------
+    list of str
+        A list of masses as strings.
     """
     masses = get_masses(atoms, f_deut, m_d)
     if f_deut:
@@ -100,15 +120,19 @@ def update_mass(root, atoms, f_deut=False, m_d=2.0141):
 
 
 def update_file(root, filename='init.xyz', units='angstrom'):
-    """
-    Updates the 'file' element within 'initialize' elements in the XML tree.
+    """Updates the 'file' element within 'initialize' elements in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    filename (str, optional): The new filename to set for the 'file' element. Default is 'init.xyz'.
-    units (str, optional): The units to set for the 'file' element. Default is 'angstrom'.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    filename : str, optional
+        The new filename to set for the 'file' element. Default is 'init.xyz'.
+    units : str, optional
+        The units to set for the 'file' element. Default is 'angstrom'.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for rank in root.iter('initialize'):
@@ -121,14 +145,17 @@ def update_file(root, filename='init.xyz', units='angstrom'):
 
 
 def update_cell(root, atoms):
-    """
-    Updates the XML tree with the cell dimensions of the atoms. If no cell tag is present, it adds it.
+    """Updates the XML tree with the cell dimensions of the atoms. If no cell tag is present, it adds it.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    atoms (object): An object representing the atoms, which must have a `get_cell` method that returns an object with a `lengths` method.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    atoms : object
+        An object representing the atoms, which must have a `get_cell` method that returns an object with a `lengths` method.
 
-    Returns:
+    Returns
+    -------
     None
     """
     cell_l = atoms.get_cell().lengths()
@@ -143,15 +170,19 @@ def update_cell(root, atoms):
 
 
 def update_driver(root, atoms, f_driver):
-    """
-    Updates the XML tree with driver information based on the specified driver type.
+    """Updates the XML tree with driver information based on the specified driver type.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    atoms (object): An object representing the atoms, which must have periodic boundary conditions (PBC).
-    f_driver (str): The type of driver to use.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    atoms : object
+        An object representing the atoms, which must have periodic boundary conditions (PBC).
+    f_driver : str
+        The type of driver to use.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Check if the driver is valid
@@ -214,14 +245,17 @@ def update_driver(root, atoms, f_driver):
 
 
 def update_nbeads(root, n_beads):
-    """
-    Updates the XML tree to set the number of beads in the 'initialize' elements.
+    """Updates the XML tree to set the number of beads in the 'initialize' elements.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    n_beads (int): The number of beads to set in the 'initialize' elements.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    n_beads : int
+        The number of beads to set in the 'initialize' elements.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for rank in root.iter('initialize'):
@@ -230,15 +264,19 @@ def update_nbeads(root, n_beads):
 
 
 def update_hessian(root, n_doft, n_beads):
-    """
-    Updates the shape attribute of the hessian elements in the XML tree.
+    """Updates the shape attribute of the hessian elements in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    n_doft (int): The number of degrees of freedom.
-    n_beads (int): The number of beads.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    n_doft : int
+        The number of degrees of freedom.
+    n_beads : int
+        The number of beads.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for subchild in root.iterfind('.//motion/instanton/hessian'):
@@ -247,14 +285,17 @@ def update_hessian(root, n_doft, n_beads):
 
 
 def update_temperature(root, temperature):
-    """
-    Updates the temperature element in the XML tree.
+    """Updates the temperature element in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    temperature (float): The temperature value to set.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    temperature : float
+        The temperature value to set.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # update the temperature in the ensemble section
@@ -267,14 +308,17 @@ def update_temperature(root, temperature):
 
 
 def update_title(root, title):
-    """
-    Updates the XML tree to set the title in the 'output' elements.
+    """Updates the XML tree to set the title in the 'output' elements.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    title (str): The title to set in the 'output' elements.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    title : str
+        The title to set in the 'output' elements.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Change the title
@@ -284,14 +328,17 @@ def update_title(root, title):
 
 
 def update_total_steps(root, total_steps):
-    """
-    Updates the total_steps element in the XML tree.
+    """Updates the total_steps element in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    total_steps (int): The total number of steps to set.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    total_steps : int
+        The total number of steps to set.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Find the total_steps element and update its text
@@ -301,14 +348,17 @@ def update_total_steps(root, total_steps):
 
 
 def update_optimiser(root, optimiser_mode):
-    """
-    Updates the optimiser element in the XML tree to set the mode attribute.
+    """Updates the optimiser element in the XML tree to set the mode attribute.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    optimiser_mode (str): The mode to set in the optimiser element.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    optimiser_mode : str
+        The mode to set in the optimiser element.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Find the optimiser element and update its mode attribute
@@ -318,16 +368,21 @@ def update_optimiser(root, optimiser_mode):
 
 
 def update_tol(root, energy, force, position):
-    """
-    Updates the tolerances elements in the XML tree for both optimiser and instanton elements.
+    """Updates the tolerances elements in the XML tree for both optimiser and instanton elements.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    energy (float): The energy tolerance value to set.
-    force (float): The force tolerance value to set.
-    position (float): The position tolerance value to set.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    energy : float
+        The energy tolerance value to set.
+    force : float
+        The force tolerance value to set.
+    position : float
+        The position tolerance value to set.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for rank in root.iter('optimizer'):
@@ -344,14 +399,17 @@ def update_tol(root, energy, force, position):
 
 
 def update_open_paths(root, n_atoms):
-    """
-    Updates the open_paths elements in the XML tree within normal_modes.
+    """Updates the open_paths elements in the XML tree within normal_modes.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    n_atoms (int): The number of atoms to generate the open paths list.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    n_atoms : int
+        The number of atoms to generate the open paths list.
 
-    Returns:
+    Returns
+    -------
     None
     """
     open_paths = list(range(n_atoms))
@@ -361,14 +419,17 @@ def update_open_paths(root, n_atoms):
 
 
 def update_timestep(root, timestep):
-    """
-    Updates the timestep element in the XML tree.
+    """Updates the timestep element in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    timestep (float): The timestep value to set.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    timestep : float
+        The timestep value to set.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for child in root.iterfind('.//motion/dynamics/timestep'):
@@ -377,14 +438,17 @@ def update_timestep(root, timestep):
 
 
 def update_stride(root, stride):
-    """
-    Updates the stride attribute for 'properties' and 'trajectory' elements in the XML tree.
+    """Updates the stride attribute for 'properties' and 'trajectory' elements in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    stride (int): The new stride value to set for the elements.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    stride : int
+        The new stride value to set for the elements.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for element in root.iter():
@@ -394,14 +458,17 @@ def update_stride(root, stride):
 
 
 def update_checkpoint_stride(root, stride):
-    """
-    Updates the stride attribute of the checkpoint elements within the output tags in the XML tree.
+    """Updates the stride attribute of the checkpoint elements within the output tags in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    stride (int): The new stride value to set for the checkpoint elements.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    stride : int
+        The new stride value to set for the checkpoint elements.
 
-    Returns:
+    Returns
+    -------
     None
     """
     for output in root.iter('output'):
@@ -410,15 +477,19 @@ def update_checkpoint_stride(root, stride):
 
 
 def find_parent(root, child):
-    """
-    Finds the parent element of a given child element in an XML tree.
+    """Finds the parent element of a given child element in an XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    child (Element): The child element for which to find the parent.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    child : Element
+        The child element for which to find the parent.
 
-    Returns:
-    Element: The parent element of the given child, or None if no parent is found.
+    Returns
+    -------
+    Element
+        The parent element of the given child, or None if no parent is found.
     """
     for parent in root.iter():
         if child in parent:
@@ -427,13 +498,15 @@ def find_parent(root, child):
 
 
 def add_plumed_smotion_section(root):
-    """
-    Adds a smotion section under the simulation tag in the XML tree.
+    """Adds a smotion section under the simulation tag in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
 
-    Returns:
+    Returns
+    -------
     None
     """
     smotion = et.Element('smotion', {'mode': 'metad'})
@@ -446,16 +519,21 @@ def add_plumed_smotion_section(root):
 
 
 def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{angstrom}"):
-    """
-    Adds a <trajectory> element to the <output> tag in the XML tree.
+    """Adds a <trajectory> element to the <output> tag in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    stride (str, optional): The stride attribute for the trajectory element. Default is "10".
-    filename (str, optional): The filename attribute for the trajectory element. Default is "xc".
-    text (str, optional): The text content for the trajectory element. Default is "x_centroid{angstrom}".
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    stride : str, optional
+        The stride attribute for the trajectory element. Default is "10".
+    filename : str, optional
+        The filename attribute for the trajectory element. Default is "xc".
+    text : str, optional
+        The text content for the trajectory element. Default is "x_centroid{angstrom}".
 
-    Returns:
+    Returns
+    -------
     None
     """
     trajectory = et.Element('trajectory', {
@@ -470,15 +548,19 @@ def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{a
 
 
 def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
-    """
-    Adds a <trajectory> element to the <output> tag in the XML tree with specified plumed extras.
+    """Adds a <trajectory> element to the <output> tag in the XML tree with specified plumed extras.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    plumed_extras (list of str): A list of extra types to include in the trajectory element.
-    stride (int, optional): The stride attribute for the trajectory element. Default is 10.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    plumed_extras : list of str
+        A list of extra types to include in the trajectory element.
+    stride : int, optional
+        The stride attribute for the trajectory element. Default is 10.
 
-    Returns:
+    Returns
+    -------
     None
     """
     trajectory = et.Element('trajectory', {
@@ -494,16 +576,21 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
 
 
 def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
-    """
-    Adds a PLUMED force field section to the XML tree.
+    """Adds a PLUMED force field section to the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    plumed_extras (list of str, optional): A list of extra types to include in the PLUMED section. Default is None.
-    file_name (str, optional): The name of the file to use in the PLUMED section. Default is "init.xyz".
-    plumed_dat (str, optional): The name of the PLUMED data file to use. Default is "plumed.dat".
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    plumed_extras : list of str, optional
+        A list of extra types to include in the PLUMED section. Default is None.
+    file_name : str, optional
+        The name of the file to use in the PLUMED section. Default is "init.xyz".
+    plumed_dat : str, optional
+        The name of the PLUMED data file to use. Default is "plumed.dat".
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Get the ffplumed section
@@ -532,15 +619,19 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
 
 
 def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
-    """
-    Adds a bias section to the XML tree under the ensemble tag.
+    """Adds a bias section to the XML tree under the ensemble tag.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    plumed_extras (list of str, optional): A list of extra types to include in the interpolate_extras element. Default is None.
-    nbeads (int, optional): The number of beads to set in the force element. Default is 1.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    plumed_extras : list of str, optional
+        A list of extra types to include in the interpolate_extras element. Default is None.
+    nbeads : int, optional
+        The number of beads to set in the force element. Default is 1.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Get the bias section
@@ -562,16 +653,21 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
 
 
 def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
-    """
-    Adds PLUMED-related sections to the XML tree.
+    """Adds PLUMED-related sections to the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    plumed_extras (list of str, optional): A list of extra types to include in the PLUMED sections. Default is None.
-    file_name (str, optional): The name of the file to use in the PLUMED sections. Default is "init.xyz".
-    plumed_dat (str, optional): The name of the PLUMED data file to use. Default is "plumed.dat".
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    plumed_extras : list of str, optional
+        A list of extra types to include in the PLUMED sections. Default is None.
+    file_name : str, optional
+        The name of the file to use in the PLUMED sections. Default is "init.xyz".
+    plumed_dat : str, optional
+        The name of the PLUMED data file to use. Default is "plumed.dat".
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Update the plumed file
@@ -592,22 +688,29 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
 
 
 def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
-    """
-    Adds or updates a <trajectory> element in the <output> tag in the XML tree.
+    """Adds or updates a <trajectory> element in the <output> tag in the XML tree.
     If a trajectory element with the same filename exists, updates it;
     otherwise adds a new element.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    filename (str, optional): The filename attribute for the trajectory element. Default is 'pos'.
-    stride (int, optional): The stride attribute for the trajectory element. Default is 20.
-    text (str, optional): The text content for the trajectory element. Default is 'positions'.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    filename : str, optional
+        The filename attribute for the trajectory element. Default is 'pos'.
+    stride : int, optional
+        The stride attribute for the trajectory element. Default is 20.
+    text : str, optional
+        The text content for the trajectory element. Default is 'positions'.
 
-    Returns:
+    Returns
+    -------
     None
 
-    Raises:
-    ValueError: If the output element is not found in the XML tree.
+    Raises
+    ------
+    ValueError
+        If the output element is not found in the XML tree.
     """
     output_element = root.find(".//output")
     if output_element is not None:
@@ -631,15 +734,19 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
 
 
 def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path=None):
-    """
-    Adds or updates the <thermostat> section in the XML tree.
+    """Adds or updates the <thermostat> section in the XML tree.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
-    thermostat (str, optional): The name of the thermostat file (without extension) to use. Default is "smart_sampling_1ps_n6_w2".
-    xml_path (str, optional): The path to the directory containing the thermostat XML files. Default is None.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
+    thermostat : str, optional
+        The name of the thermostat file (without extension) to use. Default is "smart_sampling_1ps_n6_w2".
+    xml_path : str, optional
+        The path to the directory containing the thermostat XML files. Default is None.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Get the path to the thermostat XML files
@@ -663,19 +770,24 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
 
 
 def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> None:
-    """
-    Updates the splitting attribute in the dynamics section of the XML tree.
+    """Updates the splitting attribute in the dynamics section of the XML tree.
 
-    Parameters:
-    root (ElementTree.Element): The root element of the XML tree.
-    splitting (str, optional): The new splitting value. Default is "baoab".
+    Parameters
+    ----------
+    root : ElementTree.Element
+        The root element of the XML tree.
+    splitting : str, optional
+        The new splitting value. Default is "baoab".
                              Valid values are: ["baoab", "obabo"].
 
-    Returns:
+    Returns
+    -------
     None
 
-    Raises:
-    ValueError: If the dynamics element is not found or if splitting value is invalid.
+    Raises
+    ------
+    ValueError
+        If the dynamics element is not found or if splitting value is invalid.
     """
     valid_splits = ["obabo", "baoab"]
     if splitting not in valid_splits:
@@ -690,18 +802,23 @@ def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> Non
 
 
 def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
-    """
-    Updates the fixcom field in the motion section of the XML tree.
+    """Updates the fixcom field in the motion section of the XML tree.
 
-    Parameters:
-    root (ElementTree.Element): The root element of the XML tree.
-    fixcom (bool, optional): Whether to fix the centre of mass. Default is False.
+    Parameters
+    ----------
+    root : ElementTree.Element
+        The root element of the XML tree.
+    fixcom : bool, optional
+        Whether to fix the centre of mass. Default is False.
 
-    Returns:
+    Returns
+    -------
     None
 
-    Raises:
-    ValueError: If the motion element is not found.
+    Raises
+    ------
+    ValueError
+        If the motion element is not found.
     """
     motion = root.find(".//motion")
     if motion is not None:

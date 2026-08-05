@@ -20,8 +20,7 @@ import nqetools as nqe
 
 
 def test_calculate_good_nbeads():
-    """
-    Tests the calculate_good_nbeads function from the nqetools module.
+    """Tests the calculate_good_nbeads function from the nqetools module.
 
     This function calculates the number of beads (replicas) needed for a
     path integral molecular dynamics (PIMD) simulation based on the
@@ -38,8 +37,7 @@ def test_calculate_good_nbeads():
 
 
 def test_orca_calc():
-    """
-    Tests the ORCA calculator from the nqetools module.
+    """Tests the ORCA calculator from the nqetools module.
 
     This function builds a water molecule, sets up the ORCA calculator,
     runs the calculation to get the potential energy, and prints the energy
@@ -67,8 +65,7 @@ def test_orca_calc():
 
 
 def test_orca_presets():
-    """
-    Tests the ORCA calculator presets from the nqetools module.
+    """Tests the ORCA calculator presets from the nqetools module.
 
     This function tests various ORCA calculator presets by building a water molecule,
     setting up the ORCA calculator with different presets, running the calculation to get
@@ -117,8 +114,7 @@ def test_orca_presets():
 
 
 def test_mace_calc():
-    """
-    Tests the MACE calculator.
+    """Tests the MACE calculator.
 
     This function builds a water molecule, sets up the MACE calculator with different presets,
     runs the calculation to get the potential energy, and prints the energy and the time taken
@@ -159,8 +155,7 @@ def test_mace_calc():
 
 
 def test_nwchem_calc():
-    """
-    Tests the NWChem calculator from the nqetools module.
+    """Tests the NWChem calculator from the nqetools module.
 
     This function builds a water molecule, sets up the NWChem calculator,
     runs the calculation to get the potential energy, and prints the energy
@@ -192,8 +187,7 @@ def test_nwchem_calc():
 
 
 def test_exe_md():
-    """
-    Tests the MACE MD calculator.
+    """Tests the MACE MD calculator.
 
     This function builds a water molecule, centers it with a vacuum of 5.0 Å,
     sets up the MACE MD calculator, runs the molecular dynamics simulation,
@@ -301,8 +295,7 @@ def test_load_xyz_with_cell():
 
 
 def test_wigner_correction():
-    """
-    Tests the Wigner tunneling correction factor calculation.
+    """Tests the Wigner tunneling correction factor calculation.
 
     This function calculates the Wigner tunneling correction factor (κ)
     using the `wigner_correction` function from the `nqetools` module.
@@ -310,8 +303,9 @@ def test_wigner_correction():
     temperature (T). The result is printed and compared to an expected
     value using an assertion.
 
-    Parameters:
-        None
+    Parameters
+    ----------
+    None
 
     Asserts:
         The calculated Wigner tunneling factor for each temperature in the
@@ -334,8 +328,7 @@ def test_wigner_correction():
 
 
 def test_bell_correction():
-    """
-    Tests the Bell tunneling correction factor calculation.
+    """Tests the Bell tunneling correction factor calculation.
 
     This function calculates the Bell tunneling correction factor (κ)
     using the `bell_correction` function from the `nqetools` module.
@@ -343,8 +336,9 @@ def test_bell_correction():
     and reduced mass. The result is printed and compared to an expected
     value using an assertion.
 
-    Parameters:
-        None
+    Parameters
+    ----------
+    None
 
     Asserts:
         The calculated Bell tunneling factor is approximately 28573.077
@@ -363,8 +357,7 @@ def test_bell_correction():
 
 
 def test_eckart_correction():
-    """
-    Tests the Eckart tunneling correction factor calculation.
+    """Tests the Eckart tunneling correction factor calculation.
 
     This function calculates the Eckart tunneling correction factor (κ)
     using the `eckart_correction` function from the `nqetools` module.
@@ -372,8 +365,9 @@ def test_eckart_correction():
     and energy values for the reactants, transition state, and products.
     The results are printed and compared to expected values using assertions.
 
-    Parameters:
-        None
+    Parameters
+    ----------
+    None
 
     Asserts:
         The calculated Eckart tunneling factor for each temperature in the

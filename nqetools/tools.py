@@ -17,13 +17,15 @@ from ase.optimize import BFGS
 
 
 def add_ipi_paths(base: str = None) -> None:
-    """
-    Adds i-PI paths to the system path and environment variables.
+    """Adds i-PI paths to the system path and environment variables.
 
-    Parameters:
-    base (str, optional): The base directory for i-PI. Default is the i-PI directory in the user's home directory.
+    Parameters
+    ----------
+    base : str, optional
+        The base directory for i-PI. Default is the i-PI directory in the user's home directory.
 
-    Returns:
+    Returns
+    -------
     None
     """
     if base is None:
@@ -34,27 +36,30 @@ def add_ipi_paths(base: str = None) -> None:
 
 
 def get_ipi_driver() -> str:
-    """
-    Get the path to the i-PI driver executable.
+    """Get the path to the i-PI driver executable.
 
     This function locates the i-PI driver executable by finding the path
     to the i-PI package and appending the relative path to the executable.
 
-    Returns:
-    str: The full path to the i-PI driver executable.
+    Returns
+    -------
+    str
+        The full path to the i-PI driver executable.
     """
     tmp = ipi.__file__.split('__init__.py')[0]
     return os.path.join(tmp, 'bin', 'i-pi-driver')
 
 
 def rm_ipi_tmp(tmp_dir: str = "/tmp") -> None:
-    """
-    Removes any file in the given directory that starts with 'ipi_'.
+    """Removes any file in the given directory that starts with 'ipi_'.
 
-    Parameters:
-    tmp_dir (str, optional): The directory to search for files. Default is '/tmp'.
+    Parameters
+    ----------
+    tmp_dir : str, optional
+        The directory to search for files. Default is '/tmp'.
 
-    Returns:
+    Returns
+    -------
     None
     """
     # Search for files starting with 'ipi_'
@@ -71,29 +76,34 @@ def rm_ipi_tmp(tmp_dir: str = "/tmp") -> None:
 
 
 def has_pbc(atoms: Atoms) -> bool:
-    """
-    Checks if an ASE atoms object has periodic boundary conditions (PBC).
+    """Checks if an ASE atoms object has periodic boundary conditions (PBC).
 
-    Parameters:
-    atoms (ase.Atoms): The ASE atoms object to check.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE atoms object to check.
 
-    Returns:
-    bool: True if the atoms object has PBC, False otherwise.
+    Returns
+    -------
+    bool
+        True if the atoms object has PBC, False otherwise.
     """
     return any(atoms.pbc)
 
 
 def remove_pbc(atoms: Atoms) -> None:
-    """
-    Removes the periodic boundary conditions from an ASE atoms object.
+    """Removes the periodic boundary conditions from an ASE atoms object.
     This is important for calculations involving isolated molecules where
     periodicity (like in crystals) is not desired. It ensures that the system
     is treated as an isolated entity without interactions from periodic images.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE atoms object from which to remove periodic boundary conditions.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE atoms object from which to remove periodic boundary conditions.
 
-    Returns:
+    Returns
+    -------
     None
     """
     atoms.set_cell([0, 0, 0])  # Setting the cell size to zero
@@ -102,16 +112,21 @@ def remove_pbc(atoms: Atoms) -> None:
 
 
 def add_hydrogen_halfway(atoms, index1, index2):
-    """
-    Add a hydrogen atom halfway between two atoms in an Atoms object.
+    """Add a hydrogen atom halfway between two atoms in an Atoms object.
 
-    Parameters:
-    atoms (Atoms): The ASE Atoms object.
-    index1 (int): The index of the first atom.
-    index2 (int): The index of the second atom.
+    Parameters
+    ----------
+    atoms : Atoms
+        The ASE Atoms object.
+    index1 : int
+        The index of the first atom.
+    index2 : int
+        The index of the second atom.
 
-    Returns:
-    Atoms: The updated Atoms object with the hydrogen atom added.
+    Returns
+    -------
+    Atoms
+        The updated Atoms object with the hydrogen atom added.
     """
     atoms = atoms.copy()
     # Get the positions of the two atoms
@@ -128,17 +143,23 @@ def add_hydrogen_halfway(atoms, index1, index2):
 
 
 def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
-    """
-    Move an atom to be halfway between two target atoms in an Atoms object.
+    """Move an atom to be halfway between two target atoms in an Atoms object.
 
-    Parameters:
-    atoms (Atoms): The ASE Atoms object.
-    atom_index (int): The index of the atom to move.
-    target_index1 (int): The index of the first target atom.
-    target_index2 (int): The index of the second target atom.
+    Parameters
+    ----------
+    atoms : Atoms
+        The ASE Atoms object.
+    atom_index : int
+        The index of the atom to move.
+    target_index1 : int
+        The index of the first target atom.
+    target_index2 : int
+        The index of the second target atom.
 
-    Returns:
-    Atoms: The updated Atoms object with the atom moved.
+    Returns
+    -------
+    Atoms
+        The updated Atoms object with the atom moved.
     """
     atoms = atoms.copy()
     # Get the positions of the target atoms
@@ -155,20 +176,28 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
 
 
 def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc, fmax=0.05):
-    """
-    Move an atom to be halfway between two target atoms, fix the positions of the three atoms,
+    """Move an atom to be halfway between two target atoms, fix the positions of the three atoms,
     perform a geometry optimisation, and return the final result without any constraints.
 
-    Parameters:
-    atoms (Atoms): The ASE Atoms object.
-    atom_index (int): The index of the atom to move.
-    target_index1 (int): The index of the first target atom.
-    target_index2 (int): The index of the second target atom.
-    calc (Calculator): The calculator to be used for the optimisation.
-    fmax (float): The maximum force criterion for the optimisation. Default is 0.05 eV/Å.
+    Parameters
+    ----------
+    atoms : Atoms
+        The ASE Atoms object.
+    atom_index : int
+        The index of the atom to move.
+    target_index1 : int
+        The index of the first target atom.
+    target_index2 : int
+        The index of the second target atom.
+    calc : Calculator
+        The calculator to be used for the optimisation.
+    fmax : float
+        The maximum force criterion for the optimisation. Default is 0.05 eV/Å.
 
-    Returns:
-    Atoms: The optimised Atoms object without any constraints.
+    Returns
+    -------
+    Atoms
+        The optimised Atoms object without any constraints.
     """
     # Move the atom to be halfway between the two target atoms
     atoms = move_atom_halfway(atoms, atom_index, target_index1, target_index2)
@@ -193,17 +222,23 @@ def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc,
 
 
 def add_hydrogen_at_distance(atoms, index1, index2, distance):
-    """
-    Add a hydrogen atom at a specified distance from one atom along the line between two atoms in an Atoms object.
+    """Add a hydrogen atom at a specified distance from one atom along the line between two atoms in an Atoms object.
 
-    Parameters:
-    atoms (Atoms): The ASE Atoms object.
-    index1 (int): The index of the first atom.
-    index2 (int): The index of the second atom.
-    distance (float): The distance from the first atom to place the hydrogen atom.
+    Parameters
+    ----------
+    atoms : Atoms
+        The ASE Atoms object.
+    index1 : int
+        The index of the first atom.
+    index2 : int
+        The index of the second atom.
+    distance : float
+        The distance from the first atom to place the hydrogen atom.
 
-    Returns:
-    Atoms: The updated Atoms object with the hydrogen atom added.
+    Returns
+    -------
+    Atoms
+        The updated Atoms object with the hydrogen atom added.
     """
     atoms = atoms.copy()
     # Get the positions of the two atoms
@@ -224,17 +259,23 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
 
 
 def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_index):
-    """
-    Swap the bonding configuration from O-H...O to O...H-O in an Atoms object.
+    """Swap the bonding configuration from O-H...O to O...H-O in an Atoms object.
 
-    Parameters:
-    atoms (Atoms): The ASE Atoms object.
-    donor_index (int): The index of the donor oxygen atom.
-    hydrogen_index (int): The index of the hydrogen atom.
-    acceptor_index (int): The index of the acceptor oxygen atom.
+    Parameters
+    ----------
+    atoms : Atoms
+        The ASE Atoms object.
+    donor_index : int
+        The index of the donor oxygen atom.
+    hydrogen_index : int
+        The index of the hydrogen atom.
+    acceptor_index : int
+        The index of the acceptor oxygen atom.
 
-    Returns:
-    Atoms: The updated Atoms object with the swapped bonding configuration.
+    Returns
+    -------
+    Atoms
+        The updated Atoms object with the swapped bonding configuration.
     """
     atoms = atoms.copy()
     # Get the positions of the donor, hydrogen, and acceptor atoms
@@ -254,15 +295,19 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
 
 
 def time_force_call(atoms, calc, n_reps=3):
-    """
-    Measure the time taken to calculate forces on an atomic structure multiple times.
+    """Measure the time taken to calculate forces on an atomic structure multiple times.
 
-    Parameters:
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
-    calc (ase.Calculator): Calculator to be used for the force calculations.
-    n_reps (int, optional): Number of repetitions for the force calculation. Default is 3.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        ASE Atoms object containing the atomic structure.
+    calc : ase.Calculator
+        Calculator to be used for the force calculations.
+    n_reps : int, optional
+        Number of repetitions for the force calculation. Default is 3.
 
-    Returns:
+    Returns
+    -------
     None
     """
     times = np.zeros(n_reps, dtype=float)
@@ -277,28 +322,35 @@ def time_force_call(atoms, calc, n_reps=3):
 
 
 def get_fmax(atoms):
-    """
-    Calculate the maximum force on any atom in the given Atoms object.
+    """Calculate the maximum force on any atom in the given Atoms object.
 
-    Parameters:
-    atoms (ase.Atoms): ASE Atoms object containing the atomic structure.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        ASE Atoms object containing the atomic structure.
 
-    Returns:
-    float: The maximum force on any atom.
+    Returns
+    -------
+    float
+        The maximum force on any atom.
     """
     return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
 
 
 def align_mols(atoms1, atoms2):
-    """
-    Align two molecular structures by minimising their rotational and translational differences.
+    """Align two molecular structures by minimising their rotational and translational differences.
 
-    Parameters:
-    atoms1 (ase.Atoms): The first ASE Atoms object.
-    atoms2 (ase.Atoms): The second ASE Atoms object.
+    Parameters
+    ----------
+    atoms1 : ase.Atoms
+        The first ASE Atoms object.
+    atoms2 : ase.Atoms
+        The second ASE Atoms object.
 
-    Returns:
-    tuple: A tuple containing the aligned ASE Atoms objects (atoms1, atoms2).
+    Returns
+    -------
+    tuple
+        A tuple containing the aligned ASE Atoms objects (atoms1, atoms2).
     """
     atoms1 = atoms1.copy()
     atoms2 = atoms2.copy()
@@ -310,8 +362,7 @@ def align_mols(atoms1, atoms2):
 
 
 def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
-    """
-    Rotate the given Atoms object so that its principal axis with the largest
+    """Rotate the given Atoms object so that its principal axis with the largest
     moment of inertia is aligned along the specified axis ('x', 'y', or 'z').
 
     Parameters
@@ -357,15 +408,19 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
 
 
 def round_sf(value, sig_figs=3):
-    """
-    Round a float to a specified number of significant figures using NumPy.
+    """Round a float to a specified number of significant figures using NumPy.
 
-    Parameters:
-    value (float): The number to be rounded.
-    sig_figs (int): The number of significant figures to round to.
+    Parameters
+    ----------
+    value : float
+        The number to be rounded.
+    sig_figs : int
+        The number of significant figures to round to.
 
-    Returns:
-    float: The rounded number.
+    Returns
+    -------
+    float
+        The rounded number.
     """
     if value == 0:
         return 0
@@ -374,33 +429,39 @@ def round_sf(value, sig_figs=3):
 
 
 def get_file_extension(file_path):
-    """
-    Returns the file extension for the given file path.
+    """Returns the file extension for the given file path.
 
-    Parameters:
-    file_path (str): The path to the file.
+    Parameters
+    ----------
+    file_path : str
+        The path to the file.
 
-    Returns:
-    str: The file extension.
+    Returns
+    -------
+    str
+        The file extension.
     """
     _, file_extension = os.path.splitext(file_path)
     return file_extension
 
 
 def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
-    """
-    Clusters atoms based on their natural cutoffs.
+    """Clusters atoms based on their natural cutoffs.
 
     This function uses the NeighborList to determine clusters of atoms
     based on their natural cutoffs. It iterates through each atom,
     checking if it has been visited, and if not, it performs a depth-first
     search to find all connected atoms, forming a cluster.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object to be clustered.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object to be clustered.
 
-    Returns:
-    list[ase.Atoms]: A list of ASE Atoms objects, each representing a cluster.
+    Returns
+    -------
+    list[ase.Atoms]
+        A list of ASE Atoms objects, each representing a cluster.
     """
     cutoffs = natural_cutoffs(atoms)
 
@@ -430,18 +491,21 @@ def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
 
 
 def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
-    """
-    Clusters non-hydrogen atoms based on their natural cutoffs and returns
+    """Clusters non-hydrogen atoms based on their natural cutoffs and returns
     indices of atoms in each cluster.
 
     This function uses the cluster_atoms function to cluster atoms, and then
     returns the indices of non-hydrogen atoms in each cluster.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object to be clustered.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object to be clustered.
 
-    Returns:
-    tuple[list[int], list[int]]: Two lists containing the indices of atoms
+    Returns
+    -------
+    tuple[list[int], list[int]]
+        Two lists containing the indices of atoms
                                in each of the two non-hydrogen clusters.
     """
     # Cluster all atoms
@@ -456,18 +520,21 @@ def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
 
 
 def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
-    """
-    Reindex atoms by their clusters.
+    """Reindex atoms by their clusters.
 
     This function takes an ASE Atoms object, clusters the atoms using the
     `cluster_atoms` function, and then rejoins the clusters into a single
     Atoms object.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object to be reindexed by clusters.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object to be reindexed by clusters.
 
-    Returns:
-    ase.Atoms: A new ASE Atoms object with atoms reindexed by clusters.
+    Returns
+    -------
+    ase.Atoms
+        A new ASE Atoms object with atoms reindexed by clusters.
     """
     clusters = cluster_atoms(atoms)
     # Rejoin the clusters into a single Atoms object
@@ -478,14 +545,17 @@ def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
 
 
 def move_com_to_origin(atoms: Atoms) -> Atoms:
-    """
-    Moves a set of atoms so that its centre of mass is at the origin.
+    """Moves a set of atoms so that its centre of mass is at the origin.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object.
 
-    Returns:
-    ase.Atoms: The modified Atoms object.
+    Returns
+    -------
+    ase.Atoms
+        The modified Atoms object.
     """
     com = atoms.get_center_of_mass()
     atoms.positions -= com
@@ -497,19 +567,26 @@ def move_clusters_to_distance(cluster1: Atoms,
                               index1: int,
                               index2: int,
                               target_distance: float) -> Atoms:
-    """
-    Moves two clusters of atoms along the vector connecting two target atoms
+    """Moves two clusters of atoms along the vector connecting two target atoms
     such that the target atoms are separated by a given distance.
 
-    Parameters:
-        cluster1 (Atoms): The first set of atoms.
-        cluster2 (Atoms): The second set of atoms.
-        index1 (int): Index of the reference atom in cluster1.
-        index2 (int): Index of the reference atom in cluster2.
-        target_distance (float): The desired final distance between the target atoms.
+    Parameters
+    ----------
+    cluster1 : Atoms
+        The first set of atoms.
+    cluster2 : Atoms
+        The second set of atoms.
+    index1 : int
+        Index of the reference atom in cluster1.
+    index2 : int
+        Index of the reference atom in cluster2.
+    target_distance : float
+        The desired final distance between the target atoms.
 
-    Returns:
-        Atoms: A new Atoms object containing both clusters, repositioned.
+    Returns
+    -------
+    Atoms
+        A new Atoms object containing both clusters, repositioned.
     """
     # Get the current positions of the target atoms
     pos1 = cluster1.positions[index1]
@@ -542,21 +619,27 @@ def move_to_distances(atoms: Atoms,
                       index1: int,
                       index2: int,
                       distances: list[float]) -> list[Atoms]:
-    """
-    Move two clusters of atoms to specified distances along the vector connecting two target atoms.
+    """Move two clusters of atoms to specified distances along the vector connecting two target atoms.
 
     This function splits the input `Atoms` object into two clusters, calculates the vector
     connecting the specified atoms in the clusters, and moves the clusters to achieve the
     specified distances between the target atoms.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object containing the atomic structure.
-    index1 (int): The index of the reference atom in the first cluster.
-    index2 (int): The index of the reference atom in the second cluster.
-    distances (list[float]): A list of target distances to move the clusters.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object containing the atomic structure.
+    index1 : int
+        The index of the reference atom in the first cluster.
+    index2 : int
+        The index of the reference atom in the second cluster.
+    distances : list[float]
+        A list of target distances to move the clusters.
 
-    Returns:
-    list[ase.Atoms]: A list of ASE Atoms objects, each representing the clusters moved to the specified distances.
+    Returns
+    -------
+    list[ase.Atoms]
+        A list of ASE Atoms objects, each representing the clusters moved to the specified distances.
     """
     # Split the atoms into two clusters
     clusters = cluster_atoms(atoms)
@@ -578,16 +661,21 @@ def move_to_distances(atoms: Atoms,
 
 
 def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray]) -> list[float]:
-    """
-    Calculate time stamps for FES arrays based on simulation parameters.
+    """Calculate time stamps for FES arrays based on simulation parameters.
 
-    Parameters:
-    timestep (float): Timestep in femtoseconds.
-    total_steps (int): Total number of simulation steps.
-    fes_arrays (list[np.ndarray]): List of FES arrays.
+    Parameters
+    ----------
+    timestep : float
+        Timestep in femtoseconds.
+    total_steps : int
+        Total number of simulation steps.
+    fes_arrays : list[np.ndarray]
+        List of FES arrays.
 
-    Returns:
-    list[float]: List of time points in picoseconds for each FES array.
+    Returns
+    -------
+    list[float]
+        List of time points in picoseconds for each FES array.
     """
     n_arrays = len(fes_arrays)
     if n_arrays == 0:
@@ -604,21 +692,27 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
 
 
 def make_dimer(atoms, translate=None, angle=180, axis='z'):
-    """
-    Create a dimer by combining two copies of a molecule.
+    """Create a dimer by combining two copies of a molecule.
 
     This function takes an ASE Atoms object, centers the first molecule,
     creates a copy, rotates the copy by a specified angle around a given axis,
     translates the copy, and combines the two molecules into a single Atoms object.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object representing the molecule.
-    translate (list[float], optional): Translation vector for the second molecule. Default is [0.0, 3.4, 0.0].
-    angle (float, optional): Rotation angle in degrees for the second molecule. Default is 180 degrees.
-    axis (str, optional): Axis of rotation ('x', 'y', or 'z'). Default is 'z'.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object representing the molecule.
+    translate : list[float], optional
+        Translation vector for the second molecule. Default is [0.0, 3.4, 0.0].
+    angle : float, optional
+        Rotation angle in degrees for the second molecule. Default is 180 degrees.
+    axis : str, optional
+        Axis of rotation ('x', 'y', or 'z'). Default is 'z'.
 
-    Returns:
-    ase.Atoms: The combined Atoms object representing the dimer.
+    Returns
+    -------
+    ase.Atoms
+        The combined Atoms object representing the dimer.
     """
     if translate is None:
         translate = [0.0, 3.4, 0.0]
@@ -641,25 +735,27 @@ def make_dimer(atoms, translate=None, angle=180, axis='z'):
 
 
 def convert_code_to_string(code):
-    """
-    Converts a Python function or code object to its string representation.
+    """Converts a Python function or code object to its string representation.
 
     This function uses the `inspect.getsource` method to retrieve the source
     code of the given function or code object and removes any common leading
     whitespace using `textwrap.dedent`.
 
-    Parameters:
-    code (object): The Python function or code object to convert.
+    Parameters
+    ----------
+    code : object
+        The Python function or code object to convert.
 
-    Returns:
-    str: The string representation of the source code.
+    Returns
+    -------
+    str
+        The string representation of the source code.
     """
     return textwrap.dedent(inspect.getsource(code))
 
 
 def get_distance(atoms: Atoms, idx1: int, idx2: int) -> float:
-    """
-    Calculate the Euclidean distance between two atoms in an ASE Atoms object.
+    """Calculate the Euclidean distance between two atoms in an ASE Atoms object.
 
     Parameters
     ----------
@@ -681,20 +777,25 @@ def get_distance(atoms: Atoms, idx1: int, idx2: int) -> float:
 
 
 def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
-    """
-    Find the index of the atom in `super_atoms` that is closest to a specific atom in `sub_atoms`.
+    """Find the index of the atom in `super_atoms` that is closest to a specific atom in `sub_atoms`.
 
     This function calculates the Euclidean distance between the position of a given atom
     in `sub_atoms` (specified by `sub_idx`) and all atoms in `super_atoms`. It then returns
     the index of the atom in `super_atoms` with the smallest distance.
 
-    Parameters:
-        super_atoms (ASE Atoms object): The larger set of atoms to search within.
-        sub_atoms (ASE Atoms object): The smaller set of atoms containing the target atom.
-        sub_idx (int): The index of the target atom in `sub_atoms`.
+    Parameters
+    ----------
+    super_atoms : ASE Atoms object
+        The larger set of atoms to search within.
+    sub_atoms : ASE Atoms object
+        The smaller set of atoms containing the target atom.
+    sub_idx : int
+        The index of the target atom in `sub_atoms`.
 
-    Returns:
-        int: The index of the closest atom in `super_atoms` to the specified atom in `sub_atoms`.
+    Returns
+    -------
+    int
+        The index of the closest atom in `super_atoms` to the specified atom in `sub_atoms`.
     """
     diff = super_atoms.positions - sub_atoms.positions[sub_idx]  # Compute position differences
     norm = np.linalg.norm(diff, axis=1)  # Calculate Euclidean distances
@@ -702,8 +803,7 @@ def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
 
 
 def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> List[List[int]]:
-    """
-    Return connected components (bonded groups) using ASE's natural cutoffs.
+    """Return connected components (bonded groups) using ASE's natural cutoffs.
     Each group is a list of atom indices in `atoms`.
     """
     if len(atoms) == 0:
@@ -747,8 +847,7 @@ def combine_without_overlaps(
         bond_cutoff_scale: float = 1.0,
         overlap_cutoff_scale: float = 1.0,
 ) -> Atoms:
-    """
-    Combine two Atoms objects (A + B) while removing any *molecule* from B
+    """Combine two Atoms objects (A + B) while removing any *molecule* from B
     that overlaps with A (based on natural cutoffs).
 
     Overlap criterion:
@@ -826,8 +925,7 @@ def combine_without_overlaps(
 
 
 def largest_bonded_cluster_indices(atoms: Atoms) -> List[int]:
-    """
-    Finds the indices of the largest bonded cluster of atoms in an ASE Atoms object.
+    """Finds the indices of the largest bonded cluster of atoms in an ASE Atoms object.
 
     This function uses ASE's NeighborList to determine bonded groups of atoms based on
     natural covalent radii. It identifies all connected components (clusters) of atoms

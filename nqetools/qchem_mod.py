@@ -5,8 +5,7 @@ from ase.calculators.calculator import SCFError
 
 
 def make_neo_basis(neo_basis, neo_idx, neo_exp, atoms):
-    """
-    Make the neo basis for a given set of atoms and indices.
+    """Make the neo basis for a given set of atoms and indices.
     This constructs the string for the neo basis.
     neo_basis: str
         The basis to use for the neo basis.
@@ -19,7 +18,8 @@ def make_neo_basis(neo_basis, neo_idx, neo_exp, atoms):
 
     Returns
     -------
-    out_str: str
+    out_str
+        str
         The string for the neo basis.
     """
     neo_basis_list = neo_basis.split("_")
@@ -40,8 +40,7 @@ def make_neo_basis(neo_basis, neo_idx, neo_exp, atoms):
 
 
 def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
-    """
-    Make the neo basis for a given set of atoms and indices.
+    """Make the neo basis for a given set of atoms and indices.
     This constructs the string for the neo basis using a preset.
 
     neo_basis_name: str
@@ -53,7 +52,8 @@ def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
 
     Returns
     -------
-    out_str: str
+    out_str
+        str
         The string for the neo basis.
     """
 
@@ -115,8 +115,7 @@ def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
 
 
 class QChem(FileIOCalculator):
-    """
-    QChem calculator
+    """QChem calculator
     """
     name = 'QChem'
     implemented_properties = ['energy', 'forces']
@@ -144,8 +143,7 @@ class QChem(FileIOCalculator):
                  neo_exp=None,
                  neo_basis=None,
                  solv_extra=None, **kwargs):
-        """
-        The scratch directory, number of processor and threads as well as a few
+        """The scratch directory, number of processor and threads as well as a few
         other command line options can be set using the arguments explained
         below. The remaining kwargs are copied as options to the input file.
         The calculator will convert these options to upper case
@@ -218,8 +216,7 @@ class QChem(FileIOCalculator):
         raise NotImplementedError
 
     def read_results(self):
-        """
-        Read the results from the output file.
+        """Read the results from the output file.
         """
         filename = self.label + '.out'
 
@@ -291,8 +288,7 @@ class QChem(FileIOCalculator):
                     self.results['forces'] = -np.array(gradient) * f_conv
 
     def write_input(self, atoms, properties=None, system_changes=None):
-        """
-        Write the input file.
+        """Write the input file.
         """
         FileIOCalculator.write_input(self, atoms, properties, system_changes)
         filename = self.label + '.inp'

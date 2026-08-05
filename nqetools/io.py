@@ -18,27 +18,27 @@ from .conversions import convert_atom_list_bohr_to_angstrom, eV_to_kJpermol
 
 
 def read_ipi_xyz(filename, convert_units=True):
+    """Reads a file in xyz i-PI format and returns it in ASE format.
+
+    Parameters
+    ----------
+    filename : str
+        The path to the xyz file in i-PI format.
+    convert_units : bool
+        If True, converts coordinates and cell from Bohr to Angstrom.
+
+    Returns
+    -------
+    list
+        A list of ASE Atoms objects representing the frames in the file.
     """
-    Reads a file in xyz i-PI format and returns it in ASE format.
 
-    Parameters:
-    filename (str): The path to the xyz file in i-PI format.
-    convert_units (bool): If True, converts coordinates and cell from Bohr to Angstrom.
-
-    Returns:
-    list: A list of ASE Atoms objects representing the frames in the file.
-    """
-
-    # Open the file for reading
     file_handle = open(filename, "r")
     frames = []
 
-    # Loop to read each frame in the file
     while True:
         try:
-            # Read a frame from the file
             ret = read_file("xyz", file_handle)
-            # Append the frame as an ASE Atoms object to the frames list
             frames.append(ase.Atoms(ret["atoms"].names,
                                     positions=ret["atoms"].q.reshape((-1, 3)),
                                     cell=ret["cell"].h.T, pbc=True))
@@ -46,13 +46,10 @@ def read_ipi_xyz(filename, convert_units=True):
             # Break the loop if the end of the file is reached
             break
         except:
-            # Raise any other exceptions encountered
             raise
 
-    # Close the file handle
     file_handle.close()
 
-    # Convert units from Bohr to Angstrom if requested
     if convert_units:
         frames = convert_atom_list_bohr_to_angstrom(frames)
 
@@ -60,14 +57,17 @@ def read_ipi_xyz(filename, convert_units=True):
 
 
 def read_ipi_output(filename):
-    """
-    Reads an i-PI output file and returns a dictionary with the properties in a tidy order.
+    """Reads an i-PI output file and returns a dictionary with the properties in a tidy order.
 
-    Parameters:
-    filename (str): The path to the i-PI output file.
+    Parameters
+    ----------
+    filename : str
+        The path to the i-PI output file.
 
-    Returns:
-    dict: A dictionary where keys are property names and values are the corresponding data columns.
+    Returns
+    -------
+    dict
+        A dictionary where keys are property names and values are the corresponding data columns.
     """
 
     f = open(filename, "r")
@@ -100,14 +100,17 @@ def read_ipi_output(filename):
 
 
 def write_xml(root, file):
-    """
-    Writes an XML tree to a file, creating any necessary directories.
+    """Writes an XML tree to a file, creating any necessary directories.
 
-    Parameters:
-    root (xml.etree.ElementTree.Element): The root element of the XML tree.
-    file (str): The path to the file where the XML tree will be written.
+    Parameters
+    ----------
+    root : xml.etree.ElementTree.Element
+        The root element of the XML tree.
+    file : str
+        The path to the file where the XML tree will be written.
 
-    Returns:
+    Returns
+    -------
     None
     """
     os.makedirs(os.path.dirname(file), exist_ok=True)
@@ -118,45 +121,48 @@ def write_xml(root, file):
 
 
 def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
-    """
-    Writes an ASE Atoms object to an XYZ file, ensuring the directory exists and centering the atoms with a specified vacuum.
+    """Writes an ASE Atoms object to an XYZ file, ensuring the directory exists and centering the atoms with a specified vacuum.
     If the atoms have no cell or a zero-sized cell, adds 5Å of vacuum by default.
 
-    Parameters:
-    atoms (ase.Atoms): The ASE Atoms object to write.
-    file (str): The path to the output XYZ file.
-    vacuum (float, optional): The vacuum padding to apply when centering the atoms. Default is None.
-    vacuum_min (float, optional): The minimum vacuum padding to apply if the cell size is zero. Default is 5.0Å.
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The ASE Atoms object to write.
+    file : str
+        The path to the output XYZ file.
+    vacuum : float, optional
+        The vacuum padding to apply when centering the atoms. Default is None.
+    vacuum_min : float, optional
+        The minimum vacuum padding to apply if the cell size is zero. Default is 5.0Å.
 
-    Returns:
-    ase.Atoms: The centered ASE Atoms object.
+    Returns
+    -------
+    ase.Atoms
+        The centered ASE Atoms object.
     """
-    # Check if cell exists and is non-zero
     cell = atoms.get_cell()
-    # Add vacuum if cell is zero
     if cell.volume == 0:
         print(f"Cell is zero, adding {vacuum_min}A vacuum!")
         atoms.center(vacuum=vacuum_min)
 
-    # Add vacuum if requested
     if vacuum is not None:
         atoms.center(vacuum=vacuum)
 
-    # Ensure the directory exists
     os.makedirs(os.path.dirname(file), exist_ok=True)
-    # Write the atoms object to the XYZ file
     ase.io.write(file, atoms)
     return atoms
 
 
 def remove_directory(directory):
-    """
-    Removes a directory if it exists, otherwise prints a message.
+    """Removes a directory if it exists, otherwise prints a message.
 
-    Parameters:
-    directory (str): The path to the directory to be removed.
+    Parameters
+    ----------
+    directory : str
+        The path to the directory to be removed.
 
-    Returns:
+    Returns
+    -------
     None
     """
     if os.path.exists(directory):
@@ -167,15 +173,19 @@ def remove_directory(directory):
 
 
 def copy_and_rename_file(src, dst_dir, new_name):
-    """
-    Copies a file to a new directory and renames it.
+    """Copies a file to a new directory and renames it.
 
-    Parameters:
-    src (str): The path to the source file.
-    dst_dir (str): The path to the destination directory.
-    new_name (str): The new name for the copied file.
+    Parameters
+    ----------
+    src : str
+        The path to the source file.
+    dst_dir : str
+        The path to the destination directory.
+    new_name : str
+        The new name for the copied file.
 
-    Returns:
+    Returns
+    -------
     None
     """
     shutil.copy(src, os.path.join(dst_dir, new_name))
@@ -183,29 +193,37 @@ def copy_and_rename_file(src, dst_dir, new_name):
 
 
 def list_files_with_pattern(directory, pattern):
-    """
-    Lists files in a directory that match a given pattern.
+    """Lists files in a directory that match a given pattern.
 
-    Parameters:
-    directory (str): The path to the directory to search in.
-    pattern (str): The pattern to match files against.
+    Parameters
+    ----------
+    directory : str
+        The path to the directory to search in.
+    pattern : str
+        The pattern to match files against.
 
-    Returns:
-    list: A list of file paths that match the given pattern.
+    Returns
+    -------
+    list
+        A list of file paths that match the given pattern.
     """
     return glob.glob(os.path.join(directory, pattern))
 
 
 def get_final_xyz(directory, sub="*FINAL_*.xyz"):
-    """
-    Filters and returns the final XYZ file from a directory.
+    """Filters and returns the final XYZ file from a directory.
 
-    Parameters:
-    dir (str): The path to the directory to search in.
-    sub (str, optional): The pattern to match files against. Default is "*FINAL_*.xyz".
+    Parameters
+    ----------
+    directory : str
+        The path to the directory to search in.
+    sub : str, optional
+        The pattern to match files against. Default is "*FINAL_*.xyz".
 
-    Returns:
-    str: The path to the final XYZ file that matches the criteria.
+    Returns
+    -------
+    str
+        The path to the final XYZ file that matches the criteria.
     """
     l = list_files_with_pattern(directory, sub)
     # Only select files that end with xyz
@@ -218,53 +236,62 @@ def get_final_xyz(directory, sub="*FINAL_*.xyz"):
 
 
 def get_final_hess(directory, sub="*FINAL.hess*"):
-    """
-    Retrieves the final Hessian file from a directory.
+    """Retrieves the final Hessian file from a directory.
 
-    Parameters:
-    dir (str): The path to the directory to search in.
-    sub (str, optional): The pattern to match files against. Default is "*FINAL.hess*".
+    Parameters
+    ----------
+    directory : str
+        The path to the directory to search in.
+    sub : str, optional
+        The pattern to match files against. Default is "*FINAL.hess*".
 
-    Returns:
-    str: The path to the final Hessian file that matches the criteria.
+    Returns
+    -------
+    str
+        The path to the final Hessian file that matches the criteria.
     """
     return list_files_with_pattern(directory, sub)[0]
 
 
 def copy_xyz(file_in, new_dir, file_out="init.xyz"):
-    """
-    Copies an XYZ file to a new directory, renaming it if necessary.
+    """Copies an XYZ file to a new directory, renaming it if necessary.
 
-    Parameters:
-    file_in (str): The path to the input XYZ file.
-    new_dir (str): The path to the destination directory.
-    file_out (str, optional): The name for the output file. Default is "init.xyz".
+    Parameters
+    ----------
+    file_in : str
+        The path to the input XYZ file.
+    new_dir : str
+        The path to the destination directory.
+    file_out : str, optional
+        The name for the output file. Default is "init.xyz".
 
-    Returns:
+    Returns
+    -------
     None
     """
     os.makedirs(new_dir, exist_ok=True)
-    # Load the file
     atoms = ase.io.read(file_in, index=":")
-    # Check if the file is a trajectory or a single structure
     if isinstance(atoms, ase.atoms.Atoms):
         ase.io.write(f"{new_dir}{file_out}", atoms)
     else:
-        # Write the new file
         ase.io.write(f"{new_dir}{file_out}", atoms[-1])
     return None
 
 
 def copy_hess(file_in, new_dir, file_out="hessian.dat"):
-    """
-    Copies a Hessian file to a new directory, renaming it if necessary.
+    """Copies a Hessian file to a new directory, renaming it if necessary.
 
-    Parameters:
-    file_in (str): The path to the input Hessian file.
-    new_dir (str): The path to the destination directory.
-    file_out (str, optional): The name for the output file. Default is "hessian.dat".
+    Parameters
+    ----------
+    file_in : str
+        The path to the input Hessian file.
+    new_dir : str
+        The path to the destination directory.
+    file_out : str, optional
+        The name for the output file. Default is "hessian.dat".
 
-    Returns:
+    Returns
+    -------
     None
     """
     os.makedirs(new_dir, exist_ok=True)
@@ -273,14 +300,17 @@ def copy_hess(file_in, new_dir, file_out="hessian.dat"):
 
 
 def find_nqetools_path():
-    """
-    Finds the path of the nqetools package.
+    """Finds the path of the nqetools package.
 
-    Returns:
-    str: The directory path where the nqetools package is located.
+    Returns
+    -------
+    str
+        The directory path where the nqetools package is located.
 
-    Raises:
-    ImportError: If the nqetools package is not found.
+    Raises
+    ------
+    ImportError
+        If the nqetools package is not found.
     """
     spec = importlib.util.find_spec('nqetools')
     if not spec:
@@ -289,14 +319,17 @@ def find_nqetools_path():
 
 
 def search_fes_files(target_directory: str) -> list[str]:
-    """
-    Searches for files in the target directory with names matching the pattern 'FES*', where '*' is an integer.
+    """Searches for files in the target directory with names matching the pattern 'FES*', where '*' is an integer.
 
-    Parameters:
-    target_directory (str): The directory to search in.
+    Parameters
+    ----------
+    target_directory : str
+        The directory to search in.
 
-    Returns:
-    list[str]: A list of matching file names.
+    Returns
+    -------
+    list[str]
+        A list of matching file names.
     """
     pattern = re.compile(r'^FES\d+\.dat$')
     matching_files = []
@@ -309,15 +342,19 @@ def search_fes_files(target_directory: str) -> list[str]:
 
 
 def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
-    """
-    Find FES files in the directory and load their data into numpy arrays.
+    """Find FES files in the directory and load their data into numpy arrays.
 
-    Parameters:
-    directory (str): Directory containing the FES files.
-    bins (int): Number of bins for reshaping the data.
+    Parameters
+    ----------
+    directory : str
+        Directory containing the FES files.
+    bins : int
+        Number of bins for reshaping the data.
 
-    Returns:
-    list[np.ndarray]: List of numpy arrays, each containing the transformed FES data.
+    Returns
+    -------
+    list[np.ndarray]
+        List of numpy arrays, each containing the transformed FES data.
     """
     fes_files = search_fes_files(directory)
     fes_arrays = []
@@ -326,7 +363,6 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
     for file in sorted(fes_files):
         file_path = os.path.join(directory, file)
 
-        # Read first line to detect number of CVs
         with open(file_path, 'r') as f:
             first_line = f.readline().strip()
             n_cv = len(first_line.split()[2:])  # Skip #! FIELDS and time
@@ -342,8 +378,7 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
 
 
 def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=False):
-    """
-    Converts an XYZ file to an SDF file, optionally inferring bonds, sanitizing, and kekulizing the molecules.
+    """Converts an XYZ file to an SDF file, optionally inferring bonds, sanitizing, and kekulizing the molecules.
 
     This function reads molecular structures from an XYZ file, processes them into RDKit molecule objects,
     and writes them to an SDF file. It supports optional charge parsing, bond inference, molecule sanitization,
@@ -369,8 +404,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
     """
 
     def _parse_charge_from_comment(comment, fallback):
-        """
-        Extracts an integer charge from the comment line of an XYZ frame.
+        """Extracts an integer charge from the comment line of an XYZ frame.
 
         Parameters
         ----------
@@ -407,8 +441,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         return fallback
 
     def _read_xyz_frames(path):
-        """
-        Reads molecular frames from an XYZ file.
+        """Reads molecular frames from an XYZ file.
 
         Parameters
         ----------
@@ -449,8 +482,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         return frames
 
     def _frame_to_mol(comment, coord_lines, name_fallback):
-        """
-        Converts a single XYZ frame to an RDKit molecule object.
+        """Converts a single XYZ frame to an RDKit molecule object.
 
         Parameters
         ----------
@@ -538,8 +570,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
 def extract_nonstandard_res(pdb_file_path: str,
                             output_dir: str = ".",
                             sdf: bool = False) -> list:
-    """
-    Extracts non-standard residues from a PDB file and saves them as XYZ files.
+    """Extracts non-standard residues from a PDB file and saves them as XYZ files.
 
     This function identifies residues in a PDB file that are not part of a predefined
     set of standard residues. Each non-standard residue is saved as a separate XYZ file
@@ -561,12 +592,10 @@ def extract_nonstandard_res(pdb_file_path: str,
     """
     pdb = PDBFile(pdb_file_path)
 
-    # Extract topology and positions from the PDB file
     topology = pdb.getTopology()
     positions_quantity = pdb.getPositions(asNumpy=True)
     positions_angstrom = positions_quantity.value_in_unit(unit.angstrom)
 
-    # Define a set of standard residues to ignore
     manual_standard_residues = {
         # Standard 20 protein residues
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
@@ -586,35 +615,27 @@ def extract_nonstandard_res(pdb_file_path: str,
     residues_to_ignore = manual_standard_residues.copy()
     generated_files = []
 
-    # Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    # Iterate through residues in the topology
     for residue in topology.residues():
         if residue.name not in residues_to_ignore:
 
-            # Extract residue details
             res_name = residue.name
             res_id = residue.id
             chain_id = residue.chain.id
 
-            # Generate a safe filename for the residue
             safe_res_name = "".join(c for c in res_name if c.isalnum())
             filename = f"{safe_res_name}_{chain_id}_{res_id}.xyz"
             output_path = os.path.join(output_dir, filename)
 
-            # Get atoms in the residue
             atoms_in_residue = list(residue.atoms())
             num_atoms = len(atoms_in_residue)
 
-            # Skip residues with 1 or fewer atoms
             if num_atoms <= 1:
                 continue
 
-            # Log the found non-standard residue
             print(f"Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})", flush=True)
 
-            # Prepare XYZ file content
             xyz_content = [str(num_atoms)]
             comment = f"Residue: {res_name}, Chain: {chain_id}, ResID: {res_id}, Source: {os.path.basename(pdb_file_path)}"
             xyz_content.append(comment)
@@ -625,7 +646,6 @@ def extract_nonstandard_res(pdb_file_path: str,
                 xyz_line = f"{element:<2}   {pos[0]:>12.6f} {pos[1]:>12.6f} {pos[2]:>12.6f}"
                 xyz_content.append(xyz_line)
 
-            # Write the XYZ file
             with open(output_path, 'w') as f:
                 f.write("\n".join(xyz_content))
                 f.write("\n")
@@ -633,7 +653,6 @@ def extract_nonstandard_res(pdb_file_path: str,
             generated_files.append(output_path)
             print(f"Successfully wrote {num_atoms} atoms to {os.path.splitext(output_path)[0]}", flush=True)
 
-    # Optionally convert XYZ files to SDF format
     if sdf:
         for xyz_file in generated_files:
             sdf_file = os.path.splitext(xyz_file)[0] + ".sdf"
@@ -645,8 +664,7 @@ def extract_nonstandard_res(pdb_file_path: str,
 
 
 def get_non_standard_residues(pdb_file):
-    """
-    Identifies non-standard residues in a PDB file.
+    """Identifies non-standard residues in a PDB file.
 
     This function reads a PDB file, splits it into residues, and compares each residue
     against a predefined set of standard residues. Residues not in the standard set
@@ -662,7 +680,6 @@ def get_non_standard_residues(pdb_file):
     list
         A list of RDKit molecule objects representing non-standard residues.
     """
-    # Define a set of standard residues, including protein, DNA, RNA, water, and common ions
     standard_residues = {
         # Standard 20 protein residues
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
@@ -684,31 +701,25 @@ def get_non_standard_residues(pdb_file):
 
     # Load the PDB file without sanitization or hydrogen removal
     mol = Chem.MolFromPDBFile(pdb_file, sanitize=False, removeHs=False)
-    # Split the molecule into residues
     mols_by_residue = Chem.SplitMolByPDBResidues(mol)
 
     print(f"\n--- Found {len(mols_by_residue)} total residue fragments ---")
 
     non_standard_mols = []
-    # Iterate through residues and identify non-standard ones
     for residue_key, fragment_mol in mols_by_residue.items():
-        # Extract the residue name from the residue key
         res_name = residue_key.split('_')[0].strip()
         if res_name not in standard_residues:
-            # Log non-standard residues
             print(f"  > Found non-standard residue: {residue_key}")
             print(Chem.MolToSmiles(fragment_mol))
             non_standard_mols.append(fragment_mol)
         else:
-            # Log standard residues being skipped
             print(f"  - Skipping standard residue: {residue_key}")
 
     return non_standard_mols
 
 
 def list_non_standard_residues(pdb_file):
-    """
-    Identifies and lists non-standard residues in a PDB file.
+    """Identifies and lists non-standard residues in a PDB file.
 
     This function reads a PDB file, splits it into residues, and compares each residue
     against a predefined set of standard residues. Residues not in the standard set
@@ -745,11 +756,9 @@ def list_non_standard_residues(pdb_file):
 
     # Load the PDB file without sanitization or hydrogen removal
     mol = Chem.MolFromPDBFile(pdb_file, sanitize=False, removeHs=False)
-    # Split the molecule into residues
     mols_by_residue = Chem.SplitMolByPDBResidues(mol)
 
     non_standard_mols = []
-    # Iterate through residues and identify non-standard ones
     for residue_key, fragment_mol in mols_by_residue.items():
         res_name = residue_key.split('_')[0].strip()
         if res_name not in standard_residues:
@@ -758,8 +767,7 @@ def list_non_standard_residues(pdb_file):
 
 
 def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output_path: str) -> List[str]:
-    """
-    Removes specified ion residues from a PDB file and saves the cleaned structure.
+    """Removes specified ion residues from a PDB file and saves the cleaned structure.
 
     This function identifies ion residues in a PDB file based on their names and removes
     those that match the provided list. The cleaned PDB structure is then saved to the
@@ -785,10 +793,8 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output
     all_found_ion_types = set()
     residues_to_delete = []
 
-    # Iterate through residues in the topology
     for res in modeller.topology.residues():
         res_name_upper = res.name.upper()
-        # Skip water residues
         if res_name_upper in ['HOH', 'WAT']:
             continue
         # Identify single-atom residues as potential ions
@@ -797,18 +803,15 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output
             if res_name_upper in ions_to_remove_upper:
                 residues_to_delete.append(res)
 
-    # Log the found ion types and residues to remove
     print(f"-> Found all potential ion types: {sorted(list(all_found_ion_types))}")
     print(f"-> Will remove {len(residues_to_delete)} residues matching: {ions_to_remove}")
 
-    # Remove the identified residues
     if residues_to_delete:
         modeller.delete(residues_to_delete)
         print(f"Successfully removed {len(residues_to_delete)} ion residues.")
     else:
         print("No matching ion residues found to remove.")
 
-    # Save the cleaned PDB structure to the output file
     with open(pdb_output_path, 'w') as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
     print(f"Cleaned PDB saved to: {pdb_output_path}")
@@ -817,8 +820,7 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output
 
 
 def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
-    """
-    Relabels residues in a PDB file based on a provided mapping and saves the modified structure.
+    """Relabels residues in a PDB file based on a provided mapping and saves the modified structure.
 
     This function reads a PDB file, updates the residue names according to the `relabel_map`,
     and writes the modified structure to an output file. A summary of changes is printed.
@@ -842,7 +844,6 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
     positions = pdb.positions
     changed_residues = {}
 
-    # Iterate through residues and relabel if they match the relabel_map
     for residue in topology.residues():
         if residue.name in relabel_map:
             original_name = residue.name
@@ -853,7 +854,6 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
                 changed_residues[change_key] = 0
             changed_residues[change_key] += 1
 
-    # Print a summary of changes
     if changed_residues:
         print("Relabeling complete. Summary of changes:")
         for (old, new), count in changed_residues.items():
@@ -861,7 +861,6 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
     else:
         print("No residues found matching the relabel map. Topology is unchanged.")
 
-    # Save the modified topology and positions to the output file
     print("Saving modified topology and positions...")
     if isinstance(output_file, str):
         with open(output_file, 'w') as f:
@@ -875,8 +874,7 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
 
 
 def remove_residues_in_pdb(input_pdb, output_pdb, names):
-    """
-    Removes specific residues from a PDB file and writes the modified structure to a new file.
+    """Removes specific residues from a PDB file and writes the modified structure to a new file.
 
     Parameters
     ----------
@@ -891,24 +889,20 @@ def remove_residues_in_pdb(input_pdb, output_pdb, names):
     -------
     None
     """
-    # Load the PDB file
     pdb = PDBFile(input_pdb)
     modeller = Modeller(pdb.topology, pdb.positions)
 
-    # Identify residues to delete based on the provided names
     residues_to_delete = [res for res in modeller.topology.residues()
                           if res.name in names]
 
     print(f"Found {len(residues_to_delete)} residues to delete.")
 
-    # Delete the identified residues if any are found
     if residues_to_delete:
         modeller.delete(residues_to_delete)
         print("Successfully deleted residues.")
     else:
         print("No matching residues found to delete.")
 
-    # Write the modified structure to the output PDB file
     with open(output_pdb, 'w') as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
 

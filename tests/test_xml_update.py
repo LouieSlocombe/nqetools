@@ -10,28 +10,34 @@ base_dir = nqe.find_nqetools_path()
 
 
 def vis_xml(root):
-    """
-    Writes the XML tree to a file named 'input.xml' in the current working directory.
+    """Writes the XML tree to a file named 'input.xml' in the current working directory.
 
-    Parameters:
-    root (Element): The root element of the XML tree.
+    Parameters
+    ----------
+    root : Element
+        The root element of the XML tree.
 
-    Returns:
+    Returns
+    -------
     None
     """
     nqe.write_xml(root, os.path.join(os.getcwd(), 'input.xml'))
 
 
 def count_matching_words(input_string, target_word):
-    """
-    Counts the number of occurrences of a target word in an input string.
+    """Counts the number of occurrences of a target word in an input string.
 
-    Parameters:
-    input_string (str): The string in which to search for the target word.
-    target_word (str): The word to search for in the input string.
+    Parameters
+    ----------
+    input_string : str
+        The string in which to search for the target word.
+    target_word : str
+        The word to search for in the input string.
 
-    Returns:
-    int: The number of times the target word appears in the input string.
+    Returns
+    -------
+    int
+        The number of times the target word appears in the input string.
     """
     pattern = re.escape(target_word)
     return len(re.findall(pattern, input_string))

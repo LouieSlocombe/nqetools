@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
+"""Generate an OPES STATE file from a KERNELS file.
 
-### Generate an OPES STATE file from a KERNELS file ###
-# For postprocessing only, do not use for restarting a simulation
-# (the idea is to fake a restart with the plumed driver and dump the OPES state)
+For postprocessing only, do not use for restarting a simulation. The idea is
+to fake a restart with the plumed driver and dump the OPES state.
+"""
 
 import argparse
 import subprocess

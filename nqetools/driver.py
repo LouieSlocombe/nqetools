@@ -41,7 +41,6 @@ atoms.calc = mace_{model_type}(device='{device}')
 client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=True)
             """
-    # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
     return None
@@ -60,7 +59,6 @@ def write_ase_qmmm_mace_driver(
         default_dtype="float64",
         enable_cueq=False,
         host="driver"):
-    # Validate model types
     if qm_indices is None:
         qm_indices = [0]
 
@@ -70,7 +68,6 @@ def write_ase_qmmm_mace_driver(
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Create the Python script content
     in_str = f"""
 from ase.io import read
 from mace.calculators import mace_{qm_model_type}, mace_{mm_model_type}
@@ -79,20 +76,17 @@ from ase.calculators.socketio import SocketClient
 atoms = read('{in_file}', 0)
 """
 
-    # Configure the QM calculator based on type
     if qm_model_type in ["off", "mp", "omol"]:
         in_str += f"qm_calc = mace_{qm_model_type}(model='{qm_model}', device='{device}', default_dtype='{default_dtype}', enable_cueq={enable_cueq})\n"
-    else:  # For anicc
+    else:  # anicc takes no model/dtype kwargs
         in_str += f"qm_calc = mace_{qm_model_type}(device='{device}')\n"
 
-    # Configure the MM calculator
     in_str += "\n# Set up MM calculator\n"
     if mm_model_type in ["off", "mp", "omol"]:
         in_str += f"mm_calc = mace_{mm_model_type}(model='{mm_model}', device='{device}', default_dtype='{default_dtype}', enable_cueq={enable_cueq})\n"
-    else:  # For anicc
+    else:  # anicc takes no model/dtype kwargs
         in_str += f"mm_calc = mace_{mm_model_type}(device='{device}')\n"
 
-    # Add QM/MM setup and socket client
     in_str += f"""
 qm_indices = {qm_indices}
 qmmm_calc = SimpleQMMM(qm_indices, qm_calc, mm_calc, mm_calc)
@@ -101,7 +95,6 @@ client = SocketClient(unixsocket='{host}')
 client.run(atoms)
 """
 
-    # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
 
@@ -109,10 +102,7 @@ client.run(atoms)
 
 
 def write_cp2k_driver():
-    # which cp2k.ssmp
-    # /home/louie/anaconda3/envs/ipi_env/bin/cp2k.ssmp
-    # https://github.com/i-pi/i-pi/tree/main/examples/clients/cp2k/npt_classical
-
+    # not yet implemented; see https://github.com/i-pi/i-pi/tree/main/examples/clients/cp2k/npt_classical
     raise ValueError("Driver cp2k is not recognized.")
 
 
@@ -144,7 +134,6 @@ def nwchem_calc_preset(directory=None,
                        disp=None,
                        solv=None):
     if directory is None:
-        #directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
         directory = os.path.join(os.getcwd(), 'nwchem')
 
     tmp = dict(
@@ -193,7 +182,6 @@ client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=False)
 
     """
-    # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
     return None
@@ -209,25 +197,35 @@ def write_nwchem_driver(atoms,
                         disp=None,
                         solv=None,
                         host='driver'):
-    """
-    Prepares and writes the input file for an NWChem calculation.
+    """Prepares and writes the input file for an NWChem calculation.
 
-    Parameters:
-    atoms (object): An ASE Atoms object representing the atomic structure.
-    directory (str): The directory to write the NWChem input file to.
-    task (str, optional): The NWChem task to perform
-    charge (int, optional): The charge of the system. Default is 0.
-    xc (str, optional): The exchange-correlation functional to use. Default is 'B3LYP'.
-    multiplicity (int, optional): The spin multiplicity of the system. Default is 1.
-    basis_set (str, optional): The basis set to use. Default is '6-311++G**'.
-    disp (str, optional): The dispersion correction to use. Default is None.
-    solv (str, optional): The solvation model to use. Default is None.
-    host (str, optional): The host for the SocketClient. Default is 'driver'.
+    Parameters
+    ----------
+    atoms : object
+        An ASE Atoms object representing the atomic structure.
+    directory : str
+        The directory to write the NWChem input file to.
+    task : str, optional
+        The NWChem task to perform
+    charge : int, optional
+        The charge of the system. Default is 0.
+    xc : str, optional
+        The exchange-correlation functional to use. Default is 'B3LYP'.
+    multiplicity : int, optional
+        The spin multiplicity of the system. Default is 1.
+    basis_set : str, optional
+        The basis set to use. Default is '6-311++G**'.
+    disp : str, optional
+        The dispersion correction to use. Default is None.
+    solv : str, optional
+        The solvation model to use. Default is None.
+    host : str, optional
+        The host for the SocketClient. Default is 'driver'.
 
-    Returns:
+    Returns
+    -------
     None
     """
-    # Prepare the NWChem calculator
     calc = nwchem_calc_preset(directory=directory,
                               task=task,
                               charge=charge,
@@ -237,9 +235,7 @@ def write_nwchem_driver(atoms,
                               disp=disp,
                               solv=solv,
                               host=host)
-    # Set the correct pathing
     calc.prefix = os.path.join(directory, 'nwchem')
-    # Write the input file
     calc.write_input(atoms)
     return None
 
@@ -394,91 +390,81 @@ client = SocketClient(host=host, port=port)
 client.run(atoms)
 
 """
-    # join the strings
     in_str = in_str_1 + in_str_2
 
-    # Write the file
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
 
 
 def move_zundel_driver_pes_files(directory):
-    """
-    Copies the Zundel driver PES (Potential Energy Surface) files to the specified directory.
+    """Copies the Zundel driver PES (Potential Energy Surface) files to the specified directory.
 
-    Parameters:
-    directory (str): The target directory where the PES files will be copied.
+    Parameters
+    ----------
+    directory : str
+        The target directory where the PES files will be copied.
 
-    Returns:
+    Returns
+    -------
     None
     """
-    # Determine the base directory where the PES files are located
     base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
-    # List of PES files to be copied
     files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']
-    # Copy each file from the base directory to the target directory
     for file in files:
         os.system(f"cp {os.path.join(base, file)} {directory}")
 
 
 def prep_driver(atoms, directory, f_driver, driver_args):
-    """
-    Prepares the driver command based on the specified driver type and parameters.
+    """Prepares the driver command based on the specified driver type and parameters.
 
-    Parameters:
-    atoms (object): An ASE Atoms object representing the atomic structure.
-    directory (str): The directory where driver files will be written.
-    f_driver (str): The type of driver to prepare. Must be one of ["cbe", "zundel", "ase-mace", "ase-nwchem", "ase-orca", "nwchem"].
-    driver_dict (dict): A dictionary of additional parameters specific to the driver type.
+    Parameters
+    ----------
+    atoms : object
+        An ASE Atoms object representing the atomic structure.
+    directory : str
+        The directory where driver files will be written.
+    f_driver : str
+        The type of driver to prepare. Must be one of ["cbe", "zundel", "mace", "ase-mace",
+        "ase-qmmm-mace", "ase-nwchem", "ase-orca", "nwchem"].
+    driver_args : dict
+        A dictionary of additional parameters specific to the driver type.
 
-    Returns:
-    str: The command to run the prepared driver.
+    Returns
+    -------
+    str
+        The command to run the prepared driver.
     """
     driver_path = get_ipi_driver()
-    # Prepare the CBE driver
     if f_driver == "cbe":
         return f"{driver_path} -m ch4hcbe -u"
 
-    # Prepare the Zundel driver
     elif f_driver == "zundel":
         move_zundel_driver_pes_files(directory)
         return f"{driver_path} -u -a zundel -m zundel"
 
-    # Prepare the straight MACE driver
     elif f_driver == "mace":
-        # If the driver is an ASE-MACE driver, write the driver file
         write_ase_mace_driver(directory, **driver_args)
         f_model = driver_args.get("model", "small")
         return f"i-pi-py_driver -a driver -u -m mace -o init.xyz,{f_model}"
 
-    # Prepare the ASE-MACE driver
     elif f_driver == "ase-mace":
-        # If the driver is an ASE-MACE driver, write the driver file
         write_ase_mace_driver(directory, **driver_args)
         return "python3 run-ase-mace.py"
 
-    # Prepare the ASE-QMMM-MACE driver
     elif f_driver == "ase-qmmm-mace":
-        # If the driver is an ASE-QMMM-MACE driver, write the driver file
         write_ase_qmmm_mace_driver(directory, **driver_args)
         return "python3 run-ase-qmmm-mace.py"
 
-    # Prepare the ASE-NWChem driver
     elif f_driver == "ase-nwchem":
-        # If the driver is an ASE-NWChem driver, write the driver file
         write_ase_nwchem_driver(directory, **driver_args)
         return "python3 run-ase-nwchem.py"
 
-    # Prepare the ASE-ORCA driver
     elif f_driver == "ase-orca":
-        # If the driver is an ASE-ORCA driver, write the driver file
         write_ase_orca_driver(directory, **driver_args)
         return "python3 run-ase-orca.py"
 
-    # Prepare the NWChem driver
     elif f_driver == "nwchem":
         write_nwchem_driver(atoms, directory, **driver_args)
         return "nwchem nwchem.nwi > nwchem.out"
     else:
-        # If not a recognised driver, raise an error
         raise ValueError(f"Driver {f_driver} is not recognized.")

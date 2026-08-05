@@ -1,5 +1,4 @@
-"""
-Instanton_interpolation.py
+"""Instanton_interpolation.py
 Reads a hessian file and/or a positions file (xyz format) and creates an interpolation
 that can be used in a further instanton optimization with more beads
 
@@ -135,7 +134,6 @@ if input_geo != "None" or chk != "None":
     rpc = nm_rescale(2 * nbeads, 2 * nbeadsNew)
     new_q = rpc.b1tob2(q2)[0:nbeadsNew]
 
-    # Print
     out = open("new_instanton.xyz", "w")
     for i in range(nbeadsNew):
         atom.q = new_q[i] / unit_to_internal(

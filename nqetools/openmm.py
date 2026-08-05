@@ -55,8 +55,7 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
 
 
 def zero_velocities(n_atoms):
-    """
-    Generates a list of zero velocity vectors for a given number of atoms.
+    """Generates a list of zero velocity vectors for a given number of atoms.
 
     Parameters
     ----------
@@ -72,8 +71,7 @@ def zero_velocities(n_atoms):
 
 
 def write_multimodel_pdb(topology, positions, fh, model_index):
-    """
-    Writes a single model to a multi-model PDB file.
+    """Writes a single model to a multi-model PDB file.
 
     This function appends a model to an existing PDB file, allowing the creation
     of a multi-model PDB file. Each model is identified by a unique index.
@@ -97,8 +95,7 @@ def write_multimodel_pdb(topology, positions, fh, model_index):
 
 
 def centroid_positions(simulation, n_atoms, n_beads):
-    """
-    Computes the centroid positions of atoms across multiple beads in a simulation.
+    """Computes the centroid positions of atoms across multiple beads in a simulation.
 
     This function calculates the average positions of atoms over a specified number
     of beads in a ring-polymer molecular dynamics (RPMD) simulation.
@@ -117,18 +114,17 @@ def centroid_positions(simulation, n_atoms, n_beads):
     list of openmm.Vec3
         A list of centroid positions for each atom, with units of nanometers.
     """
-    acc = np.zeros((n_atoms, 3), dtype=float)  # Initialize accumulator for positions.
+    acc = np.zeros((n_atoms, 3), dtype=float)
     for b in range(n_beads):
-        state = simulation.integrator.getState(b, getPositions=True)  # Get state for bead `b`.
-        r = state.getPositions(asNumpy=True)  # Extract positions as a NumPy array.
-        acc += r.value_in_unit(unit.nanometer)  # Accumulate positions in nanometers.
-    acc /= n_beads  # Compute the average positions across all beads.
-    return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer  # Return centroid positions.
+        state = simulation.integrator.getState(b, getPositions=True)
+        r = state.getPositions(asNumpy=True)
+        acc += r.value_in_unit(unit.nanometer)
+    acc /= n_beads
+    return [openmm.Vec3(*acc[i]) for i in range(n_atoms)] * unit.nanometer
 
 
 def get_thermal_de_broglie_wavelength(mass, temperature):
-    """
-    Calculates the thermal de Broglie wavelength for a given mass and temperature.
+    """Calculates the thermal de Broglie wavelength for a given mass and temperature.
 
     The thermal de Broglie wavelength is a quantum mechanical property that
     characterizes the wave-like behavior of particles at a given temperature.
@@ -166,8 +162,7 @@ def get_thermal_de_broglie_wavelength(mass, temperature):
 
 
 def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=0.1):
-    """
-    Initializes bead positions for a ring-polymer molecular dynamics (RPMD) simulation.
+    """Initializes bead positions for a ring-polymer molecular dynamics (RPMD) simulation.
 
     This function perturbs the initial positions of atoms in the system to create
     multiple beads, scaled by the thermal de Broglie wavelength of each atom.
@@ -192,41 +187,33 @@ def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=
     system = simulation.system
     n_atoms = system.getNumParticles()
 
-    # Get the masses of all particles in daltons.
     masses_val = np.array([system.getParticleMass(i).value_in_unit(unit.dalton)
                            for i in range(n_atoms)])
     masses_quantity = masses_val * unit.dalton
 
-    # Calculate the thermal de Broglie wavelength for each particle.
     lambdas = get_thermal_de_broglie_wavelength(masses_quantity, temperature)
     lambdas_nm = lambdas.value_in_unit(unit.nanometer)
 
-    # Ensure positions are in the correct unit (nanometers).
     if not unit.is_quantity(positions):
         positions = positions * unit.nanometer
     pos0 = positions.value_in_unit(unit.nanometer)
 
-    # Initialize a random number generator with a fixed seed.
-    rng = np.random.default_rng(0)
+    rng = np.random.default_rng(0)  # fixed seed for reproducibility
 
-    # Log information about the thermal wavelengths.
     print(f"Initializing {n_beads} beads scaled by thermal wavelengths...")
     print(f"Max Lambda (lightest atom): {np.max(lambdas_nm):.4f} nm")
     print(f"Min Lambda (heaviest atom): {np.min(lambdas_nm):.4f} nm")
 
-    # Perturb the positions for each bead.
     for b in range(n_beads):
         noise = rng.normal(size=(n_atoms, 3)) * lambdas_nm[:, np.newaxis] * scale_factor
         bead_pos = pos0 + noise
         simulation.integrator.setPositions(b, bead_pos * unit.nanometer)
 
-    # Set the velocities of the system to match the target temperature.
     simulation.context.setVelocitiesToTemperature(temperature)
 
 
 def init_beads(modeller, simulation, n_beads, perturb=0.002):
-    """
-    Initializes bead positions and velocities for a ring-polymer molecular dynamics (RPMD) simulation.
+    """Initializes bead positions and velocities for a ring-polymer molecular dynamics (RPMD) simulation.
 
     This function perturbs the initial positions of atoms to create multiple beads
     and sets their velocities to zero.
@@ -308,7 +295,6 @@ def md_workflow(file_in,
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
 
-    # Local energy minimization
     print("Minimizing energy", flush=True)
     simulation.minimizeEnergy()
 
@@ -344,7 +330,6 @@ def md_workflow(file_in,
 
 
 def md_analysis(file_in='md_log.txt'):
-    # Analysis
     data = np.loadtxt(file_in, delimiter=',')
 
     time = data[:, 1]
@@ -376,8 +361,7 @@ def md_analysis(file_in='md_log.txt'):
 
 
 def make_sdf(pdb_file, lig_name='LIG'):
-    """
-    Converts a ligand from a PDB file to an SDF file.
+    """Converts a ligand from a PDB file to an SDF file.
 
     This function reads a PDB file, extracts the ligand specified by its residue name,
     and writes it to an SDF file. The ligand's atomic elements are guessed and added
@@ -399,14 +383,12 @@ def make_sdf(pdb_file, lig_name='LIG'):
     u.add_TopologyAttr('elements', elements)
     lig = u.select_atoms(f"resname {lig_name}")
     mol = lig.convert_to("RDKIT")
-    # write to sdf file
     Chem.MolToMolFile(mol, f"{lig_name}.sdf", kekulize=False)
     return None
 
 
 def pdb_patcher(pdb_file, lig_name='LIG'):
-    """
-    Modifies a PDB file to replace placeholder residue names and characters.
+    """Modifies a PDB file to replace placeholder residue names and characters.
 
     This function reads a PDB file, replaces occurrences of the character 'x' with a space,
     and changes the residue name 'UNK' to the specified ligand name. The modified PDB
@@ -433,8 +415,7 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
 
 
 def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
-    """
-    Combines a ligand from an SDF file with a receptor from a PDB file into a single PDB file.
+    """Combines a ligand from an SDF file with a receptor from a PDB file into a single PDB file.
 
     This function reads a receptor structure from a PDB file and a ligand structure from an SDF file,
     then combines them into a single PDB file. Optionally, it can patch the resulting PDB file to
@@ -453,7 +434,6 @@ def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
     -------
     None
     """
-    # Combine ligand and receptor into one pdb
     pdb = app.PDBFile(input_pdb)
     molecule = Molecule.from_file(f'{lig_name}.sdf')
     ligand_ff_topology = molecule.to_topology()
@@ -476,8 +456,7 @@ def prepare_lig_system(input_pdb,
                        rm_files=True,
                        save_lig_sdf=False,
                        lig_name='LIG'):
-    """
-    Prepares a ligand-receptor system for molecular simulations.
+    """Prepares a ligand-receptor system for molecular simulations.
 
     This function processes a PDB file to clean up water residues, optionally remove ions,
     relabel residues, and extract the ligand. The ligand is saved as an SDF file, and the
@@ -498,10 +477,10 @@ def prepare_lig_system(input_pdb,
         A mapping of residue names to relabel in the PDB file. Default is None.
     rm_files : bool, optional
         If True, removes intermediate files generated during processing. Default is True.
+    save_lig_sdf : bool, optional
+        If True, saves the ligand as an SDF file. Default is False.
     lig_name : str, optional
         Residue name of the ligand to extract. Default is 'LIG'.
-    save_lig_sdf: str, optional
-        If True, saves the ligand as an SDF file. Default is False.
 
     Returns
     -------
@@ -517,13 +496,10 @@ def prepare_lig_system(input_pdb,
     if residue_map is not None:
         relabel_residues_in_pdb(clean_pdb, residue_map, clean_pdb)
 
-    # Save ligand as sdf
     make_sdf(clean_pdb, lig_name=lig_name)
 
-    # Strip out the ligand and fix the pdb
     fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
-    # Remove the ligand
-    remove_residues_in_pdb(combined_pdb, combined_pdb, names=[lig_name])
+    remove_residues_in_pdb(combined_pdb, combined_pdb, names=[lig_name])  # drop the ligand, kept separately as SDF
 
     combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
 
@@ -546,8 +522,7 @@ def prepare_ligand_ff(standard_ff,
                       n_conf=10,
                       pc_methods='mmff94',
                       gaff_ver='gaff-2.11'):  # gaff-2.2.20
-    """
-    Prepares a ligand-specific force field using the General Amber Force Field (GAFF).
+    """Prepares a ligand-specific force field using the General Amber Force Field (GAFF).
 
     This function generates or loads GAFF parameters for a given molecule and integrates
     them into a standard force field. It supports caching of GAFF parameters for faster
@@ -578,8 +553,6 @@ def prepare_ligand_ff(standard_ff,
     openmm.app.ForceField
         The prepared force field object with GAFF parameters integrated.
     """
-    # mmff94 am1bcc am1-mulliken
-
     if use_cache:
         print('Using cached GAFF parameters...', flush=True)
         gaff = GAFFTemplateGenerator(molecules=molecule, cache=cache, forcefield=gaff_ver)
@@ -605,8 +578,7 @@ def prepare_ligand_ff(standard_ff,
 
 
 def deuterate_system(modeller, system, option='all', target_resname=None):
-    """
-    Replaces hydrogen atoms with deuterium in a molecular system.
+    """Replaces hydrogen atoms with deuterium in a molecular system.
 
     This function modifies the masses of hydrogen atoms in the system to the mass of deuterium
     based on the specified option. It supports deuteration of all hydrogens, or specific subsets
@@ -642,7 +614,6 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
     """
     deuterium_mass = app.element.deuterium.mass
 
-    # Define residue sets for different options
     protein_residues = {
         'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
         'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP',
@@ -667,7 +638,6 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
 
     nucleic_residues = dna_residues.union(rna_residues)
 
-    # Determine target residues based on the option
     target_residues = set()
     if option == 'all':
         pass
@@ -688,13 +658,11 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
     else:
         raise ValueError("Option must be 'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'")
 
-    # Deuterate all hydrogens if option is 'all'
     if option == 'all':
         for atom in modeller.topology.atoms():
             if atom.element and atom.element.symbol == 'H':
                 system.setParticleMass(atom.index, deuterium_mass)
     else:
-        # Deuterate hydrogens in the specified residue set
         found_target = False
         for residue in modeller.topology.residues():
             if residue.name in target_residues:
@@ -703,7 +671,6 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
                     if atom.element and atom.element.symbol == 'H':
                         system.setParticleMass(atom.index, deuterium_mass)
 
-        # Print warnings if no matching residues are found
         if not found_target and option == 'ligand':
             print(f"Warning: No ligand named '{target_resname}' was found.")
         elif not found_target and option != 'all':
@@ -711,8 +678,7 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
 
 
 def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
-    """
-    Retrieves the atom indices of a specific residue in a PDB file.
+    """Retrieves the atom indices of a specific residue in a PDB file.
 
     This function reads a PDB file, identifies the specified residue by its index
     and optionally its chain ID, and returns the indices of all atoms in that residue.
@@ -781,8 +747,7 @@ def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
 
 
 def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
-    """
-    Saves a subset of atoms from a PDB file to a new PDB file.
+    """Saves a subset of atoms from a PDB file to a new PDB file.
 
     This function reads a PDB file, selects a subset of atoms based on their indices,
     and writes the selected atoms to a new PDB file. Atoms not in the specified indices
@@ -1003,7 +968,6 @@ def run_openmm_relaxation_simple(modeller,
                                                       temperature=True,
                                                       volume=True))
 
-    # Local energy minimization
     print("Minimizing energy", flush=True)
     simulation.minimizeEnergy()
 
@@ -1778,8 +1742,7 @@ def run_openmm_rpmd_prod(modeller,
 
 
 def _calculate_quantum_spread(integrator, atom_indices=None):
-    """
-    Calculates the root-mean-square distance of beads from the ring polymer centroid.
+    """Calculates the root-mean-square distance of beads from the ring polymer centroid.
     This is a measure of quantum delocalization (quantum spread).
 
     Parameters
@@ -1805,27 +1768,23 @@ def _calculate_quantum_spread(integrator, atom_indices=None):
             pos = pos[atom_indices]
         all_bead_positions.append(pos)
 
-    # Convert to numpy array for vector math
     coords = np.array(all_bead_positions)
-    # Calculate Centroid (average position across beads)
     centroid = np.mean(coords, axis=0)
-    # Calculate Squared Distance of each bead from the Centroid
     diff = coords - centroid
-    sq_dist = np.sum(diff ** 2, axis=2)  # Sum x,y,z components -> (n_beads, n_atoms)
-    # Average over beads (Mean Squared Displacement from Centroid)
+    sq_dist = np.sum(diff ** 2, axis=2)  # sum x,y,z components -> (n_beads, n_atoms)
     mean_sq_dist = np.mean(sq_dist, axis=0)
     quantum_rg = np.sqrt(mean_sq_dist)
     return quantum_rg * unit.nanometers
 
 
 class RPMDQuantumSpreadReporter(object):
-    """
-    A Reporter class to log the quantum spread (delocalization) of specific atoms
+    """A Reporter class to log the quantum spread (delocalization) of specific atoms
     during an RPMD simulation.
     """
 
     def __init__(self, file, reportInterval, atom_indices, names=None):
-        """
+        """Initialize the reporter.
+
         Parameters
         ----------
         file : str
@@ -1842,7 +1801,6 @@ class RPMDQuantumSpreadReporter(object):
         self._atom_indices = atom_indices
         self._out = open(file, 'w')
 
-        # Header
         if names:
             header = "Step\t" + "\t".join([f"Rg_{n}(nm)" for n in names])
         else:
@@ -1857,11 +1815,8 @@ class RPMDQuantumSpreadReporter(object):
         # We need access to the integrator to get bead positions, not just the simulation state
         integrator = simulation.integrator
 
-        # Calculate spreads using the helper function defined above
-        # Note: This requires the helper function to be available or methodized
         spreads = _calculate_quantum_spread(integrator, self._atom_indices)
 
-        # Write to file
         step = simulation.currentStep
         spread_values = spreads.value_in_unit(unit.nanometers)
 
@@ -1876,66 +1831,64 @@ class RPMDQuantumSpreadReporter(object):
 
 
 class RPMDBeadReporter(object):
-    """
-    A custom reporter for OpenMM that saves the trajectory of EVERY individual
+    """A custom reporter for OpenMM that saves the trajectory of EVERY individual
     bead in an RPMD simulation to separate PDB files.
     """
 
     def __init__(self, file_base_name, reportInterval, num_beads, topology):
-        """
-        args:
-            file_base_name (str): Prefix for files (e.g., 'output' -> 'output_bead_0.pdb')
-            reportInterval (int): How often to write frames (steps)
-            num_beads (int): Number of beads in the RPMD integrator
-            topology (Topology): The system topology
+        """Initialize the reporter.
+
+        Parameters
+        ----------
+        file_base_name : str
+            Prefix for files (e.g., 'output' -> 'output_bead_0.pdb').
+        reportInterval : int
+            How often to write frames (steps).
+        num_beads : int
+            Number of beads in the RPMD integrator.
+        topology : Topology
+            The system topology.
         """
         self._reportInterval = reportInterval
         self._num_beads = num_beads
         self._topology = topology
         self._next_frame_index = 0
 
-        # Create a list of open file handles, one for each bead
         self._files = []
         for i in range(num_beads):
             filename = f"{file_base_name}_bead_{i}.pdb"
             f = open(filename, 'w')
-            # Write the PDB Header for each file
             app.PDBFile.writeHeader(topology, f)
             self._files.append(f)
 
     def describeNextReport(self, simulation):
-        """
-        Tells the Simulation when the next report is due.
+        """Tells the Simulation when the next report is due.
         """
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
         return (steps, False, False, False, False)
 
     def report(self, simulation, state):
-        """
-        Called by the Simulation to generate the report.
+        """Called by the Simulation to generate the report.
         """
         # We must access the integrator specifically to get bead positions
         integrator = simulation.integrator
 
-        # Loop through every bead
         for i in range(self._num_beads):
             # getState(bead_index, ...) is specific to RPMDIntegrator
             # Note: enforcePeriodicBox must match your system settings
             bead_state = integrator.getState(i, getPositions=True, enforcePeriodicBox=True)
             positions = bead_state.getPositions()
 
-            # Write the frame (Model) to the specific bead's file
             app.PDBFile.writeModel(self._topology, positions, self._files[i], self._next_frame_index)
 
-            # Flush periodically to ensure data is written to disk
+            # flush periodically so data isn't lost if the run is interrupted
             if self._next_frame_index % 10 == 0:
                 self._files[i].flush()
 
         self._next_frame_index += 1
 
     def __del__(self):
-        """
-        Cleanup: Close all file handles when the reporter is destroyed.
+        """Cleanup: Close all file handles when the reporter is destroyed.
         """
         for f in self._files:
             try:
@@ -1947,8 +1900,7 @@ class RPMDBeadReporter(object):
 
 
 class RPMDCentroidReporter(object):
-    """
-    A custom reporter that calculates the centroid (average position) of all beads
+    """A custom reporter that calculates the centroid (average position) of all beads
     and writes it to a single PDB file.
     """
 
@@ -1967,19 +1919,15 @@ class RPMDCentroidReporter(object):
     def report(self, simulation, state):
         integrator = simulation.integrator
 
-        # Get first bead to initialize sum
-        # We use asNumpy=True for vector efficiency, though OpenMM Quantities also support math.
+        # asNumpy=True for vector efficiency, though OpenMM Quantities also support math
         sum_pos = integrator.getState(0, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
 
-        # Sum positions of remaining beads
         for i in range(1, self._num_beads):
             pos = integrator.getState(i, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
             sum_pos += pos
 
-        # Calculate Average
         centroid_pos = sum_pos / self._num_beads
 
-        # Write to file
         app.PDBFile.writeModel(self._topology, centroid_pos, self._out, self._next_frame_index)
         self._next_frame_index += 1
 

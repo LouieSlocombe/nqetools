@@ -1,5 +1,4 @@
-"""
-Reads all the information needed from a i-pi RESTART file and compute the partition functions of the reactant, transition state (TS) or
+"""Reads all the information needed from a i-pi RESTART file and compute the partition functions of the reactant, transition state (TS) or
 instanton according to J. Phys. Chem. Lett. 7, 437(2016) (Instanton Rate calculations) or J. Chem. Phys. 134, 054109 (2011) (Tunneling Splitting)
 
 
@@ -338,7 +337,6 @@ elif case == "instanton":
         print("We can not recognize the mode. STOP HERE", flush=True)
         sys.exit()
 
-# ----------------------------------------------------------START----------------------------------------------
 beta = 1.0 / (kb * temp)
 betaP = 1.0 / (kb * nbeads * temp)
 
