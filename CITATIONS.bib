@@ -1,0 +1,211 @@
+% CITATIONS.bib
+%
+% Citations for nqetools and the underlying software/methods it wraps or
+% depends on (i-PI, ASE, PLUMED/OPES, MACE, Sella, OpenMM, geodesic_interpolate,
+% CP2K, NWChem, DFTB+, MDAnalysis, chemiscope) as well as key methodological
+% references (ring-polymer instanton theory). Please cite the entries
+% relevant to the functionality you use.
+
+@misc{nqetools,
+  author       = {Slocombe, Louie},
+  title        = {{nqetools}: tools for nuclear quantum effects calculations based on i-PI},
+  year         = {2025},
+  howpublished = {\url{https://github.com/LouieSlocombe/nqetools}}
+}
+
+% --- i-PI ---------------------------------------------------------------
+
+@article{kapil2019ipi,
+  author  = {Kapil, Venkat and Rossi, Mariana and Marsalek, Ondrej and Petraglia, Riccardo and Litman, Yair and Spura, Thomas and Cheng, Bingqing and Cuzzocrea, Alice and Meissner, Robert H. and Wilkins, David M. and Helfrecht, Benjamin A. and Juda, Przemys{\l}aw and Bienvenue, Sebastien P. and Fang, Wei and Kessler, Jan and Poltavsky, Igor and Vandenbrande, Steven and Wieme, Jelle and Corminboeuf, Clemence and Kuhne, Thomas D. and Manolopoulos, David E. and Markland, Thomas E. and Richardson, Jeremy O. and Tkatchenko, Alexandre and Tribello, Gareth A. and Van Speybroeck, Veronique and Ceriotti, Michele},
+  title   = {{i-PI} 2.0: A universal force engine for advanced molecular simulations},
+  journal = {Computer Physics Communications},
+  year    = {2019},
+  volume  = {236},
+  pages   = {214--223},
+  doi     = {10.1016/j.cpc.2018.09.020}
+}
+
+@article{litman2024ipi3,
+  author  = {Litman, Yair and Kapil, Venkat and Feldman, Yotam M. Y. and Tisi, Davide and Begu{\v{s}}i{\'c}, Tomislav and Fidanyan, Karen and Fraux, Guillaume and Higer, Jacob and Kellner, Matthias and Li, Tao E. and P{\'o}s, Eszter S. and Stocco, Elia and Trenins, George and Hirshberg, Barak and Rossi, Mariana and Ceriotti, Michele},
+  title   = {{i-PI} 3.0: A flexible and efficient framework for advanced atomistic simulations},
+  journal = {The Journal of Chemical Physics},
+  year    = {2024},
+  volume  = {161},
+  number  = {6},
+  pages   = {062504},
+  doi     = {10.1063/5.0215869}
+}
+
+% --- ASE ------------------------------------------------------------------
+
+@article{larsen2017ase,
+  author  = {Larsen, Ask Hjorth and Mortensen, Jens J{\o}rgen and Blomqvist, Jakob and Castelli, Ivano E. and Christensen, Rune and Du{\l}ak, Marcin and Friis, Jesper and Groves, Michael N. and Hammer, Bj{\o}rk and Hargus, Cory and Hermes, Eric D. and Jennings, Paul C. and Jensen, Peter Bjerre and Kermode, James and Kitchin, John R. and Kolsbjerg, Esben Leonhard and Kubal, Joseph and Kaasbjerg, Kristen and Lysgaard, Steen and Maronsson, J{\'o}n Bergmann and Max{\'e}n, Tristan and Olsen, Thomas and Pastewka, Lars and Peterson, Andrew and Rostgaard, Carsten and Sch{\o}tt, Jakob and Sch{\"u}tt, Ole and Strange, Mikkel and Thygesen, Kristian S. and Vegge, Tejs and Vilhelmsen, Lasse and Walter, Michael and Zeng, Zhenhua and Jacobsen, Karsten W.},
+  title   = {The atomic simulation environment---a {Python} library for working with atoms},
+  journal = {Journal of Physics: Condensed Matter},
+  year    = {2017},
+  volume  = {29},
+  number  = {27},
+  pages   = {273002},
+  doi     = {10.1088/1361-648X/aa680e}
+}
+
+% --- PLUMED / OPES ----------------------------------------------------------
+
+@article{tribello2014plumed2,
+  author  = {Tribello, Gareth A. and Bonomi, Massimiliano and Branduardi, Davide and Camilloni, Carlo and Bussi, Giovanni},
+  title   = {{PLUMED} 2: New feathers for an old bird},
+  journal = {Computer Physics Communications},
+  year    = {2014},
+  volume  = {185},
+  number  = {2},
+  pages   = {604--613},
+  doi     = {10.1016/j.cpc.2013.09.018}
+}
+
+@article{plumed2019consortium,
+  author  = {{The PLUMED consortium}},
+  title   = {Promoting transparency and reproducibility in enhanced molecular simulations},
+  journal = {Nature Methods},
+  year    = {2019},
+  volume  = {16},
+  number  = {8},
+  pages   = {670--673},
+  doi     = {10.1038/s41592-019-0506-8}
+}
+
+@article{invernizzi2020opes,
+  author  = {Invernizzi, Michele and Parrinello, Michele},
+  title   = {Rethinking Metadynamics: From Bias Potentials to Probability Distributions},
+  journal = {The Journal of Physical Chemistry Letters},
+  year    = {2020},
+  volume  = {11},
+  number  = {7},
+  pages   = {2731--2736},
+  doi     = {10.1021/acs.jpclett.0c00497}
+}
+
+% --- MACE -------------------------------------------------------------------
+
+@inproceedings{batatia2022mace,
+  author    = {Batatia, Ilyes and Kov{\'a}cs, D{\'a}vid P{\'e}ter and Simm, Gregor N. C. and Ortner, Christoph and Cs{\'a}nyi, G{\'a}bor},
+  title     = {{MACE}: Higher Order Equivariant Message Passing Neural Networks for Fast and Accurate Force Fields},
+  booktitle = {Advances in Neural Information Processing Systems},
+  editor    = {Koyejo, S. and Mohamed, S. and Agarwal, A. and Belgrave, D. and Cho, K. and Oh, A.},
+  volume    = {35},
+  pages     = {11423--11436},
+  publisher = {Curran Associates, Inc.},
+  year      = {2022}
+}
+
+% --- Sella --------------------------------------------------------------
+
+@article{hermes2022sella,
+  author  = {Hermes, Eric D. and Sargsyan, Khachik and Najm, Habib N. and Z{\'a}dor, Judit},
+  title   = {Sella, an Open-Source Automation-Friendly Molecular Saddle Point Optimizer},
+  journal = {Journal of Chemical Theory and Computation},
+  year    = {2022},
+  volume  = {18},
+  number  = {11},
+  pages   = {6974--6988},
+  doi     = {10.1021/acs.jctc.2c00395}
+}
+
+% --- OpenMM ---------------------------------------------------------------
+
+@article{eastman2024openmm8,
+  author  = {Eastman, Peter and Galvelis, Raimondas and Pel{\'a}ez, Ra{\'u}l P. and Abreu, Charlles R. A. and Farr, Stephen E. and Gallicchio, Emilio and Gorenko, Anton and Henry, Michael M. and Hu, Frank and Huang, Jing and Krämer, Andreas and Michel, Julien and Mitchell, Joshua A. and Pande, Vijay S. and Rodrigues, Jo{\~a}o PGLM and Rodriguez-Guerra, Jaime and Simmonett, Andrew C. and Singh, Sukrit and Swails, Jason and Turner, Philip and Wang, Yuanqing and Zhang, Ivy and Chodera, John D. and De Fabritiis, Gianni and Markland, Thomas E.},
+  title   = {{OpenMM} 8: Molecular Dynamics Simulation with Machine Learning Potentials},
+  journal = {The Journal of Physical Chemistry B},
+  year    = {2024},
+  volume  = {128},
+  number  = {1},
+  pages   = {109--116},
+  doi     = {10.1021/acs.jpcb.3c06662}
+}
+
+% --- geodesic_interpolate --------------------------------------------------
+
+@article{zhu2019geodesic,
+  author  = {Zhu, Xiaolei and Thompson, Keiran C. and Mart{\'i}nez, Todd J.},
+  title   = {Geodesic interpolation for reaction pathways},
+  journal = {The Journal of Chemical Physics},
+  year    = {2019},
+  volume  = {150},
+  number  = {16},
+  pages   = {164103},
+  doi     = {10.1063/1.5090303}
+}
+
+% --- Electronic structure drivers (CP2K, NWChem, DFTB+) --------------------
+
+@article{kuhne2020cp2k,
+  author  = {K{\"u}hne, Thomas D. and Iannuzzi, Marcella and Del Ben, Mauro and Rybkin, Vladimir V. and Seewald, Patrick and Stein, Frederick and Laino, Teodoro and Khaliullin, Rustam Z. and Sch{\"u}tt, Ole and Schiffmann, Florian and Golze, Dorothea and Wilhelm, Jan and Chulkov, Sergey and Bani-Hashemian, Mohammad Hossein and Weber, Valery and Borstnik, Urban and Taillefumier, Mathieu and Jakobovits, Alice Shoshana and Lazzaro, Alfio and Pabst, Hans and Müller, Tiziano and Schade, Robert and Guidon, Manuel and Andermatt, Samuel and Holmberg, Nico and Schenter, Gregory K. and Hehn, Anna and Bussy, Augustin and Belleflamme, Fabian and Tabacchi, Gloria and Glöß, Andreas and Lass, Michael and Bethune, Iain and Mundy, Christopher J. and Plessl, Christian and Watkins, Matt and VandeVondele, Joost and Krack, Matthias and Hutter, J{\"u}rg},
+  title   = {{CP2K}: An electronic structure and molecular dynamics software package -- {Quickstep}: Efficient and accurate electronic structure calculations},
+  journal = {The Journal of Chemical Physics},
+  year    = {2020},
+  volume  = {152},
+  number  = {19},
+  pages   = {194103},
+  doi     = {10.1063/5.0007045}
+}
+
+@article{apra2020nwchem,
+  author  = {Apr{\`a}, Edoardo and Bylaska, Eric J. and de Jong, Wibe A. and Govind, Niranjan and Kowalski, Karol and Straatsma, T. P. and Valiev, Marat and van Dam, Hubertus J. J. and others},
+  title   = {{NWChem}: Past, present, and future},
+  journal = {The Journal of Chemical Physics},
+  year    = {2020},
+  volume  = {152},
+  number  = {18},
+  pages   = {184102},
+  doi     = {10.1063/5.0004997}
+}
+
+@article{hourahine2020dftbplus,
+  author  = {Hourahine, Ben and Aradi, B{\'a}lint and Blum, Volker and Bonaf{\'e}, Federico and Buccheri, Alberto and Camacho, Carlos and Cevallos, Cristina and others},
+  title   = {{DFTB+}, a software package for efficient approximate density functional theory based atomistic simulations},
+  journal = {The Journal of Chemical Physics},
+  year    = {2020},
+  volume  = {152},
+  number  = {12},
+  pages   = {124101},
+  doi     = {10.1063/1.5143190}
+}
+
+% --- MDAnalysis -------------------------------------------------------------
+
+@article{michaudagrawal2011mdanalysis,
+  author  = {Michaud-Agrawal, Naveen and Denning, Elizabeth J. and Woolf, Thomas B. and Beckstein, Oliver},
+  title   = {{MDAnalysis}: A toolkit for the analysis of molecular dynamics simulations},
+  journal = {Journal of Computational Chemistry},
+  year    = {2011},
+  volume  = {32},
+  number  = {10},
+  pages   = {2319--2327},
+  doi     = {10.1002/jcc.21787}
+}
+
+% --- chemiscope ---------------------------------------------------------
+
+@article{fraux2020chemiscope,
+  author  = {Fraux, Guillaume and Cersonsky, Rose K. and Ceriotti, Michele},
+  title   = {Chemiscope: interactive structure-property explorer for materials and molecules},
+  journal = {Journal of Open Source Software},
+  year    = {2020},
+  volume  = {5},
+  number  = {51},
+  pages   = {2117},
+  doi     = {10.21105/joss.02117}
+}
+
+% --- Instanton (tunneling rate) theory --------------------------------------
+
+@article{richardson2018instanton,
+  author  = {Richardson, Jeremy O.},
+  title   = {Perspective: Ring-polymer instanton theory},
+  journal = {The Journal of Chemical Physics},
+  year    = {2018},
+  volume  = {148},
+  number  = {20},
+  pages   = {200901},
+  doi     = {10.1063/1.5028352}
+}
