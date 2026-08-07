@@ -41,8 +41,9 @@ dependencies = [
     "rdkit",
     "mdanalysis",
     "mace-torch",
-    "sella",
-    "geodesic_interpolate @ git+https://github.com/LouieSlocombe/geodesic_interpolate.git",
+    # Reaction paths, TS/IRC searches and the geometry helpers live here now.
+    # The [ts] extra pulls in sella; geodesic_interpolate comes with it.
+    "reactiontools[ts] @ git+https://github.com/LouieSlocombe/reactiontools.git",
 ]
 
 classifiers = [

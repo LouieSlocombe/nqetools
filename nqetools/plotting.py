@@ -1,12 +1,8 @@
-import copy
 import matplotlib.pyplot as plt
 import numpy as np
-from ase.visualize.plot import plot_atoms
 from pathlib import Path
-from scipy.interpolate import make_interp_spline
 
 from .calcs import moving_average
-from .pathway import get_neb_path
 
 # Setting plot aesthetics for better visibility
 plt.rcParams['axes.linewidth'] = 2.0
@@ -40,27 +36,6 @@ def ax_plot(fig,
     ax.set_ylabel(ylab, fontsize=ys)
     fig.tight_layout()
     return None
-
-
-def show_atoms(atoms,
-               save=True,
-               show=True,
-               filename="atoms"):
-    if isinstance(atoms, list):
-        _fig, ax = plt.subplots()
-        for atom in atoms:
-            plot_atoms(atom, ax)
-    else:
-        _fig, ax = plt.subplots()
-        plot_atoms(atoms, ax)
-
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    else:
-        plt.close()
 
 
 def plot_step_energy(data,
@@ -431,91 +406,6 @@ def plot_fes_sep(fes_a,
     ax.legend(ncols=2, loc="upper right", fontsize=9)
     ax.set_ylabel(r"$F$ (eV)")
     ax.set_xlabel(r"$\Delta C_\mathrm{H}$")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
-
-
-def plot_neb(images,
-             calc,
-             fig=None,
-             ax=None,
-             save=True,
-             show=True,
-             smooth=True,
-             k=2,
-             fig_size=(8, 3),
-             filename="neb",
-             label=None):
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
-
-    for image in images:
-        image.calc = copy.copy(calc)
-
-    energies = np.array([i.get_potential_energy() for i in images])
-    energies -= min(energies)
-
-    path = get_neb_path(images)
-
-    if smooth:
-        spl = make_interp_spline(path, energies, k=k)
-        path_smooth = np.linspace(min(path), max(path), 100)
-        energies_smooth = spl(path_smooth)
-        ax.scatter(path, energies)
-
-        ax.plot(path_smooth, energies_smooth, '-', lw=2, label=label)
-    else:
-        ax.plot(path, energies, 'o-', lw=2, label=label)
-
-    ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
-
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
-
-
-def plot_sella(images,
-               calc,
-               fig=None,
-               ax=None,
-               save=True,
-               show=True,
-               filename="irc",
-               smooth=True,
-               k=2,
-               fig_size=(8, 3)):
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
-
-    for image in images:
-        image.calc = copy.copy(calc)
-
-    energies = np.array([i.get_potential_energy() for i in images])
-
-    # Shift the graph so the minimum energy is zero
-    energies -= min(energies)
-
-    path = get_neb_path(images)
-
-    if smooth:
-        spl = make_interp_spline(path, energies, k=k)
-        path_smooth = np.linspace(min(path), max(path), 100)
-        energies_smooth = spl(path_smooth)
-        plt.scatter(path, energies, c='k')
-
-        ax.plot(path_smooth, energies_smooth, '-', c='k', lw=2)
-    else:
-        ax.plot(path, energies, 'o-', c='k', lw=2)
-
-    ax_plot(fig, ax, "Path (Å)", "Energy (eV)")
-
     if save:
         plt.savefig(f"{filename}.png", dpi=600)
         plt.savefig(f"{filename}.pdf")

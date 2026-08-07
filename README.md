@@ -60,6 +60,11 @@ Alternatively, if it is very slow. But, not suggested:
 pip3 install sella
 ```
 
+Sella is used by the transition-state and IRC searches, which now live in
+[reactiontools](https://github.com/LouieSlocombe/reactiontools) — see
+[Reaction paths](#reaction-paths) below. It is pulled in automatically as part
+of the `nqetools` install.
+
 ## MACE
 
 Mace has two options, but the torch option seems best. For model eval and training:
@@ -178,6 +183,27 @@ unset SSH_ASKPASS
 ```
 pip install git+https://github.com/LouieSlocombe/nqetools.git
 ```
+
+## Reaction paths
+
+Reaction-path work — NEB bands, transition-state and IRC searches, and the
+geometry helpers for building flipped end states — lives in
+[reactiontools](https://github.com/LouieSlocombe/reactiontools), which
+`nqetools` installs as a dependency. Import those functions from there:
+
+```python
+import reactiontools as rt
+
+reactant, product = rt.optimise_reactant_product(reactant, product, calc)
+neb = rt.prepare_neb(reactant, product, calc, n_images=7)
+images = rt.optimise_neb(neb, fmax=0.05)
+ts = rt.optimise_ts(rt.get_ts_image(images), calc)
+```
+
+These were previously re-exported from `nqetools` itself as `nqe.prepare_neb`,
+`nqe.optimise_ts`, `nqe.plot_neb` and friends. They are no longer, so that
+there is one copy of the code rather than two drifting apart. `nqe.plot_sella`
+is now `rt.plot_irc`; everything else kept its name.
 
 ## Driver installation
 

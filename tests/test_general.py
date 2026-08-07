@@ -17,6 +17,7 @@ from ase.visualize import view
 from mace.calculators import mace_anicc, mace_off, mace_omol
 
 import nqetools as nqe
+import reactiontools as rt
 
 
 def test_calculate_good_nbeads():
@@ -427,21 +428,21 @@ def test_prepare_neb():
     labels = ['off_sma', 'off_med', 'off_lar', 'anicc', 'omol']
 
     for i, calc in enumerate(calcs):
-        reactant = nqe.optimise_geom(reactant_init, calc, fmax=f_max)
-        product = nqe.optimise_geom(product_init, calc, fmax=f_max)
-        neb = nqe.prepare_neb(reactant,
-                              product,
-                              calc,
-                              n_images=n_images,
-                              climb=f_climb,
-                              k=spring_constant,
-                              geo_int=True)
-        neb_path = nqe.optimise_neb(neb,
-                                    fmax=f_max,
-                                    n_images=n_images,
-                                    ts_traj='ts.traj')
+        reactant = rt.optimise_geom(reactant_init, calc, fmax=f_max)
+        product = rt.optimise_geom(product_init, calc, fmax=f_max)
+        neb = rt.prepare_neb(reactant,
+                             product,
+                             calc,
+                             n_images=n_images,
+                             climb=f_climb,
+                             k=spring_constant,
+                             geo_int=True)
+        # optimise_neb takes the image count from the band itself
+        neb_path = rt.optimise_neb(neb,
+                                   fmax=f_max,
+                                   ts_traj='ts.traj')
         os.remove('ts.traj')
-        nqe.plot_neb(neb_path, calc, fig=fig, ax=ax, label=labels[i])
+        rt.plot_neb(neb_path, calc, fig=fig, ax=ax, label=labels[i])
 
     plt.legend()
     plt.show()

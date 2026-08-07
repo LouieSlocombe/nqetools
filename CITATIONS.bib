@@ -2,15 +2,28 @@
 %
 % Citations for nqetools and the underlying software/methods it wraps or
 % depends on (i-PI, ASE, PLUMED/OPES, MACE, Sella, OpenMM, geodesic_interpolate,
-% CP2K, NWChem, DFTB+, MDAnalysis, chemiscope) as well as key methodological
-% references (ring-polymer instanton theory). Please cite the entries
-% relevant to the functionality you use.
+% reactiontools, CP2K, NWChem, DFTB+, MDAnalysis, chemiscope) as well as key
+% methodological references (ring-polymer instanton theory). Please cite the
+% entries relevant to the functionality you use.
 
 @misc{nqetools,
   author       = {Slocombe, Louie},
   title        = {{nqetools}: tools for nuclear quantum effects calculations based on i-PI},
   year         = {2025},
   howpublished = {\url{https://github.com/LouieSlocombe/nqetools}}
+}
+
+% --- reactiontools ----------------------------------------------------------
+% Reaction paths, TS/IRC searches and the flip-and-face geometry helpers moved
+% here; cite it alongside Sella and geodesic_interpolate below when used.
+
+@software{Slocombe_reactiontools,
+  author  = {Slocombe, Louie},
+  title   = {{reactiontools}: tools for transition-state and NEB calculations},
+  url     = {https://github.com/LouieSlocombe/reactiontools},
+  version = {0.1.0},
+  year    = {2026},
+  license = {MIT}
 }
 
 % --- i-PI ---------------------------------------------------------------
