@@ -47,11 +47,11 @@ def show_atoms(atoms,
                show=True,
                filename="atoms"):
     if isinstance(atoms, list):
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         for atom in atoms:
             plot_atoms(atom, ax)
     else:
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         plot_atoms(atoms, ax)
 
     if save:
@@ -179,8 +179,8 @@ def plot_time_energy_conservation(data,
 def plot_fes_series_1d(fes_arrays: list[np.ndarray],
                        fig=None,
                        ax=None,
-                       slices: list[float] = None,
-                       labels: list[str] = None,
+                       slices: list[float] | None = None,
+                       labels: list[str] | None = None,
                        max_slices: int = 5,
                        save: bool = True,
                        show: bool = True,
@@ -218,7 +218,7 @@ def plot_fes_series_1d_compare(fes_arrays_a: list[np.ndarray],
                                fes_arrays_b: list[np.ndarray],
                                fig=None,
                                ax=None,
-                               labels: list[str] = None,
+                               labels: list[str] | None = None,
                                save: bool = True,
                                show: bool = True,
                                filename: str = "fes_1d_compare",
@@ -246,7 +246,7 @@ def plot_fes_series_1d_compare(fes_arrays_a: list[np.ndarray],
 def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
                              fig=None,
                              ax=None,
-                             times: list[float] = None,
+                             times: list[float] | None = None,
                              max_times=5,
                              save=True,
                              show=True,

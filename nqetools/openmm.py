@@ -50,7 +50,8 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
     fixer.findMissingAtoms()
     fixer.addMissingAtoms()
     fixer.addMissingHydrogens(ph)
-    app.PDBFile.writeFile(fixer.topology, fixer.positions, open(file_out, 'w'))
+    with open(file_out, 'w') as f:
+        app.PDBFile.writeFile(fixer.topology, fixer.positions, f)
     return None
 
 
@@ -240,7 +241,7 @@ def init_beads(modeller, simulation, n_beads, perturb=0.002):
     for b in range(n_beads):
         jiggle = perturb * rng.normal(size=(n_atoms, 3))
         bead_pos = [openmm.Vec3(p.x + dx, p.y + dy, p.z + dz)
-                    for p, (dx, dy, dz) in zip(pos0, jiggle)]
+                    for p, (dx, dy, dz) in zip(pos0, jiggle, strict=True)]
         simulation.integrator.setPositions(b, bead_pos * unit.nanometer)
         simulation.integrator.setVelocities(b, zero_velocities(n_atoms))
 
@@ -405,7 +406,7 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
     -------
     None
     """
-    with open(pdb_file, 'r') as f:
+    with open(pdb_file) as f:
         pdb_data = f.read()
     pdb_data = pdb_data.replace('x', ' ')
     pdb_data = pdb_data.replace('UNK', lig_name)
@@ -1279,7 +1280,7 @@ def run_openmm_prod(modeller,
     if plumed_script_path is not None:
         print(f"Adding PLUMED bias from {plumed_script_path}...", flush=True)
 
-        with open(plumed_script_path, 'r') as f:
+        with open(plumed_script_path) as f:
             script_content = f.read()
 
         plumed_force = PlumedForce(script_content)
@@ -1516,7 +1517,7 @@ def run_openmm_rpmd_contracted(modeller,
     if plumed_script_path is not None:
         print(f"Adding PLUMED bias from {plumed_script_path}...", flush=True)
 
-        with open(plumed_script_path, 'r') as f:
+        with open(plumed_script_path) as f:
             script_content = f.read()
 
         plumed_force = PlumedForce(script_content)
@@ -1678,7 +1679,7 @@ def run_openmm_rpmd_prod(modeller,
     if plumed_script_path is not None:
         print(f"Adding PLUMED bias from {plumed_script_path}...", flush=True)
 
-        with open(plumed_script_path, 'r') as f:
+        with open(plumed_script_path) as f:
             script_content = f.read()
 
         plumed_force = PlumedForce(script_content)
@@ -1777,7 +1778,7 @@ def _calculate_quantum_spread(integrator, atom_indices=None):
     return quantum_rg * unit.nanometers
 
 
-class RPMDQuantumSpreadReporter(object):
+class RPMDQuantumSpreadReporter:
     """A Reporter class to log the quantum spread (delocalization) of specific atoms
     during an RPMD simulation.
     """
@@ -1830,7 +1831,7 @@ class RPMDQuantumSpreadReporter(object):
         self._out.close()
 
 
-class RPMDBeadReporter(object):
+class RPMDBeadReporter:
     """A custom reporter for OpenMM that saves the trajectory of EVERY individual
     bead in an RPMD simulation to separate PDB files.
     """
@@ -1892,11 +1893,11 @@ class RPMDBeadReporter(object):
                 # Write footer before closing to ensure valid PDB syntax
                 app.PDBFile.writeFooter(self._topology, f)
                 f.close()
-            except:
+            except Exception:
                 pass
 
 
-class RPMDCentroidReporter(object):
+class RPMDCentroidReporter:
     """A custom reporter that calculates the centroid (average position) of all beads
     and writes it to a single PDB file.
     """
@@ -1935,7 +1936,7 @@ class RPMDCentroidReporter(object):
         try:
             app.PDBFile.writeFooter(self._topology, self._out)
             self._out.close()
-        except:
+        except Exception:
             pass
 
 

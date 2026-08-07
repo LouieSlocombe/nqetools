@@ -1246,8 +1246,8 @@ PRINT ARG=diff_cn,metad.bias STRIDE={stride} FILE=COLVAR
 
 
 def write_plumed_opes_com(directory=None,
-                          group_1=[0],
-                          group_2=[1],
+                          group_1=None,
+                          group_2=None,
                           temperature=300.0,
                           pace=10,
                           stride=10,
@@ -1259,6 +1259,10 @@ def write_plumed_opes_com(directory=None,
                           ):
     if directory is None:
         directory = os.getcwd()
+    if group_1 is None:
+        group_1 = [0]
+    if group_2 is None:
+        group_2 = [1]
 
     # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
@@ -1766,8 +1770,8 @@ def write_plumed_opes_2pt_1d_coord_com(directory=None,
                                        idx_d2=3,
                                        idx_h2=4,
                                        idx_a2=5,
-                                       group_1=[0],
-                                       group_2=[1],
+                                       group_1=None,
+                                       group_2=None,
                                        d_upper=5.0,
                                        kappa=500.0,
                                        temperature=300.0,
@@ -1780,6 +1784,10 @@ def write_plumed_opes_2pt_1d_coord_com(directory=None,
                                        ):
     if directory is None:
         directory = os.getcwd()
+    if group_1 is None:
+        group_1 = [0]
+    if group_2 is None:
+        group_2 = [1]
 
     # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)

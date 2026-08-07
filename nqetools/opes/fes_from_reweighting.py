@@ -104,10 +104,10 @@ elif dim == 2:
 else:
     sys.exit(error % ('only 1D and 2D are supported'))
 # get cvs
-with open(filename, 'r') as f:
+with open(filename) as f:
     fields = f.readline().split()
     if fields[1] != 'FIELDS':
-        sys.exit(error % ('no FIELDS found in "%s"' % filename))
+        sys.exit(error % (f'no FIELDS found in "{filename}"'))
     try:
         col_x = int(args_cv.split(',')[0]) - 1
         name_cv_x = fields[col_x + 2]
@@ -118,7 +118,7 @@ with open(filename, 'r') as f:
             if fields[i] == name_cv_x:
                 col_x = i - 2
         if col_x == -1:
-            sys.exit(error % ('cv "%s" not found' % name_cv_x))
+            sys.exit(error % (f'cv "{name_cv_x}" not found'))
     if dim2:
         try:
             col_y = int(args_cv.split(',')[1]) - 1
@@ -130,7 +130,7 @@ with open(filename, 'r') as f:
                 if fields[i] == name_cv_y:
                     col_y = i - 2
             if col_y == -1:
-                sys.exit(error % ('cv "%s" not found' % name_cv_y))
+                sys.exit(error % (f'cv "{name_cv_y}" not found'))
     # get bias
     if args_bias == 'NO' or args_bias == 'no':
         col_bias = []
@@ -174,7 +174,7 @@ with open(filename, 'r') as f:
             line = f.readline().split()
             header_lines += 1
             if line[2] != 'max_' + name_cv_x:
-                sys.exit(error % ('min_%s was found, but not max_%s !' % (name_cv_x, name_cv_x)))
+                sys.exit(error % (f'min_{name_cv_x} was found, but not max_{name_cv_x} !'))
             if line[3] == 'pi':
                 grid_max_x = np.pi
             else:
@@ -190,7 +190,7 @@ with open(filename, 'r') as f:
             line = f.readline().split()
             header_lines += 1
             if line[2] != 'max_' + name_cv_y:
-                sys.exit(error % ('min_%s was found, but not max_%s !' % (name_cv_y, name_cv_y)))
+                sys.exit(error % (f'min_{name_cv_y} was found, but not max_{name_cv_y} !'))
             if line[3] == 'pi':
                 grid_max_y = np.pi
             else:
@@ -356,12 +356,12 @@ def printFES(outfilename):
                 fields += ' der_' + name_cv_y
         f.write(fields + '\n')
         f.write('#! SET sample_size %d\n' % size)
-        f.write('#! SET effective_sample_size %g\n' % effsize)
+        f.write(f'#! SET effective_sample_size {effsize:g}\n')
         if calc_deltaF:
-            f.write('#! SET DeltaF %g\n' % (deltaF))
-        f.write('#! SET min_' + name_cv_x + ' %g\n' % (grid_min_x))
-        f.write('#! SET max_' + name_cv_x + ' %g\n' % (grid_max_x))
-        f.write('#! SET nbins_' + name_cv_x + ' %g\n' % (grid_bin_x))
+            f.write(f'#! SET DeltaF {deltaF:g}\n')
+        f.write('#! SET min_' + name_cv_x + f' {grid_min_x:g}\n')
+        f.write('#! SET max_' + name_cv_x + f' {grid_max_x:g}\n')
+        f.write('#! SET nbins_' + name_cv_x + f' {grid_bin_x:g}\n')
         if period_x == 0:
             f.write('#! SET periodic_' + name_cv_x + ' false\n')
         else:
@@ -373,9 +373,9 @@ def printFES(outfilename):
                     line += (' ' + fmt) % (der_fes_x[i])
                 f.write(line + '\n')
         else:
-            f.write('#! SET min_' + name_cv_y + ' %g\n' % (grid_min_y))
-            f.write('#! SET max_' + name_cv_y + ' %g\n' % (grid_max_y))
-            f.write('#! SET nbins_' + name_cv_y + ' %g\n' % (grid_bin_y))
+            f.write('#! SET min_' + name_cv_y + f' {grid_min_y:g}\n')
+            f.write('#! SET max_' + name_cv_y + f' {grid_max_y:g}\n')
+            f.write('#! SET nbins_' + name_cv_y + f' {grid_bin_y:g}\n')
             if period_y == 0:
                 f.write('#! SET periodic_' + name_cv_y + ' false\n')
             else:
@@ -427,18 +427,18 @@ if s > 1:
 it = 1
 for n in range(s + stride, len_tot + 1, stride):
     if stride != len_tot:
-        print('   working...   0% of {:.0%}'.format(n / (len_tot + 1)), end='\r')
+        print(f'   working...   0% of {n / (len_tot + 1):.0%}', end='\r')
     # loop over whole grid
     if not dim2:
         for i in range(grid_bin_x):
-            print('   working...  {:.0%}'.format(i / grid_bin_x), end='\r')
+            print(f'   working...  {i / grid_bin_x:.0%}', end='\r')
             if not calc_der:
                 fes[i] = calcFESpoint(s, n, grid_cv_x[i])
             else:
                 fes[i], der_fes_x[i] = calcFESpoint(s, n, grid_cv_x[i])
     else:
         for i in range(grid_bin_x):
-            print('   working...  {:.0%}'.format(i / grid_bin_x), end='\r')
+            print(f'   working...  {i / grid_bin_x:.0%}', end='\r')
             for j in range(grid_bin_y):
                 if not calc_der:
                     fes[i, j] = calcFESpoint(s, n, x[i, j], y[i, j])
@@ -505,14 +505,14 @@ if block_av:
         fields += ' file.free uncertainty'
         f.write(fields + '\n')
         f.write('#! SET sample_size %d\n' % size)
-        f.write('#! SET effective_sample_size %g\n' % effsize)
+        f.write(f'#! SET effective_sample_size {effsize:g}\n')
         if calc_deltaF:
-            f.write('#! SET DeltaF %g\n' % (deltaF))
+            f.write(f'#! SET DeltaF {deltaF:g}\n')
         f.write('#! SET blocks_num %d\n' % blocks_num)
-        f.write('#! SET blocks_effective_num %g\n' % blocks_neff)
-        f.write('#! SET min_' + name_cv_x + ' %g\n' % (grid_min_x))
-        f.write('#! SET max_' + name_cv_x + ' %g\n' % (grid_max_x))
-        f.write('#! SET nbins_' + name_cv_x + ' %g\n' % (grid_bin_x))
+        f.write(f'#! SET blocks_effective_num {blocks_neff:g}\n')
+        f.write('#! SET min_' + name_cv_x + f' {grid_min_x:g}\n')
+        f.write('#! SET max_' + name_cv_x + f' {grid_max_x:g}\n')
+        f.write('#! SET nbins_' + name_cv_x + f' {grid_bin_x:g}\n')
         if period_x == 0:
             f.write('#! SET periodic_' + name_cv_x + ' false\n')
         else:
@@ -521,9 +521,9 @@ if block_av:
             for i in range(grid_bin_x):
                 f.write((fmt + '  ' + fmt + ' ' + fmt + '\n') % (grid_cv_x[i], fes[i], fes_err[i]))
         else:
-            f.write('#! SET min_' + name_cv_y + ' %g\n' % (grid_min_y))
-            f.write('#! SET max_' + name_cv_y + ' %g\n' % (grid_max_y))
-            f.write('#! SET nbins_' + name_cv_y + ' %g\n' % (grid_bin_y))
+            f.write('#! SET min_' + name_cv_y + f' {grid_min_y:g}\n')
+            f.write('#! SET max_' + name_cv_y + f' {grid_max_y:g}\n')
+            f.write('#! SET nbins_' + name_cv_y + f' {grid_bin_y:g}\n')
             if period_y == 0:
                 f.write('#! SET periodic_' + name_cv_y + ' false\n')
             else:

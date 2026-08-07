@@ -818,7 +818,7 @@ def test_fep():
     print("Analyzing with MBAR...")
     N_k = np.zeros([n_steps], np.int32)  # number of uncorrelated samples
     for k in range(n_steps):
-        [nequil, g, Neff_max] = timeseries.detect_equilibration(u_kln[k, k, :])
+        [_nequil, g, _Neff_max] = timeseries.detect_equilibration(u_kln[k, k, :])
         indices = timeseries.subsample_correlated_data(u_kln[k, k, :], g=g)
         N_k[k] = len(indices)
         u_kln[k, :, 0:N_k[k]] = u_kln[k, :, indices].T

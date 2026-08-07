@@ -5,12 +5,12 @@ from .io import find_nqetools_path
 from .tools import has_pbc, get_file_extension
 
 
-def list_to_string(l):
+def list_to_string(items):
     """Converts a list to a string with brackets and commas.
 
     Parameters
     ----------
-    l : list
+    items : list
         The list to convert to a string.
 
     Returns
@@ -18,7 +18,7 @@ def list_to_string(l):
     str
         The string representation of the list.
     """
-    return '[' + ', '.join(l) + ']'
+    return '[' + ', '.join(items) + ']'
 
 
 def update_properties(root, prop_list):
@@ -82,7 +82,7 @@ def get_masses(atoms, f_deut=False, m_d=2.0141):
     if f_deut:
         print("Using deuterium masses.", flush=True)
         masses = [m_d if symbol == 'H' else mass for symbol, mass in
-                  zip(atoms.get_chemical_symbols(), atoms.get_masses())]
+                  zip(atoms.get_chemical_symbols(), atoms.get_masses(), strict=True)]
     else:
         masses = atoms.get_masses()
     return [str(m) for m in masses]
@@ -222,10 +222,10 @@ def update_driver(root, atoms, f_driver):
                 port_elem = et.SubElement(rank, 'port')
                 port_elem.text = '10200'
 
-            for rank in root.iter('forces'):
-                for child in rank:
-                    if child.tag == 'force':
-                        child.attrib['forcefield'] = 'driver'
+        for rank in root.iter('forces'):
+            for child in rank:
+                if child.tag == 'force':
+                    child.attrib['forcefield'] = 'driver'
 
     elif f_driver in ["ase-mace", "ase-nwchem", "nwchem"]:
         for rank in root.iter('ffsocket'):

@@ -90,7 +90,25 @@ include = ["nqetools", "nqetools.*"]
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E9", "F"]
+select = ["E7", "E9", "F", "W", "B", "C4", "UP", "SIM", "RUF"]
+ignore = [
+    "RUF001", # unicode symbols (Å, Greek letters) in strings are intentional
+    "RUF002", # same, in docstrings
+    "RUF012", # ASE calculator convention: mutable class-attribute defaults
+    "SIM102", # nested ifs kept where they read better
+    "SIM105", # try/except/pass is fine without contextlib.suppress
+    "SIM108", # explicit if/else preferred over ternary
+    "SIM115", # OpenMM reporters hold file handles open across reports
+    "SIM117",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "nqetools/__init__.py" = ["F401"]
+# PLUMED/driver input templates embedded as strings keep their exact whitespace
+"nqetools/plumed.py" = ["W291", "W293"]
+"nqetools/driver.py" = ["W291", "W293"]
+# Adapted third-party scripts (PLUMED opes tools, ASE QChem calculator)
+"nqetools/opes/*" = ["UP031", "RUF005", "E741"]
+"nqetools/qchem_mod.py" = ["UP031"]
+# `l` is the conventional lambda-state index in the MBAR loop
+"tests/test_openmm.py" = ["E741"]

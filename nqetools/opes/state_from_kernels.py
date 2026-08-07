@@ -27,7 +27,7 @@ outfile = args.outfile
 tmp_plumed_file = args.tmpname
 
 # get info
-with open(filename, 'r') as f:
+with open(filename) as f:
     line = f.readline()  # fields
     if line.split()[1] != 'FIELDS':
         sys.exit(error % (' no FIELDS found in file "' + filename + '"'))
@@ -40,7 +40,7 @@ with open(filename, 'r') as f:
     for i in range(ncv):
         cvname.append(line.split()[3 + i])
         if line.split()[3 + ncv + i] != 'sigma_' + cvname[i]:
-            sys.exit(error % (' expected "sigma_%s" instead of "%s"' % (cvname[i], line.split()[4 + i])))
+            sys.exit(error % (f' expected "sigma_{cvname[i]}" instead of "{line.split()[4 + i]}"'))
     line = f.readline()  # action
     if line.split()[3] == 'OPES_METAD_kernels':
         action = 'OPES_METAD'
@@ -85,7 +85,7 @@ for i in range(ncv):
         if ((suffix[i] == '.x' or suffix[i] == '.y' or suffix[i] == '.z') and periodic[i] == 'NO'):
             cvname[i] = cvname[i][:cvname[i].find('.')]
         else:
-            sys.exit(error % (' %s: you must modify the KERNELS file and remove any "." from CVs names' % cvname[i]))
+            sys.exit(error % (f' {cvname[i]}: you must modify the KERNELS file and remove any "." from CVs names'))
 
 # create temporary plumed file
 plumed_input = '# Temporary file used to convert an opes KERNELS file into a STATE file\n'
@@ -99,7 +99,7 @@ for i in range(ncv):
         plumed_input += cvname[i] + ': COMBINE ARG=d PERIODIC=' + periodic[
             i] + '\n'  # recreate CVs label doesn't work if they have components!
     else:
-        if not cvname[i] in cvname[i + 1:]:  # avoid duplicates
+        if cvname[i] not in cvname[i + 1:]:  # avoid duplicates
             plumed_input += cvname[i] + ': DISTANCE ATOMS=f,f COMPONENTS\n'
         cvname[i] += suffix[i]
 plumed_input += 'opes: ' + action
@@ -113,7 +113,7 @@ plumed_input += ' EPSILON=' + epsilon
 plumed_input += ' KERNEL_CUTOFF=' + kernel_cutoff
 plumed_input += ' COMPRESSION_THRESHOLD=' + compression_threshold
 plumed_input += ' TEMP=1 PACE=1 BARRIER=1 SIGMA=1'
-for ii in range(1, ncv):
+for _ in range(1, ncv):
     plumed_input += ',1'
 
 with open(tmp_plumed_file, 'w') as f:

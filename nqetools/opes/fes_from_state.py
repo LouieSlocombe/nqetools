@@ -92,7 +92,7 @@ if len(fields_pos) > 1:
 fields_pos.append(tot_lines)
 
 for n in range(len(fields_pos) - 1):
-    print('   working...   0% of {:.0%}'.format(n / (len(fields_pos) - 1)), end='\r')
+    print(f'   working...   0% of {n / (len(fields_pos) - 1):.0%}', end='\r')
     l = fields_pos[n]
     dim2 = False
     if len(data[l, :]) == 6:
@@ -149,7 +149,7 @@ for n in range(len(fields_pos) - 1):
                 grid_min_x = float(data[l, 3])
             l += 1
             if data[l, 2] != 'max_' + name_cv_x:
-                sys.exit(' min_%s was found, but not max_%s !' % (name_cv_x, name_cv_x))
+                sys.exit(f' min_{name_cv_x} was found, but not max_{name_cv_x} !')
             if data[l, 3] == 'pi':
                 grid_max_x = np.pi
             else:
@@ -164,7 +164,7 @@ for n in range(len(fields_pos) - 1):
                 grid_min_y = float(data[l, 3])
             l += 1
             if data[l, 2] != 'max_' + name_cv_y:
-                sys.exit(' min_%s was found, but not max_%s !' % (name_cv_y, name_cv_y))
+                sys.exit(f' min_{name_cv_y} was found, but not max_{name_cv_y} !')
             if data[l, 3] == 'pi':
                 grid_max_y = np.pi
             else:
@@ -250,7 +250,7 @@ for n in range(len(fields_pos) - 1):
         if calc_der:
             der_prob_x = np.zeros(grid_bin_x)
         for i in range(grid_bin_x):
-            print('   working...  {:.0%} of '.format(i / grid_bin_x), end='\r')
+            print(f'   working...  {i / grid_bin_x:.0%} of ', end='\r')
             if period_x == 0:
                 dist_x = (grid_cv_x[i] - center_x) / sigma_x
             else:
@@ -268,7 +268,7 @@ for n in range(len(fields_pos) - 1):
             der_prob_x = np.zeros((grid_bin_y, grid_bin_x))
             der_prob_y = np.zeros((grid_bin_y, grid_bin_x))
         for i in range(grid_bin_y):
-            print('   working...  {:.0%} of '.format(i / grid_bin_y), end='\r')
+            print(f'   working...  {i / grid_bin_y:.0%} of ', end='\r')
             for j in range(grid_bin_x):
                 if period_x == 0:
                     dist_x = (x[i, j] - center_x) / sigma_x
@@ -324,10 +324,10 @@ for n in range(len(fields_pos) - 1):
                 fields += ' der_' + name_cv_y
         f.write(fields + '\n')
         if calc_deltaF:
-            f.write('#! SET DeltaF %g\n' % (deltaF))
-        f.write('#! SET min_' + name_cv_x + ' %g\n' % (grid_min_x))
-        f.write('#! SET max_' + name_cv_x + ' %g\n' % (grid_max_x))
-        f.write('#! SET nbins_' + name_cv_x + ' %g\n' % (grid_bin_x))
+            f.write(f'#! SET DeltaF {deltaF:g}\n')
+        f.write('#! SET min_' + name_cv_x + f' {grid_min_x:g}\n')
+        f.write('#! SET max_' + name_cv_x + f' {grid_max_x:g}\n')
+        f.write('#! SET nbins_' + name_cv_x + f' {grid_bin_x:g}\n')
         if period_x == 0:
             f.write('#! SET periodic_' + name_cv_x + ' false\n')
         else:
@@ -339,9 +339,9 @@ for n in range(len(fields_pos) - 1):
                     line += (' ' + fmt) % (der_fes_x[i])
                 f.write(line + '\n')
         else:
-            f.write('#! SET min_' + name_cv_y + ' %g\n' % (grid_min_y))
-            f.write('#! SET max_' + name_cv_y + ' %g\n' % (grid_max_y))
-            f.write('#! SET nbins_' + name_cv_y + ' %g\n' % (grid_bin_y))
+            f.write('#! SET min_' + name_cv_y + f' {grid_min_y:g}\n')
+            f.write('#! SET max_' + name_cv_y + f' {grid_max_y:g}\n')
+            f.write('#! SET nbins_' + name_cv_y + f' {grid_bin_y:g}\n')
             if period_y == 0:
                 f.write('#! SET periodic_' + name_cv_y + ' false\n')
             else:

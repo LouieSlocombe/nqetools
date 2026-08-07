@@ -2,7 +2,6 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -60,23 +59,23 @@ def nwchem_calc_preset(directory=None,
     if directory is None:
         directory = os.path.join(tempfile.mkdtemp(), 'nwchem')
 
-    tmp = dict(
-        label=directory,
-        charge=charge,
-        basis=basis_set,
-        dft=dict(
-            maxiter=2000,
-            iterations=1000,
-            grid='fine nodisk',
-            print='medium',
-            direct=' ',
-            noio=' ',
-            xc=xc.upper(),
-            mult=multiplicity
-        )
-    )
+    tmp = {
+        'label': directory,
+        'charge': charge,
+        'basis': basis_set,
+        'dft': {
+            'maxiter': 2000,
+            'iterations': 1000,
+            'grid': 'fine nodisk',
+            'print': 'medium',
+            'direct': ' ',
+            'noio': ' ',
+            'xc': xc.upper(),
+            'mult': multiplicity
+        }
+    }
     if host is not None:
-        tmp['driver'] = dict(socket=dict(unix=host))
+        tmp['driver'] = {'socket': {'unix': host}}
 
     if disp:
         if disp.upper() == 'XDM':
@@ -86,9 +85,9 @@ def nwchem_calc_preset(directory=None,
 
     if solv:
         if solv.upper() == 'WATER':
-            tmp['cosmo'] = dict(do_cosmo_smd=True, solvent='water')
+            tmp['cosmo'] = {'do_cosmo_smd': True, 'solvent': 'water'}
         elif solv.upper() == 'PROTEIN':
-            tmp['cosmo'] = dict(do_cosmo_smd=True, dielec=8.0)
+            tmp['cosmo'] = {'do_cosmo_smd': True, 'dielec': 8.0}
 
     if task:
         tmp['task'] = task
@@ -156,17 +155,17 @@ def orca_calc_preset(orca_path=None,
     profile = OrcaProfile(command=orca_path)
 
     if n_procs > 1:
-        inpt_procs = '%pal nprocs {} end'.format(n_procs)
+        inpt_procs = f'%pal nprocs {n_procs} end'
     else:
         inpt_procs = ''
 
     if f_solv is not None and f_solv is not False:
         if f_solv:
             f_solv = 'WATER'
-        inpt_solv = '''
+        inpt_solv = f'''
                                               %CPCM SMD TRUE
-                                                  SMDSOLVENT "{}"
-                                              END'''.format(f_solv)
+                                                  SMDSOLVENT "{f_solv}"
+                                              END'''
     else:
         inpt_solv = ''
 
@@ -191,16 +190,16 @@ def orca_calc_preset(orca_path=None,
     inpt_blocks = inpt_procs + inpt_solv + blocks_extra
 
     if calc_type == 'DFT':
-        inpt_simple = '{} {} {}'.format(xc, inpt_disp, basis_set)
+        inpt_simple = f'{xc} {inpt_disp} {basis_set}'
     elif calc_type == 'MP2':
-        inpt_simple = 'DLPNO-{} {} {}/C'.format(calc_type, basis_set, basis_set)
+        inpt_simple = f'DLPNO-{calc_type} {basis_set} {basis_set}/C'
     elif calc_type == 'CCSD':
-        inpt_simple = 'DLPNO-{}(T) {} {}/C'.format(calc_type, basis_set, basis_set)
+        inpt_simple = f'DLPNO-{calc_type}(T) {basis_set} {basis_set}/C'
     elif calc_type == 'QM/XTB2':
-        inpt_simple = '{} {} {} {}'.format(calc_type, xc, inpt_disp, basis_set)
+        inpt_simple = f'{calc_type} {xc} {inpt_disp} {basis_set}'
         inpt_blocks = inpt_procs + inpt_solv + inpt_xtb
     else:
-        inpt_simple = '{} {}'.format(calc_type, basis_set)
+        inpt_simple = f'{calc_type} {basis_set}'
 
     if multiplicity > 1:
         if calc_type == 'DFT' or calc_type == 'QM/XTB2':
@@ -487,7 +486,7 @@ def load_ir_data(filename):
     ValueError
         If the IR spectrum data cannot be found in the file.
     """
-    with open(filename, 'r') as f:
+    with open(filename) as f:
         lines = f.readlines()
 
     start_idx = None
@@ -543,7 +542,7 @@ def load_raman_data(filename):
     ValueError
         If the Raman spectrum data cannot be found in the file.
     """
-    with open(filename, 'r') as f:
+    with open(filename) as f:
         lines = f.readlines()
 
     start_idx = None
@@ -596,7 +595,7 @@ def load_vib_data(filename):
     ValueError
         If the vibrational spectrum data cannot be found in the file.
     """
-    with open(filename, 'r') as f:
+    with open(filename) as f:
         lines = f.readlines()
 
     start_idx = None
@@ -753,7 +752,7 @@ def get_total_electrons(atoms: Atoms) -> int:
     n_electrons = int(np.sum(atoms.get_atomic_numbers()))
 
     charge = atoms.info.get('charge', 0.0)
-    n_electrons -= int(round(charge))
+    n_electrons -= round(charge)
 
     return n_electrons
 
@@ -857,7 +856,7 @@ def grab_value(orca_file, term, splitter):
     float or None
         The extracted value in eV, or None if the term is not found.
     """
-    with open(orca_file, 'r') as f:
+    with open(orca_file) as f:
         for line in reversed(f.readlines()):
             if term in line:
                 return float(line.split(splitter)[-1].split('Eh')[0]) * Hartree
@@ -1104,7 +1103,7 @@ def calculate_hessian(atoms,
         return read(atoms_file, format="xyz"), hessian_file
 
 
-def extract_conformer_info(filepath: Union[str, Path]) -> pd.DataFrame:
+def extract_conformer_info(filepath: str | Path) -> pd.DataFrame:
     """Extract conformer information from an ORCA output file.
 
     This function reads an ORCA output file and parses the ensemble table to extract
@@ -1144,7 +1143,7 @@ def extract_conformer_info(filepath: Union[str, Path]) -> pd.DataFrame:
     rows = []
     in_table = False
 
-    with open(filepath, "r", encoding="utf-8", errors="ignore") as fh:
+    with open(filepath, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             if not in_table and header_pat.search(line):
                 in_table = True  # Start reading on the next lines
@@ -1215,7 +1214,7 @@ def calculate_goat(atoms,
     profile = OrcaProfile(command=orca_path)
 
     if n_procs > 1:
-        inpt_procs = '%pal nprocs {} end'.format(n_procs)
+        inpt_procs = f'%pal nprocs {n_procs} end'
     else:
         inpt_procs = ''
 

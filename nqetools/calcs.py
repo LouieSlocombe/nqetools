@@ -1,5 +1,4 @@
 import math
-from typing import List, Dict
 
 import numpy as np
 from scipy import constants
@@ -9,8 +8,8 @@ from .conversions import eV_to_kJpermol
 
 def correlate(x: np.ndarray,
               y: np.ndarray,
-              xbar: float = None,
-              ybar: float = None,
+              xbar: float | None = None,
+              ybar: float | None = None,
               normalise: bool = True) -> np.ndarray:
     """Compute the correlation function of two quantities.
 
@@ -42,7 +41,7 @@ def correlate(x: np.ndarray,
 
 
 def autocorrelate(x: np.ndarray,
-                  xbar: float = None,
+                  xbar: float | None = None,
                   normalise: bool = True) -> np.ndarray:
     """Compute the autocorrelation function of a trajectory.
 
@@ -363,11 +362,11 @@ def eckart_correction(
 
 
 def analyze_opes_free_energy(
-        free_energy: List[float],
+        free_energy: list[float],
         temperature: float = 300.0,
         unit: str = "kJ/mol",
         dx: float = 1.0,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Analyze a 1D free-energy profile (e.g., from OPES) to extract kinetics.
 
     Locates the two lowest metastable minima and the barrier (maximum)

@@ -263,9 +263,9 @@ def test_load_xyz_with_cell():
     target_cell = [[13.383769816511084, 0.0, 0.0],
                    [8.195195433157629e-16, 13.383769816511084, 0.0],
                    [8.195195433157629e-16, 8.195195433157629e-16, 13.383769816511084]]
-    comparison = [np.allclose(a, b) for a, b in zip(atoms.get_cell(), target_cell)]
+    comparison = [np.allclose(a, b) for a, b in zip(atoms.get_cell(), target_cell, strict=True)]
     assert all(comparison)
-    comparison = [np.allclose(a, b) for a, b in zip(atoms.get_positions(), target_positions)]
+    comparison = [np.allclose(a, b) for a, b in zip(atoms.get_positions(), target_positions, strict=True)]
     assert all(comparison)
 
 
@@ -538,7 +538,7 @@ def test_xyz_to_sdf():
     atoms_sdf = read('water.sdf')
     print(atoms_sdf.positions)
 
-    comparison = [np.allclose(a, b, rtol=0.001) for a, b in zip(atoms.get_positions(), atoms_sdf.get_positions())]
+    comparison = [np.allclose(a, b, rtol=0.001) for a, b in zip(atoms.get_positions(), atoms_sdf.get_positions(), strict=True)]
     assert all(comparison)
     os.remove('water.sdf')
     os.remove('water.xyz')
@@ -589,7 +589,7 @@ def test_clean_pdb_ions():
 
     nqe.clean_ions_in_pdb(input_pdb, rm_ions, output_pdb)
 
-    with open(output_pdb, 'r') as f:
+    with open(output_pdb) as f:
         lines = f.readlines()
     ion_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in rm_ions]
     assert len(ion_lines) == 0, "Ions were not removed from the PDB file"
@@ -601,7 +601,7 @@ def test_clean_pdb_ions():
 
     nqe.clean_ions_in_pdb(input_pdb, rm_ions, output_pdb)
 
-    with open(output_pdb, 'r') as f:
+    with open(output_pdb) as f:
         lines = f.readlines()
     ion_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in rm_ions]
     assert len(ion_lines) == 0, "Ions were not removed from the PDB file"
@@ -616,12 +616,12 @@ def test_relabel_residues_in_pdb():
 
     nqe.relabel_residues_in_pdb(input_pdb, residue_map, output_pdb)
 
-    with open(output_pdb, 'r') as f:
+    with open(output_pdb) as f:
         lines = f.readlines()
     for line in lines:
         if line.startswith('HETATM'):
             res_name = line[17:20].strip()
-            assert res_name not in residue_map.keys(), f"Residue {res_name} was not relabelled"
+            assert res_name not in residue_map, f"Residue {res_name} was not relabelled"
     os.remove(output_pdb)
 
 
@@ -632,7 +632,7 @@ def test_remove_water_residues_in_pdb():
 
     nqe.remove_water_residues_in_pdb(input_pdb, output_pdb)
 
-    with open(output_pdb, 'r') as f:
+    with open(output_pdb) as f:
         lines = f.readlines()
     water_lines = [line for line in lines if line.startswith('HETATM') and line[17:20].strip() in ['HOH', 'WAT']]
     assert len(water_lines) == 0, "Water residues were not removed from the PDB file"

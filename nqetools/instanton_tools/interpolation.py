@@ -79,12 +79,12 @@ else:
 if input_geo != "None" or chk != "None":
     if manual:
         if os.path.exists(input_geo):
-            ipos = open(input_geo, "r")
+            ipos = open(input_geo)
         else:
-            print("We can't find {}".format(input_geo), flush=True)
+            print(f"We can't find {input_geo}", flush=True)
             sys.exit()
 
-        pos = list()
+        pos = []
         nbeads = 0
         while True:
             try:
@@ -108,7 +108,7 @@ if input_geo != "None" or chk != "None":
                 open(chk), custom_verbosity="low", request_banner=False, read_only=True
             )
         else:
-            print("We can't find {}".format(chk), flush=True)
+            print(f"We can't find {chk}", flush=True)
             sys.exit()
         cell = simulation.syslist[0].cell
         beads = simulation.syslist[0].motion.beads.clone()
@@ -119,14 +119,10 @@ if input_geo != "None" or chk != "None":
 
     print(" ", flush=True)
     print(
-        "We have a half ring polymer made of {} beads and {} atoms.".format(
-            nbeads, natoms
-        ), flush=True
+        f"We have a half ring polymer made of {nbeads} beads and {natoms} atoms.", flush=True
     )
     print(
-        "We will expand the ring polymer to get a half polymer of {} beads.".format(
-            nbeadsNew
-        ), flush=True
+        f"We will expand the ring polymer to get a half polymer of {nbeadsNew} beads.", flush=True
     )
 
     # Make the rpc step (standard). It is better that open path in some corner cases.
@@ -148,9 +144,7 @@ if input_geo != "None" or chk != "None":
     print("Check new_instanton.xyz", flush=True)
     print("", flush=True)
     print(
-        "Don't forget to change the number of beads to the new value ({}) in your input file".format(
-            nbeadsNew
-        ), flush=True
+        f"Don't forget to change the number of beads to the new value ({nbeadsNew}) in your input file", flush=True
     )
     print("when starting your new simulation with an increased number of beads.", flush=True)
     print("", flush=True)
@@ -158,9 +152,9 @@ if input_geo != "None" or chk != "None":
 if input_hess != "None" or chk != "None":
     if manual:
         try:
-            hess = open(input_hess, "r")
-        except:
-            print("We can't find {}".format(input_hess), flush=True)
+            hess = open(input_hess)
+        except OSError:
+            print(f"We can't find {input_hess}", flush=True)
             sys.exit()
         h = np.zeros((natoms * 3) ** 2 * nbeads)
         aux = hess.readline().split()
@@ -175,14 +169,14 @@ if input_hess != "None" or chk != "None":
 
         try:
             h = simulation.syslist[0].motion.optarrays["hessian"].copy()
-        except:
+        except (KeyError, AttributeError):
             print("We don't have a hessian so there is nothing more to do", flush=True)
             sys.exit()
         if np.linalg.norm(h) < 1e-13:
             print("We don't have a hessian so there is nothing more to do", flush=True)
             sys.exit()
 
-    print("The new hessian is {} x {}.".format(3 * natoms, natoms * 3 * nbeadsNew), flush=True)
+    print(f"The new hessian is {3 * natoms} x {natoms * 3 * nbeadsNew}.", flush=True)
     out = open("new_hessian.dat", "w")
 
     print("Creating matrix... ", flush=True)
@@ -218,9 +212,7 @@ if input_hess != "None" or chk != "None":
     print("Remeber to adapt/add the following line in your input file:", flush=True)
     print("", flush=True)
     print(
-        " <hessian mode='file' shape='({}, {})' >hessian.dat</hessian>".format(
-            3 * natoms, natoms * 3 * nbeadsNew
-        ), flush=True
+        f" <hessian mode='file' shape='({3 * natoms}, {natoms * 3 * nbeadsNew})' >hessian.dat</hessian>", flush=True
     )
     print("", flush=True)
 

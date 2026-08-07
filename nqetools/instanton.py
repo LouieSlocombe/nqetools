@@ -19,14 +19,14 @@ def parse_react_thermo_data(directory,
                             ref_filename='phonon.out'):
     data = {}
     temp = None
-    output_data, output_desc = ipi.read_output(os.path.join(directory, ref_filename))
+    output_data, _output_desc = ipi.read_output(os.path.join(directory, ref_filename))
     data['energy'] = output_data.get('potential', None)[-1]
     if data['energy'] is None:
         raise ValueError(f"Could not find potential energy in {ref_filename} in {directory}")
 
     filepath = os.path.join(directory, filename)
 
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         lines = f.readlines()
 
     for i, line in enumerate(lines):
@@ -67,7 +67,7 @@ def parse_ts_thermo_data(directory, filename='thermo_data.out'):
     """
     filepath = os.path.join(directory, filename)
 
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         lines = f.readlines()
 
     data = {}
@@ -105,7 +105,7 @@ def parse_inst_thermo_data(directory, filename='thermo_data.out'):
     """
     filepath = os.path.join(directory, filename)
 
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         lines = f.readlines()
 
     data = {}

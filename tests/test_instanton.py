@@ -117,7 +117,7 @@ def test_calc_instanton_kappa_bead():
     os.remove(os.path.join(directory_inst, 'freq.dat'))
 
     kappa = nqe.calc_instanton_kappa(data_ts, data_inst)
-    print('Tunneling factor, kappa = {:5.5f}'.format(kappa))
+    print(f'Tunneling factor, kappa = {kappa:5.5f}')
     assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
 
     n_beads = 80
@@ -131,7 +131,7 @@ def test_calc_instanton_kappa_bead():
     os.remove(os.path.join(directory_inst, 'freq.dat'))
 
     kappa = nqe.calc_instanton_kappa(data_ts, data_inst)
-    print('Tunneling factor, kappa = {:5.5f}'.format(kappa))
+    print(f'Tunneling factor, kappa = {kappa:5.5f}')
     assert np.allclose(kappa, 9.816, rtol=1e-3)
 
 
@@ -162,10 +162,10 @@ def test_ch4hcbe_end_to_end():
                               tol_energy=tol_energy,
                               tol_force=tol_force,
                               tol_position=tol_position)
-    atoms_opti, output_data_opti, output_desc_opti = output
+    atoms_opti, output_data_opti, _output_desc_opti = output
 
     energy_react = output_data_opti['potential'][-1]
-    print('Final energy of reactant = {:5.5f}'.format(energy_react), flush=True)
+    print(f'Final energy of reactant = {energy_react:5.5f}', flush=True)
 
     nqe.run_phonons(directory_phonon_react,
                     atoms_opti,
@@ -177,13 +177,13 @@ def test_ch4hcbe_end_to_end():
                         tol_energy=tol_energy,
                         tol_force=tol_force,
                         tol_position=tol_position)
-    atoms_ts, output_data_ts, output_desc_ts = output
+    atoms_ts, output_data_ts, _output_desc_ts = output
 
     energy_ts = output_data_ts['potential'][-1]
-    print('Final energy of TS = {:5.5f}'.format(energy_ts), flush=True)
+    print(f'Final energy of TS = {energy_ts:5.5f}', flush=True)
 
     delta_energy = energy_ts - energy_react
-    print('Energy difference (TS - Reactant) = {:5.5f}'.format(delta_energy), flush=True)
+    print(f'Energy difference (TS - Reactant) = {delta_energy:5.5f}', flush=True)
 
     nqe.run_instanton(directory_instanton,
                       atoms_ts,
@@ -197,7 +197,7 @@ def test_ch4hcbe_end_to_end():
 
     rate = nqe.calc_forward_rate(directory_phonon_react, directory_ts, temperature, filter_list=n_atoms - 1)
 
-    print('Reaction rate = {}'.format(rate), flush=True)
+    print(f'Reaction rate = {rate}', flush=True)
     # assert np.allclose(rate, 1.0416486358380245e-08, rtol=1e-3)
 
     kappa = nqe.calc_kappa_full(directory_phonon_react,
@@ -205,7 +205,7 @@ def test_ch4hcbe_end_to_end():
                                 directory_instanton,
                                 temperature,
                                 n_beads, filter_list=n_atoms - 1)
-    print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+    print(f'Tunneling factor, kappa = {kappa:5.5f}', flush=True)
     assert np.allclose(kappa, 10.1278133296990684, rtol=1e-3)
 
     nqe.remove_directory(directory_opti)
@@ -246,10 +246,10 @@ def test_ch4hcbe_end_to_end_orca():
                               tol_energy=tol_energy,
                               tol_force=tol_force,
                               tol_position=tol_position)
-    atoms_opti, output_data_opti, output_desc_opti = output
+    atoms_opti, output_data_opti, _output_desc_opti = output
 
     energy_react = output_data_opti['potential'][-1]
-    print('Final energy of reactant = {:5.5f}'.format(energy_react), flush=True)
+    print(f'Final energy of reactant = {energy_react:5.5f}', flush=True)
 
     nqe.run_phonons(directory_phonon_react,
                     atoms_opti,
@@ -263,16 +263,16 @@ def test_ch4hcbe_end_to_end_orca():
                         tol_energy=tol_energy,
                         tol_force=tol_force,
                         tol_position=tol_position)
-    atoms_ts, output_data_ts, output_desc_ts = output
+    atoms_ts, output_data_ts, _output_desc_ts = output
 
     energy_ts = output_data_ts['potential'][-1]
-    print('Final energy of TS = {:5.5f}'.format(energy_ts), flush=True)
+    print(f'Final energy of TS = {energy_ts:5.5f}', flush=True)
 
     delta_energy = energy_ts - energy_react
-    print('Energy difference (TS - Reactant) = {:5.5f}'.format(delta_energy), flush=True)
+    print(f'Energy difference (TS - Reactant) = {delta_energy:5.5f}', flush=True)
 
     rate = nqe.calc_forward_rate(directory_phonon_react, directory_ts, temperature, filter_list=n_atoms - 1)
-    print('Reaction rate = {}'.format(rate), flush=True)
+    print(f'Reaction rate = {rate}', flush=True)
     # assert np.allclose(rate, 1.0416486358380245e-08, rtol=1e-3)
 
     nqe.run_instanton(directory_instanton,
@@ -291,7 +291,7 @@ def test_ch4hcbe_end_to_end_orca():
                                 directory_instanton,
                                 temperature,
                                 n_beads, filter_list=n_atoms - 1)
-    print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+    print(f'Tunneling factor, kappa = {kappa:5.5f}', flush=True)
 
 
 def test_ch4hcbe_temperature():
@@ -320,7 +320,7 @@ def test_ch4hcbe_temperature():
                               tol_energy=tol_energy,
                               tol_force=tol_force,
                               tol_position=tol_position)
-    atoms_opti, output_data_opti, output_desc_opti = output
+    atoms_opti, _output_data_opti, _output_desc_opti = output
 
     nqe.run_phonons(directory_phonon_react,
                     atoms_opti,
@@ -332,7 +332,7 @@ def test_ch4hcbe_temperature():
                         tol_energy=tol_energy,
                         tol_force=tol_force,
                         tol_position=tol_position)
-    atoms_ts, output_data_ts, output_desc_ts = output
+    atoms_ts, _output_data_ts, _output_desc_ts = output
 
     temperatures = [300.0, 250.0, 200.0]
     kappas = []
@@ -363,7 +363,7 @@ def test_ch4hcbe_temperature():
         nqe.remove_directory(directory_instanton)
 
     for kappa in kappas:
-        print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+        print(f'Tunneling factor, kappa = {kappa:5.5f}', flush=True)
 
     assert np.allclose(kappas, kappa_ref, rtol=1e-3)
 
@@ -384,13 +384,13 @@ def test_thermo():
                                  temperature,
                                  debug=True,
                                  use_part_funcs=True, filter_list=n_atoms - 1)
-    print('Reaction rate = {}'.format(rate), flush=True)
+    print(f'Reaction rate = {rate}', flush=True)
 
     kappa = nqe.calc_kappa_full(directory_phonon_react,
                                 directory_ts,
                                 directory_instanton,
                                 temperature,
                                 n_beads, filter_list=n_atoms - 1)
-    print('Tunneling factor, kappa = {:5.5f}'.format(kappa), flush=True)
+    print(f'Tunneling factor, kappa = {kappa:5.5f}', flush=True)
 
     pass

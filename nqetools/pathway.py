@@ -123,7 +123,7 @@ def optimise_geom(atoms, calc,
     t0 = time.time()
     BFGS(atoms, trajectory=opti_traj).run(fmax=fmax, steps=steps)
     t1 = time.time()
-    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
+    print(f'Time taken: {t1 - t0:.3} s', flush=True)
     atoms = read(opti_traj, index=-1)
     os.remove(opti_traj)
     return atoms
@@ -179,7 +179,7 @@ def prepare_neb(reactant, product, calc,
                 geo_int=True,
                 k=2.0):
     neb_images = [reactant]
-    for ii in range(n_images - 2):
+    for _ii in range(n_images - 2):
         neb_images.append(reactant.copy())
     neb_images.append(product)
 
@@ -228,7 +228,7 @@ def optimise_neb(neb,
     t0 = time.time()
     BFGS(neb, trajectory=ts_traj).run(fmax=fmax, steps=steps)
     t1 = time.time()
-    print('Time taken: {:.3} s'.format(t1 - t0), flush=True)
+    print(f'Time taken: {t1 - t0:.3} s', flush=True)
     # Read the trajectory of the last images
     return read(ts_traj, index=f"-{n_images}:")
 
@@ -288,8 +288,8 @@ def optimise_ts(ts_image, calc,
     print('Running Sella TS search', flush=True)
     ts_image.calc = calc
 
-    print('Initial energy: {:.3} eV'.format(ts_image.get_potential_energy()), flush=True)
-    print('Initial max force: {:.3} eV/A'.format(get_fmax(ts_image)), flush=True)
+    print(f'Initial energy: {ts_image.get_potential_energy():.3} eV', flush=True)
+    print(f'Initial max force: {get_fmax(ts_image):.3} eV/A', flush=True)
 
     sella_ts = Sella(ts_image,
                      trajectory=sella_traj,
@@ -442,7 +442,7 @@ def bonded_cluster_indices_no_anchor_hub(atoms: Atoms,
     first_neighbors = [i for i in first_neighbors if i != anchor - 2]
 
     # Seed traversal with first-shell neighbors; mark anchor as visited so we never traverse through it
-    visited = set([anchor]) | set(first_neighbors)
+    visited = {anchor} | set(first_neighbors)
     stack = list(first_neighbors)
 
     # Explore without ever stepping onto the anchor again
@@ -475,7 +475,7 @@ def get_dimer_bonded_cluster_indices(atoms: Atoms,
     base_a = bonded_cluster_indices_no_anchor_hub(atoms, anchors[0], mult=mults[0], multi_h=multi_h)
     base_b = bonded_cluster_indices_no_anchor_hub(atoms, anchors[1], mult=mults[1], multi_h=multi_h)
 
-    return list(sorted(set(base_a + base_b)))
+    return sorted(set(base_a + base_b))
 
 
 def _pca_frame(positions):
@@ -483,7 +483,7 @@ def _pca_frame(positions):
     origin = pts.mean(axis=0)
     X = pts - origin
     # PCA via SVD
-    U, S, Vt = np.linalg.svd(X, full_matrices=False)
+    _U, _S, Vt = np.linalg.svd(X, full_matrices=False)
     # Principal axes are rows of Vt; use columns as unit vectors
     x = Vt[0]  # largest variance axis
     y = Vt[1]
@@ -519,7 +519,7 @@ def flip_and_face_bases(
         baseA_idxs: list,
         baseB_idxs: list,
         anchors: list,
-        rot_matrix: list = None,
+        rot_matrix: list | None = None,
 ) -> Atoms:
     anchorA_idx = anchors[0]
     anchorB_idx = anchors[1]

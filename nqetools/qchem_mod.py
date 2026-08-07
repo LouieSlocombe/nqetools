@@ -102,7 +102,7 @@ def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
         out_str += ele[idx] + " " + str(idx + 1) + "\n"
         iter_exp = iter(neo_basis_terms_dict[neo_basis_name])
         for i in range(len(neo_basis_list)):
-            for j in range(int(neo_basis_list[i][0])):
+            for _j in range(int(neo_basis_list[i][0])):
                 out_str += neo_basis_list[i][-1].upper() + " 1 1.0\n"
                 out_str += "  " + str(next(iter_exp)) + " 1.0\n"
         out_str += "****\n"
@@ -215,7 +215,7 @@ class QChem(FileIOCalculator):
         """Read the results from the output file."""
         filename = self.label + '.out'
 
-        with open(filename, 'r') as fileobj:
+        with open(filename) as fileobj:
             lineiter = iter(fileobj)
             n_atoms = self.atoms.get_global_number_of_atoms()
             # Convert from Hartree to eV/angstrom
@@ -314,13 +314,12 @@ class QChem(FileIOCalculator):
             # Default charge of 0 is defined in default_parameters
             fileobj.write('   %d %d\n' % (self.parameters['charge'], mult))
             for a in atoms:
-                fileobj.write('   %s  %f  %f  %f\n' % (a.symbol,
-                                                       a.x, a.y, a.z))
+                fileobj.write(f'   {a.symbol}  {a.x:f}  {a.y:f}  {a.z:f}\n')
             fileobj.write('$end\n\n')
 
             # Write the basis block
             if self.basisfile is not None:
-                with open(self.basisfile, 'r') as f_in:
+                with open(self.basisfile) as f_in:
                     basis = f_in.readlines()
                 fileobj.write('$basis\n')
                 fileobj.writelines(basis)
@@ -328,7 +327,7 @@ class QChem(FileIOCalculator):
 
             # Write the ecp block
             if self.ecpfile is not None:
-                with open(self.ecpfile, 'r') as f_in:
+                with open(self.ecpfile) as f_in:
                     ecp = f_in.readlines()
                 fileobj.write('$ecp\n')
                 fileobj.writelines(ecp)

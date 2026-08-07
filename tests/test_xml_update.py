@@ -73,7 +73,7 @@ def test_update_cell():
     cell_out = atoms.get_cell()
     print(cell_in)
     print(cell_out)
-    assert all([all([(a - b) < 0.1 for a, b in zip(cell_in[i], cell_out[i])]) for i in range(3)])
+    assert all(all((a - b) < 0.1 for a, b in zip(cell_in[i], cell_out[i], strict=True)) for i in range(3))
 
 
 def test_update_properties():

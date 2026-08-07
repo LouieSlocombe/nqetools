@@ -53,7 +53,7 @@ def run_command(command):
     str
         The output of the command.
     """
-    result = subprocess.run(command.split(), shell=True, capture_output=True, text=True)
+    result = subprocess.run(command.split(), check=False, capture_output=True, text=True)
     return result.stdout
 
 
@@ -170,8 +170,8 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
 
     print(f"Running command:\n{command}", flush=True)
 
-    with open(os.path.join(directory, "plumed.dat"), "r") as file:
-        subprocess.run(command.split(), stdin=file, text=True)
+    with open(os.path.join(directory, "plumed.dat")) as file:
+        subprocess.run(command.split(), check=False, stdin=file, text=True)
 
     print("Plumed hills run complete\n", flush=True)
     return None
@@ -213,7 +213,7 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
-    subprocess.run(command.split())
+    subprocess.run(command.split(), check=False)
 
     os.chdir(cwd)
     print("Plumed OPES hills run complete\n", flush=True)
@@ -244,7 +244,7 @@ def run_instanton_post_process(directory,
     print(f"Running command:\n{command}", flush=True)
 
     with open(outfile, "w") as file:
-        result = subprocess.run(command.split(), stdout=file, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
             print(f"Error: {result.stderr}", flush=True)
 
@@ -270,7 +270,7 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
     print(f"Running command:\n{command}", flush=True)
 
     with open("interpolation.out", "w") as file:
-        result = subprocess.run(command.split(), stdout=file, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
             print(f"Error: {result.stderr}", flush=True)
 
@@ -485,9 +485,7 @@ def run_md(directory,
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
-    if n_procs is None:
-        n_procs = n_beads
-    elif n_procs > n_beads:
+    if n_procs is None or n_procs > n_beads:
         n_procs = n_beads
 
     remove_directory(directory)
@@ -632,9 +630,7 @@ def run_plumed_md(directory,
     if driver_args is None:
         driver_args = {}
 
-    if n_procs is None:
-        n_procs = n_beads
-    elif n_procs > n_beads:
+    if n_procs is None or n_procs > n_beads:
         n_procs = n_beads
 
     remove_directory(directory)
@@ -935,9 +931,7 @@ def run_instanton(directory,
     print(f"Running the instanton with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
-    if n_procs is None:
-        n_procs = n_beads
-    elif n_procs > n_beads:
+    if n_procs is None or n_procs > n_beads:
         n_procs = n_beads
 
     remove_directory(directory)

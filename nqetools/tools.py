@@ -4,8 +4,6 @@ import os
 import sys
 import textwrap
 import time
-from typing import List
-from typing import Set
 
 import ipi
 import numpy as np
@@ -16,7 +14,7 @@ from ase.neighborlist import NeighborList, natural_cutoffs
 from ase.optimize import BFGS
 
 
-def add_ipi_paths(base: str = None) -> None:
+def add_ipi_paths(base: str | None = None) -> None:
     """Adds i-PI paths to the system path and environment variables.
 
     Parameters
@@ -296,8 +294,8 @@ def time_force_call(atoms, calc, n_reps=3):
         tmp.calc = calc
         tmp.get_forces()
         times[i] = time.time() - t0
-        print('Time taken={:.3} s'.format(times[i]), flush=True)
-    print('Average time taken={:.3} s std={:.3}'.format(np.mean(times), np.std(times)), flush=True)
+        print(f'Time taken={times[i]:.3} s', flush=True)
+    print(f'Average time taken={np.mean(times):.3} s std={np.std(times):.3}', flush=True)
 
 
 def get_fmax(atoms):
@@ -370,7 +368,7 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     atoms.center()
 
     # evalues are sorted ascending, so evecs[2] is the axis with the largest eigenvalue
-    evalues, evecs = atoms.get_moments_of_inertia(vectors=True)
+    _evalues, evecs = atoms.get_moments_of_inertia(vectors=True)
 
     principal_axis = evecs[2]
 
@@ -758,7 +756,7 @@ def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
     return np.argmin(norm)  # Return the index of the smallest distance
 
 
-def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> List[List[int]]:
+def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> list[list[int]]:
     """Return connected components (bonded groups) using ASE's natural cutoffs.
     Each group is a list of atom indices in `atoms`.
     """
@@ -770,14 +768,14 @@ def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> List[List[int]]:
 
     adj = [[] for _ in range(len(atoms))]
     for i in range(len(atoms)):
-        indices, offsets = nl.get_neighbors(i)
+        indices, _offsets = nl.get_neighbors(i)
         # only indices are needed for connectivity
         for j in indices:
             adj[i].append(j)
 
     # BFS to get connected components
-    seen: Set[int] = set()
-    groups: List[List[int]] = []
+    seen: set[int] = set()
+    groups: list[list[int]] = []
     for i in range(len(atoms)):
         if i in seen:
             continue
@@ -854,14 +852,14 @@ def combine_without_overlaps(
         nA = len(A)
         # For every atom in A, find neighbors; keep those neighbors whose index is in B
         # (i.e., >= nA) and record the corresponding B atom index.
-        b_atoms_to_remove: Set[int] = set()
+        b_atoms_to_remove: set[int] = set()
         for iA in range(nA):
             js, _ = nl_ab.get_neighbors(iA)
             for j in js:
                 if j >= nA:  # j belongs to B
                     jB = j - nA
                     # Map to the full B molecule (group) and mark all its atoms for removal
-                    gidx = index_to_group_B.get(jB, None)
+                    gidx = index_to_group_B.get(jB)
                     if gidx is not None:
                         b_atoms_to_remove.update(groups_B[gidx])
                     else:
@@ -879,7 +877,7 @@ def combine_without_overlaps(
     return merged
 
 
-def largest_bonded_cluster_indices(atoms: Atoms) -> List[int]:
+def largest_bonded_cluster_indices(atoms: Atoms) -> list[int]:
     """Finds the indices of the largest bonded cluster of atoms in an ASE Atoms object.
 
     This function uses ASE's NeighborList to determine bonded groups of atoms based on

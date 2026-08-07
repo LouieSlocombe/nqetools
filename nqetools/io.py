@@ -4,7 +4,6 @@ import os
 import re
 import shutil
 import xml.etree.ElementTree as et
-from typing import List
 
 import ase.io
 import numpy as np
@@ -33,22 +32,17 @@ def read_ipi_xyz(filename, convert_units=True):
         A list of ASE Atoms objects representing the frames in the file.
     """
 
-    file_handle = open(filename, "r")
     frames = []
-
-    while True:
-        try:
-            ret = read_file("xyz", file_handle)
-            frames.append(ase.Atoms(ret["atoms"].names,
-                                    positions=ret["atoms"].q.reshape((-1, 3)),
-                                    cell=ret["cell"].h.T, pbc=True))
-        except EOFError:
-            # Break the loop if the end of the file is reached
-            break
-        except:
-            raise
-
-    file_handle.close()
+    with open(filename) as file_handle:
+        while True:
+            try:
+                ret = read_file("xyz", file_handle)
+                frames.append(ase.Atoms(ret["atoms"].names,
+                                        positions=ret["atoms"].q.reshape((-1, 3)),
+                                        cell=ret["cell"].h.T, pbc=True))
+            except EOFError:
+                # Break the loop if the end of the file is reached
+                break
 
     if convert_units:
         frames = convert_atom_list_bohr_to_angstrom(frames)
@@ -70,23 +64,21 @@ def read_ipi_output(filename):
         A dictionary where keys are property names and values are the corresponding data columns.
     """
 
-    f = open(filename, "r")
-
     regex = re.compile(".*column *([0-9]*) *--> ([^ {]*)")
 
     fields = []
     cols = []
-    for line in f:
-        if line[0] == "#":
-            match = regex.match(line)
-            if match is None:
-                print("Malformed comment line: ", line)
-                raise ValueError()
-            fields.append(match.group(2))
-            cols.append(slice(int(match.group(1)) - 1, int(match.group(1))))
-        else:
-            break  # done with header
-    f.close()
+    with open(filename) as f:
+        for line in f:
+            if line[0] == "#":
+                match = regex.match(line)
+                if match is None:
+                    print("Malformed comment line: ", line)
+                    raise ValueError()
+                fields.append(match.group(2))
+                cols.append(slice(int(match.group(1)) - 1, int(match.group(1))))
+            else:
+                break  # done with header
 
     columns = {}
     raw = np.loadtxt(filename)
@@ -225,9 +217,9 @@ def get_final_xyz(directory, sub="*FINAL_*.xyz"):
     str
         The path to the final XYZ file that matches the criteria.
     """
-    l = list_files_with_pattern(directory, sub)
+    files = list_files_with_pattern(directory, sub)
     # Only select files that end with xyz
-    l_filt = [f for f in l if f.endswith(".xyz")]
+    l_filt = [f for f in files if f.endswith(".xyz")]
     # Select the file that does not contain the string "forces"
     l_nf = [f for f in l_filt if "forces" not in f]
     # Remove the file that contains the string "_0"
@@ -363,7 +355,7 @@ def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
     for file in sorted(fes_files):
         file_path = os.path.join(directory, file)
 
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             first_line = f.readline().strip()
             n_cv = len(first_line.split()[2:])  # Skip #! FIELDS and time
         print(f"Loading {file_path} with {n_cv} FIELDS")
@@ -454,7 +446,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             A list of tuples, each containing the comment line and atom block for a frame.
         """
         frames = []
-        with open(path, 'r', encoding='utf-8') as fh:
+        with open(path, encoding='utf-8') as fh:
             lines = [ln.rstrip('\n') for ln in fh]
         i = 0
         n_total = len(lines)
@@ -466,7 +458,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             try:
                 n = int(lines[i].strip())
             except ValueError:
-                raise ValueError(f"Expected atom count at line {i + 1}, got: {lines[i]!r}")
+                raise ValueError(f"Expected atom count at line {i + 1}, got: {lines[i]!r}") from None
             i += 1
             if i >= n_total:
                 raise ValueError("Unexpected EOF after atom count.")
@@ -501,7 +493,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         rw = Chem.RWMol()
         conf = Chem.Conformer(len(coord_lines))
         symbols = []
-        for idx, line in enumerate(coord_lines):
+        for _idx, line in enumerate(coord_lines):
             parts = line.split()
             if len(parts) < 4:
                 raise ValueError(f"Bad XYZ atom line (needs 'El x y z'): {line!r}")
@@ -509,7 +501,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             try:
                 x, y, z = map(float, parts[1:4])
             except ValueError:
-                raise ValueError(f"Bad XYZ coordinates on line: {line!r}")
+                raise ValueError(f"Bad XYZ coordinates on line: {line!r}") from None
             a = Chem.Atom(sym)
             atom_idx = rw.AddAtom(a)
             conf.SetAtomPosition(atom_idx, (x, y, z))
@@ -530,7 +522,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
 
     writer = Chem.SDWriter(sdf_path)
     if writer is None:
-        raise IOError(f"Could not open SDF writer for: {sdf_path}")
+        raise OSError(f"Could not open SDF writer for: {sdf_path}")
 
     n_written = 0
     for idx, (comment, coord_lines) in enumerate(frames, start=1):
@@ -759,14 +751,14 @@ def list_non_standard_residues(pdb_file):
     mols_by_residue = Chem.SplitMolByPDBResidues(mol)
 
     non_standard_mols = []
-    for residue_key, fragment_mol in mols_by_residue.items():
+    for residue_key, _fragment_mol in mols_by_residue.items():
         res_name = residue_key.split('_')[0].strip()
         if res_name not in standard_residues:
             non_standard_mols.append(residue_key)
     return non_standard_mols
 
 
-def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output_path: str) -> List[str]:
+def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: list[str], pdb_output_path: str) -> list[str]:
     """Removes specified ion residues from a PDB file and saves the cleaned structure.
 
     This function identifies ion residues in a PDB file based on their names and removes
@@ -803,7 +795,7 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output
             if res_name_upper in ions_to_remove_upper:
                 residues_to_delete.append(res)
 
-    print(f"-> Found all potential ion types: {sorted(list(all_found_ion_types))}")
+    print(f"-> Found all potential ion types: {sorted(all_found_ion_types)}")
     print(f"-> Will remove {len(residues_to_delete)} residues matching: {ions_to_remove}")
 
     if residues_to_delete:
@@ -816,7 +808,7 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: List[str], pdb_output
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
     print(f"Cleaned PDB saved to: {pdb_output_path}")
 
-    return sorted(list(all_found_ion_types))
+    return sorted(all_found_ion_types)
 
 
 def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
