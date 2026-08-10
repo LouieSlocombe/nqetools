@@ -36,8 +36,8 @@ dependencies:
   - pip:
       #    - torch
       - mace-torch
-      - sella
       #    - cuequivariance
       #    - cuequivariance-torch
       #    - cuequivariance-ops-torch-cu12
+      - git+https://github.com/LouieSlocombe/reactiontools.git
       - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
