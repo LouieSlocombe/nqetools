@@ -43,7 +43,8 @@ from .execution import (run_command,
                         run_instanton,
                         run_plumed_hills,
                         run_plumed_hills_opes,
-                        run_instanton_post_process)
+                        run_instanton_post_process,
+                        run_instanton_interpolation)
 from .instanton import (parse_inst_thermo_data,
                         parse_ts_thermo_data,
                         calc_instanton_kappa,

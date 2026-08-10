@@ -20,9 +20,9 @@ def parse_react_thermo_data(directory,
     data = {}
     temp = None
     output_data, _output_desc = ipi.read_output(os.path.join(directory, ref_filename))
-    data['energy'] = output_data.get('potential', None)[-1]
-    if data['energy'] is None:
+    if output_data.get('potential') is None:
         raise ValueError(f"Could not find potential energy in {ref_filename} in {directory}")
+    data['energy'] = output_data['potential'][-1]
 
     filepath = os.path.join(directory, filename)
 
@@ -44,8 +44,6 @@ def parse_react_thermo_data(directory,
         raise ValueError(f"Could not find temperature in {filepath}")
 
     data['V/kBT'] = float(data['energy'] / (kB * temp))
-    if not data:
-        raise ValueError(f"Could not find reactant thermodynamic data in {filepath}")
 
     return data
 
@@ -281,13 +279,33 @@ def calc_forward_rate_orca(atoms_react,
                            atoms_ts,
                            temperature=300.0,
                            calc_settings=None):
+    """Calculate the Eyring TST forward rate from ORCA Gibbs free energies.
+
+    Parameters
+    ----------
+    atoms_react : ase.Atoms
+        The reactant structure.
+    atoms_ts : ase.Atoms
+        The transition state structure.
+    temperature : float, optional
+        Temperature in kelvin (K). Default is 300.0.
+    calc_settings : dict, optional
+        Extra keyword arguments forwarded to `calculate_free_energy`.
+
+    Returns
+    -------
+    float
+        The forward rate constant in s^-1.
+    """
     if calc_settings is None:
         calc_settings = {}
 
-    e_react = calculate_free_energy(atoms_react, temperature=temperature, **calc_settings)
-    e_ts = calculate_free_energy(atoms_ts, temperature=temperature, **calc_settings)
+    # calculate_free_energy returns (gibbs, enthalpy, entropy); only Gibbs is needed here
+    e_react, _, _ = calculate_free_energy(atoms_react, temperature=temperature, **calc_settings)
+    e_ts, _, _ = calculate_free_energy(atoms_ts, temperature=temperature, **calc_settings)
 
-    boltzmann_factor = np.exp(-(e_react - e_ts) / (kB * temperature))
+    # The activation free energy is the TS energy relative to the reactant
+    boltzmann_factor = np.exp(-(e_ts - e_react) / (kB * temperature))
 
     return (k * temperature / h) * boltzmann_factor
 

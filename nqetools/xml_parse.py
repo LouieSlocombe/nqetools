@@ -227,7 +227,7 @@ def update_driver(root, atoms, f_driver):
                 if child.tag == 'force':
                     child.attrib['forcefield'] = 'driver'
 
-    elif f_driver in ["ase-mace", "ase-nwchem", "nwchem"]:
+    elif f_driver in ["mace", "ase-mace", "ase-qmmm-mace", "ase-nwchem", "nwchem"]:
         for rank in root.iter('ffsocket'):
             rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
             for child in rank:

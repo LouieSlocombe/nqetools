@@ -105,7 +105,9 @@ def write_xml(root, file):
     -------
     None
     """
-    os.makedirs(os.path.dirname(file), exist_ok=True)
+    directory = os.path.dirname(file)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
     tree = et.ElementTree(root)
     et.indent(tree.getroot(), space="\t", level=0)
     tree.write(file)
@@ -140,7 +142,9 @@ def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
     if vacuum is not None:
         atoms.center(vacuum=vacuum)
 
-    os.makedirs(os.path.dirname(file), exist_ok=True)
+    directory = os.path.dirname(file)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
     ase.io.write(file, atoms)
     return atoms
 
@@ -262,11 +266,12 @@ def copy_xyz(file_in, new_dir, file_out="init.xyz"):
     None
     """
     os.makedirs(new_dir, exist_ok=True)
+    file_path = os.path.join(new_dir, file_out)
     atoms = ase.io.read(file_in, index=":")
     if isinstance(atoms, ase.atoms.Atoms):
-        ase.io.write(f"{new_dir}{file_out}", atoms)
+        ase.io.write(file_path, atoms)
     else:
-        ase.io.write(f"{new_dir}{file_out}", atoms[-1])
+        ase.io.write(file_path, atoms[-1])
     return None
 
 
@@ -336,34 +341,65 @@ def search_fes_files(target_directory: str) -> list[str]:
 def load_fes_data(directory: str, bins: int) -> list[np.ndarray]:
     """Find FES files in the directory and load their data into numpy arrays.
 
+    The number of collective variables is taken from the position of the
+    ``file.free`` column in the PLUMED ``#! FIELDS`` header, which always sits
+    immediately after the CV columns. Free energies are converted from kJ/mol to
+    eV; the CV columns are left in their original units.
+
     Parameters
     ----------
     directory : str
         Directory containing the FES files.
     bins : int
-        Number of bins for reshaping the data.
+        Number of bins used to generate the FES. A grid therefore has
+        ``bins + 1`` points per dimension. Only used for two-dimensional
+        surfaces, which are reshaped onto that grid.
 
     Returns
     -------
     list[np.ndarray]
-        List of numpy arrays, each containing the transformed FES data.
+        List of numpy arrays, one per FES file, ordered by their numeric
+        suffix. One CV gives an array of shape ``(2, n_points)`` holding
+        ``[cv, F]``; two CVs give shape ``(3, bins + 1, bins + 1)`` holding
+        ``[cv1, cv2, F]``, ready to unpack into ``contourf``.
+
+    Raises
+    ------
+    ValueError
+        If the header has no ``file.free`` column, if the surface has more than
+        two collective variables, or if a two-dimensional file does not contain
+        ``(bins + 1) ** 2`` rows.
     """
     fes_files = search_fes_files(directory)
     fes_arrays = []
-    bins += 1
+    n_grid = bins + 1
 
-    for file in sorted(fes_files):
+    # Sort by the numeric suffix so FES2 precedes FES10 rather than following it
+    for file in sorted(fes_files, key=lambda name: int(re.findall(r'\d+', name)[0])):
         file_path = os.path.join(directory, file)
 
         with open(file_path) as f:
-            first_line = f.readline().strip()
-            n_cv = len(first_line.split()[2:])  # Skip #! FIELDS and time
-        print(f"Loading {file_path} with {n_cv} FIELDS")
+            fields = f.readline().strip().split()[2:]  # Skip the '#!' and 'FIELDS' tokens
+        if 'file.free' not in fields:
+            raise ValueError(f"No 'file.free' column in the FIELDS header of {file_path}: {fields}")
+        n_cv = fields.index('file.free')
+        print(f"Loading {file_path} with {n_cv} CV(s)")
+
         data = np.loadtxt(file_path, comments="#")
-        if n_cv == 2:
-            transformed_data = np.array([1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
+        if n_cv == 1:
+            scale = np.array([1.0, 1.0 / eV_to_kJpermol])
+            transformed_data = scale[:, np.newaxis] * data[:, :2].T
+        elif n_cv == 2:
+            if data.shape[0] != n_grid ** 2:
+                raise ValueError(
+                    f"{file_path} has {data.shape[0]} rows, expected {n_grid ** 2} "
+                    f"for a {n_grid}x{n_grid} grid. Check the 'bins' argument."
+                )
+            scale = np.array([1.0, 1.0, 1.0 / eV_to_kJpermol])
+            # PLUMED writes the first CV fastest, so a C-order reshape gives [cv2, cv1]
+            transformed_data = (scale[:, np.newaxis] * data[:, :3].T).reshape(3, n_grid, n_grid)
         else:
-            transformed_data = np.array([1.0, 1.0 / eV_to_kJpermol])[:, np.newaxis] * data[:, :2].T
+            raise ValueError(f"{file_path} has {n_cv} CVs; only 1D and 2D surfaces are supported")
         fes_arrays.append(transformed_data)
 
     return fes_arrays

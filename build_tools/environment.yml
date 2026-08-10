@@ -24,6 +24,8 @@ dependencies:
   - py-plumed
   - openmm
   - openmm-ml
+  - openmm-plumed
+  - openff-toolkit
   - pytorch
   - nnpops
   - openmm-torch

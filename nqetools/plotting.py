@@ -108,10 +108,12 @@ def plot_time_temperature(data,
         fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
 
     if mov_ave:
-        min_val = int(window_size / 2)
-        max_val = -int(window_size / 2 - 1)
-        time = data["time"][min_val:max_val]
         ave_temperature = moving_average(data["temperature"], window_size)
+        # Centre the averaged values on the original time axis. The offsets are
+        # derived from the actual output length so that odd window sizes, which
+        # drop an uneven number of points from each end, still line up.
+        lead = (window_size - 1) // 2
+        time = data["time"][lead:lead + len(ave_temperature)]
         ax.plot(time, ave_temperature, c="black", lw=2)
     else:
         ax.plot(data["time"], data["temperature"], c="black", lw=2)
@@ -245,6 +247,9 @@ def plot_fes_contourf_series(fes_arrays: list[np.ndarray],
             sharey=True,
             constrained_layout=True
         )
+
+    # subplots() returns a bare Axes for a single column, so normalise to an array
+    ax = np.atleast_1d(ax)
 
     contours = []
     for i, xyz in enumerate(fes_arrays):
@@ -581,7 +586,8 @@ def _load_plumed_colvar(path,
     if field not in names:
         raise ValueError(f"Field '{field}' not found. Available: {names}")
 
-    data = np.loadtxt(path, comments="#")
+    # loadtxt squeezes a single-row file to 1-D, which would break the column indexing
+    data = np.atleast_2d(np.loadtxt(path, comments="#"))
     name_to_idx = {name: i for i, name in enumerate(names)}
     x_idx = name_to_idx[x]
     y_idx = name_to_idx[field]
@@ -589,12 +595,11 @@ def _load_plumed_colvar(path,
     x_vals = data[:, x_idx]
     y_vals = data[:, y_idx]
 
-    dt = x_vals[1] - x_vals[0]
     if derivative:
         if len(x_vals) < 2:
             raise ValueError("Not enough data points to compute derivative.")
-        dy = np.gradient(y_vals, dt)
-        y_vals = dy
+        dt = x_vals[1] - x_vals[0]
+        y_vals = np.gradient(y_vals, dt)
     return x_vals, y_vals
 
 
@@ -605,7 +610,7 @@ def plot_plumed_field(path,
                       x="time",
                       save=True,
                       show=True,
-                      filename="bead_temperature",
+                      filename="plumed_field",
                       derivative=False,
                       fig_size=(8, 3)):
     x_vals, y_vals = _load_plumed_colvar(path,

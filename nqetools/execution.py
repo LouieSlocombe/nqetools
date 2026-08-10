@@ -1,4 +1,6 @@
+import contextlib
 import os
+import shutil
 import subprocess
 import time
 from itertools import chain
@@ -38,6 +40,31 @@ from .xml_parse import (append_properties,
                          add_thermostat_section,
                          add_trajectory_centroid)
 import multiprocessing
+
+
+@contextlib.contextmanager
+def working_directory(directory):
+    """Temporarily change the working directory, restoring it on the way out.
+
+    The original directory is restored even if the body raises, so a failed run
+    does not leave the interpreter pointing at the run directory.
+
+    Parameters
+    ----------
+    directory : str
+        The directory to change into for the duration of the block.
+
+    Yields
+    ------
+    str
+        The directory that was changed into.
+    """
+    dir_base = os.getcwd()
+    os.chdir(directory)
+    try:
+        yield directory
+    finally:
+        os.chdir(dir_base)
 
 
 def run_command(command):
@@ -118,22 +145,29 @@ def run_ipi(directory,
     -------
     None
     """
-    dir_base = os.getcwd()
-    os.chdir(directory)
-    rm_ipi_tmp()
+    # Check before changing directory, so a refused run leaves the cwd untouched
+    if os.path.exists(os.path.join(directory, outfile)):
+        raise FileExistsError(f"Output file {outfile} already exists in {directory}. Skipping the run.")
+
     n = check_driver_processes(n)
 
-    if not os.path.exists(outfile):
+    with working_directory(directory):
+        rm_ipi_tmp()
         ipi_proc = subprocess.Popen(server.split())
         time.sleep(t_sleep)
-        driver_proc = [subprocess.Popen(driver.split()) for _ in range(n)]
-    else:
-        raise FileExistsError(f"Output file {outfile} already exists. Skipping the run.")
-    if ipi_proc is not None:
-        ipi_proc.wait()
-        for process in driver_proc:
-            process.wait()
-    os.chdir(dir_base)
+
+        # Each driver gets its own log; the drivers are not run through a shell,
+        # so any redirection has to happen here rather than in the command string
+        driver_logs = [open(f"driver_{i}.out", "w") for i in range(n)]
+        try:
+            driver_proc = [subprocess.Popen(driver.split(), stdout=log, stderr=subprocess.STDOUT)
+                           for log in driver_logs]
+            ipi_proc.wait()
+            for process in driver_proc:
+                process.wait()
+        finally:
+            for log in driver_logs:
+                log.close()
     return None
 
 
@@ -184,9 +218,6 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
 
     kbt = temperature * 0.0083144621
 
-    # Need to be in the directory of the run
-    cwd = os.getcwd()
-    os.chdir(directory)
     path_to_opes = os.path.join(find_nqetools_path(), "opes", "fes_from_state.py")
     command = f'{path_to_opes} --kt {round_sf(kbt)}'
 
@@ -213,9 +244,10 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
-    subprocess.run(command.split(), check=False)
+    # Needs to run from the directory of the run
+    with working_directory(directory):
+        subprocess.run(command.split(), check=False)
 
-    os.chdir(cwd)
     print("Plumed OPES hills run complete\n", flush=True)
     return None
 
@@ -229,9 +261,6 @@ def run_instanton_post_process(directory,
                                outfile='thermo_data.out'):
     print(f'Running the {process_type} thermo/instanton post-processing', flush=True)
 
-    # Need to be in the directory of the run
-    cwd = os.getcwd()
-    os.chdir(directory)
     path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "postproc.py")
     command = f'python {path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}'
     if filter_list is not None:
@@ -243,12 +272,12 @@ def run_instanton_post_process(directory,
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
-    with open(outfile, "w") as file:
+    # Needs to run from the directory of the run
+    with working_directory(directory), open(outfile, "w") as file:
         result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
             print(f"Error: {result.stderr}", flush=True)
 
-    os.chdir(cwd)
     print("Thermo/Instanton post-processing complete\n", flush=True)
     return None
 
@@ -257,38 +286,39 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
     # Reimplements the manual recipe from:
     # https://github.com/i-pi/piqm2023-tutorial/blob/main/05-RPI/tutorial-4.ipynb
     print('Running the instanton interpolation', flush=True)
-    cwd = os.getcwd()
 
     os.makedirs(directory_new, exist_ok=True)
-    os.chdir(directory_new)
-    os.system(f'cp {os.path.join(directory_old, "init.xyz")} init0')
-    os.system(f'cp {os.path.join(directory_old, "hessian.dat")} hess0')
 
-    path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "interpolation.py")
-    command = f'python {path_to_proc} -m -xyz init0 -hess hess0 -n {new_n_beads}'
+    with working_directory(directory_new):
+        shutil.copy(os.path.join(directory_old, "init.xyz"), "init0")
+        shutil.copy(os.path.join(directory_old, "hessian.dat"), "hess0")
 
-    print(f"Running command:\n{command}", flush=True)
+        path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "interpolation.py")
+        command = f'python {path_to_proc} -m -xyz init0 -hess hess0 -n {new_n_beads}'
 
-    with open("interpolation.out", "w") as file:
-        result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
-        if result.returncode != 0:
-            print(f"Error: {result.stderr}", flush=True)
+        print(f"Running command:\n{command}", flush=True)
 
-    os.system('cp hess0 hessian.dat')
-    os.system('cp init0 init.xyz')
+        with open("interpolation.out", "w") as file:
+            result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
+            if result.returncode != 0:
+                print(f"Error: {result.stderr}", flush=True)
 
-    os.system(f'cp {os.path.join(directory_old, "input.xml")} input.xml')
+        shutil.copy("hess0", "hessian.dat")
+        shutil.copy("init0", "init.xyz")
 
-    tree = et.parse('input.xml')
-    root = tree.getroot()
-    update_nbeads(root, new_n_beads)
+        shutil.copy(os.path.join(directory_old, "input.xml"), "input.xml")
 
-    atoms = read_ipi_xyz(os.path.join(directory_old, "init.xyz"))
-    n_doft = 3 * len(atoms)
+        tree = et.parse('input.xml')
+        root = tree.getroot()
+        update_nbeads(root, new_n_beads)
 
-    update_hessian(root, n_doft, new_n_beads)
+        atoms = read_ipi_xyz(os.path.join(directory_old, "init.xyz"))
+        n_doft = 3 * len(atoms)
 
-    os.chdir(cwd)
+        update_hessian(root, n_doft, new_n_beads)
+
+        write_xml(root, 'input.xml')
+
     print("Instanton interpolation complete\n", flush=True)
     return None
 

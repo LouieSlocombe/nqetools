@@ -171,13 +171,13 @@ def nwchem_calc_preset(directory=None,
     return NWChem(**tmp)
     
 atoms = read('{in_file}', 0)
-atoms.calc = nwchem_calc_preset(charge={charge}, 
+atoms.calc = nwchem_calc_preset(charge={charge},
                          xc='{xc}',
-                         task='optimize', 
+                         task='optimize',
                          multiplicity={multi},
                          basis_set='{basis_set}',
-                         disp={disp},
-                         solv={solv})
+                         disp={disp!r},
+                         solv={solv!r})
 client = SocketClient(unixsocket='{host}')
 client.run(atoms, use_stress=False)
 
@@ -377,11 +377,11 @@ atoms.calc = orca_calc_preset(calc_type='{calc_type}',
                        charge={charge},
                        multiplicity={multi},
                        basis_set='{basis_set}',
-                       f_disp={disp},
-                       f_solv={solv},
-                       atom_list='{atom_list}',
-                       calc_extra={calc_extra},
-                       scf_option={scf_option},
+                       f_disp={disp!r},
+                       f_solv={solv!r},
+                       atom_list={atom_list!r},
+                       calc_extra={calc_extra!r},
+                       scf_option={scf_option!r},
                        n_procs={n_procs})
 # Create Client
 port = 10200
@@ -465,6 +465,9 @@ def prep_driver(atoms, directory, f_driver, driver_args):
 
     elif f_driver == "nwchem":
         write_nwchem_driver(atoms, directory, **driver_args)
-        return "nwchem nwchem.nwi > nwchem.out"
+        # Driver stdout is captured by run_ipi; a shell redirect here would be
+        # passed to nwchem as literal arguments, since the driver is not run
+        # through a shell
+        return "nwchem nwchem.nwi"
     else:
         raise ValueError(f"Driver {f_driver} is not recognized.")

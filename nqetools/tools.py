@@ -2,6 +2,7 @@ import glob
 import inspect
 import os
 import sys
+import tempfile
 import textwrap
 import time
 
@@ -48,26 +49,41 @@ def get_ipi_driver() -> str:
     return os.path.join(tmp, 'bin', 'i-pi-driver')
 
 
-def rm_ipi_tmp(tmp_dir: str = "/tmp") -> None:
-    """Removes any file in the given directory that starts with 'ipi_'.
+def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
+    """Removes stale i-PI unix sockets belonging to the current user.
+
+    Only sockets owned by the calling user are considered, so this will not
+    disturb i-PI runs started by anyone else sharing the machine.
 
     Parameters
     ----------
     tmp_dir : str, optional
-        The directory to search for files. Default is '/tmp'.
+        The directory to search for sockets. Defaults to the system temporary
+        directory (honouring TMPDIR).
+    address : str, optional
+        Socket address to target, matching only 'ipi_<address>'. If None, every
+        'ipi_*' socket owned by the current user is removed - including those of
+        the caller's own concurrent runs, so prefer passing an address when one
+        is known.
 
     Returns
     -------
     None
     """
-    files = glob.glob(os.path.join(tmp_dir, 'ipi_*'))
+    if tmp_dir is None:
+        tmp_dir = tempfile.gettempdir()
 
+    pattern = f'ipi_{address}' if address is not None else 'ipi_*'
+    files = glob.glob(os.path.join(tmp_dir, pattern))
+
+    uid = os.getuid()
     for file in files:
-        if os.path.exists(file):
-            try:
-                os.remove(file)
-            except FileNotFoundError:
-                pass
+        try:
+            if os.stat(file).st_uid != uid:
+                continue  # Belongs to another user; leave their run alone
+            os.remove(file)
+        except FileNotFoundError:
+            pass
     return None
 
 
@@ -553,8 +569,12 @@ def move_clusters_to_distance(cluster1: Atoms,
     Returns
     -------
     Atoms
-        A new Atoms object containing both clusters, repositioned.
+        A new Atoms object containing both clusters, repositioned. The inputs
+        are not modified.
     """
+    cluster1 = cluster1.copy()
+    cluster2 = cluster2.copy()
+
     pos1 = cluster1.positions[index1]
     pos2 = cluster2.positions[index2]
 
@@ -609,8 +629,9 @@ def move_to_distances(atoms: Atoms,
 
     cluster1, cluster2 = clusters
 
-    # Adjust index2 to account for the second cluster's indices
-    index2 = index2 - len(cluster2)
+    # index2 is a global index into `atoms`; convert it to an index within
+    # cluster2 by subtracting the number of atoms that precede it
+    index2 = index2 - len(cluster1)
 
     moved_atoms_list = []
     for distance in distances:

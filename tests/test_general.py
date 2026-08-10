@@ -27,15 +27,16 @@ def test_calculate_good_nbeads():
     path integral molecular dynamics (PIMD) simulation based on the
     maximum vibrational frequency (omega_max) and temperature (T).
 
-    For water, omega_max is approximately 3800 cm^-1, which results in
-    approximately 18 beads at 300 K. A safe choice is 32 replicas.
+    For water, omega_max is approximately 3800 cm^-1. The ratio
+    hbar*omega/(kB*T) at 300 K is 18.22, so 19 beads are needed for the
+    inequality to hold. A safe choice is 32 replicas.
 
     Notes
     -----
-    Asserts that the calculated number of beads is 18.
+    Asserts that the calculated number of beads is 19.
     """
     n_beads = nqe.calculate_good_nbeads(3800.0, 300.0)
-    assert n_beads == 18
+    assert n_beads == 19
 
 
 def test_orca_calc():

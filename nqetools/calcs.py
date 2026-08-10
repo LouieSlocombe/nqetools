@@ -136,14 +136,15 @@ def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
     Returns
     -------
     int
-        Number of beads.
+        Number of beads, rounded up so that the inequality holds strictly.
     """
     cm2hartree = 1. / (constants.physical_constants['hartree-inverse meter relationship'][0] / 100)
     boltzmann_au = constants.physical_constants['Boltzmann constant in eV/K'][0] * \
                    constants.physical_constants['electron volt-hartree relationship'][0]
     omega_max = omega_max * cm2hartree
     nbeads = (1.0 * omega_max) / (boltzmann_au * temperature)
-    return int(nbeads)
+    # Round up: truncating would return a bead count that fails the inequality
+    return max(1, math.ceil(nbeads))
 
 
 def wigner_correction(omega_cm: float, temperature: float) -> float:

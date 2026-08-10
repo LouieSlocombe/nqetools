@@ -948,25 +948,17 @@ def calculate_free_energy(atoms,
     scf_flag = 'TIGHTSCF' if tight_scf else ''
     calc_extra = f'{opt_flag} {scf_flag} FREQ'.strip()
 
-    if temperature is not None and pressure is None:
-        blocks_extra = f'''
-                                                            %freq
-                                                                Temp {temperature}
-                                                            end
-                                                            '''
-    elif pressure is not None and temperature is None:
-        blocks_extra = f'''
-                                                                    %freq
-                                                                        Pressure {pressure}
-                                                                    end
-                                                                    '''
-    elif pressure is None and temperature is not None:
-        blocks_extra = f'''
-                                                                    %freq
-                                                                        Temp {temperature}
-                                                                        Pressure {pressure}
-                                                                    end
-                                                                    '''
+    # Build the %freq block from whichever of temperature/pressure were supplied,
+    # so that setting both is honoured rather than silently discarded
+    freq_settings = []
+    if temperature is not None:
+        freq_settings.append(f'Temp {temperature}')
+    if pressure is not None:
+        freq_settings.append(f'Pressure {pressure}')
+
+    if freq_settings:
+        freq_lines = '\n'.join(f'    {setting}' for setting in freq_settings)
+        blocks_extra = f'\n%freq\n{freq_lines}\nend\n'
     else:
         blocks_extra = None
 
