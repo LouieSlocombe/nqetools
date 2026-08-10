@@ -35,5 +35,5 @@ dependencies:
   - mdanalysis
   - pip:
       - mace-torch
-      - sella
+      - git+https://github.com/LouieSlocombe/reactiontools.git
       - git+https://github.com/LouieSlocombe/geodesic_interpolate.git
