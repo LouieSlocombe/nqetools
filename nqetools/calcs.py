@@ -1,3 +1,17 @@
+"""Numerical analysis of simulation output and rate corrections.
+
+Two groups of routines. The first works on time series: correlation
+functions, autocorrelations and moving averages for trajectory analysis.
+The second supplies approximate tunnelling corrections - Wigner, Bell and
+Eckart - which estimate the rate enhancement from a barrier's curvature
+alone, and are much cheaper than the instanton treatment in
+:mod:`nqetools.instanton` though correspondingly less reliable at low
+temperature.
+
+Also provides the crossover temperature below which tunnelling dominates,
+and the bead count needed to converge a path-integral calculation there.
+"""
+
 import math
 
 import numpy as np

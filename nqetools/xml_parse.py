@@ -1,3 +1,15 @@
+"""In-place editing of i-PI XML input files.
+
+i-PI is configured entirely through XML, so preparing a run means taking
+one of the templates in ``templates/`` and rewriting the elements that
+describe this particular system: cell, masses, temperature, timestep,
+bead count, tolerances, output strides and the driver socket.
+
+Every function takes a parsed element tree root and mutates it, so a
+sequence of updates can be applied to one document before it is written
+out. :mod:`nqetools.execution` is the main caller.
+"""
+
 import os
 import xml.etree.ElementTree as et
 
@@ -217,7 +229,6 @@ def update_driver(root, atoms, f_driver):
                     child.text = 'localhost'
                 elif child.tag == 'port':
                     child.text = '10200'
-            # Add port tag if not present
             if rank.find('port') is None:
                 port_elem = et.SubElement(rank, 'port')
                 port_elem.text = '10200'
@@ -732,7 +743,6 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
 
     tree = et.parse(os.path.join(xml_path, thermostat + ".xml"))
 
-    # Remove existing thermostat section
     for thermostat in root.iter('thermostat'):
         parent = find_parent(root, thermostat)
         if parent is not None:
@@ -797,7 +807,6 @@ def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
     """
     motion = root.find(".//motion")
     if motion is not None:
-        # Find or create fixcom element
         fixcom_elem = motion.find("fixcom")
         if fixcom_elem is not None:
             fixcom_elem.text = str(fix_com)

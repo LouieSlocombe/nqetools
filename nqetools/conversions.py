@@ -1,3 +1,11 @@
+"""Unit conversion factors and helpers.
+
+The codes wrapped by this package disagree on units: ASE uses eV and
+Angstrom, i-PI works internally in atomic units, and PLUMED and OpenMM
+expect kJ/mol and nm. The factors here are the single place those
+conversions are defined.
+"""
+
 from scipy.constants import physical_constants as const
 from ase import Atoms
 

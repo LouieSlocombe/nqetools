@@ -18,19 +18,15 @@ if do_bck:
 ### Parser stuff ###
 parser = argparse.ArgumentParser(
     description='get the FES estimate used by OPES, from a dumped state file (STATE_WFILE). 1D or 2D only')
-# files
 parser.add_argument('--state', '-f', dest='filename', type=str, default='STATE',
                     help='the state file name, with the compressed kernels')
 parser.add_argument('--outfile', '-o', dest='outfile', type=str, default='FES.dat', help='name of the output file')
-# compulsory
 kbt_group = parser.add_mutually_exclusive_group(required=True)
 kbt_group.add_argument('--kt', dest='kbt', type=float, help='the temperature in energy units')
 kbt_group.add_argument('--temp', dest='temp', type=float, help='the temperature in Kelvin. Energy units is Kj/mol')
-# grid related
 parser.add_argument('--min', dest='grid_min', type=str, required=False, help='lower bounds for the grid')
 parser.add_argument('--max', dest='grid_max', type=str, required=False, help='upper bounds for the grid')
 parser.add_argument('--bin', dest='grid_bin', type=str, default="100,100", help='number of bins for the grid')
-# other options
 parser.add_argument('--fmt', dest='fmt', type=str, default='% 12.6f', help='specify the output format')
 parser.add_argument('--deltaFat', dest='deltaFat', type=float, required=False,
                     help='calculate the free energy difference between left and right of given c1 value')
@@ -39,7 +35,6 @@ parser.add_argument('--all_stored', dest='all_stored', action='store_true', defa
 parser.add_argument('--nomintozero', dest='nomintozero', action='store_true', default=False,
                     help='do not shift the minimum to zero')
 parser.add_argument('--der', dest='der', action='store_true', default=False, help='calculate also FES derivatives')
-# some easy parsing
 args = parser.parse_args()
 filename = args.filename
 outfile = args.outfile
@@ -73,7 +68,6 @@ if all_stored:
 explore = 'unset'
 
 ### Get data ###
-# get data and check number of stored states
 data = pd.read_table(filename, sep=r'\s+', header=None).to_numpy()
 fields_pos = []
 tot_lines = data.shape[0]
@@ -138,7 +132,6 @@ for n in range(len(fields_pos) - 1):
             sys.exit(' counter not found!')
         Zed *= float(data[l + 9, 3])
     l += 10  # there are always at least 10 header lines
-    # get periodicity
     period_x = 0
     period_y = 0
     while data[l, 0] == '#!':
@@ -294,7 +287,6 @@ for n in range(len(fields_pos) - 1):
         der_fes_x = -kbt * sf / prob * der_prob_x
         if dim2:
             der_fes_y = -kbt * sf / prob * der_prob_y
-    # calculate deltaF
     # NB: summing is as accurate as trapz, and logaddexp avoids overflows
     if calc_deltaF:
         if not dim2:
@@ -306,13 +298,11 @@ for n in range(len(fields_pos) - 1):
         deltaF = fesB - fesA
 
     ### Print to file ###
-    # prepare file
     if all_stored:
         outfile = outfile_n % (n + 1)
     if do_bck:
         cmd = subprocess.Popen(bck_script + ' -i ' + outfile, shell=True)
         cmd.wait()
-    # actual print
     with open(outfile, 'w') as f:
         fields = '#! FIELDS ' + name_cv_x
         if dim2:

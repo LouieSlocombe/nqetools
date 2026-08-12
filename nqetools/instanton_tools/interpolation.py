@@ -1,17 +1,30 @@
-"""Instanton_interpolation.py
-Reads a hessian file and/or a positions file (xyz format) and creates an interpolation
-that can be used in a further instanton optimization with more beads
+"""Interpolate an instanton geometry and Hessian onto more beads.
 
-Syntax manual:    python  Instanton_interpolation.py -m -xyz <geometry file> -h <hessian file> -n <new-beads(half-polymer)>
-Syntax chk:       python  Instanton_interpolation.py -chk  <checkpoint_file>  -n <new-beads(half-polymer)>
+Instanton optimisations are normally converged by stepping up the number
+of ring-polymer beads. This script takes a converged low-bead result and
+resamples it onto a finer discretisation, so the next optimisation starts
+close to its solution rather than from scratch.
 
-Example:   python  Instanton_interpolation.py  -xyz INSTANTON.xyz  -hess  INSTANTON.hess -n 30
-           python  Instanton_interpolation.py  -chk RESTART -n 30
+Input comes either from an i-PI checkpoint, or, in manual mode, from an
+explicit XYZ geometry and Hessian file. Two files are written:
+``new_instanton.xyz`` and ``new_hessian.dat``.
 
-Relies on the infrastructure of i-pi, so the ipi package should
-be installed in the Python module directory, or the i-pi
-main directory must be added to the PYTHONPATH environment variable.
+This is a command-line script, executed on import rather than imported for
+its functions. It relies on i-PI's normal-mode machinery, so the ``ipi``
+package must be importable.
 
+Notes
+-----
+Bead counts throughout refer to the half polymer. The instanton orbit is
+symmetric about its turning points, so only half of it is stored; the full
+ring is reconstructed by mirroring before any normal-mode transform.
+
+Examples
+--------
+::
+
+    python interpolation.py -chk RESTART -n 30
+    python interpolation.py -m -xyz INSTANTON.xyz -hess INSTANTON.hess -n 30
 """
 
 import argparse
@@ -23,7 +36,6 @@ from ipi.utils.io import read_file, print_file
 from ipi.utils.nmtransform import nm_rescale
 from ipi.utils.units import unit_to_internal
 
-# INPUT
 parser = argparse.ArgumentParser(
     description="""Script for interpolate hessian and/or instanton geometry"""
 )
@@ -98,7 +110,6 @@ if input_geo != "None" or chk != "None":
 
         natoms = pos[0].natoms
         atom = pos[0]
-        # Compose the half ring polymer.
         q = np.vstack([i.q for i in pos])
     else:
         from ipi.engine.simulation import Simulation
@@ -125,8 +136,9 @@ if input_geo != "None" or chk != "None":
         f"We will expand the ring polymer to get a half polymer of {nbeadsNew} beads.", flush=True
     )
 
-    # Make the rpc step (standard). It is better that open path in some corner cases.
-    q2 = np.concatenate((q, np.flipud(q)), axis=0)  # Compose the full ring polymer.
+    # Mirror to the full ring before rescaling: the closed-path transform is
+    # better behaved than the open-path one in corner cases
+    q2 = np.concatenate((q, np.flipud(q)), axis=0)
     rpc = nm_rescale(2 * nbeads, 2 * nbeadsNew)
     new_q = rpc.b1tob2(q2)[0:nbeadsNew]
 
@@ -134,7 +146,7 @@ if input_geo != "None" or chk != "None":
     for i in range(nbeadsNew):
         atom.q = new_q[i] / unit_to_internal(
             "length", "angstrom", 1.0
-        )  # Go back to angstrom
+        )  # i-PI works in atomic units; XYZ is written in angstrom
         print_file(
             "xyz", atom, cell, out, title="cell{atomic_unit}  Traj: positions{angstrom}"
         )
@@ -184,22 +196,21 @@ if input_hess != "None" or chk != "None":
     hessian = h
     size0 = natoms * 3
 
-    # Compose the full ring polymer.
     size1 = size0 * (2 * nbeads)
     size2 = size0 * (2 * nbeadsNew)
     new_h = np.zeros([size0, size2])
-    q2 = np.concatenate((q, np.flipud(q)), axis=0)  # Compose the full ring polymer.
+    q2 = np.concatenate((q, np.flipud(q)), axis=0)
     rpc = nm_rescale(2 * nbeads, 2 * nbeadsNew)
     new_q = rpc.b1tob2(q2)[0:nbeadsNew]
 
+    # Each (i, j) element is interpolated independently along the bead index,
+    # mirrored to the full ring in the same way as the positions above
     for i in range(size0):
         for j in range(size0):
             h = np.array([])
             for n in range(nbeads):
                 h = np.append(h, hessian[i, j + size0 * n])
-            h2 = np.concatenate(
-                (h, np.flipud(h)), axis=0
-            )  # Compose the full ring polymer.
+            h2 = np.concatenate((h, np.flipud(h)), axis=0)
             diag = rpc.b1tob2(h2)
             new_h[i, j:size2:size0] += diag
 

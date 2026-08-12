@@ -1,3 +1,24 @@
+"""Generation of PLUMED input files for enhanced sampling.
+
+Each writer emits a plumed.dat for one biasing scheme and returns the
+names of the COLVAR columns it produces, which i-PI needs in order to read
+the results back. :func:`prep_plumed` dispatches between them by name.
+
+Schemes come in metadynamics ('mtd-') and OPES ('opes-') variants that
+differ only in the bias they apply, and are built from a small set of
+collective variables: interatomic distances, antisymmetric stretches,
+coordination-number differences, and centre-of-mass separations. The
+coordination-based variables are bounded by a switching function, which
+makes them less sensitive to the donor-acceptor distance than raw
+distances are.
+
+Notes
+-----
+Arguments throughout are given in ASE units (eV, Angstrom) and converted
+to the kJ/mol and nm that PLUMED expects. Atom indices are zero-based on
+the way in and shifted to PLUMED's one-based convention.
+"""
+
 import os
 
 from .conversions import (A_to_nm,
@@ -7,6 +28,36 @@ from .tools import round_sf, get_distance
 
 
 def prep_plumed(atoms, plumed_type, plumed_args):
+    """Dispatch to the PLUMED input writer named by `plumed_type`.
+
+    Single entry point used by :func:`~nqetools.execution.run_plumed_md`,
+    mapping a short scheme name onto the function that writes the
+    corresponding plumed.dat.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from. Only passed to the writers that
+        need to enumerate atoms, such as the coordination-number schemes.
+    plumed_type : str
+        Name of the biasing scheme. Names beginning 'mtd-' use
+        metadynamics and 'opes-' use OPES. The special value 'custom'
+        writes ``plumed_args['input']`` verbatim.
+    plumed_args : dict
+        Keyword arguments forwarded to the selected writer. For 'custom',
+        must contain 'directory', 'input' and 'output'.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by the selected input, for
+        i-PI to read back.
+
+    Raises
+    ------
+    ValueError
+        If `plumed_type` is not a recognised scheme.
+    """
     if plumed_type == 'mtd-pos':
         return write_plumed_mtd_pos(**plumed_args)
     elif plumed_type == 'opes-pos':
@@ -90,13 +141,50 @@ def write_plumed_mtd_pos(directory=None,
                          temperature=300,
                          stride=10,
                          ):
+    """Write metadynamics biasing the x position of a single atom.
+
+    The simplest possible scheme, used mainly for testing the i-PI to
+    PLUMED coupling rather than for production runs.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_atom : int, optional
+        Index of the biased atom. Default is 0.
+    pace : int, optional
+        Steps between bias depositions. Default is 20.
+    sigma : float, optional
+        Gaussian width in nm. Default is 0.01.
+    height : float, optional
+        Initial hill height in eV. Default is 1.0.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 2.5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Update the index as it starts from 1
     idx_atom += 1
     impt = f"""
 q: POSITION ATOM={idx_atom}
@@ -119,13 +207,51 @@ def write_plumed_opes_pos(directory=None,
                           stride_hills=100,
                           explore=False
                           ):
+    """Write OPES biasing the x position of a single atom.
+
+    OPES counterpart of :func:`write_plumed_mtd_pos`.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_atom : int, optional
+        Index of the biased atom. Default is 0.
+    pace : int, optional
+        Steps between bias depositions. Default is 20.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 1.0.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Update the index as it starts from 1
     idx_atom += 1
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
     opes_command = 'OPES_METAD'
@@ -158,35 +284,85 @@ def write_plumed_mtd_coord(atoms,
                            height=0.041,
                            bias=10,
                            ):
+    """Write metadynamics on the donor-acceptor distance and a coordination difference.
+
+    Two collective variables are biased together: the heavy-atom
+    separation, and the difference between the donor and acceptor
+    coordination numbers, which tracks which of the two the shared atom
+    is bound to. An upper wall on the separation stops the two heavy
+    atoms drifting apart.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : list of float, optional
+        Gaussian widths for the distance and coordination difference.
+        Default is [0.005, 0.05].
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 4.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 0.026.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+
+    The coordination shell is every atom except the donor and acceptor
+    themselves.
+    """
     if directory is None:
         directory = os.getcwd()
 
     if sigma is None:
         sigma = [0.005, 0.05]
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
     d_upper = d_upper * A_to_nm
 
-    # eV/Å² to 1 kJ/(mol·nm²)
     kappa = round_sf(kappa * eVperA2_to_kJpermolpernm2)
 
-    # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -221,32 +397,83 @@ def write_plumed_opes_coord(atoms,
                             stride_hills=100,
                             explore=False,
                             ):
+    """Write OPES on the donor-acceptor distance and a coordination difference.
+
+    Two collective variables are biased together: the heavy-atom
+    separation, and the difference between the donor and acceptor
+    coordination numbers, which tracks which of the two the shared atom
+    is bound to. An upper wall on the separation stops the two heavy
+    atoms drifting apart.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 4.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 0.026.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+
+    The coordination shell is every atom except the donor and acceptor
+    themselves.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
     d_upper = d_upper * A_to_nm
 
-    # eV/Å² to 1 kJ/(mol·nm²)
     kappa = round_sf(kappa * eVperA2_to_kJpermolpernm2)
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -283,16 +510,60 @@ def write_plumed_mtd_dists(directory=None,
                            height=0.041,
                            bias=10,
                            ):
+    """Write metadynamics on two independent interatomic distances.
+
+    Biases two unrelated atom pairs at once, giving a two-dimensional
+    free energy surface in those distances.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        First atom of the first pair. Default is 0.
+    idx2 : int, optional
+        Second atom of the first pair. Default is 1.
+    idx3 : int, optional
+        First atom of the second pair. Default is 2.
+    idx4 : int, optional
+        Second atom of the second pair. Default is 3.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : list of float, optional
+        Gaussian widths for the two distances in nm. Default is
+        [0.05, 0.05].
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
     if sigma is None:
         sigma = [0.05, 0.05]
 
-    # Convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     idx3 += 1
@@ -323,13 +594,58 @@ def write_plumed_opes_dists(directory=None,
                             stride_hills=100,
                             explore=False,
                             ):
+    """Write OPES on two independent interatomic distances.
+
+    Biases two unrelated atom pairs at once, giving a two-dimensional
+    free energy surface in those distances.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        First atom of the first pair. Default is 0.
+    idx2 : int, optional
+        Second atom of the first pair. Default is 1.
+    idx3 : int, optional
+        First atom of the second pair. Default is 2.
+    idx4 : int, optional
+        Second atom of the second pair. Default is 3.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     idx3 += 1
@@ -362,13 +678,52 @@ def write_plumed_mtd_dist(directory=None,
                           height=0.041,
                           bias=10,
                           ):
+    """Write metadynamics on a single interatomic distance.
+
+    The one-dimensional case: a bond length or heavy-atom separation
+    used directly as the collective variable.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        First atom of the pair. Default is 0.
+    idx2 : int, optional
+        Second atom of the pair. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : float, optional
+        Gaussian width in nm. Default is 0.05.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
 
@@ -394,13 +749,54 @@ def write_plumed_opes_dist(directory=None,
                            stride_hills=100,
                            explore=False,
                            ):
+    """Write OPES on a single interatomic distance.
+
+    The one-dimensional case: a bond length or heavy-atom separation
+    used directly as the collective variable.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        First atom of the pair. Default is 0.
+    idx2 : int, optional
+        Second atom of the pair. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
 
@@ -431,15 +827,58 @@ def write_plumed_mtd_diff1(directory=None,
                            height=0.041,
                            bias=10,
                            ):
+    """Write metadynamics on an antisymmetric stretch coordinate.
+
+    Biases the difference between the donor-hydrogen and
+    hydrogen-acceptor distances. This coordinate is negative in the
+    reactant well, zero at the barrier and positive in the product well,
+    so a single collective variable spans the whole transfer.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the transferring atom. Default is 1.
+    idx3 : int, optional
+        Index of the acceptor atom. Default is 2.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : float, optional
+        Gaussian width in nm. Default is 0.05.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1  # Assumed transferring atom
+    idx2 += 1
     idx3 += 1
 
     impt = f"""
@@ -467,15 +906,60 @@ def write_plumed_opes_diff1(directory=None,
                             stride_hills=100,
                             explore=False,
                             ):
+    """Write OPES on an antisymmetric stretch coordinate.
+
+    Biases the difference between the donor-hydrogen and
+    hydrogen-acceptor distances. This coordinate is negative in the
+    reactant well, zero at the barrier and positive in the product well,
+    so a single collective variable spans the whole transfer.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the transferring atom. Default is 1.
+    idx3 : int, optional
+        Index of the acceptor atom. Default is 2.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1  # Assumed transferring atom
+    idx2 += 1
     idx3 += 1
 
     opes_command = 'OPES_METAD'
@@ -510,21 +994,71 @@ def write_plumed_mtd_diff2(directory=None,
                            height=0.041,
                            bias=10,
                            ):
+    """Write metadynamics on two antisymmetric stretch coordinates.
+
+    The double-transfer analogue of
+    :func:`write_plumed_mtd_diff1`: two independent transfers are
+    biased at once, so the resulting surface distinguishes stepwise from
+    concerted mechanisms.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx2 : int, optional
+        Transferring atom of the first transfer. Default is 1.
+    idx3 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx4 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx5 : int, optional
+        Transferring atom of the second transfer. Default is 4.
+    idx6 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : list of float, optional
+        Gaussian widths for the two coordinates in nm. Default is
+        [0.05, 0.05].
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
     if sigma is None:
         sigma = [0.05, 0.05]
 
-    # Convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1  # Assumed transferring atom
+    idx2 += 1
     idx3 += 1
     idx4 += 1
-    idx5 += 1  # Assumed transferring atom
+    idx5 += 1
     idx6 += 1
 
     impt = f"""
@@ -561,18 +1095,69 @@ def write_plumed_opes_diff2(directory=None,
                             stride_hills=100,
                             explore=False,
                             ):
+    """Write OPES on two antisymmetric stretch coordinates.
+
+    The double-transfer analogue of
+    :func:`write_plumed_opes_diff1`: two independent transfers are
+    biased at once, so the resulting surface distinguishes stepwise from
+    concerted mechanisms.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx2 : int, optional
+        Transferring atom of the first transfer. Default is 1.
+    idx3 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx4 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx5 : int, optional
+        Transferring atom of the second transfer. Default is 4.
+    idx6 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
-    idx2 += 1  # Assumed transferring atom
+    idx2 += 1
     idx3 += 1
     idx4 += 1
-    idx5 += 1  # Assumed transferring atom
+    idx5 += 1
     idx6 += 1
 
     opes_command = 'OPES_METAD'
@@ -611,28 +1196,70 @@ def write_plumed_mtd_pt1(atoms,
                          height=0.041,
                          bias=10,
                          ):
+    """Write metadynamics on a single coordination-number difference.
+
+    Biases the difference between the donor and acceptor coordination
+    numbers alone, without the heavy-atom distance that
+    :func:`write_plumed_mtd_coord` also biases. Suits cases where the
+    donor-acceptor separation is already constrained.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : float, optional
+        Gaussian width for the coordination difference. Default is 0.005.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -663,28 +1290,72 @@ def write_plumed_opes_pt1(atoms,
                           stride_hills=100,
                           explore=False,
                           ):
+    """Write OPES on a single coordination-number difference.
+
+    Biases the difference between the donor and acceptor coordination
+    numbers alone, without the heavy-atom distance that
+    :func:`write_plumed_opes_coord` also biases. Suits cases where the
+    donor-acceptor separation is already constrained.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -721,32 +1392,77 @@ def write_plumed_mtd_pt2_a(atoms,
                            height=0.041,
                            bias=10,
                            ):
+    """Write metadynamics on two coordination-number differences.
+
+    The double-transfer analogue of
+    :func:`write_plumed_mtd_pt1`, biasing one coordination difference
+    per proton so the two transfers can proceed independently.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx2 : int, optional
+        Acceptor of the first transfer. Default is 1.
+    idx3 : int, optional
+        Donor of the second transfer. Default is 2.
+    idx4 : int, optional
+        Acceptor of the second transfer. Default is 3.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : float, optional
+        Gaussian width for both coordination differences. Default is 0.005.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
     group_idx.remove(idx3)
     group_idx.remove(idx4)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     idx3 += 1
     idx4 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -782,32 +1498,79 @@ def write_plumed_opes_pt2_a(atoms,
                             stride_hills=100,
                             explore=False,
                             ):
+    """Write OPES on two coordination-number differences.
+
+    The double-transfer analogue of
+    :func:`write_plumed_opes_pt1`, biasing one coordination difference
+    per proton so the two transfers can proceed independently.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx2 : int, optional
+        Acceptor of the first transfer. Default is 1.
+    idx3 : int, optional
+        Donor of the second transfer. Default is 2.
+    idx4 : int, optional
+        Acceptor of the second transfer. Default is 3.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
     group_idx.remove(idx3)
     group_idx.remove(idx4)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     idx3 += 1
     idx4 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -845,28 +1608,68 @@ def write_plumed_mtd_pt_wob(atoms,
                             height=0.041,
                             bias=10,
                             ):
+    """Write metadynamics on a coordination difference, without a wall.
+
+    As :func:`write_plumed_mtd_pt1`, but with no upper wall on the
+    donor-acceptor separation, leaving the heavy atoms free to move.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : float, optional
+        Gaussian width for the coordination difference. Default is 0.005.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -897,28 +1700,70 @@ def write_plumed_opes_pt_wob(atoms,
                              stride_hills=100,
                              explore=False,
                              ):
+    """Write OPES on a coordination difference, without a wall.
+
+    As :func:`write_plumed_opes_pt1`, but with no upper wall on the
+    donor-acceptor separation, leaving the heavy atoms free to move.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -957,34 +1802,86 @@ def write_plumed_mtd_pt_wob_sep(atoms,
                                 height=0.041,
                                 bias=10,
                                 ):
+    """Write metadynamics on a coordination difference and a centre-of-mass distance.
+
+    Biases the proton coordination difference together with the
+    separation of two molecular fragments, so the transfer and the
+    approach of the fragments are sampled jointly. An upper wall keeps
+    the fragments from dissociating.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    list_1 : list of int, optional
+        Indices of the atoms making up the first fragment, whose centre of
+        mass defines one end of the distance.
+    list_2 : list of int, optional
+        Indices of the atoms making up the second fragment.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    sigma : list of float, optional
+        Gaussian widths for the coordination difference and the distance.
+        Default is [0.005, 0.05].
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 4.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 0.1.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    height : float, optional
+        Initial hill height in eV. Default is 0.041.
+    bias : float, optional
+        Well-tempered bias factor. Larger values flatten the surface more
+        aggressively but converge more slowly. Default is 10.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
     if sigma is None:
         sigma = [0.005, 0.05]
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
     d_upper = d_upper * A_to_nm
 
-    # convert the height from eV to kJ/mol
     height = round_sf(height * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
     list_1 = [x + 1 for x in list_1]
     list_2 = [x + 1 for x in list_2]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
     idx_list_1 = ",".join([str(x) for x in list_1])
     idx_list_2 = ",".join([str(x) for x in list_2])
@@ -1028,31 +1925,84 @@ def write_plumed_opes_pt_wob_sep(atoms,
                                  stride_hills=100,
                                  explore=False,
                                  ):
+    """Write OPES on a coordination difference and a centre-of-mass distance.
+
+    Biases the proton coordination difference together with the
+    separation of two molecular fragments, so the transfer and the
+    approach of the fragments are sampled jointly. An upper wall keeps
+    the fragments from dissociating.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        Index of the donor atom. Default is 0.
+    idx2 : int, optional
+        Index of the acceptor atom. Default is 1.
+    list_1 : list of int, optional
+        Indices of the atoms making up the first fragment, whose centre of
+        mass defines one end of the distance.
+    list_2 : list of int, optional
+        Indices of the atoms making up the second fragment.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 4.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 0.1.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
     d_upper = d_upper * A_to_nm
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
     list_1 = [x + 1 for x in list_1]
     list_2 = [x + 1 for x in list_2]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
     idx_list_1 = ",".join([str(x) for x in list_1])
     idx_list_2 = ",".join([str(x) for x in list_2])
@@ -1102,28 +2052,87 @@ def write_plumed_opes_pt_wob_dist(atoms,
                                   stride_hills=100,
                                   explore=False,
                                   ):
+    """Write OPES on a difference of summed distances.
+
+    Four distances are measured, summed in pairs, and their difference
+    used as a single collective variable spanning a concerted double
+    transfer.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx1 : int, optional
+        First atom of the first distance. Default is 0.
+    idx2 : int, optional
+        Second atom of the first distance. Default is 1.
+    idx3 : int, optional
+        First atom of the second distance. Default is 2.
+    idx4 : int, optional
+        Second atom of the second distance. Default is 3.
+    idx5 : int, optional
+        First atom of the third distance. Default is 4.
+    idx6 : int, optional
+        Second atom of the third distance. Default is 5.
+    idx7 : int, optional
+        First atom of the fourth distance. Default is 6.
+    idx8 : int, optional
+        Second atom of the fourth distance. Default is 7.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.
+    d_low : float, optional
+        Switching function midpoint in Angstrom. Default is 1.4.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.041.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+
+    Only `idx1` and `idx2` are shifted to PLUMED's one-based indexing;
+    `idx3` through `idx8` are written out unchanged, and `atoms`, `d_low`
+    and the coordination groups are computed but unused. An earlier
+    coordination-based input is also built and then discarded before the
+    distance-based one above is written.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert d_low and d_upper from A to nm
     d_low = d_low * A_to_nm
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
 
-    # Get a list of all the atom indexes
     group_idx = list(range(len(atoms)))
 
-    # Remove the indexes of the atoms which are acceptors or donors
     group_idx.remove(idx1)
     group_idx.remove(idx2)
 
-    # Fix the indexing as it starts from 1
     idx1 += 1
     idx2 += 1
     group_idx = [x + 1 for x in group_idx]
 
-    # Indexing starts from 1
     idx_group = ",".join([str(x) for x in group_idx])
 
     d_low_line = f"RATIONAL R_0={round_sf(d_low)}"
@@ -1257,6 +2266,53 @@ def write_plumed_opes_com(directory=None,
                           stride_hills=100,
                           explore=False,
                           ):
+    """Write OPES on the distance between two centres of mass.
+
+    Biases the separation of two molecular fragments, with an upper wall
+    to stop them drifting apart once unbound.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    group_1 : list of int, optional
+        Indices of the atoms in the first fragment.
+    group_2 : list of int, optional
+        Indices of the atoms in the second fragment.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 5.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 500.0.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
     if group_1 is None:
@@ -1264,12 +2320,9 @@ def write_plumed_opes_com(directory=None,
     if group_2 is None:
         group_2 = [1]
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert d_upper from A to nm
     d_upper = round_sf(d_upper * A_to_nm)
 
-    # Fix the indexing as it starts from 1
     group_1 = [x + 1 for x in group_1]
     group_2 = [x + 1 for x in group_2]
 
@@ -1279,7 +2332,7 @@ def write_plumed_opes_com(directory=None,
     opes_command = 'OPES_METAD'
     if explore:
         opes_command += '_EXPLORE'
-    #
+
     impt = f"""
 com1: COM ATOMS={group_1}
 com2: COM ATOMS={group_2}
@@ -1308,17 +2361,64 @@ def write_plumed_opes_1pt(directory=None,
                           stride_hills=100,
                           explore=False,
                           ):
+    """Write OPES on a single proton transfer, using distances.
+
+    Biases the antisymmetric stretch built from the donor-hydrogen and
+    acceptor-hydrogen distances, with an upper wall on the
+    donor-hydrogen distance to keep the proton from leaving.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d : int, optional
+        Index of the donor atom. Default is 0.
+    idx_h : int, optional
+        Index of the transferring hydrogen. Default is 1.
+    idx_a : int, optional
+        Index of the acceptor atom. Default is 2.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 3.5.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 500.0.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert d_upper from A to nm
     d_upper = round_sf(d_upper * A_to_nm)
 
-    # Fix the indexing as it starts from 1
     idx_d += 1
-    idx_h += 1  # Assumed transferring atom
+    idx_h += 1
     idx_a += 1
 
     opes_command = 'OPES_METAD'
@@ -1354,15 +2454,60 @@ def write_plumed_opes_1pt_coord(directory=None,
                                 r0=1.5,
                                 stride_hills=100,
                                 explore=False):
+    """Write OPES on a single proton transfer, using coordination numbers.
+
+    As :func:`write_plumed_opes_1pt`, but built from switching functions
+    rather than raw distances, which bounds the collective variable and
+    makes it less sensitive to the heavy-atom separation.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d : int, optional
+        Index of the donor atom. Default is 0.
+    idx_h : int, optional
+        Index of the transferring hydrogen. Default is 1.
+    idx_a : int, optional
+        Index of the acceptor atom. Default is 2.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    r0 : float, optional
+        Switching function midpoint in Angstrom. Default is 1.5.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert r0 from A to nm
     r0 = round_sf(r0 * A_to_nm)
 
-    # Fix indexing to start from 1 (PLUMED convention)
     idx_d += 1
     idx_h += 1
     idx_a += 1
@@ -1406,15 +2551,77 @@ def write_plumed_opes_1pt_3donor_coord(atoms,
                                        explore=False,
                                        d_upper=4.0,
                                        kappa=500.0):
+    """Write OPES on a proton transfer with three candidate donors.
+
+    Built for a nucleobase pair, where a proton may be shared between
+    several heteroatoms. The coordination numbers over all candidate
+    sites are combined into one collective variable, so the bias does
+    not presuppose which pathway the proton takes.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Structure the run will start from, used to enumerate the atoms that
+        form the coordination shell.
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_n3 : int, optional
+        Index of the N3 nitrogen. Default is 0.
+    idx_h3 : int, optional
+        Index of the hydrogen bound to N3. Default is 1.
+    idx_o6 : int, optional
+        Index of the O6 oxygen. Default is 2.
+    idx_o4 : int, optional
+        Index of the O4 oxygen. Default is 2.
+    idx_n1 : int, optional
+        Index of the N1 nitrogen. Default is 3.
+    idx_h1 : int, optional
+        Index of the hydrogen bound to N1. Default is 4.
+    idx_o2 : int, optional
+        Index of the O2 oxygen. Default is 5.
+    idx_n2 : int, optional
+        Index of the N2 nitrogen. Default is 6.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    r0 : float, optional
+        Switching function midpoint in Angstrom. Default is 1.1.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 4.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 500.0.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert r0 from A to nm
-    # r0 = round_sf(r0 * A_to_nm)
 
-    # Convert d_upper from A to nm
     d_upper = round_sf(d_upper * A_to_nm)
 
     r_1 = round_sf(get_distance(atoms, idx_n3, idx_h3) * r0 * A_to_nm)
@@ -1428,7 +2635,6 @@ def write_plumed_opes_1pt_3donor_coord(atoms,
     r_9 = round_sf(get_distance(atoms, idx_n2, idx_o2) * r0 * A_to_nm)
     r_10 = round_sf(get_distance(atoms, idx_n1, idx_n3) * r0 * A_to_nm)
 
-    # Fix indexing to start from 1 (PLUMED convention)
     idx_n3 += 1
     idx_h3 += 1
     idx_o6 += 1
@@ -1526,20 +2732,73 @@ def write_plumed_opes_2pt_2d(directory=None,
                              stride_hills=100,
                              explore=False,
                              ):
+    """Write OPES on a double proton transfer, two dimensions.
+
+    Biases both antisymmetric stretch coordinates independently, giving
+    a two-dimensional surface in which stepwise and concerted pathways
+    appear as distinct routes between the wells.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx_h1 : int, optional
+        Hydrogen of the first transfer. Default is 1.
+    idx_a1 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx_d2 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx_h2 : int, optional
+        Hydrogen of the second transfer. Default is 4.
+    idx_a2 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 3.5.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 500.0.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert d_upper from A to nm
     d_upper = round_sf(d_upper * A_to_nm)
 
-    # Fix the indexing as it starts from 1
     idx_d1 += 1
-    idx_h1 += 1  # Assumed transferring atom
+    idx_h1 += 1
     idx_a1 += 1
     idx_d2 += 1
-    idx_h2 += 1  # Assumed transferring atom
+    idx_h2 += 1
     idx_a2 += 1
 
     opes_command = 'OPES_METAD'
@@ -1586,15 +2845,65 @@ def write_plumed_opes_2pt_2d_coord(directory=None,
                                    explore=False,
                                    r0=1.5,
                                    ):
+    """Write OPES on a double proton transfer, two dimensions, coordination based.
+
+    As :func:`write_plumed_opes_2pt_2d`, but built from switching
+    functions rather than raw distances.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx_h1 : int, optional
+        Hydrogen of the first transfer. Default is 1.
+    idx_a1 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx_d2 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx_h2 : int, optional
+        Hydrogen of the second transfer. Default is 4.
+    idx_a2 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+    r0 : float, optional
+        Switching function midpoint in Angstrom. Default is 1.5.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert r0 from A to nm
     r0 = round_sf(r0 * A_to_nm)
 
-    # PLUMED uses 1-based indexing
     idx_d1 += 1
     idx_h1 += 1
     idx_a1 += 1
@@ -1648,20 +2957,74 @@ def write_plumed_opes_2pt_1d(directory=None,
                              stride_hills=100,
                              explore=False,
                              ):
+    """Write OPES on a double proton transfer, one dimension.
+
+    Combines both antisymmetric stretch coordinates into a single
+    collective variable. Cheaper to converge than the two-dimensional
+    form, at the cost of projecting stepwise and concerted pathways onto
+    the same axis.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx_h1 : int, optional
+        Hydrogen of the first transfer. Default is 1.
+    idx_a1 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx_d2 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx_h2 : int, optional
+        Hydrogen of the second transfer. Default is 4.
+    idx_a2 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 3.5.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 500.0.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Energies are given in eV and converted to the kJ/mol PLUMED expects.
+    Atom indices are zero-based on the way in and shifted to PLUMED's
+    one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert d_upper from A to nm
     d_upper = round_sf(d_upper * A_to_nm)
 
-    # Fix the indexing as it starts from 1
     idx_d1 += 1
-    idx_h1 += 1  # Assumed transferring atom
+    idx_h1 += 1
     idx_a1 += 1
     idx_d2 += 1
-    idx_h2 += 1  # Assumed transferring atom
+    idx_h2 += 1
     idx_a2 += 1
 
     opes_command = 'OPES_METAD'
@@ -1710,15 +3073,65 @@ def write_plumed_opes_2pt_1d_coord(directory=None,
                                    explore=False,
                                    r0=1.5,
                                    ):
+    """Write OPES on a double proton transfer, one dimension, coordination based.
+
+    As :func:`write_plumed_opes_2pt_1d`, but built from switching
+    functions rather than raw distances.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx_h1 : int, optional
+        Hydrogen of the first transfer. Default is 1.
+    idx_a1 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx_d2 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx_h2 : int, optional
+        Hydrogen of the second transfer. Default is 4.
+    idx_a2 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+    r0 : float, optional
+        Switching function midpoint in Angstrom. Default is 1.5.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert r0 from A to nm
     r0 = round_sf(r0 * A_to_nm)
 
-    # 1-based indexing for PLUMED
     idx_d1 += 1
     idx_h1 += 1
     idx_a1 += 1
@@ -1782,6 +3195,69 @@ def write_plumed_opes_2pt_1d_coord_com(directory=None,
                                        explore=False,
                                        r0=1.5,
                                        ):
+    """Write OPES on a double proton transfer and a fragment separation.
+
+    Extends :func:`write_plumed_opes_2pt_1d_coord` with the distance
+    between two fragment centres of mass, so the transfer is sampled
+    alongside the approach of the two molecules. An upper wall stops the
+    fragments dissociating.
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory to write plumed.dat into. Defaults to the current
+        working directory.
+    idx_d1 : int, optional
+        Donor of the first transfer. Default is 0.
+    idx_h1 : int, optional
+        Hydrogen of the first transfer. Default is 1.
+    idx_a1 : int, optional
+        Acceptor of the first transfer. Default is 2.
+    idx_d2 : int, optional
+        Donor of the second transfer. Default is 3.
+    idx_h2 : int, optional
+        Hydrogen of the second transfer. Default is 4.
+    idx_a2 : int, optional
+        Acceptor of the second transfer. Default is 5.
+    group_1 : list of int, optional
+        Indices of the atoms in the first fragment.
+    group_2 : list of int, optional
+        Indices of the atoms in the second fragment.
+    d_upper : float, optional
+        Position of the upper wall in Angstrom. Default is 5.0.
+    kappa : float, optional
+        Upper wall force constant in eV/A^2. Default is 500.0.
+    temperature : float, optional
+        Simulation temperature in K, used to set the well-tempered bias
+        factor. Default is 300.0.
+    pace : int, optional
+        Steps between bias depositions. Default is 10.
+    stride : int, optional
+        Steps between COLVAR writes. Default is 10.
+    barrier : float, optional
+        Expected barrier height in eV, which sets how far OPES will push.
+        Default is 0.5.
+    stride_hills : int, optional
+        STATE is written every ``pace * stride_hills`` steps. Default is 100.
+    explore : bool, optional
+        If True, use OPES_METAD_EXPLORE, which samples the biased
+        distribution more broadly at the cost of slower convergence.
+        Default is False.
+    r0 : float, optional
+        Switching function midpoint in Angstrom. Default is 1.5.
+
+    Returns
+    -------
+    list of str
+        Names of the COLVAR columns written by this input, for i-PI to
+        read back.
+
+    Notes
+    -----
+    Arguments are given in ASE units (eV, Angstrom) and converted to the
+    kJ/mol and nm that PLUMED expects. Atom indices are zero-based on the
+    way in and shifted to PLUMED's one-based convention.
+    """
     if directory is None:
         directory = os.getcwd()
     if group_1 is None:
@@ -1789,14 +3265,10 @@ def write_plumed_opes_2pt_1d_coord_com(directory=None,
     if group_2 is None:
         group_2 = [1]
 
-    # Convert the barrier from eV to kJ/mol
     barrier = round_sf(barrier * eV_to_kJpermol)
-    # Convert r0 from A to nm
     r0 = round_sf(r0 * A_to_nm)
-    # Convert d_upper from A to nm
     d_upper = round_sf(d_upper * A_to_nm)
 
-    # 1-based indexing for PLUMED
     idx_d1 += 1
     idx_h1 += 1
     idx_a1 += 1
@@ -1804,7 +3276,6 @@ def write_plumed_opes_2pt_1d_coord_com(directory=None,
     idx_h2 += 1
     idx_a2 += 1
 
-    # Fix the indexing as it starts from 1
     group_1 = [x + 1 for x in group_1]
     group_2 = [x + 1 for x in group_2]
 

@@ -1,3 +1,25 @@
+"""Tools for nuclear quantum effect calculations.
+
+Ties together i-PI, PLUMED, OpenMM and several quantum chemistry codes
+behind one interface, for studying reactions where the nuclei cannot be
+treated classically - chiefly proton transfer, where tunnelling and
+zero-point energy shift both the rate and its isotope dependence.
+
+The package covers the whole path: preparing structures
+(:mod:`~nqetools.io`, :mod:`~nqetools.tools`), choosing a level of theory
+(:mod:`~nqetools.calculators`, :mod:`~nqetools.driver`), running
+minimisations, dynamics and instanton searches
+(:mod:`~nqetools.execution`), biasing them
+(:mod:`~nqetools.plumed`), and analysing the results
+(:mod:`~nqetools.calcs`, :mod:`~nqetools.instanton`,
+:mod:`~nqetools.plotting`).
+
+Rates can be obtained two ways: approximate tunnelling corrections from
+:mod:`~nqetools.calcs`, or full ring-polymer instanton theory from
+:mod:`~nqetools.instanton`. Condensed-phase path-integral dynamics is
+handled separately through :mod:`~nqetools.openmm`.
+"""
+
 from .calcs import (correlate,
                     autocorrelate,
                     moving_average,

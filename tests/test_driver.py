@@ -1,3 +1,9 @@
+"""Tests for i-PI client driver generation and execution.
+
+Each test runs a short optimisation through one driver backend, checking
+that the generated client connects to the i-PI server and returns forces.
+"""
+
 import getpass
 
 import ase.build
@@ -7,6 +13,7 @@ import nqetools as nqe
 
 
 def test_zundel_driver():
+    """Optimise the Zundel cation with the built-in i-PI PES driver."""
     print(flush=True)
     print("Testing zundel driver", flush=True)
 
@@ -19,6 +26,7 @@ def test_zundel_driver():
 
 
 def test_cbe_driver():
+    """Optimise with the built-in CH4+H analytic PES driver."""
     print(flush=True)
     print("Testing cbe driver", flush=True)
 
@@ -31,6 +39,7 @@ def test_cbe_driver():
 
 
 def test_ase_mace_driver():
+    """Optimise with MACE through the ASE socket client."""
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
@@ -44,6 +53,7 @@ def test_ase_mace_driver():
 
 
 def test_mace_driver():
+    """Optimise with MACE through i-PI's own Python driver."""
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
@@ -59,6 +69,7 @@ def test_mace_driver():
 
 
 def test_ase_mace_driver_omol():
+    """Optimise with the MACE-OMOL model through the ASE client."""
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
@@ -76,6 +87,7 @@ def test_ase_mace_driver_omol():
 
 
 def test_ase_mace_driver_omol_eq():
+    """Check MACE-OMOL gives the same result attached directly as through the driver."""
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
@@ -92,12 +104,13 @@ def test_ase_mace_driver_omol_eq():
 
 
 def test_ase_mace_driver_qmmm():
+    """Optimise with a MACE QM/MM partition through the ASE client."""
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
     atoms1 = ase.build.molecule('H2O')
     atoms2 = ase.build.molecule('H2O')
-    atoms2.translate([0.0, 0.0, 3.0])  # Move the second water molecule
+    atoms2.translate([0.0, 0.0, 3.0])
     atoms = atoms1 + atoms2
 
     atoms.center(vacuum=10.0)
@@ -139,12 +152,13 @@ def test_ase_orca_driver():
 
 
 def test_ase_orca_driver_qmmm():
+    """Optimise with an ORCA QM/MM partition through the ASE client."""
     print(flush=True)
     print("Testing ORCA driver", flush=True)
 
     atoms1 = ase.build.molecule('H2O')
     atoms2 = ase.build.molecule('H2O')
-    atoms2.translate([0.0, 0.0, 3.0])  # Move the second water molecule
+    atoms2.translate([0.0, 0.0, 3.0])
     atoms = atoms1 + atoms2
 
     atoms.center(vacuum=10.0)

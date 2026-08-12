@@ -1,3 +1,15 @@
+"""General-purpose structure and environment helpers.
+
+Two loosely related groups. The first deals with the i-PI installation
+itself: locating the driver executable, putting it on the path, and
+clearing stale unix sockets left behind by interrupted runs.
+
+The second manipulates ASE structures - adding and moving atoms,
+measuring distances, clustering by connectivity, and toggling periodic
+boundary conditions - as preparation for the calculations set up
+elsewhere in the package.
+"""
+
 import glob
 import inspect
 import os
@@ -118,8 +130,8 @@ def remove_pbc(atoms: Atoms) -> None:
     -------
     None
     """
-    atoms.set_cell([0, 0, 0])  # Setting the cell size to zero
-    atoms.set_pbc([0, 0, 0])  # Turning off periodic boundary conditions
+    atoms.set_cell([0, 0, 0])
+    atoms.set_pbc([0, 0, 0])
     return None
 
 
@@ -182,8 +194,11 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
 
 
 def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc, fmax=0.05):
-    """Move an atom to be halfway between two target atoms, fix the positions of the three atoms,
-    perform a geometry optimisation, and return the final result without any constraints.
+    """Relax a structure around an atom placed halfway between two others.
+
+    The moved atom and its two targets are held fixed while the rest of
+    the structure relaxes, giving a reasonable transition state guess.
+    The constraints are removed before returning.
 
     Parameters
     ----------
@@ -245,7 +260,7 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
     pos2 = atoms.positions[index2]
 
     direction = pos2 - pos1
-    direction /= np.linalg.norm(direction)  # Normalise the direction vector
+    direction /= np.linalg.norm(direction)
 
     hydrogen_position = pos1 + direction * distance
 
@@ -279,7 +294,7 @@ def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_inde
     acceptor_pos = atoms.positions[acceptor_index]
 
     direction = acceptor_pos - donor_pos
-    direction /= np.linalg.norm(direction)  # Normalise the direction vector
+    direction /= np.linalg.norm(direction)
     new_hydrogen_pos = acceptor_pos - direction * np.linalg.norm(hydrogen_pos - donor_pos)
 
     atoms.positions[hydrogen_index] = new_hydrogen_pos
@@ -354,8 +369,7 @@ def align_mols(atoms1, atoms2):
 
 
 def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
-    """Rotate the given Atoms object so that its principal axis with the largest
-    moment of inertia is aligned along the specified axis ('x', 'y', or 'z').
+    """Align a structure's largest principal axis with a Cartesian axis.
 
     Parameters
     ----------
@@ -379,7 +393,6 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     if axis not in directions:
         raise ValueError("axis must be one of 'x', 'y', or 'z'")
 
-    # Ensure the Atoms object is centered
     atoms = atoms.copy()
     atoms.center()
 
@@ -444,6 +457,10 @@ def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     ----------
     atoms : ase.Atoms
         The ASE Atoms object to be clustered.
+    multi : float, optional
+        Multiplier on the natural cutoffs. Values above 1.0 make bonding
+        more permissive, merging clusters that are close but not bonded.
+        Default is 1.0.
 
     Returns
     -------
@@ -477,11 +494,10 @@ def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
 
 
 def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
-    """Clusters non-hydrogen atoms based on their natural cutoffs and returns
-    indices of atoms in each cluster.
+    """Cluster atoms by connectivity, reporting only the heavy atoms.
 
-    This function uses the cluster_atoms function to cluster atoms, and then
-    returns the indices of non-hydrogen atoms in each cluster.
+    Wraps :func:`cluster_atoms` and filters hydrogens out of each
+    cluster, leaving the heavy-atom skeleton.
 
     Parameters
     ----------
@@ -550,8 +566,10 @@ def move_clusters_to_distance(cluster1: Atoms,
                               index1: int,
                               index2: int,
                               target_distance: float) -> Atoms:
-    """Moves two clusters of atoms along the vector connecting two target atoms
-    such that the target atoms are separated by a given distance.
+    """Separate two clusters to a set distance between chosen atoms.
+
+    Both clusters move rigidly along the vector joining the two target
+    atoms, so their internal geometry is unchanged.
 
     Parameters
     ----------
@@ -588,7 +606,6 @@ def move_clusters_to_distance(cluster1: Atoms,
 
     shift = (np.subtract(target_distance, current_distance)) / 2
 
-    # Move clusters in opposite directions along the vector
     cluster1.positions -= shift * unit_vec
     cluster2.positions += shift * unit_vec
 
@@ -772,14 +789,30 @@ def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
     int
         The index of the closest atom in `super_atoms` to the specified atom in `sub_atoms`.
     """
-    diff = super_atoms.positions - sub_atoms.positions[sub_idx]  # Compute position differences
-    norm = np.linalg.norm(diff, axis=1)  # Calculate Euclidean distances
-    return np.argmin(norm)  # Return the index of the smallest distance
+    diff = super_atoms.positions - sub_atoms.positions[sub_idx]
+    norm = np.linalg.norm(diff, axis=1)
+    return np.argmin(norm)
 
 
 def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> list[list[int]]:
-    """Return connected components (bonded groups) using ASE's natural cutoffs.
-    Each group is a list of atom indices in `atoms`.
+    """Find connected components of the bonding graph.
+
+    Bonds are inferred from ASE's natural cutoffs rather than from any
+    explicit topology, so this works on bare coordinates.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The atoms object to analyse.
+    cutoff_scale : float, optional
+        Multiplier on the natural cutoffs. Values above 1.0 make bonding
+        more permissive. Default is 1.0.
+
+    Returns
+    -------
+    list of list of int
+        One list of atom indices per connected group. Empty if `atoms`
+        contains no atoms.
     """
     if len(atoms) == 0:
         return []
@@ -790,7 +823,6 @@ def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> list[list[int]]:
     adj = [[] for _ in range(len(atoms))]
     for i in range(len(atoms)):
         indices, _offsets = nl.get_neighbors(i)
-        # only indices are needed for connectivity
         for j in indices:
             adj[i].append(j)
 
@@ -821,78 +853,77 @@ def combine_without_overlaps(
         bond_cutoff_scale: float = 1.0,
         overlap_cutoff_scale: float = 1.0,
 ) -> Atoms:
-    """Combine two Atoms objects (A + B) while removing any *molecule* from B
-    that overlaps with A (based on natural cutoffs).
+    """Merge two structures, dropping whole molecules of B that clash with A.
 
-    Overlap criterion:
-        distance(i in A, j in B) < overlap_cutoff_scale * (r_i + r_j)
-    where r_k are ASE's natural cutoffs for bonding.
+    The usual case is inserting a solute into a pre-equilibrated solvent
+    box. Removal is by molecule rather than by atom, so no partial
+    solvent fragments are left behind.
+
+    Two atoms are considered to clash when their separation falls below
+    ``overlap_cutoff_scale * (r_i + r_j)``, with ``r`` taken from ASE's
+    natural cutoffs.
 
     Parameters
     ----------
-    A, B : ase.Atoms
-        Input structures. They are not modified.
+    A : ase.Atoms
+        Structure kept intact. Not modified.
+    B : ase.Atoms
+        Structure to remove clashing molecules from. Not modified.
     bond_cutoff_scale : float, optional
-        Scale factor for building connectivity (bonded groups). Default 1.0.
+        Scale factor on the cutoffs used to group B into molecules.
+        Default is 1.0.
     overlap_cutoff_scale : float, optional
-        Scale factor for the overlap detection between A and B. Default 1.0.
-        Increase slightly (e.g., 1.1) to be more aggressive at removing clashes.
+        Scale factor on the cutoffs used to detect clashes between A and
+        B. Raising it slightly, to around 1.1, removes clashes more
+        aggressively. Default is 1.0.
 
     Returns
     -------
-    merged : ase.Atoms
-        The merged structure with clashing molecules from B removed and A appended intact.
+    ase.Atoms
+        The merged structure, with A first and the surviving atoms of B
+        appended.
+
+    Notes
+    -----
+    A and B are assumed to share a coordinate frame and cell.
     """
-    # Defensive copies
     A = A.copy()
     B = B.copy()
 
-    # Build bonded groups in B alone (so we can remove whole molecules)
+    # Grouped so that a single clashing atom takes its whole molecule with it,
+    # rather than leaving a fragment behind
     groups_B = _bonded_groups(B, cutoff_scale=bond_cutoff_scale)
     index_to_group_B = {}
     for gidx, group in enumerate(groups_B):
         for i in group:
             index_to_group_B[i] = gidx
 
-    # Detect overlaps between A and B using a NeighborList on the *combined* cutoffs,
-    # but we only care about cross-set contacts (i in A, j in B).
-    # NeighborList uses per-atom cutoffs and considers pairs if d < cutoff[i] + cutoff[j].
     if len(A) and len(B):
-        # Create a temporary concatenated Atoms to reuse PBC/cell consistently
-        # We'll place A first, then B, but positions/cell/pbc are already defined.
-        # If A and B have different cell/PBC, ASE uses the Atoms' own; in practice
-        # you typically set B's cell/PBC (e.g., the water box) and add A into that box first.
-        # Here we assume A and B are already in the same box / coordinate frame.
+        # Concatenated so one NeighborList covers both sets under a single cell;
+        # this assumes A and B already share a coordinate frame
         AB = A + B
 
-        # Overlap cutoffs
         ov_cutoffs = [overlap_cutoff_scale * c for c in natural_cutoffs(AB)]
         nl_ab = NeighborList(ov_cutoffs, self_interaction=False, bothways=True, skin=0.0)
         nl_ab.update(AB)
 
         nA = len(A)
-        # For every atom in A, find neighbors; keep those neighbors whose index is in B
-        # (i.e., >= nA) and record the corresponding B atom index.
         b_atoms_to_remove: set[int] = set()
         for iA in range(nA):
             js, _ = nl_ab.get_neighbors(iA)
             for j in js:
-                if j >= nA:  # j belongs to B
+                if j >= nA:  # Indices at or past nA belong to B
                     jB = j - nA
-                    # Map to the full B molecule (group) and mark all its atoms for removal
                     gidx = index_to_group_B.get(jB)
                     if gidx is not None:
                         b_atoms_to_remove.update(groups_B[gidx])
                     else:
-                        # If an atom in B had no group (isolated), remove that atom alone
-                        b_atoms_to_remove.add(jB)
+                        b_atoms_to_remove.add(jB)  # Isolated atom, no molecule to take
 
-        # Create B' without the removed atoms
         if b_atoms_to_remove:
             keep = [i for i in range(len(B)) if i not in b_atoms_to_remove]
             B = B[keep]
 
-    # Merge the cleaned B with A (A first by convention)
     merged = A + B
 
     return merged
@@ -921,7 +952,6 @@ def largest_bonded_cluster_indices(atoms: Atoms) -> list[int]:
     if n == 0:
         return []
 
-    # Build neighbor list using ASE's natural covalent radii-based cutoffs
     cutoffs = natural_cutoffs(atoms)
     nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
     nl.update(atoms)

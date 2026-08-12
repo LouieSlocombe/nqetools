@@ -1,9 +1,17 @@
+"""Tests for PLUMED-biased molecular dynamics.
+
+One short biased run per collective variable scheme, confirming that the
+generated plumed.dat is accepted and that i-PI reads back the COLVAR
+columns each writer declares.
+"""
+
 import ase.build
 
 import nqetools as nqe
 
 
 def test_plumed_zundel_mtd_pos():
+    """Run metadynamics on a Zundel cation position with the analytic PES."""
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
     atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
@@ -20,6 +28,7 @@ def test_plumed_zundel_mtd_pos():
 
 
 def test_plumed_mtd_pos():
+    """Run metadynamics on an atom position."""
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -37,6 +46,7 @@ def test_plumed_mtd_pos():
 
 
 def test_plumed_mtd_pos_pimd():
+    """Run metadynamics on an atom position with path-integral dynamics."""
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -54,6 +64,7 @@ def test_plumed_mtd_pos_pimd():
 
 
 def test_plumed_opes_pos():
+    """Run OPES on an atom position."""
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -70,6 +81,7 @@ def test_plumed_opes_pos():
 
 
 def test_plumed_mtd_dist():
+    """Run metadynamics on an interatomic distance."""
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -86,6 +98,7 @@ def test_plumed_mtd_dist():
 
 
 def test_plumed_opes_dist():
+    """Run OPES on an interatomic distance."""
     print(flush=True)
     print("Testing MACE md calculator", flush=True)
     atoms = ase.build.molecule('H2O')

@@ -1,3 +1,9 @@
+"""Standalone ORCA i-PI client script.
+
+Run as a driver alongside an i-PI server; connects over a socket and
+returns ORCA energies and forces.
+"""
+
 import os
 
 from ase.calculators.orca import ORCA

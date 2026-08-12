@@ -1,3 +1,13 @@
+"""Q-Chem calculator with nuclear-electronic orbital (NEO) support.
+
+Extends ASE's Q-Chem ``FileIOCalculator`` to handle NEO calculations, in
+which selected nuclei - normally protons - are treated quantum
+mechanically alongside the electrons rather than as fixed point charges.
+This requires an extra protonic basis set, built here either from explicit
+exponents or from one of the standard PB4/PB5/PB6 presets, and a separate
+parser for the NEO-SCF energies and gradients Q-Chem reports.
+"""
+
 import ase.units
 import numpy as np
 from ase.calculators.calculator import FileIOCalculator
@@ -59,7 +69,7 @@ def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
         The string for the neo basis.
     """
 
-    # Define the neo basis dictionary
+    # Shell composition of each preset
     neo_basis_dict = {"PB4-D": "4s_3p_2d",
                       "PB4-F1": "4s_3p_2d_1f",
                       "PB4-F2": "4s_3p_2d_2f",
@@ -71,7 +81,7 @@ def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
                       "PB6-G": "6s_5p_4d_3f_2g",
                       "PB6-H": "6s_5p_4d_3f_2g_1h",
                       }
-    # Define the neo basis terms and exponents dictionary
+    # Exponents in shell order, consumed sequentially against the composition
     neo_basis_terms_dict = {"PB4-D": [1.957, 8.734, 16.010, 31.997, 9.438, 13.795, 24.028, 10.524, 19.016],
                             "PB4-F1": [5.973, 10.645, 17.943, 28.950, 7.604, 14.701, 23.308, 9.011, 19.787, 10.914],
                             "PB4-F2": [5.973, 10.645, 17.943, 28.950, 7.604, 14.701, 23.308, 9.011, 19.787, 10.914,
@@ -111,13 +121,27 @@ def make_neo_basis_presets(neo_basis_name, neo_idx, atoms):
 
 
 class QChem(FileIOCalculator):
-    """QChem calculator."""
+    """ASE file-IO calculator for Q-Chem, extended for NEO calculations.
+
+    Any keyword argument not listed below is written straight into the
+    ``$rem`` block of the input file, upper-cased to match Q-Chem
+    convention. Setting ``neo='TRUE'`` additionally emits a ``$neo_basis``
+    block built from `neo_preset`, or from `neo_basis` and `neo_exp`.
+
+    Attributes
+    ----------
+    name : str
+        Calculator name used by ASE.
+    implemented_properties : list of str
+        Properties this calculator can return: 'energy' and 'forces'.
+    default_parameters : dict
+        Minimal ``$rem`` settings required for a valid Q-Chem job.
+    """
     name = 'QChem'
     implemented_properties = ['energy', 'forces']
     _legacy_default_command = 'qchem PREFIX.inp PREFIX.out'
 
-    # Following the minimal requirements given in
-    # http://www.q-chem.com/qchem-website/manual/qchem43_manual/sect-METHOD.html
+    # Minimal requirements per the Q-Chem manual, sect-METHOD
     default_parameters = {'method': 'hf',
                           'basis': '6-31G*',
                           'jobtype': None,
@@ -138,42 +162,54 @@ class QChem(FileIOCalculator):
                  neo_exp=None,
                  neo_basis=None,
                  solv_extra=None, **kwargs):
-        """Initialize the calculator.
-
-        The scratch directory, number of processor and threads as well as a few
-        other command line options can be set using the arguments explained
-        below. The remaining kwargs are copied as options to the input file.
-        The calculator will convert these options to upper case
-        (Q-Chem standard) when writing the input file.
+        """Initialise the calculator and assemble the Q-Chem command line.
 
         Parameters
         ----------
-        scratch : str
-            path of the scratch directory
-        n_p : int
-            number of processors for the -np command line flag
-        n_t : int
-            number of threads for the -nt command line flag
-        pbs : boolean
-            command line flag for pbs scheduler (see Q-Chem manual)
-        basisfile : str
-            path to file containing the basis. Use in combination with
-            basis='gen' keyword argument.
-        ecpfile : str
-            path to file containing the effective core potential. Use in
-            combination with ecp='gen' keyword argument.
-        atoms : ase.Atoms
-            atoms object to be used for the calculation
-        neo_idx : list
-            list of indices of atoms for which to apply the neo basis
-        neo_exp : list
-            list of exponents for the neo basis
-        neo_basis : str
-            string defining the neo basis
-        neo_preset : str
-            string defining the neo basis preset
-        solv_extra : str
-            extra string to be added to the solvent block
+        restart : str, optional
+            Prefix of a previous calculation to restart from. Default is
+            None.
+        ignore_bad_restart_file : bool, optional
+            Deprecated ASE argument, retained for signature compatibility.
+        label : str, optional
+            Prefix for the generated .inp, .out and .log files. Default is
+            'qchem'.
+        scratch : str, optional
+            Path of the Q-Chem scratch directory. Default is None.
+        n_p : int, optional
+            Number of processors for the -np command line flag. Default is 1.
+        n_t : int, optional
+            Number of threads for the -nt command line flag. Default is 1.
+        pbs : bool, optional
+            If True, add the -pbs scheduler flag. Default is False.
+        basisfile : str, optional
+            Path to a file containing the basis. Use together with
+            ``basis='gen'``. Default is None.
+        ecpfile : str, optional
+            Path to a file containing the effective core potential. Use
+            together with ``ecp='gen'``. Default is None.
+        atoms : ase.Atoms, optional
+            Structure to attach the calculator to. Default is None.
+        neo_idx : list of int, optional
+            Indices of the nuclei to treat quantum mechanically. Default
+            is [0].
+        neo_preset : str, optional
+            Name of a standard protonic basis such as 'PB4-D'. Takes
+            precedence over `neo_basis` and `neo_exp`. Default is None.
+        neo_exp : list of float, optional
+            Explicit protonic basis exponents. Default is [4.0, 8.0].
+        neo_basis : str, optional
+            Shell composition of the protonic basis, for example "1s_1p".
+            Default is "1s_1p".
+        solv_extra : str, optional
+            Extra text appended to the solvent block. Default is None.
+        **kwargs
+            Further options written verbatim into the ``$rem`` block,
+            upper-cased.
+
+        Returns
+        -------
+        None
         """
 
         FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
@@ -209,16 +245,47 @@ class QChem(FileIOCalculator):
         self.solv_extra = solv_extra
 
     def read(self, label):
+        """Restore a calculation from previous output files.
+
+        Parameters
+        ----------
+        label : str
+            Prefix of the calculation to read.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        NotImplementedError
+            Always. Restarting from Q-Chem output is not supported.
+        """
         raise NotImplementedError
 
     def read_results(self):
-        """Read the results from the output file."""
+        """Parse energy and forces from the Q-Chem output file.
+
+        Handles both conventional SCF and NEO-SCF output, which report
+        their energies and gradients under different headings and in
+        different layouts.
+
+        Returns
+        -------
+        None
+            Results are stored in ``self.results``.
+
+        Raises
+        ------
+        ase.calculators.calculator.SCFError
+            If the SCF failed to converge.
+        """
         filename = self.label + '.out'
 
         with open(filename) as fileobj:
             lineiter = iter(fileobj)
             n_atoms = self.atoms.get_global_number_of_atoms()
-            # Convert from Hartree to eV/angstrom
+            # Q-Chem reports atomic units; ASE expects eV and eV/Angstrom
             e_conv = ase.units.Hartree
             f_conv = ase.units.Hartree / ase.units.Bohr
 
@@ -226,65 +293,64 @@ class QChem(FileIOCalculator):
                 if 'SCF failed to converge' in line:
                     raise SCFError()
                 elif 'ERROR: alpha_min' in line:
-                    # Even though it is not technically a SCFError:
+                    # Not strictly an SCF failure, but equally unusable
                     raise SCFError()
-                # Get the energy from the SCF calculation (legacy)
-                elif ' Total energy in the final basis set =' in line:
+                elif ' Total energy in the final basis set =' in line:  # Legacy SCF
                     self.results['energy'] = float(line.split()[8]) * e_conv
-                # Get the energy from the SCF calculation
-                elif ' Total energy =' in line:
+                elif ' Total energy =' in line:  # SCF
                     self.results['energy'] = float(line.split()[3]) * e_conv
-                # Get the energy from the NEO-SCF calculation
-                elif ' E(NEO-SCF) =' in line:
+                elif ' E(NEO-SCF) =' in line:  # NEO-SCF
                     self.results['energy'] = float(line.split("=")[1]) * e_conv
-                # Get the forces from the SCF calculation
                 elif ' Gradient of SCF Energy' in line:
-                    # Read gradient as 3 by N array and transpose at the end
+                    # Accumulated as 3 by N, transposed on assignment
                     gradient = [[] for _ in range(3)]
-                    # Skip first line containing atom numbering
-                    next(lineiter)
+                    next(lineiter)  # Atom numbering header
                     while True:
                         for i in range(3):
-                            # Cut off the component numbering and remove
-                            # trailing characters ('\n' and stuff)
-                            line = next(lineiter)[5:].rstrip()
-                            # Cut in chunks of 12 symbols and convert into
-                            # strings. This is preferred over string.split() as
-                            # the fields may overlap for large gradients
+                            line = next(lineiter)[5:].rstrip()  # Drop the component index
+                            # Fixed 12-character fields: split() would merge
+                            # adjacent columns once gradients grow wide enough
+                            # to fill the whitespace between them
                             gradient[i].extend(list(map(
                                 float, [line[i:i + 12]
                                         for i in range(0, len(line), 12)])))
 
-                        # After three force components we expect either a
-                        # separator line, which we want to skip, or the end of
-                        # the gradient matrix which is characterised by the
-                        # line ' Max gradient component'.
-                        # Maybe change stopping criterion to be independent of
-                        # next line. e.g. if not lineiter.next().startswith(' ')
+                        # Each block of three components is followed by either a
+                        # separator line to skip, or the end-of-matrix marker
                         if ' Max gradient component' in next(lineiter):
-                            # Minus to convert from gradient to force
                             self.results['forces'] = -np.array(gradient).T * f_conv
                             break
-                # Get the forces from the NEO-SCF calculation
                 elif ' NEO-SCF Analytic gradient:' in line:
-                    # Read gradient as N array by 3
+                    # NEO reports N by 3, one atom per line
                     gradient = np.zeros((n_atoms, 3))
-                    # Skip first line containing atom numbering
-                    next(lineiter)
+                    next(lineiter)  # Atom numbering header
                     for i in range(n_atoms):
                         gradient[i, :] = np.fromstring(next(lineiter), dtype=float, sep=' ')[1:]
-                    # Minus to convert from gradient to force
                     self.results['forces'] = -np.array(gradient) * f_conv
 
     def write_input(self, atoms, properties=None, system_changes=None):
-        """Write the input file."""
+        """Write the Q-Chem input deck.
+
+        Parameters
+        ----------
+        atoms : ase.Atoms
+            Structure to write into the ``$molecule`` block.
+        properties : list of str, optional
+            Properties requested by ASE. The presence of 'forces' selects
+            a FORCE job rather than a single point. Default is None.
+        system_changes : list of str, optional
+            Changes since the last calculation, passed through to ASE.
+            Default is None.
+
+        Returns
+        -------
+        None
+        """
         FileIOCalculator.write_input(self, atoms, properties, system_changes)
         filename = self.label + '.inp'
 
         with open(filename, 'w') as fileobj:
-            # Write the comment line
             fileobj.write('$comment\n   ASE generated input file\n$end\n\n')
-            # Set main job type
             fileobj.write('$rem\n')
             if self.parameters['jobtype'] is None:
                 if 'forces' in properties:
@@ -298,26 +364,23 @@ class QChem(FileIOCalculator):
                         fileobj.write('   %-25s   %s\n' % (
                             prm.upper(), self.parameters[prm].upper()))
 
-            # Not even a parameters as this is an absolute necessity
+            # Forced, not exposed as a parameter: symmetry reorientation would
+            # break the correspondence between Q-Chem and ASE atom ordering
             fileobj.write('   %-25s   %s\n' % ('SYM_IGNORE', 'TRUE'))
             fileobj.write('$end\n\n')
 
-            # Write the molecule block
             fileobj.write('$molecule\n')
 
-            # Write the charge and multiplicity
             if 'multiplicity' not in self.parameters:
                 tot_magmom = atoms.get_initial_magnetic_moments().sum()
                 mult = tot_magmom + 1
             else:
                 mult = self.parameters['multiplicity']
-            # Default charge of 0 is defined in default_parameters
             fileobj.write('   %d %d\n' % (self.parameters['charge'], mult))
             for a in atoms:
                 fileobj.write(f'   {a.symbol}  {a.x:f}  {a.y:f}  {a.z:f}\n')
             fileobj.write('$end\n\n')
 
-            # Write the basis block
             if self.basisfile is not None:
                 with open(self.basisfile) as f_in:
                     basis = f_in.readlines()
@@ -325,7 +388,6 @@ class QChem(FileIOCalculator):
                 fileobj.writelines(basis)
                 fileobj.write('$end\n\n')
 
-            # Write the ecp block
             if self.ecpfile is not None:
                 with open(self.ecpfile) as f_in:
                     ecp = f_in.readlines()
@@ -333,21 +395,17 @@ class QChem(FileIOCalculator):
                 fileobj.writelines(ecp)
                 fileobj.write('$end\n\n')
 
-            # Write the solvent block
             if 'solvent_method' in self.parameters:
                 if self.solv_extra is not None:
                     fileobj.write("\n")
                     fileobj.write(self.solv_extra)
                     fileobj.write("\n")
 
-            # Write the NEO basis block
             if 'neo' in self.parameters:
                 if self.parameters['neo'].upper() == 'TRUE':
-                    # Write the neo basis from a list of exponents
                     if self.neo_preset is None:
                         out_str = make_neo_basis(self.neo_basis, self.neo_idx, self.neo_exp, atoms)
                     else:
-                        # Write the neo basis from a preset
                         out_str = make_neo_basis_presets(self.neo_preset, self.neo_idx, atoms)
                     fileobj.write("\n")
                     fileobj.write(out_str)

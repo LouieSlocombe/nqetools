@@ -1,3 +1,17 @@
+"""Instanton rate theory: tunnelling factors and reaction rates.
+
+Ring-polymer instanton theory recovers the deep-tunnelling rate by locating
+the dominant periodic orbit on the inverted potential. This module parses
+the partition functions that i-PI's post-processing writes out for the
+reactant, transition state and instanton, combines them into a tunnelling
+enhancement factor kappa, and computes classical Eyring rates for
+comparison.
+
+Because kappa converges only slowly with ring-polymer size,
+:func:`extrapolate_inf_bead_limit` fits the bead dependence to recover the
+continuum value.
+"""
+
 import os
 
 import ipi
@@ -17,6 +31,32 @@ K2au = unit_to_internal("temperature", "kelvin", 1.0)
 def parse_react_thermo_data(directory,
                             filename='thermo_data.out',
                             ref_filename='phonon.out'):
+    """Parse reactant partition functions and reference energy.
+
+    Parameters
+    ----------
+    directory : str
+        Directory containing the reactant post-processing output.
+    filename : str, optional
+        Name of the thermo data file. Default is 'thermo_data.out'.
+    ref_filename : str, optional
+        i-PI output file supplying the reference potential energy. Default
+        is 'phonon.out'.
+
+    Returns
+    -------
+    dict
+        Translational and rotational partition functions ('Qtras',
+        'Qrot'), the log vibrational partition function ('logQvib_rp'),
+        the potential energy ('energy') and the reduced energy 'V/kBT'.
+
+    Raises
+    ------
+    ValueError
+        If the reference energy or temperature is missing, or if the
+        phonon calculation produced a negative frequency, which means the
+        reactant is not a genuine minimum.
+    """
     data = {}
     temp = None
     output_data, _output_desc = ipi.read_output(os.path.join(directory, ref_filename))
@@ -236,6 +276,44 @@ def calc_forward_rate(dir_react,
                       use_part_funcs=True,
                       debug=False,
                       barrier=None):
+    """Calculate the classical TST forward rate from partition functions.
+
+    Evaluates the Eyring expression using partition functions extracted
+    from i-PI post-processing. The result carries no tunnelling
+    correction, so it serves as the classical baseline that
+    :func:`calc_kappa_full` multiplies.
+
+    Parameters
+    ----------
+    dir_react : str
+        Directory containing the reactant data.
+    dir_ts : str
+        Directory containing the transition state data.
+    temperature : float
+        Temperature in K.
+    filter_list : list, optional
+        Modes to discard during post-processing. Default is None.
+    use_part_funcs : bool, optional
+        If True, include the partition function ratio. If False, the ratio
+        is fixed at 1.0, leaving only the prefactor and Boltzmann factor.
+        Default is True.
+    debug : bool, optional
+        If True, print the individual contributions to the rate. Default
+        is False.
+    barrier : float, optional
+        Barrier height in eV, overriding the value derived from the
+        transition state data. Default is None.
+
+    Returns
+    -------
+    float
+        The forward rate constant in s^-1.
+
+    Notes
+    -----
+    Reactant energies are used as the reference for the transition state,
+    so the barrier is measured relative to the reactant minimum.
+    """
     run_instanton_post_process(dir_react,
                                process_type='reactant',
                                temperature=temperature,
@@ -371,7 +449,6 @@ def fit_exp_decay(x, y, p0=None, bounds=None):
         c0 = y.min()
         p0 = (a0, tau0, c0)
 
-    # Default to unbounded fit unless user supplies bounds
     if bounds is None:
         bounds = (-np.inf, np.inf)
 
@@ -411,4 +488,4 @@ def extrapolate_inf_bead_limit(x, y, plot=False):
         n_plot("Number of instanton beads", r"$\kappa$")
         plt.show()
 
-    return popt[-1]  # Return the fitted value at infinity
+    return popt[-1]  # The offset c is the value the decay approaches as beads -> inf

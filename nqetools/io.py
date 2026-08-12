@@ -1,3 +1,20 @@
+"""Reading and writing simulation files.
+
+Handles the file formats that pass between the tools this package wraps:
+i-PI trajectories and output tables, XYZ and PDB structures, Hessians,
+and the RDKit conversions needed to hand a ligand to a force field
+generator.
+
+Also provides the PDB cleaning steps - stripping waters and ions,
+relabelling residues, removing unwanted chains - that experimental
+structures usually need before they can be parameterised.
+
+Notes
+-----
+i-PI works in atomic units, so positions read from its trajectories are
+converted to Angstrom on the way in.
+"""
+
 import glob
 import importlib.util
 import os
@@ -41,7 +58,6 @@ def read_ipi_xyz(filename, convert_units=True):
                                         positions=ret["atoms"].q.reshape((-1, 3)),
                                         cell=ret["cell"].h.T, pbc=True))
             except EOFError:
-                # Break the loop if the end of the file is reached
                 break
 
     if convert_units:
@@ -222,11 +238,10 @@ def get_final_xyz(directory, sub="*FINAL_*.xyz"):
         The path to the final XYZ file that matches the criteria.
     """
     files = list_files_with_pattern(directory, sub)
-    # Only select files that end with xyz
+    # i-PI writes several XYZ files per run; discard the force trajectory and
+    # the per-bead files, leaving the centroid or single-bead positions
     l_filt = [f for f in files if f.endswith(".xyz")]
-    # Select the file that does not contain the string "forces"
     l_nf = [f for f in l_filt if "forces" not in f]
-    # Remove the file that contains the string "_0"
     l_n0 = [f for f in l_nf if "_0.xyz" not in f]
     return l_n0[0]
 

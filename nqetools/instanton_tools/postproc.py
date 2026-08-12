@@ -1,26 +1,33 @@
-"""Reads all the information needed from a i-pi RESTART file and compute the partition functions of the reactant, transition state (TS) or
-instanton according to J. Phys. Chem. Lett. 7, 437(2016) (Instanton Rate calculations) or J. Chem. Phys. 134, 054109 (2011) (Tunneling Splitting)
+"""Compute partition functions from an instanton calculation.
 
+Reads an i-PI RESTART file and evaluates the translational, rotational and
+vibrational partition functions for one of three stationary points: the
+reactant minimum, the classical transition state, or the instanton orbit.
+Their ratios give either a tunnelling-corrected rate or a tunnelling
+splitting, depending on the mode the instanton was optimised in.
 
-Syntax:    python  Instanton_postproc.py  <checkpoint_file> -c <case> -t  <temperature (K)>  (-n <nbeads(full polymer)>) (-freq <freq_reactant.dat>)
+This is a command-line script, executed on import rather than imported for
+its functions, and it relies on i-PI's instanton machinery. Run it with
+``-h`` for the full argument list.
 
-Examples for rate calculation:
-           python  Instanton_postproc.py   RESTART  -c  instanton    -t   300
-           python  Instanton_postproc.py   RESTART  -c  reactant     -t   300            -n 50
-           python  Instanton_postproc.py   RESTART  -c    TS         -t   300
+References
+----------
+Rate calculations: J. Phys. Chem. Lett. 7, 437 (2016).
+Tunnelling splittings: J. Chem. Phys. 134, 054109 (2011).
 
-Examples for splitting  calculation (2 steps):
-         i)   python  Instanton_postproc.py   RESTART  -c  reactant   -t   10  -n 32 --->this generate the 'eigenvalues_reactant.dat' file
-         ii)  python  Instanton_postproc.py   RESTART  -c  instanton  -t   10  -freq eigenvalues_reactant.dat
+Examples
+--------
+Rate calculation, one invocation per stationary point::
 
+    python postproc.py RESTART -c instanton -t 300
+    python postproc.py RESTART -c reactant  -t 300 -n 50
+    python postproc.py RESTART -c TS        -t 300
 
+Tunnelling splitting, where the reactant run supplies the frequencies the
+instanton run needs::
 
-Type python Instanton_postproc.py -h for more information
-
-
-Relies on the infrastructure of i-pi, so the ipi package should
-be installed in the Python module directory, or the i-pi
-main directory must be added to the PYTHONPATH environment variable.
+    python postproc.py RESTART -c reactant  -t 10 -n 32
+    python postproc.py RESTART -c instanton -t 10 -freq eigenvalues_reactant.dat
 """
 import argparse
 import sys
@@ -33,7 +40,7 @@ from ipi.utils.instools import red2comp
 from ipi.utils.messages import verbosity, info
 from ipi.utils.units import unit_to_internal, Constants
 
-# UNITS
+# Conversions into i-PI internal (atomic) units
 K2au = unit_to_internal("temperature", "kelvin", 1.0)
 kb = Constants.kb
 hbar = Constants.hbar
@@ -41,7 +48,6 @@ eV2au = unit_to_internal("energy", "electronvolt", 1.0)
 cal2au = unit_to_internal("energy", "cal/mol", 1.0)
 cm2au = unit_to_internal("frequency", "hertz", 1.0) * 3e10
 
-# INPUT
 parser = argparse.ArgumentParser(
     description="""Post-processing routine in order to obtain different quantities from an instanton (or instanton related) calculation. These quantities can be used for the calculation of rates or tunneling splittings in the instanton approximation."""
 )
@@ -129,8 +135,30 @@ if args.temperature == 0.0:
 
 
 def get_double(q0, nbeads0, natoms, h0):
-    """Takes nbeads, positions and hessian (only the 'physical part') of the half polymer and
-    returns the equivalent for the full ringpolymer."""
+    """Mirror a half ring polymer into the equivalent full ring polymer.
+
+    The instanton orbit is symmetric about its turning points, so i-PI
+    stores only half of it. Rate expressions need the closed path, which
+    this reconstructs by reflection.
+
+    Parameters
+    ----------
+    q0 : numpy.ndarray
+        Half-polymer positions of shape (nbeads0, 3 * natoms).
+    nbeads0 : int
+        Number of beads in the half polymer.
+    natoms : int
+        Number of atoms.
+    h0 : numpy.ndarray
+        Physical part of the half-polymer Hessian, excluding the spring
+        terms.
+
+    Returns
+    -------
+    tuple of (numpy.ndarray, int, numpy.ndarray)
+        The full-ring positions, the doubled bead count, and the
+        full-ring Hessian.
+    """
     q = np.concatenate((q0, np.flipud(q0)), axis=0)
     nbeads = 2 * nbeads0
     ii = 3 * natoms
@@ -139,7 +167,9 @@ def get_double(q0, nbeads0, natoms, h0):
     h = np.zeros((iii * 2, iii * 2))
     h[0:iii, 0:iii] = h0
 
-    # diagonal block
+    # The mirrored half reuses the same per-bead blocks in reverse order;
+    # beads do not couple through the physical Hessian, so only the
+    # diagonal blocks need filling
     for i in range(nbeads0):
         x = i * ii + iii
         y = ((nbeads0 - 1) - i) * ii
@@ -149,6 +179,30 @@ def get_double(q0, nbeads0, natoms, h0):
 
 
 def spring_pot(nbeads, q, omega2, m3):
+    """Compute the harmonic spring energy of an open ring polymer.
+
+    Parameters
+    ----------
+    nbeads : int
+        Number of beads.
+    q : numpy.ndarray
+        Bead positions of shape (nbeads, 3 * natoms).
+    omega2 : float
+        Squared ring-polymer frequency, ``(nbeads * kb * T / hbar) ** 2``.
+    m3 : numpy.ndarray
+        Masses repeated over the three Cartesian components.
+
+    Returns
+    -------
+    float
+        The spring energy in atomic units.
+
+    Notes
+    -----
+    The sum runs over nbeads - 1 links rather than nbeads, so the chain is
+    left open. This is the linear polymer used for tunnelling splittings,
+    not the closed ring used for rates.
+    """
     e = 0.0
     for i in range(nbeads - 1):
         dq = q[i + 1, :] - q[i, :]
@@ -157,6 +211,31 @@ def spring_pot(nbeads, q, omega2, m3):
 
 
 def Filter(pos, h, natoms, m, m3, filt):
+    """Remove selected atoms from the position, mass and Hessian arrays.
+
+    Used to freeze spectator atoms - typically a rigid substrate - so they
+    contribute neither modes nor mass to the partition functions.
+
+    Parameters
+    ----------
+    pos : numpy.ndarray
+        Positions of shape (nbeads, 3 * natoms).
+    h : numpy.ndarray
+        Hessian, filtered along both axes.
+    natoms : int
+        Number of atoms before filtering.
+    m : numpy.ndarray
+        Atomic masses.
+    m3 : numpy.ndarray
+        Masses repeated over the three Cartesian components.
+    filt : list of int
+        Zero-based indices of the atoms to remove.
+
+    Returns
+    -------
+    tuple
+        The filtered `pos`, `h`, `natoms`, `m` and `m3`.
+    """
     filt3 = []
     for i in filt:
         filt3.append(3 * i)
@@ -172,8 +251,37 @@ def Filter(pos, h, natoms, m, m3, filt):
 
 
 def get_rp_freq(w0, nbeads, temp, mode="rate"):
-    """Compute the ring polymer frequencies for multidimensional harmonic potential
-    defined by the frequencies w0."""
+    """Compute ring-polymer normal-mode frequencies.
+
+    Each physical frequency in `w0` splits into `nbeads` ring-polymer
+    modes, whose spacing is set by the imaginary-time discretisation.
+
+    Parameters
+    ----------
+    w0 : numpy.ndarray
+        Squared physical frequencies of the harmonic potential.
+    nbeads : int
+        Number of beads.
+    temp : float
+        Temperature in atomic units.
+    mode : {"rate", "splitting"}, optional
+        'rate' returns the summed log frequency needed for the
+        vibrational partition function; 'splitting' returns the
+        individual frequencies of the open chain. Default is "rate".
+
+    Returns
+    -------
+    float or numpy.ndarray
+        The log-sum of the frequencies for 'rate', or the array of
+        frequencies for 'splitting'.
+
+    Notes
+    -----
+    Exits the process if any input frequency is negative, which means the
+    reference structure is not a genuine minimum, or if `mode` is not
+    recognised. The zero-frequency ``k = 0`` mode is skipped in 'rate'
+    mode, since it corresponds to free translation of the centroid.
+    """
     hbar = 1.0
     kb = 1
     betaP = 1 / (kb * nbeads * temp)
@@ -220,8 +328,28 @@ def get_rp_freq(w0, nbeads, temp, mode="rate"):
 
 
 def save_frequencies(d, nzeros, filename="freq.dat"):
-    """Small function to save the frequencies in a file
-    d: array with the eigenvalues of the (extended) hessian"""
+    """Write vibrational frequencies to a text file.
+
+    Parameters
+    ----------
+    d : numpy.ndarray
+        Eigenvalues of the (extended) Hessian.
+    nzeros : int
+        Number of zero modes removed by the sum rule, padded back in so
+        the output length matches the full mode count.
+    filename : str, optional
+        Output file name. Default is "freq.dat".
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Frequencies are written in cm^-1, and the sign of each eigenvalue is
+    preserved through the square root so that imaginary modes appear as
+    negative values rather than NaN.
+    """
 
     outfile = open(filename, "w")
     aux = np.zeros(nzeros)
@@ -255,7 +383,8 @@ if case != "instanton" and nbeads > 1:
     print((f"case {case} , beads {nbeads}"), flush=True)
     sys.exit()
 
-# Depending on the case, we read from the restart file different things:
+# The three cases store their curvature differently: the reactant keeps a
+# dynamical matrix, the TS and instanton an explicit optimiser Hessian
 if case == "reactant":
     dynmat = simulation.syslist[0].motion.dynmatrix.copy()
 
@@ -369,10 +498,11 @@ if case == "reactant":
     else:
         Qrot = 1.0
 
-    # logQvib    = -np.sum( np.log( 2*np.sinh( (beta*hbar*np.sqrt(d)/2.0) )  ))   #Limit n->inf
+    # Ring-polymer form, which tends to the usual -sum(log(2*sinh(beta*hbar*w/2)))
+    # as the bead count goes to infinity
     logQvib_rp = -get_rp_freq(d, nbeadsR, temp)
 
-    # This file is created to use afterwards in the splitting calculations
+    # Consumed by a later instanton run via the -freq flag
     outfile = open("eigenvalues_reactant.dat", "w")
     aux = np.zeros(nzeros)
     dd = np.concatenate((aux, d))

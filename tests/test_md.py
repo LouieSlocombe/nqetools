@@ -1,9 +1,16 @@
+"""Tests for the molecular dynamics ensembles.
+
+One short run per XML template in ``templates/``, confirming that each
+ensemble, thermostat and barostat combination is set up correctly.
+"""
+
 import ase.build
 
 import nqetools as nqe
 
 
 def test_npt_bzp():
+    """Run NPT dynamics with the Bussi-Zykova-Parrinello barostat."""
     print(flush=True)
     print("Testing NPT-BZP md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -16,6 +23,7 @@ def test_npt_bzp():
 
 
 def test_npt_mttk():
+    """Run NPT dynamics with the Martyna-Tobias-Tuckerman-Klein barostat."""
     print(flush=True)
     print("Testing NPT-MTTK md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -28,6 +36,7 @@ def test_npt_mttk():
 
 
 def test_npt_re():
+    """Run NPT dynamics with replica exchange."""
     print(flush=True)
     print("Testing NPT-RE md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -40,6 +49,7 @@ def test_npt_re():
 
 
 def test_nve():
+    """Run microcanonical dynamics."""
     print(flush=True)
     print("Testing NVE md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -52,6 +62,7 @@ def test_nve():
 
 
 def test_nve_pimd():
+    """Run microcanonical path-integral dynamics."""
     print(flush=True)
     print("Testing NVE md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -64,6 +75,7 @@ def test_nve_pimd():
 
 
 def test_nvt():
+    """Run canonical dynamics with the default thermostat."""
     print(flush=True)
     print("Testing NVT md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -76,6 +88,7 @@ def test_nvt():
 
 
 def test_nvt_gle():
+    """Run canonical dynamics with a generalised Langevin thermostat."""
     print(flush=True)
     print("Testing NVT-GLE md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -88,6 +101,7 @@ def test_nvt_gle():
 
 
 def test_nvt_langevin():
+    """Run canonical dynamics with a Langevin thermostat."""
     print(flush=True)
     print("Testing NVT-LANGEVIN md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -100,6 +114,7 @@ def test_nvt_langevin():
 
 
 def test_nvt_pimd():
+    """Run canonical path-integral dynamics."""
     print(flush=True)
     print("Testing NVT-PIMD md calculator", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -112,6 +127,7 @@ def test_nvt_pimd():
 
 
 def test_nvt_pimd_sc():
+    """Run canonical path-integral dynamics with Suzuki-Chin splitting."""
     print(flush=True)
     print("Testing NVT-PIMD-SC md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -124,6 +140,7 @@ def test_nvt_pimd_sc():
 
 
 def test_nvt_re():
+    """Run canonical dynamics with replica exchange."""
     print(flush=True)
     print("Testing NVT-RE md", flush=True)
     atoms = ase.build.molecule('H2O')
@@ -136,6 +153,7 @@ def test_nvt_re():
 
 
 def test_nvt_svr():
+    """Run canonical dynamics with a stochastic velocity rescaling thermostat."""
     print(flush=True)
     print("Testing NVT-SVR md", flush=True)
     atoms = ase.build.molecule('H2O')

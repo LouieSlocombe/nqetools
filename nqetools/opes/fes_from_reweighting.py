@@ -32,32 +32,26 @@ error = '--- ERROR: %s \n'
 ### Parser stuff ###
 parser = argparse.ArgumentParser(
     description='calculate the free energy surfase (FES) along the chosen collective variables (1 or 2) using a reweighted kernel density estimate')
-# files
 parser.add_argument('--colvar', '-f', dest='filename', type=str, default='COLVAR',
                     help='the COLVAR file name, with the collective variables and the bias')
 parser.add_argument('--outfile', '-o', dest='outfile', type=str, default='fes-rew.dat', help='name of the output file')
-# compulsory
 parser.add_argument('--sigma', '-s', dest='sigma', type=str, required=True,
                     help='the bandwidth for the kernel density estimation. Use e.g. the last value of sigma from an OPES_METAD simulation')
 kbt_group = parser.add_mutually_exclusive_group(required=True)
 kbt_group.add_argument('--kt', dest='kbt', type=float, help='the temperature in energy units')
 kbt_group.add_argument('--temp', dest='temp', type=float, help='the temperature in Kelvin. Energy units is Kj/mol')
-# input columns
 parser.add_argument('--cv', dest='cv', type=str, default='2',
                     help='the CVs to be used. Either by name or by column number, starting from 1')
 parser.add_argument('--bias', dest='bias', type=str, default='.bias',
                     help='the bias to be used. Either by name or by column number, starting from 1. Set to NO for nonweighted KDE')
-# grid related
 parser.add_argument('--min', dest='grid_min', type=str, help='lower bounds for the grid')
 parser.add_argument('--max', dest='grid_max', type=str, help='upper bounds for the grid')
 parser.add_argument('--bin', dest='grid_bin', type=str, default="100,100", help='number of bins for the grid')
-# blocks
 split_group = parser.add_mutually_exclusive_group(required=False)
 split_group.add_argument('--blocks', dest='blocks_num', type=int, default=1,
                          help='calculate errors with block average, using this number of blocks')
 split_group.add_argument('--stride', dest='stride', type=int, default=0,
                          help='print running FES estimate with this stride. Use --blocks for stride without history')  # TODO make this more efficient
-# other options
 parser.add_argument('--deltaFat', dest='deltaFat', type=float,
                     help='calculate the free energy difference between left and right of given cv1 value')
 parser.add_argument('--skiprows', dest='skiprows', type=int, default=0, help='skip this number of initial rows')
@@ -67,7 +61,6 @@ parser.add_argument('--nomintozero', dest='nomintozero', action='store_true', de
                     help='do not shift the minimum to zero')
 parser.add_argument('--der', dest='der', action='store_true', default=False, help='calculate also FES derivatives')
 parser.add_argument('--fmt', dest='fmt', type=str, default='% 12.6f', help='specify the output format')
-# parse everything, for better compatibility
 
 args = parser.parse_args()
 filename = args.filename
@@ -95,7 +88,6 @@ calc_der = args.der
 fmt = args.fmt
 
 ### Get data ###
-# get dim
 dim = len(args_cv.split(','))
 if dim == 1:
     dim2 = False
@@ -103,7 +95,6 @@ elif dim == 2:
     dim2 = True
 else:
     sys.exit(error % ('only 1D and 2D are supported'))
-# get cvs
 with open(filename) as f:
     fields = f.readline().split()
     if fields[1] != 'FIELDS':
@@ -131,7 +122,6 @@ with open(filename) as f:
                     col_y = i - 2
             if col_y == -1:
                 sys.exit(error % (f'cv "{name_cv_y}" not found'))
-    # get bias
     if args_bias == 'NO' or args_bias == 'no':
         col_bias = []
     else:
@@ -159,7 +149,6 @@ with open(filename) as f:
         print(' no bias')
     for col in col_bias:
         print(' using bias "%s" found at column %d' % (fields[col + 2], col + 1))
-    # get periodicity
     period_x = 0
     period_y = 0
     header_lines = 1
@@ -200,13 +189,11 @@ with open(filename) as f:
                 sys.exit(error % ('derivatives not supported with periodic CVs, remove --der option'))
         line = f.readline().split()
 skipme = header_lines + args_skiprows
-# get sigma
 sigma_x = float(args_sigma.split(',')[0])
 if dim2:
     if len(args_sigma.split(',')) != 2:
         sys.exit(error % (' two comma-separated floats expected after --sigma'))
     sigma_y = float(args_sigma.split(',')[1])
-# read file
 all_cols = [col_x] + col_bias
 if dim2:
     all_cols = [col_x, col_y] + col_bias
@@ -293,7 +280,6 @@ if calc_deltaF and (ts <= grid_min_x or ts >= grid_max_x):
     calc_deltaF = False
 
 ### Print to file ###
-# setup blocks if needed
 len_tot = len(cv_x)
 block_av = False
 if blocks_num != 1:
@@ -325,8 +311,27 @@ if stride != len_tot:
     outfile_it = prefix + outfile_it + '_%d' + suffix
 
 
-# print function needs the grid and size, effsize, fes, der_fes
 def printFES(outfilename):
+    """Write the free energy surface in PLUMED grid format.
+
+    Parameters
+    ----------
+    outfilename : str
+        Path of the file to write.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Reads the grid, `size`, `effsize`, `fes` and `der_fes` arrays from
+    module scope rather than taking them as arguments.
+
+    The free energy difference across the transition state is accumulated
+    with ``logaddexp``, which is as accurate as trapezoidal integration
+    here and avoids overflow when the barrier is many kT high.
+    """
     if do_bck:
         cmd = subprocess.Popen(bck_script + ' -i ' + outfilename, shell=True)
         cmd.wait()
@@ -334,8 +339,6 @@ def printFES(outfilename):
         shift = np.amin(fes)
     else:
         shift = 0
-    # calculate deltaF
-    # NB: summing is as accurate as trapz, and logaddexp avoids overflows
     if calc_deltaF:
         if not dim2:
             fesA = -kbt * np.logaddexp.reduce(-1 / kbt * fes[grid_cv_x < ts])
@@ -344,7 +347,6 @@ def printFES(outfilename):
             fesA = -kbt * np.logaddexp.reduce(-1 / kbt * fes[x < ts])
             fesB = -kbt * np.logaddexp.reduce(-1 / kbt * fes[x > ts])
         deltaF = fesB - fesA
-    # actual printing
     with open(outfilename, 'w') as f:
         fields = '#! FIELDS ' + name_cv_x
         if dim2:
@@ -390,8 +392,40 @@ def printFES(outfilename):
 
 
 ### Calculate FES ###
-# on single grid point
 def calcFESpoint(start, end, point_x, point_y=None):
+    """Evaluate the reweighted free energy at a single grid point.
+
+    Sums Gaussian kernels centred on each sampled configuration, weighted
+    by its bias, to estimate the unbiased probability density at the
+    requested point.
+
+    Parameters
+    ----------
+    start : int
+        First sample index to include.
+    end : int
+        One past the last sample index to include.
+    point_x : float
+        Grid coordinate along the first collective variable.
+    point_y : float, optional
+        Grid coordinate along the second collective variable. If None, a
+        one-dimensional estimate is returned. Default is None.
+
+    Returns
+    -------
+    tuple of float
+        The free energy, followed by its derivative along each collective
+        variable when `calc_der` is set, otherwise the free energy alone.
+
+    Notes
+    -----
+    Reads the sample arrays, bandwidths and periodicities from module
+    scope. Periodic variables use the minimum-image distance so kernels
+    wrap correctly across the boundary.
+
+    The largest exponent is factored out before exponentiating, which
+    keeps the sum finite when the bias spans a wide range.
+    """
     if period_x == 0:
         dist_x = (point_x - cv_x[start:end]) / sigma_x
     else:
@@ -420,7 +454,6 @@ def calcFESpoint(start, end, point_x, point_y=None):
         return -kbt * np.logaddexp.reduce(arg)
 
 
-# adjust stride
 s = len_tot % stride  # skip some initial point to make it fit
 if s > 1:
     print(' first %d samples discarded to fit with given stride' % s)
@@ -428,7 +461,6 @@ it = 1
 for n in range(s + stride, len_tot + 1, stride):
     if stride != len_tot:
         print(f'   working...   0% of {n / (len_tot + 1):.0%}', end='\r')
-    # loop over whole grid
     if not dim2:
         for i in range(grid_bin_x):
             print(f'   working...  {i / grid_bin_x:.0%}', end='\r')
@@ -444,7 +476,6 @@ for n in range(s + stride, len_tot + 1, stride):
                     fes[i, j] = calcFESpoint(s, n, x[i, j], y[i, j])
                 else:
                     fes[i, j], der_fes_x[i, j], der_fes_y[i, j] = calcFESpoint(s, n, x[i, j], y[i, j])
-    # calculate sample size
     weights = np.exp(bias[s:n] - np.amax(bias[s:n]))  # these are safe to sum
     size = len(weights)
     effsize = np.sum(weights) ** 2 / np.sum(weights ** 2)
@@ -456,7 +487,6 @@ for n in range(s + stride, len_tot + 1, stride):
         block_logweight[it - 1] = bias_norm_shift
         block_fes[it - 1] = fes
         s = n  # do not include previous samples
-    # print to file
     if stride == len_tot:
         printFES(outfile)
     else:
@@ -474,20 +504,18 @@ if block_av:
     blocks_neff = np.sum(safe_block_weight) ** 2 / np.sum(safe_block_weight ** 2)
     print(' number of blocks is %d, while effective number is %g' % (blocks_num, blocks_neff))
     fes = -kbt * np.log(np.average(np.exp(-block_fes / kbt), axis=0, weights=safe_block_weight))
-    # To understand the formula for fes_err:
-    # - calc the uncertainty over the probability=exp(-fes/kbt). this is a simple weighted average of all the gaussians evauated in that grid position
-    # - propagate the uncertainty from there to the fes, neglecting correlations for simplicity
-    # NB: the following np.exp cannot be easily made 100% numerically safe, but using np.expm1 makes it more robust
+    # Uncertainty is taken on the probability, a weighted average of the
+    # kernels at this grid point, then propagated to the FES, neglecting
+    # correlations. expm1 keeps the exponential accurate for small arguments,
+    # though it cannot be made fully overflow-safe
     fes_err = kbt * np.sqrt(1 / (blocks_neff - 1) * (
         np.average(np.expm1(-(block_fes - fes) / kbt) ** 2, axis=0, weights=safe_block_weight)))
     print(' average FES uncertainty is:', np.average(fes_err))
-    # print to file (slightly different than usual)
     if do_bck:
         cmd = subprocess.Popen(bck_script + ' -i ' + outfile, shell=True)
         cmd.wait()
     if mintozero:
         fes -= np.amin(fes)
-    # calculate deltaF
     # NB: summing is as accurate as trapz, and logaddexp avoids overflows
     if calc_deltaF:
         if not dim2:
@@ -497,7 +525,6 @@ if block_av:
             fesA = -kbt * np.logaddexp.reduce(-1 / kbt * fes[x < ts])
             fesB = -kbt * np.logaddexp.reduce(-1 / kbt * fes[x > ts])
         deltaF = fesB - fesA
-    # actual printing
     with open(outfile, 'w') as f:
         fields = '#! FIELDS ' + name_cv_x
         if dim2:

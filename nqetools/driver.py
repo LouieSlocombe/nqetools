@@ -1,3 +1,15 @@
+"""Generation of i-PI client drivers.
+
+i-PI splits a calculation between a server, which propagates the nuclei,
+and a client, which returns forces over a socket. This module writes the
+client side: either a standalone Python script that builds an ASE
+calculator and connects back, or an input deck for a code that speaks the
+i-PI protocol natively.
+
+:func:`prep_driver` is the entry point, dispatching on a driver name and
+returning the shell command that launches the client.
+"""
+
 import ipi
 import os
 import torch
@@ -16,6 +28,45 @@ def write_ase_mace_driver(
         device=None,
         default_dtype="float64",
         enable_cueq=False):
+    """Write an i-PI client script driven by a MACE machine-learning potential.
+
+    Parameters
+    ----------
+    directory : str
+        The directory to write the client script to.
+    out_file : str, optional
+        Name of the generated script. Default is "run-ase-mace.py".
+    in_file : str, optional
+        Structure file the client reads to build its Atoms object. Default
+        is "init.xyz".
+    host : str, optional
+        Unix socket name used to reach the i-PI server. Default is "driver".
+    model : str, optional
+        Model size or path passed to the MACE calculator. Default is "small".
+    model_type : {"off", "mp", "anicc", "omol"}, optional
+        Which pre-trained MACE family to load. Default is "off".
+    device : torch.device or str, optional
+        Device to run inference on. Defaults to CUDA when available,
+        otherwise CPU.
+    default_dtype : str, optional
+        Floating-point precision for the model. Default is "float64".
+    enable_cueq : bool, optional
+        If True, enable cuEquivariance acceleration. Default is False.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    AssertionError
+        If `model_type` is not a recognised MACE family.
+
+    Notes
+    -----
+    The 'anicc' family takes no model or dtype arguments, so it is emitted
+    with a reduced call signature.
+    """
     assert model_type in ["off", "mp", "anicc", 'omol']
 
     if device is None:
@@ -59,6 +110,55 @@ def write_ase_qmmm_mace_driver(
         default_dtype="float64",
         enable_cueq=False,
         host="driver"):
+    """Write an i-PI client script using a MACE-based QM/MM partition.
+
+    Two MACE models are combined through ASE's ``SimpleQMMM``: an accurate
+    model for the reacting subsystem and a cheaper one for the surroundings.
+
+    Parameters
+    ----------
+    directory : str
+        The directory to write the client script to.
+    out_file : str, optional
+        Name of the generated script. Default is "run-ase-qmmm-mace.py".
+    in_file : str, optional
+        Structure file the client reads to build its Atoms object. Default
+        is "init.xyz".
+    qm_indices : list of int, optional
+        Indices of the atoms treated at the QM level. Default is [0].
+    qm_model_type : {"off", "mp", "anicc", "omol"}, optional
+        MACE family for the QM region. Default is "omol".
+    qm_model : str, optional
+        Model size or path for the QM region. Default is "medium".
+    mm_model_type : {"off", "mp", "anicc", "omol"}, optional
+        MACE family for the MM region. Default is "off".
+    mm_model : str, optional
+        Model size or path for the MM region. Default is "small".
+    device : torch.device or str, optional
+        Device to run inference on. Defaults to CUDA when available,
+        otherwise CPU.
+    default_dtype : str, optional
+        Floating-point precision for the models. Default is "float64".
+    enable_cueq : bool, optional
+        If True, enable cuEquivariance acceleration. Default is False.
+    host : str, optional
+        Unix socket name used to reach the i-PI server. Default is "driver".
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    AssertionError
+        If either model type is not a recognised MACE family.
+
+    Notes
+    -----
+    ``SimpleQMMM`` is passed the MM calculator twice, so the MM model is
+    evaluated on both the QM subsystem and the full system in order to
+    subtract the double-counted contribution.
+    """
     if qm_indices is None:
         qm_indices = [0]
 
@@ -102,7 +202,18 @@ client.run(atoms)
 
 
 def write_cp2k_driver():
-    # not yet implemented; see https://github.com/i-pi/i-pi/tree/main/examples/clients/cp2k/npt_classical
+    """Write a CP2K i-PI client input deck.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    ValueError
+        Always. CP2K support is not implemented yet; see the i-PI
+        ``examples/clients/cp2k/npt_classical`` reference setup.
+    """
     raise ValueError("Driver cp2k is not recognized.")
 
 
@@ -117,6 +228,41 @@ def write_ase_nwchem_driver(
         disp=None,
         solv=None,
         host="driver"):
+    """Write an i-PI client script driven by an NWChem DFT calculation.
+
+    Parameters
+    ----------
+    directory : str
+        The directory to write the client script to.
+    in_file : str, optional
+        Structure file the client reads to build its Atoms object. Default
+        is "init.xyz".
+    out_file : str, optional
+        Name of the generated script. Default is "run-ase-nwchem.py".
+    charge : int, optional
+        Net charge of the system. Default is 0.
+    xc : str, optional
+        Exchange-correlation functional. Default is "B3LYP".
+    multi : int, optional
+        Spin multiplicity of the system. Default is 1.
+    basis_set : str, optional
+        Basis set to use. Default is "6-31G**".
+    disp : str, optional
+        Dispersion correction, either 'XDM' or 'D3'. Default is None.
+    solv : str, optional
+        Implicit solvent model, either 'WATER' or 'PROTEIN'. Default is None.
+    host : str, optional
+        Unix socket name used to reach the i-PI server. Default is "driver".
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    The calculator preset is inlined into the generated script rather than
+    imported, so the client has no dependency on this package at run time.
+    """
     in_str = f"""
 import os
 import tempfile
@@ -255,6 +401,53 @@ def write_ase_orca_driver(
         calc_extra=None,
         scf_option=None,
         n_procs=10):
+    """Write an i-PI client script driven by an ORCA calculation.
+
+    Parameters
+    ----------
+    directory : str
+        The directory to write the client script to.
+    in_file : str, optional
+        Structure file the client reads to build its Atoms object. Default
+        is "init.xyz".
+    out_file : str, optional
+        Name of the generated script. Default is "run-ase-orca.py".
+    charge : int, optional
+        Net charge of the system. Default is 0.
+    xc : str, optional
+        Exchange-correlation functional, used by the DFT and QM/XTB2
+        calculation types. Default is "BLYP".
+    multi : int, optional
+        Spin multiplicity. Values above 1 switch the reference to
+        unrestricted. Default is 1.
+    basis_set : str, optional
+        Basis set to use. Default is "6-311G".
+    disp : str or bool, optional
+        Dispersion correction; True selects 'D4'. Default is False.
+    solv : str or bool, optional
+        SMD implicit solvent; True selects 'WATER'. Default is False.
+    calc_type : {"DFT", "MP2", "CCSD", "QM/XTB2"}, optional
+        Level of theory. Default is "DFT".
+    atom_list : str, optional
+        ORCA-format atom selection for the QM region, used only when
+        `calc_type` is 'QM/XTB2'. Default is None.
+    calc_extra : str, optional
+        Extra keywords appended to the ORCA simple input line. Default is
+        None.
+    scf_option : str, optional
+        Additional SCF convergence keyword. Default is None.
+    n_procs : int, optional
+        Number of MPI processes for ORCA. Default is 10.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Unlike the other ASE clients, this one connects over a TCP socket on
+    port 10200 rather than a Unix socket.
+    """
     in_str_1 = """
 import os
 import tempfile

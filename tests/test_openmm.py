@@ -1,3 +1,10 @@
+"""Tests for the OpenMM setup, equilibration and RPMD routines.
+
+Covers ligand parameterisation, deuteration, the staged equilibration
+workflow, machine-learning and mixed ML/MM potentials, and the
+ring-polymer reporters.
+"""
+
 import os
 import sys
 from sys import stdout
@@ -14,6 +21,7 @@ import nqetools as nqe
 
 
 def test_openmm_ml():
+    """Relax a system with a pure machine-learning potential."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = MLPotential('mace-off23-small')
@@ -26,6 +34,7 @@ def test_openmm_ml():
 
 
 def test_openmm_ml_mixed_system():
+    """Relax a system with a mixed ML/MM potential."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = app.ForceField('amber14-all.xml',
                                 'amber14/tip3pfb.xml')
@@ -48,6 +57,7 @@ def test_openmm_ml_mixed_system():
 
 
 def test_prepare_ligand_ff():
+    """Generate GAFF parameters for a ligand and merge them into a force field."""
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
     cache_name = "gaff-molecules.json"
@@ -79,6 +89,7 @@ def test_prepare_ligand_ff():
 
 
 def test_nonstandard_ligand():
+    """Parameterise and relax a system containing a non-standard ligand."""
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
 
@@ -100,6 +111,18 @@ def test_nonstandard_ligand():
 
 
 def _get_total_mass(system):
+    """Sum the particle masses of an OpenMM system.
+
+        Parameters
+        ----------
+        system : openmm.System
+            System to total the masses of.
+
+        Returns
+        -------
+        openmm.unit.Quantity
+            The total mass.
+    """
     total_mass = 0.0 * unit.dalton
     for i in range(system.getNumParticles()):
         total_mass += system.getParticleMass(i)
@@ -107,6 +130,7 @@ def _get_total_mass(system):
 
 
 def test_deuterate_system():
+    """Check deuteration raises the total mass by the expected amount."""
     print(flush=True)
     pdb = app.PDBFile('tests/data/pdb/input.pdb')
     forcefield = app.ForceField('amber14/protein.ff14SB.xml', 'amber14/tip3p.xml')
@@ -158,6 +182,7 @@ def test_deuterate_system():
 
 
 def test_plumed():
+    """Run PLUMED-biased OpenMM dynamics and reconstruct the free energy surface."""
     temperature = 300 * unit.kelvin
     timestep = 1.0 * unit.femtosecond
     friction_coeff = 1.0 / unit.picosecond
@@ -250,7 +275,6 @@ FLUSH STRIDE=1
                          temperature=300,
                          bins=n_bins,
                          cv=cv_limits)
-    # Plot the free energy surface convergence
     fes_arrays_meta_md = nqe.load_fes_data(directory, n_bins)
     fes_times = nqe.get_fes_times(2.0, total_steps, fes_arrays_meta_md)
 
@@ -262,6 +286,7 @@ FLUSH STRIDE=1
 
 
 def test_get_atoms_in_residue():
+    """Look up the atom indices belonging to one residue."""
     print(flush=True)
     input_pdb = 'tests/data/pdb/input.pdb'
     indexes = nqe.get_atoms_in_residue(input_pdb, 0)
@@ -271,6 +296,7 @@ def test_get_atoms_in_residue():
 
 
 def test_run_openmm_relaxation():
+    """Run the staged restrained minimisation."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
@@ -286,6 +312,7 @@ def test_run_openmm_relaxation():
 
 
 def test_run_openmm_heating():
+    """Run the staged heating equilibration."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
@@ -301,6 +328,7 @@ def test_run_openmm_heating():
 
 
 def test_run_openmm_heating_deuterate():
+    """Run the staged heating equilibration on a deuterated system."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
@@ -316,6 +344,7 @@ def test_run_openmm_heating_deuterate():
 
 
 def test_run_openmm_npt():
+    """Run the constant-pressure equilibration."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
@@ -331,6 +360,7 @@ def test_run_openmm_npt():
 
 
 def test_eq_workflow():
+    """Run relaxation, heating and NPT equilibration in sequence."""
     print(flush=True)
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
@@ -357,6 +387,7 @@ def test_eq_workflow():
 
 
 def test_eq_workflow_mixed():
+    """Run the full equilibration sequence with a mixed ML/MM potential."""
     print(flush=True)
 
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
@@ -386,6 +417,7 @@ def test_eq_workflow_mixed():
 
 
 def test_openmm_rpmd():
+    """Run ring-polymer dynamics on a gas-phase system."""
     n_steps = 1_000
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -427,6 +459,7 @@ def test_openmm_rpmd():
 
 
 def test_openmm_qtb():
+    """Run quantum thermal bath dynamics as a cheaper alternative to RPMD."""
     n_steps = 1_000
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -470,6 +503,7 @@ def test_openmm_qtb():
 
 
 def test_openmm_rpmd_solvated():
+    """Run ring-polymer dynamics on a solvated system."""
     n_steps = 200
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -514,6 +548,7 @@ def test_openmm_rpmd_solvated():
 
 
 def test_openmm_rpmd_ml():
+    """Run ring-polymer dynamics with a machine-learning potential."""
     n_steps = 200
     report_every = 100
     in_pdb = "tests/data/pdb/input_aaa.pdb"
@@ -554,6 +589,7 @@ def test_openmm_rpmd_ml():
 
 
 def test_openmm_rpmd_mixed():
+    """Run ring-polymer dynamics with a mixed ML/MM potential."""
     print(flush=True)
     n_steps = 200
     report_every = 100
@@ -614,6 +650,7 @@ def test_openmm_rpmd_mixed():
 
 
 def test_rpmd_quantum_spread_reporter():
+    """Check the quantum spread reporter logs a radius of gyration per atom."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
 
@@ -665,6 +702,7 @@ def test_rpmd_quantum_spread_reporter():
 
 
 def test_rpmd_bead_reporter():
+    """Check the bead reporter writes one trajectory file per bead."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
 
@@ -702,6 +740,7 @@ def test_rpmd_bead_reporter():
 
 
 def test_rpmd_centroid_reporter():
+    """Check the centroid reporter writes the bead-averaged trajectory."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
     forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
 
@@ -738,6 +777,7 @@ def test_rpmd_centroid_reporter():
 
 
 def test_count_dna_and_estimate_charge():
+    """Check the DNA charge estimate matches the nucleotide count."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/gt_wob_pol.pdb")
     est_charge = nqe.count_dna_and_estimate_charge(pdb.topology)
@@ -747,6 +787,7 @@ def test_count_dna_and_estimate_charge():
 
 def test_fep():
     # https://openmm.github.io/openmm-cookbook/latest/notebooks/tutorials/Alchemical_free_energy_calculations.html
+    """Run an alchemical free energy calculation on a host-guest system."""
     print(flush=True)
     from openmmtools import testsystems, alchemy
     import copy

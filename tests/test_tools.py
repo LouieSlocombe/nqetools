@@ -1,3 +1,9 @@
+"""Tests for the structure manipulation helpers.
+
+Covers clustering by connectivity, moving fragments to set separations,
+distance measurement, and merging structures without steric clashes.
+"""
+
 import numpy as np
 from ase.build import molecule
 from ase.visualize import view
@@ -6,6 +12,7 @@ import nqetools as nqe
 
 
 def test_cluster_atoms():
+    """Check two separated water molecules are found as distinct clusters."""
     print(flush=True)
 
     water = molecule("H2O")
@@ -25,6 +32,7 @@ def test_cluster_atoms():
 
 
 def test_move_clusters_to_distance():
+    """Move two clusters to a set centre-of-mass separation."""
     print(flush=True)
 
     idx1 = 0
@@ -47,6 +55,7 @@ def test_move_clusters_to_distance():
 
 
 def test_move_to_distances():
+    """Move a fragment to several set separations in turn."""
     print(flush=True)
 
     index1 = 0
@@ -73,6 +82,7 @@ def test_move_to_distances():
 
 
 def test_get_fes_times():
+    """Read the time stamps from a series of free energy surfaces."""
     print(flush=True)
     dt = 1.0
     n_steps = 5000
@@ -100,6 +110,7 @@ def test_convert_code_to_string():
 
 
 def test_get_distance():
+    """Measure the distance between two atoms."""
     print(flush=True)
     water = molecule("H2O")
     dist = nqe.get_distance(water, 0, 1)
@@ -107,6 +118,7 @@ def test_get_distance():
 
 
 def test_closest_corresponding_index():
+    """Find the atom in one structure closest to a given atom in another."""
     print(flush=True)
     water = molecule("H2O")
     water2 = water.copy()
@@ -115,6 +127,7 @@ def test_closest_corresponding_index():
 
 
 def test_combine_without_overlaps():
+    """Merge two structures, dropping molecules that clash."""
     print(flush=True)
     water = molecule("H2O")
 
@@ -130,6 +143,7 @@ def test_combine_without_overlaps():
 
 
 def test_largest_bonded_cluster_indices():
+    """Find the indices of the largest bonded cluster."""
     print(flush=True)
 
     water = molecule("H2O")

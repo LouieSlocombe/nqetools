@@ -1,3 +1,23 @@
+"""OpenMM simulation setup, equilibration and ring-polymer dynamics.
+
+Covers the path from a raw PDB file to a production trajectory: repairing
+structures, parameterising non-standard ligands through GAFF, solvating,
+and then the staged relaxation, heating and pressure equilibration that
+a condensed-phase system needs before production.
+
+Nuclear quantum effects enter two ways. Deuteration via
+:func:`deuterate_system` gives the cheap mass-only estimate, while the
+``run_openmm_rpmd_*`` functions run full ring-polymer dynamics, where each
+nucleus is represented by a closed chain of beads. The reporter classes at
+the end of the module exist because OpenMM's own reporters only see the
+centroid, not the individual beads.
+
+Notes
+-----
+Every ``run_openmm_*`` function accepts a `potential` and `ml_idx` pair;
+supplying both builds a mixed ML/MM system and forces the CUDA platform.
+"""
+
 import os
 import sys
 
@@ -247,8 +267,8 @@ def init_beads(modeller, simulation, n_beads, perturb=0.002):
 
 
 def md_workflow(file_in,
-                ff='amber19-all.xml',  # charmm36_2024.xml amber19-all.xml
-                water_model='amber19/opc3.xml',  # charmm36_2024/tip5p.xml amber19/opc3.xml
+                ff='amber19-all.xml',
+                water_model='amber19/opc3.xml',
                 padding=1.0,
                 temperature=300.0,
                 pressure=1.0,
@@ -265,19 +285,72 @@ def md_workflow(file_in,
                 gbaoab=True,
                 platform='CPU',
                 ):
-    # Prepare system
+    """Solvate, equilibrate and run MD on a PDB structure in one pass.
+
+    Builds the system from a PDB file, adds hydrogens and solvent,
+    minimises, then runs NVT equilibration followed by NPT production.
+
+    Parameters
+    ----------
+    file_in : str
+        Path to the input PDB file.
+    ff : str, optional
+        Force field XML for the solute. Default is "amber19-all.xml".
+    water_model : str, optional
+        Force field XML for the water model, which must match the solute
+        force field family. Default is "amber19/opc3.xml".
+    padding : float, optional
+        Minimum solvent padding around the solute in nm. Default is 1.0.
+    temperature : float, optional
+        Target temperature in K. Default is 300.0.
+    pressure : float, optional
+        Target pressure in bar for the NPT stage. Default is 1.0.
+    friction_coeff : float, optional
+        Langevin friction coefficient in ps^-1. Default is 1.0.
+    time_step : float, optional
+        Integration timestep in ps. Default is 0.004.
+    report_pdb : int, optional
+        Steps between PDB frames. Default is 1000.
+    report_std : int, optional
+        Steps between progress lines on stdout. Default is 1000.
+    report_data : int, optional
+        Steps between rows in the data log. Default is 100.
+    file_out : str, optional
+        Trajectory output path. Default is "output.pdb".
+    data_out : str, optional
+        Scalar data log path, readable by :func:`md_analysis`. Default is
+        "md_log.txt".
+    n_nvt : int, optional
+        Number of NVT equilibration steps. Default is 10000.
+    n_npt : int, optional
+        Number of NPT production steps. Default is 50000.
+    box_shape : str, optional
+        Solvent box shape. Default is "dodecahedron".
+    gbaoab : bool, optional
+        If True, use the geodesic BAOAB integrator, which tolerates the
+        larger 4 fs timestep better than plain Langevin. Default is True.
+    platform : str, optional
+        OpenMM platform to run on. Default is "CPU".
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    The 4 fs default timestep relies on the HBonds constraints applied
+        here; loosening those requires a shorter step.
+    """
     pdb = app.PDBFile(file_in)
     forcefield = app.ForceField(ff, water_model)
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens(forcefield)
 
-    # Solvate
     modeller.addSolvent(forcefield,
                         padding=padding * unit.nanometer,
                         boxShape=box_shape)
 
-    # Setup system and integrator
     system = forcefield.createSystem(modeller.topology,
                                      nonbondedMethod=app.PME,
                                      nonbondedCutoff=1.0 * unit.nanometer,
@@ -299,7 +372,6 @@ def md_workflow(file_in,
     print("Minimizing energy", flush=True)
     simulation.minimizeEnergy()
 
-    # Setup reporting
     simulation.reporters.append(app.PDBReporter(file_out, report_pdb))
     simulation.reporters.append(app.StateDataReporter(sys.stdout,
                                                       report_std,
@@ -316,11 +388,9 @@ def md_workflow(file_in,
                                                       temperature=True,
                                                       volume=True))
 
-    # NVT equilibration
     print("Running NVT", flush=True)
     simulation.step(n_nvt)
 
-    # NPT production MD
     system.addForce(openmm.MonteCarloBarostat(pressure * unit.bar,
                                               temperature * unit.kelvin))
     simulation.context.reinitialize(preserveState=True)
@@ -331,6 +401,26 @@ def md_workflow(file_in,
 
 
 def md_analysis(file_in='md_log.txt'):
+    """Plot the energy, temperature and volume traces from an MD log.
+
+    Reads the comma-separated log written by :func:`md_workflow` and
+    shows one figure per quantity, as a quick equilibration check.
+
+    Parameters
+    ----------
+    file_in : str, optional
+        Path to the state data log. Default is "md_log.txt".
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Column order is assumed to match the reporter configured in
+        :func:`md_workflow`: step, time, potential, kinetic, total,
+        temperature, volume.
+    """
     data = np.loadtxt(file_in, delimiter=',')
 
     time = data[:, 1]
@@ -522,7 +612,7 @@ def prepare_ligand_ff(standard_ff,
                       cache="gaff-molecules.json",
                       n_conf=10,
                       pc_methods='mmff94',
-                      gaff_ver='gaff-2.11'):  # gaff-2.2.20
+                      gaff_ver='gaff-2.11'):
     """Prepares a ligand-specific force field using the General Amber Force Field (GAFF).
 
     This function generates or loads GAFF parameters for a given molecule and integrates
@@ -597,21 +687,25 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
     target_resname : str, optional
         The residue name of the ligand to deuterate. Required if `option` is 'ligand'.
 
-    Raises
-    ------
-    ValueError
-        If `option` is 'ligand' and `target_resname` is not provided.
-        If `option` is not one of the supported values.
-
-    Notes
-    -----
-    - If `option` is 'all', all hydrogen atoms in the system are deuterated.
-    - If `option` is 'ligand' and no residues match `target_resname`, a warning is printed.
-    - If no residues match the specified `option`, a warning is printed.
-
     Returns
     -------
     None
+        The system's particle masses are modified in place.
+
+    Raises
+    ------
+    ValueError
+        If `option` is 'ligand' and `target_resname` is not provided, or
+        if `option` is not one of the supported values.
+
+    Notes
+    -----
+    Only masses change, not the force field, so this captures the mass
+    dependence of nuclear quantum effects but not zero-point energy. Use
+    the ``run_openmm_rpmd_*`` functions when that matters.
+
+    A warning is printed, rather than an error raised, when no residues
+    match the selection.
     """
     deuterium_mass = app.element.deuterium.mass
 
@@ -810,6 +904,67 @@ def run_openmm_relaxation(modeller,
                           potential=None,
                           ml_idx=None,
                           ):
+    """Minimise a structure in three stages of decreasing restraint.
+
+    Backbone atoms are held by a harmonic restraint that is relaxed
+    between stages, so the solvent and side chains settle before the
+    backbone is allowed to move. Releasing everything at once tends to
+    distort an experimental starting structure.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "minimized".
+    temperature : openmm.unit.Quantity, optional
+        Temperature for the integrator. Default is 300 K.
+    gamma : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    time_step : openmm.unit.Quantity, optional
+        Integration timestep. Default is 1 fs.
+    n_1 : int, optional
+        Maximum minimisation iterations in stage 1. Default is 1000.
+    n_2 : int, optional
+        Maximum minimisation iterations in stage 2. Default is 1000.
+    n_3 : int, optional
+        Maximum minimisation iterations in stage 3. Default is 2000.
+    backbone_names : list of str, optional
+        Atom names treated as backbone and restrained. Default is
+        ['CA', 'C', 'N', 'P', 'O3'], which covers both protein and nucleic
+        acid backbones.
+    ks_1 : float, optional
+        Stage 1 restraint constant in kJ/mol/nm^2. Default is 100.0.
+    ks_2 : float, optional
+        Stage 2 restraint constant in kJ/mol/nm^2. Default is 10.0.
+    ks_3 : float, optional
+        Stage 3 restraint constant in kJ/mol/nm^2. Default is 0.0, which
+        removes the restraint entirely.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+
+        The system is built without constraints and with flexible water, so
+        that the minimisation can relax bond lengths too.
+    """
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
@@ -906,10 +1061,51 @@ def run_openmm_relaxation_simple(modeller,
                                  potential=None,
                                  ml_idx=None,
                                  ):
+    """Minimise a structure in a single unrestrained pass.
+
+    The plain counterpart to :func:`run_openmm_relaxation`, for systems
+    that do not need staged restraints.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "minimized".
+    temperature : openmm.unit.Quantity, optional
+        Temperature for the integrator. Default is 300 K.
+    gamma : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    time_step : openmm.unit.Quantity, optional
+        Integration timestep. Default is 1 fs.
+    n_report : int, optional
+        Steps between reporter writes. Default is 1.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CUDA".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+    """
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -997,13 +1193,72 @@ def run_openmm_heating(modeller,
                        potential=None,
                        ml_idx=None,
                        ):
+    """Heat a system to its target temperature in stages.
+
+    Temperature is raised in increments of `temp_step`, with the backbone
+    restrained throughout, then a final unrestrained run is performed at
+    the target temperature. Heating gradually avoids the structural
+    damage that setting the full temperature at once can cause.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "equilibrate".
+    k1 : float, optional
+        Backbone restraint constant in kJ/mol/nm^2. Default is 100.0.
+    backbone_names : list of str, optional
+        Atom names treated as backbone and restrained. Default is
+        ['CA', 'C', 'N', 'P', 'O3'].
+    target_temp : openmm.unit.Quantity, optional
+        Final temperature. Default is 300 K.
+    temp_step : openmm.unit.Quantity, optional
+        Temperature increment per stage. Default is 50 K.
+    gamma : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    time_step : openmm.unit.Quantity, optional
+        Integration timestep. Default is 1 fs.
+    n_report : int, optional
+        Steps between reporter writes. Default is 1000.
+    steps_per_stage : int, optional
+        Steps run at each intermediate temperature. Default is 5000.
+    steps_final : int, optional
+        Steps run at the target temperature. Default is 10000.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    deuterate_option : str, optional
+        Which hydrogens to deuterate, for example 'water' or 'all'. Default
+        is "water".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+    """
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -1116,13 +1371,74 @@ def run_openmm_npt(modeller,
                    potential=None,
                    ml_idx=None,
                    ):
+    """Equilibrate a system at constant pressure.
+
+    Adds a Monte Carlo barostat and runs a restrained stage followed by
+    an unrestrained one, letting the box relax to the correct density
+    before production.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "npt_equilibrated".
+    pressure : openmm.unit.Quantity, optional
+        Target pressure. Default is 1 bar.
+    temperature : openmm.unit.Quantity, optional
+        Target temperature. Default is 300 K.
+    gamma : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    time_step : openmm.unit.Quantity, optional
+        Integration timestep. Default is 1 fs.
+    barostat_freq : int, optional
+        Steps between barostat volume moves. Default is 50.
+    backbone_names : list of str, optional
+        Atom names treated as backbone and restrained. Default is
+        ['CA', 'C', 'N', 'P', 'O3'].
+    k : float, optional
+        Backbone restraint constant in kJ/mol/nm^2 for the first stage.
+        Default is 10.0.
+    n_report : int, optional
+        Steps between reporter writes. Default is 500.
+    n_1 : int, optional
+        Steps in the restrained stage. Default is 5000.
+    n_2 : int, optional
+        Steps in the unrestrained stage. Default is 25000.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    deuterate_option : str, optional
+        Which hydrogens to deuterate, for example 'water' or 'all'. Default
+        is "water".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+    """
     if backbone_names is None:
         backbone_names = ['CA', 'C', 'N', 'P', 'O3']
 
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -1232,10 +1548,62 @@ def run_openmm_prod(modeller,
                     potential=None,
                     ml_idx=None,
                     ):
+    """Run classical production MD, optionally biased with PLUMED.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    plumed_script_path : str, optional
+        Path to a PLUMED input file to apply as a bias. Default is None,
+        which runs unbiased.
+    pressure : openmm.unit.Quantity, optional
+        Target pressure. Default is 1 bar.
+    temperature : openmm.unit.Quantity, optional
+        Target temperature. Default is 300 K.
+    gamma : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    time_step : openmm.unit.Quantity, optional
+        Integration timestep. Default is 1 fs.
+    barostat_freq : int, optional
+        Steps between barostat volume moves. Default is 50.
+    n_report : int, optional
+        Steps between reporter writes. Default is 1000.
+    steps : int, optional
+        Number of production steps. Default is 500000.
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "prod".
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    deuterate_option : str, optional
+        Which hydrogens to deuterate, for example 'water' or 'all'. Default
+        is "water".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+    """
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -1338,10 +1706,76 @@ def run_openmm_rpmd_equilibration(modeller,
                                   potential=None,
                                   ml_idx=None,
                                   atoms_to_watch=None):
+    """Equilibrate a ring-polymer MD system and save a checkpoint.
+
+    Runs in two stages: a first at half the requested timestep, letting
+    the beads spread out from their collapsed starting positions without
+    the stiff spring forces destabilising the integrator, then a second
+    at the full timestep. The checkpoint written here is what the
+    production runs restart from.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "rpmd_ready".
+    n_beads : int, optional
+        Number of ring-polymer beads. Default is 32.
+    temperature : openmm.unit.Quantity, optional
+        Target temperature. Default is 300 K.
+    pressure : openmm.unit.Quantity, optional
+        Target pressure. Default is 1 bar.
+    barostat_freq : int, optional
+        Steps between barostat volume moves. Default is 50.
+    friction : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    timestep : openmm.unit.Quantity, optional
+        Integration timestep at full speed. Default is 0.5 fs.
+    n_report : int, optional
+        Steps between reporter writes. Default is 1000.
+    n_1 : int, optional
+        Steps in the bead expansion stage, run at half `timestep`. Default
+        is 2000.
+    n_2 : int, optional
+        Steps in the relaxation stage at full `timestep`. Default is 10000.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    deuterate_option : str, optional
+        Which hydrogens to deuterate, for example 'water' or 'all'. Default
+        is "water".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+    atoms_to_watch : list of int, optional
+        Indices of atoms whose quantum spread is logged each report. Default
+        is None, which disables the spread reporter.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+
+        Ring-polymer dynamics needs a shorter timestep than classical MD
+        because the internal spring frequencies scale with the bead count.
+    """
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -1460,10 +1894,77 @@ def run_openmm_rpmd_contracted(modeller,
                                potential=None,
                                ml_idx=None,
                                atoms_to_watch=None):
+    """Run ring-polymer production MD with ring-polymer contraction.
+
+    Contraction evaluates the slowly varying parts of the force field on
+    fewer beads than the full ring, which is where most of the cost of
+    RPMD otherwise goes. Restarts from an equilibration checkpoint.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    plumed_script_path : str, optional
+        Path to a PLUMED input file to apply as a bias. Default is None.
+    checkpoint_file : str, optional
+        Checkpoint to restart from. Default is "rpmd_ready.chk".
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "prod_contracted".
+    n_beads : int, optional
+        Number of ring-polymer beads. Default is 32.
+    temperature : openmm.unit.Quantity, optional
+        Target temperature. Default is 300 K.
+    pressure : openmm.unit.Quantity, optional
+        Target pressure. Default is 1 bar.
+    barostat_freq : int, optional
+        Steps between barostat volume moves. Default is 50.
+    friction : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    timestep : openmm.unit.Quantity, optional
+        Integration timestep. Default is 0.5 fs.
+    steps : int, optional
+        Number of production steps. Default is 100000.
+    n_report : int, optional
+        Steps between reporter writes. Default is 1000.
+    contractions : dict, optional
+        Maps force group index to the number of bead copies it is evaluated
+        on. Each count must divide `n_beads`, and groups left out default to
+        the full ring. Default contracts direct-space nonbonded onto 8
+        copies and PME reciprocal space onto the centroid alone.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    deuterate_option : str, optional
+        Which hydrogens to deuterate, for example 'water' or 'all'. Default
+        is "water".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+    atoms_to_watch : list of int, optional
+        Indices of atoms whose quantum spread is logged each report. Default
+        is None, which disables the spread reporter.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+    """
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -1471,13 +1972,10 @@ def run_openmm_rpmd_contracted(modeller,
     has_box = modeller.topology.getUnitCellDimensions() is not None
 
     if contractions is None:
-        # Note: NumCopies must be a divisor of num_beads (32).
-        # Valid divisors for 32: 1, 2, 4, 8, 16, 32.
         contractions = {
             1: 8,  # Nonbonded Direct Space (calculate on every 4th bead)
             2: 1  # PME Reciprocal Space (calculate only on centroid)
         }
-        # Group 0 is not in the dict, so it defaults to num_beads (32)
 
     if run_mixed:
         mm_system = forcefield.createSystem(
@@ -1523,23 +2021,17 @@ def run_openmm_rpmd_contracted(modeller,
         plumed_force = PlumedForce(script_content)
         system.addForce(plumed_force)
 
-    # We must assign specific forces to specific integer groups (0-31).
-    # Group 0: Bonded Forces (Cheap) -> 32 copies (Implicit default)
-    # Group 1: Nonbonded Direct Space (Expensive) -> 8 copies
-    # Group 2: PME Reciprocal Space (Very Expensive) -> 1 copy
-
+    # Contraction is keyed on force group, so forces are sorted into groups by
+    # cost: 0 for cheap bonded terms evaluated on every bead, 1 for nonbonded
+    # direct space, 2 for the expensive PME reciprocal sum on the centroid alone
     print("Assigning force groups for contraction...", flush=True)
 
     for force in system.getForces():
-        # Check for NonbondedForce (Handles VdW + Coulomb)
         if isinstance(force, openmm.NonbondedForce):
-            # Set the Direct Space calculation to Group 1
             force.setForceGroup(1)
-            # Set the Reciprocal Space (PME) calculation to Group 2
             force.setReciprocalSpaceForceGroup(2)
             print(f"  - {force.__class__.__name__}: Direct->Group 1, Reciprocal->Group 2")
 
-        # Check for Bonded Forces (HarmonicBond, Angle, Torsion, etc.)
         elif isinstance(force, (openmm.HarmonicBondForce,
                                 openmm.HarmonicAngleForce,
                                 openmm.PeriodicTorsionForce,
@@ -1548,8 +2040,7 @@ def run_openmm_rpmd_contracted(modeller,
             force.setForceGroup(0)
             print(f"  - {force.__class__.__name__}: Group 0")
 
-        # Barostat and others
-        else:
+        else:  # Barostat and anything else, evaluated on every bead
             force.setForceGroup(0)
 
     print(f"\nInitializing RPMDIntegrator with contractions: {contractions}", flush=True)
@@ -1631,10 +2122,73 @@ def run_openmm_rpmd_prod(modeller,
                          potential=None,
                          ml_idx=None,
                          atoms_to_watch=None):
+    """Run ring-polymer production MD on the full ring polymer.
+
+    The uncontracted counterpart of
+    :func:`run_openmm_rpmd_contracted`: every force is evaluated on
+    every bead. More expensive, but free of any contraction
+    approximation. Restarts from an equilibration checkpoint.
+
+    Parameters
+    ----------
+    modeller : openmm.app.Modeller
+        Prepared topology and positions for the system.
+    forcefield : openmm.app.ForceField
+        Force field used to parameterise the system.
+    plumed_script_path : str, optional
+        Path to a PLUMED input file to apply as a bias. Default is None.
+    checkpoint_file : str, optional
+        Checkpoint to restart from. Default is "rpmd_ready.chk".
+    output_prefix : str, optional
+        Stem for the PDB, log and checkpoint files written. Default is
+        "prod".
+    n_beads : int, optional
+        Number of ring-polymer beads. Default is 32.
+    pressure : openmm.unit.Quantity, optional
+        Target pressure. Default is 1 bar.
+    temperature : openmm.unit.Quantity, optional
+        Target temperature. Default is 300 K.
+    gamma : openmm.unit.Quantity, optional
+        Langevin friction coefficient. Default is 1/ps.
+    time_step : openmm.unit.Quantity, optional
+        Integration timestep. Default is 1 fs.
+    barostat_freq : int, optional
+        Steps between barostat volume moves. Default is 50.
+    n_report : int, optional
+        Steps between reporter writes. Default is 1000.
+    steps : int, optional
+        Number of production steps. Default is 500000.
+    platform_name : str, optional
+        OpenMM platform to run on. Overridden to 'CUDA' whenever a mixed
+        ML potential is in use. Default is "CPU".
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    deuterate_option : str, optional
+        Which hydrogens to deuterate, for example 'water' or 'all'. Default
+        is "water".
+    potential : openmmml.MLPotential, optional
+        Machine-learning potential for the subsystem named by `ml_idx`. Has
+        no effect unless `ml_idx` is also given. Default is None.
+    ml_idx : list of int, optional
+        Indices of the atoms to treat with `potential`. Has no effect unless
+        `potential` is also given. Default is None.
+    atoms_to_watch : list of int, optional
+        Indices of atoms whose quantum spread is logged each report. Default
+        is None, which disables the spread reporter.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
+    forces the CUDA platform.
+    """
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'  # Force CUDA for mixed potential
+        platform_name = 'CUDA'
     else:
         run_mixed = False
 
@@ -1779,8 +2333,17 @@ def _calculate_quantum_spread(integrator, atom_indices=None):
 
 
 class RPMDQuantumSpreadReporter:
-    """A Reporter class to log the quantum spread (delocalization) of specific atoms
-    during an RPMD simulation.
+    """Log the quantum delocalisation of selected atoms during RPMD.
+
+    Writes the radius of gyration of each atom's ring polymer, which
+    measures how far that nucleus is spread in imaginary time. A proton
+    with a large spread relative to its bond lengths is one where
+    tunnelling is likely to matter.
+
+    Attributes
+    ----------
+    _atom_indices : list of int
+        Indices of the atoms being monitored.
     """
 
     def __init__(self, file, reportInterval, atom_indices, names=None):
@@ -1809,11 +2372,42 @@ class RPMDQuantumSpreadReporter:
         self._out.write(header + "\n")
 
     def describeNextReport(self, simulation):
+        """Report how many steps remain until the next report is due.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+
+        Returns
+        -------
+        tuple
+            Steps until the next report, followed by flags for whether
+            positions, velocities, forces and energies are needed.
+        """
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
         return (steps, False, False, False, False)
 
     def report(self, simulation, state):
-        # We need access to the integrator to get bead positions, not just the simulation state
+        """Write the radius of gyration of each watched atom.
+
+        The spread of a ring polymer measures how delocalised that nucleus
+        is, so a proton with a large radius of gyration is one where
+        tunnelling matters.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+        state : openmm.State
+            Current state of the simulation. Unused; bead positions are read
+            from the RPMD integrator instead, since the state holds only the
+            centroid.
+
+        Returns
+        -------
+        None
+        """
         integrator = simulation.integrator
 
         spreads = _calculate_quantum_spread(integrator, self._atom_indices)
@@ -1828,12 +2422,31 @@ class RPMDQuantumSpreadReporter:
         self._out.flush()
 
     def __del__(self):
+        """Close the log file when the reporter is destroyed.
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        None
+        """
         self._out.close()
 
 
 class RPMDBeadReporter:
-    """A custom reporter for OpenMM that saves the trajectory of EVERY individual
-    bead in an RPMD simulation to separate PDB files.
+    """Write the trajectory of every individual bead to its own PDB file.
+
+    OpenMM's built-in reporters see only the centroid, so the bead
+    positions have to be pulled from the RPMD integrator directly. Use
+    when the spread of the ring polymer itself is the object of interest;
+    :class:`RPMDCentroidReporter` is cheaper when it is not.
+
+    Attributes
+    ----------
+    _files : list of file object
+        One open PDB file per bead.
     """
 
     def __init__(self, file_base_name, reportInterval, num_beads, topology):
@@ -1863,34 +2476,73 @@ class RPMDBeadReporter:
             self._files.append(f)
 
     def describeNextReport(self, simulation):
-        """Tells the Simulation when the next report is due."""
+        """Report how many steps remain until the next report is due.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+
+        Returns
+        -------
+        tuple
+            Steps until the next report, followed by flags for whether
+            positions, velocities, forces and energies are needed.
+        """
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
         return (steps, False, False, False, False)
 
     def report(self, simulation, state):
-        """Called by the Simulation to generate the report."""
-        # We must access the integrator specifically to get bead positions
+        """Write the current positions of every bead, one file each.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+        state : openmm.State
+            Current state of the simulation. Unused; bead positions are read
+            from the RPMD integrator instead, since the state holds only the
+            centroid.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        Files are flushed every tenth frame so an interrupted run still
+            leaves readable trajectories.
+        """
         integrator = simulation.integrator
 
         for i in range(self._num_beads):
-            # getState(bead_index, ...) is specific to RPMDIntegrator
-            # Note: enforcePeriodicBox must match your system settings
             bead_state = integrator.getState(i, getPositions=True, enforcePeriodicBox=True)
             positions = bead_state.getPositions()
 
             app.PDBFile.writeModel(self._topology, positions, self._files[i], self._next_frame_index)
 
-            # flush periodically so data isn't lost if the run is interrupted
             if self._next_frame_index % 10 == 0:
                 self._files[i].flush()
 
         self._next_frame_index += 1
 
     def __del__(self):
-        """Cleanup: Close all file handles when the reporter is destroyed."""
+        """Write the PDB footer to every bead file and close them.
+
+        Errors are swallowed because interpreter shutdown may already have
+        torn down what this needs, and a failure here would mask the real
+        reason the run ended.
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        None
+        """
         for f in self._files:
             try:
-                # Write footer before closing to ensure valid PDB syntax
                 app.PDBFile.writeFooter(self._topology, f)
                 f.close()
             except Exception:
@@ -1898,11 +2550,36 @@ class RPMDBeadReporter:
 
 
 class RPMDCentroidReporter:
-    """A custom reporter that calculates the centroid (average position) of all beads
-    and writes it to a single PDB file.
+    """Write the bead-averaged positions to a single PDB file.
+
+    The centroid is the closest thing a ring polymer has to a classical
+    configuration, which makes it the sensible trajectory to visualise or
+    to feed to analysis tools that expect one particle per atom.
+
+    Attributes
+    ----------
+    _num_beads : int
+        Number of beads averaged over at each report.
     """
 
     def __init__(self, file_name, reportInterval, num_beads, topology):
+        """Initialise the reporter and open the output file.
+
+        Parameters
+        ----------
+        file_name : str
+            Path of the PDB file to write.
+        reportInterval : int
+            Steps between frames.
+        num_beads : int
+            Number of beads in the RPMD integrator, used to average over.
+        topology : openmm.app.Topology
+            Topology written into the PDB header.
+
+        Returns
+        -------
+        None
+        """
         self._reportInterval = reportInterval
         self._num_beads = num_beads
         self._topology = topology
@@ -1911,10 +2588,41 @@ class RPMDCentroidReporter:
         app.PDBFile.writeHeader(topology, self._out)
 
     def describeNextReport(self, simulation):
+        """Report how many steps remain until the next report is due.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+
+        Returns
+        -------
+        tuple
+            Steps until the next report, followed by flags for whether
+            positions, velocities, forces and energies are needed.
+        """
         steps = self._reportInterval - simulation.currentStep % self._reportInterval
         return (steps, False, False, False, False)
 
     def report(self, simulation, state):
+        """Write the bead-averaged positions as one PDB model.
+
+        The centroid is the closest thing the ring polymer has to a
+        classical configuration, so it is what gets visualised.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+        state : openmm.State
+            Current state of the simulation. Unused; bead positions are read
+            from the RPMD integrator instead, since the state holds only the
+            centroid.
+
+        Returns
+        -------
+        None
+        """
         integrator = simulation.integrator
 
         # asNumpy=True for vector efficiency, though OpenMM Quantities also support math
@@ -1933,6 +2641,20 @@ class RPMDCentroidReporter:
             self._out.flush()
 
     def __del__(self):
+        """Write the PDB footer and close the file.
+
+        Errors are swallowed because interpreter shutdown may already have
+        torn down what this needs, and a failure here would mask the real
+        reason the run ended.
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        None
+        """
         try:
             app.PDBFile.writeFooter(self._topology, self._out)
             self._out.close()
@@ -1941,6 +2663,28 @@ class RPMDCentroidReporter:
 
 
 def count_dna_and_estimate_charge(topology):
+    """Estimate the net charge of the DNA in a topology.
+
+    Counts nucleotide residues and assumes one negative charge each,
+    which is the charge of the phosphate backbone at neutral pH. Used to
+    work out how many counter-ions a system needs.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+        Topology to scan.
+
+    Returns
+    -------
+    int
+        The estimated net charge in units of the elementary charge.
+
+    Notes
+    -----
+    Recognises internal, 5'-terminal and 3'-terminal residue names. Only
+        DNA is counted, so RNA or a phosphorylated protein will not be
+        accounted for.
+    """
     dna_residue_names = {
         "DA", "DC", "DG", "DT",  # internal
         "DA5", "DC5", "DG5", "DT5",  # 5'-terminal
@@ -1953,7 +2697,6 @@ def count_dna_and_estimate_charge(topology):
         if residue.name.strip() in dna_residue_names:
             num_dna_residues += 1
 
-    # Estimate: -1 e per nucleotide
     estimated_charge = -num_dna_residues
 
     return estimated_charge

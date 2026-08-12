@@ -1,3 +1,24 @@
+"""Preparation and execution of i-PI simulations.
+
+Each calculation type - minimisation, MD, biased MD, phonons, transition
+state search and instanton - is exposed as a pair of functions. The
+``prep_*_xml`` half loads the matching XML template from ``templates/``,
+rewrites it for the system and settings at hand, and writes it alongside
+the input geometry. The ``run_*`` half wraps that: it clears and recreates
+the run directory, prepares the client driver, launches i-PI, and reads the
+results back.
+
+Also provides post-processing entry points that shell out to PLUMED and to
+the instanton tools for free energy surfaces, partition functions and
+bead interpolation.
+
+Notes
+-----
+Runs are destructive: every ``run_*`` function removes its target
+directory before starting, so results must be read or copied out before
+re-running into the same path.
+"""
+
 import contextlib
 import os
 import shutil
@@ -172,6 +193,31 @@ def run_ipi(directory,
 
 
 def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None):
+    """Reconstruct a free energy surface from metadynamics hills.
+
+    Runs ``plumed sum_hills`` over the HILLS file, writing the surface to
+    FES in the same directory.
+
+    Parameters
+    ----------
+    directory : str
+        Directory containing HILLS and plumed.dat.
+    temperature : float, optional
+        Temperature in K, converted to kJ/mol for PLUMED. Default is 300.0.
+    bins : int, optional
+        Number of grid bins per collective variable. Default is 100.
+    stride : int, optional
+        Emit an intermediate surface every this many hills, which is what
+        makes the convergence plots possible. Default is 100.
+    cv : list, optional
+        Grid bounds as ``[min, max]`` for one collective variable, or a
+        list of such pairs for several. Bounds of None let PLUMED choose
+        them. Default is [[0.21, 0.31], [-1, 1]].
+
+    Returns
+    -------
+    None
+    """
     print('Running plumed hills', flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
@@ -212,6 +258,34 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
 
 
 def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
+    """Reconstruct a free energy surface from an OPES state file.
+
+    OPES stores compressed kernels rather than a hill history, so the
+    surface is rebuilt with ``opes/fes_from_state.py`` instead of
+    ``plumed sum_hills``.
+
+    Parameters
+    ----------
+    directory : str
+        Directory containing the OPES STATE file.
+    temperature : float, optional
+        Temperature in K, converted to kJ/mol. Default is 300.0.
+    bins : int, optional
+        Number of grid bins per collective variable. Default is 100.
+    cv : list, optional
+        Grid bounds as ``[min, max]`` for one collective variable, or a
+        list of such pairs for several. Bounds of None let the grid be
+        chosen automatically. Default is [[0.21, 0.31], [-1, 1]].
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Every stored state is written out, not just the last, so convergence
+    can be checked across the run.
+    """
     print('Running plumed OPES hills', flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
@@ -244,7 +318,7 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
-    # Needs to run from the directory of the run
+    # The FES script takes no path argument, so it finds STATE via the cwd
     with working_directory(directory):
         subprocess.run(command.split(), check=False)
 
@@ -259,6 +333,41 @@ def run_instanton_post_process(directory,
                                ref_energy=None,
                                n_beads=1,
                                outfile='thermo_data.out'):
+    """Run the instanton post-processing on a completed calculation.
+
+    Invokes ``instanton_tools/postproc.py`` against the RESTART file to
+    extract the partition functions that the rate expressions need.
+
+    Parameters
+    ----------
+    directory : str
+        Directory containing the RESTART file.
+    process_type : {"reactant", "TS", "instanton"}, optional
+        Which stationary point the calculation describes. Default is
+        'reactant'.
+    temperature : float, optional
+        Temperature in K. Default is 300.0.
+    filter_list : list of int, optional
+        Zero-based indices of atoms to exclude from the partition
+        functions. Default is None.
+    ref_energy : float, optional
+        Energy zero in eV, normally the reactant energy, so barriers come
+        out relative to it. Default is None.
+    n_beads : int, optional
+        Number of beads in the full polymer, required for the reactant
+        case. Default is 1.
+    outfile : str, optional
+        File to capture stdout into. Default is 'thermo_data.out'.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Failures are reported on stderr rather than raised, so callers should
+    check that the parsed output contains the expected fields.
+    """
     print(f'Running the {process_type} thermo/instanton post-processing', flush=True)
 
     path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "postproc.py")
@@ -272,7 +381,7 @@ def run_instanton_post_process(directory,
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
-    # Needs to run from the directory of the run
+    # RESTART is passed as a bare name, so it resolves against the cwd
     with working_directory(directory), open(outfile, "w") as file:
         result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
@@ -283,8 +392,31 @@ def run_instanton_post_process(directory,
 
 
 def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
-    # Reimplements the manual recipe from:
-    # https://github.com/i-pi/piqm2023-tutorial/blob/main/05-RPI/tutorial-4.ipynb
+    """Resample a converged instanton onto a larger number of beads.
+
+    Copies the geometry, Hessian and input from a finished run into a new
+    directory, interpolates them onto a finer ring polymer, and rewrites
+    the XML to match. This is how a bead-convergence sequence is stepped
+    up without restarting from the transition state each time.
+
+    Parameters
+    ----------
+    directory_old : str
+        Directory of the completed lower-bead instanton run.
+    directory_new : str
+        Directory to create and populate for the next run.
+    new_n_beads : int
+        Number of beads for the new calculation.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Reimplements the manual recipe from the i-PI PIQM2023 tutorial,
+    ``05-RPI/tutorial-4.ipynb``.
+    """
     print('Running the instanton interpolation', flush=True)
 
     os.makedirs(directory_new, exist_ok=True)
@@ -338,6 +470,47 @@ def prep_optimise_xml(directory,
                       properties=None,
                       xml_in=None,
                       file_in="init.xyz"):
+    """Write the i-PI input for a geometry optimisation.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to write input.xml and the structure file into.
+    atoms : ase.Atoms
+        Starting structure.
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "min".
+    driver : str, optional
+        Driver name, used to select the force provider. Default is
+        "ase-mace".
+    total_steps : int, optional
+        Maximum number of optimiser steps. Default is 100.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    optimiser : str, optional
+        Optimisation algorithm. Default is "lbfgs".
+    tol_energy : float, optional
+        Energy convergence tolerance. Default is 1.0e-4.
+    tol_force : float, optional
+        Force convergence tolerance. Default is 1.0e-4.
+    tol_position : float, optional
+        Position convergence tolerance. Default is 1.0e-4.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 10.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the MIN.xml template.
+        Default is None.
+    file_in : str, optional
+        Name of the structure file to write. Default is "init.xyz".
+
+    Returns
+    -------
+    None
+    """
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
@@ -389,6 +562,51 @@ def run_optimise(directory,
                  checkpoint_stride=1000,
                  properties=None,
                  xml_in=None):
+    """Run a geometry optimisation and return the relaxed structure.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated before the run.
+    atoms : ase.Atoms or list of ase.Atoms
+        Starting structure. If a list is given, the last frame is used.
+    server : str, optional
+        Command that starts the i-PI server. Default is "i-pi input.xml".
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "min".
+    driver : str, optional
+        Driver name passed to :func:`~nqetools.driver.prep_driver`.
+        Default is "ase-mace".
+    driver_args : dict, optional
+        Extra keyword arguments for the driver. Default is None.
+    total_steps : int, optional
+        Maximum number of optimiser steps. Default is 100.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    optimiser : str, optional
+        Optimisation algorithm. Default is "lbfgs".
+    tol_energy : float, optional
+        Energy convergence tolerance. Default is 1.0e-4.
+    tol_force : float, optional
+        Force convergence tolerance. Default is 1.0e-4.
+    tol_position : float, optional
+        Position convergence tolerance. Default is 1.0e-4.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is
+        None.
+
+    Returns
+    -------
+    tuple of (list of ase.Atoms, dict, dict)
+        The optimisation trajectory, the parsed scalar output, and the
+        descriptions of those output columns.
+    """
     print(f"Running the minimisation with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
@@ -441,6 +659,57 @@ def prep_md_xml(directory,
                 properties=None,
                 xml_in=None,
                 file_in="init.xyz"):
+    """Write the i-PI input for a molecular dynamics run.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to write input.xml and the structure file into.
+    atoms : ase.Atoms
+        Starting structure.
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "md".
+    driver : str, optional
+        Driver name, used to select the force provider. Default is
+        "ase-mace".
+    total_steps : int, optional
+        Number of MD steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    temperature : float, optional
+        Target temperature in K. Default is 300.0.
+    timestep : float, optional
+        Integration timestep in fs. Default is 1.
+    thermostat : str, optional
+        Name of a thermostat XML fragment to splice in, overriding the
+        template's own. Default is None.
+    md_type : str, optional
+        Ensemble, naming the template to load, for example "NVT", "NPT"
+        or "NVE". Default is "NVT".
+    splitting : str, optional
+        Integrator splitting scheme. Default is "baoab".
+    fix_com : bool, optional
+        If True, remove centre of mass motion. Default is False.
+    stride : int, optional
+        Interval between trajectory writes. Default is 10.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    n_beads : int, optional
+        Ring-polymer beads. Values above 1 select path-integral dynamics,
+        which adds centroid output and switches the kinetic and pressure
+        estimators to their centroid-virial forms. Default is 1.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the ensemble template.
+        Default is None.
+    file_in : str, optional
+        Name of the structure file to write. Default is "init.xyz".
+
+    Returns
+    -------
+    None
+    """
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
@@ -512,6 +781,62 @@ def run_md(directory,
            n_procs=None,
            properties=None,
            xml_in=None):
+    """Run molecular dynamics and return the resulting trajectory.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated before the run.
+    atoms : ase.Atoms or list of ase.Atoms
+        Starting structure. If a list is given, the last frame is used.
+    server : str, optional
+        Command that starts the i-PI server. Default is "i-pi input.xml".
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "md".
+    driver : str, optional
+        Driver name passed to :func:`~nqetools.driver.prep_driver`.
+        Default is "ase-mace".
+    driver_args : dict, optional
+        Extra keyword arguments for the driver. Default is None.
+    total_steps : int, optional
+        Number of MD steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    temperature : float, optional
+        Target temperature in K. Default is 300.0.
+    timestep : float, optional
+        Integration timestep in fs. Default is 1.
+    thermostat : str, optional
+        Name of a thermostat XML fragment to splice in. Default is None.
+    md_type : str, optional
+        Ensemble, naming the template to load. Default is "NVT".
+    splitting : str, optional
+        Integrator splitting scheme. Default is "baoab".
+    fix_com : bool, optional
+        If True, remove centre of mass motion. Default is False.
+    stride : int, optional
+        Interval between trajectory writes. Default is 10.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    n_beads : int, optional
+        Ring-polymer beads. Values above 1 select path-integral dynamics.
+        Default is 1.
+    n_procs : int, optional
+        Number of driver processes. Capped at `n_beads`, since beads are
+        the unit of parallel force evaluation. Defaults to `n_beads`.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is
+        None.
+
+    Returns
+    -------
+    tuple of (list of ase.Atoms, dict, dict)
+        The trajectory, the parsed scalar output, and the descriptions of
+        those output columns. For path-integral runs the trajectory holds
+        the centroid rather than a single bead.
+    """
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
@@ -572,6 +897,61 @@ def prep_plumed_xml(directory,
                     properties=None,
                     xml_in=None,
                     file_in="init.xyz"):
+    """Write the i-PI input for a PLUMED-biased molecular dynamics run.
+
+    Identical to :func:`prep_md_xml` except that a PLUMED force section is
+    spliced in and the bias energy is added to the output list, so the
+    accumulated bias can be monitored for convergence.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to write input.xml and the structure file into.
+    atoms : ase.Atoms
+        Starting structure.
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "md".
+    driver : str, optional
+        Driver name, used to select the force provider. Default is
+        "ase-mace".
+    total_steps : int, optional
+        Number of MD steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    temperature : float, optional
+        Target temperature in K. Default is 300.0.
+    timestep : float, optional
+        Integration timestep in fs. Default is 1.0.
+    thermostat : str, optional
+        Name of a thermostat XML fragment to splice in. Default is None.
+    md_type : str, optional
+        Ensemble, naming the template to load. Default is "NVT".
+    splitting : str, optional
+        Integrator splitting scheme. Default is "baoab".
+    fix_com : bool, optional
+        If True, remove centre of mass motion. Default is False.
+    stride : int, optional
+        Interval between trajectory writes. Default is 10.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    n_beads : int, optional
+        Ring-polymer beads. Values above 1 select path-integral dynamics.
+        Default is 1.
+    plumed_extras : dict, optional
+        Extra attributes for the PLUMED force section, as returned by
+        :func:`~nqetools.plumed.prep_plumed`. Default is None.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the ensemble template.
+        Default is None.
+    file_in : str, optional
+        Name of the structure file to write. Default is "init.xyz".
+
+    Returns
+    -------
+    None
+    """
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
@@ -649,6 +1029,72 @@ def run_plumed_md(directory,
                   plumed_args=None,
                   properties=None,
                   xml_in=None):
+    """Run PLUMED-biased molecular dynamics and return the trajectory.
+
+    Builds the PLUMED input from `plumed_type` and `plumed_args`, then
+    runs MD with that bias applied.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated before the run.
+    atoms : ase.Atoms or list of ase.Atoms
+        Starting structure. If a list is given, the last frame is used.
+    server : str, optional
+        Command that starts the i-PI server. Default is "i-pi input.xml".
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "md".
+    driver : str, optional
+        Driver name passed to :func:`~nqetools.driver.prep_driver`.
+        Default is "ase-mace".
+    driver_args : dict, optional
+        Extra keyword arguments for the driver. Default is None.
+    total_steps : int, optional
+        Number of MD steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    temperature : float, optional
+        Target temperature in K. Also passed to PLUMED, which needs it to
+        set the bias factor. Default is 300.0.
+    timestep : float, optional
+        Integration timestep in fs. Default is 1.0.
+    thermostat : str, optional
+        Name of a thermostat XML fragment to splice in. Default is None.
+    md_type : str, optional
+        Ensemble, naming the template to load. Default is "NVT".
+    splitting : str, optional
+        Integrator splitting scheme. Default is "baoab".
+    fix_com : bool, optional
+        If True, remove centre of mass motion. Default is False.
+    stride : int, optional
+        Interval between trajectory writes. Default is 10.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    n_beads : int, optional
+        Ring-polymer beads. Values above 1 select path-integral dynamics.
+        Default is 1.
+    n_procs : int, optional
+        Number of driver processes, capped at `n_beads`. Defaults to
+        `n_beads`.
+    plumed_type : str, optional
+        Which PLUMED input writer to use, for example "mtd-pos" or
+        "opes-dist". Default is "mtd-pos".
+    plumed_args : dict, optional
+        Arguments for that writer. The run directory and temperature are
+        always overwritten with the values used here. Default is None.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is
+        None.
+
+    Returns
+    -------
+    tuple of (list of ase.Atoms, dict, dict)
+        The trajectory, the parsed scalar output, and the descriptions of
+        those output columns. For path-integral runs the trajectory holds
+        the centroid rather than a single bead.
+    """
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
     if plumed_args is None:
         plumed_args = {'directory': directory,
@@ -715,6 +1161,41 @@ def prep_phonons_xml(directory,
                      properties=None,
                      xml_in=None,
                      file_in="init.xyz"):
+    """Write the i-PI input for a phonon calculation.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to write input.xml and the structure file into.
+    atoms : ase.Atoms
+        Structure to displace, which should already be at a minimum.
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "phonon".
+    driver : str, optional
+        Driver name, used to select the force provider. Default is
+        "ase-mace".
+    total_steps : int, optional
+        Maximum number of displacement steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium, which shifts the
+        frequencies without changing the underlying force constants.
+        Default is False.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the PHO.xml template.
+        Default is None.
+    file_in : str, optional
+        Name of the structure file to write. Default is "init.xyz".
+
+    Returns
+    -------
+    None
+    """
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
@@ -758,6 +1239,44 @@ def run_phonons(directory,
                 checkpoint_stride=1000,
                 properties=None,
                 xml_in=None):
+    """Run a phonon calculation to obtain the dynamical matrix.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated before the run.
+    atoms : ase.Atoms or list of ase.Atoms
+        Structure to displace, which should already be at a minimum. If a
+        list is given, the last frame is used.
+    server : str, optional
+        Command that starts the i-PI server. Default is "i-pi input.xml".
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "phonon".
+    driver : str, optional
+        Driver name passed to :func:`~nqetools.driver.prep_driver`.
+        Default is "ase-mace".
+    driver_args : dict, optional
+        Extra keyword arguments for the driver. Default is None.
+    total_steps : int, optional
+        Maximum number of displacement steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is
+        None.
+
+    Returns
+    -------
+    None
+        Results are left in the run directory for the post-processing
+        step to pick up.
+    """
     print(f"Running the phonons with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
@@ -799,6 +1318,51 @@ def prep_ts_xml(directory,
                 properties=None,
                 xml_in=None,
                 file_in="init.xyz"):
+    """Write the i-PI input for a transition state search.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to write input.xml and the structure file into.
+    atoms : ase.Atoms
+        Starting guess for the saddle point.
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "ts".
+    driver : str, optional
+        Driver name, used to select the force provider. Default is
+        "ase-mace".
+    total_steps : int, optional
+        Maximum number of search steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    tol_energy : float, optional
+        Energy convergence tolerance. Default is 5.0e-6.
+    tol_force : float, optional
+        Force convergence tolerance. Default is 5.0e-6.
+    tol_position : float, optional
+        Position convergence tolerance. Default is 1.0e-6.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the TS.xml template.
+        Default is None.
+    file_in : str, optional
+        Name of the structure file to write. Default is "init.xyz".
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    The tolerances are two orders of magnitude tighter than for a
+    minimisation, because the Hessian produced here seeds the instanton
+    search and a loosely converged saddle gives a poor starting orbit.
+    """
     if xml_in is not None:
         tree = et.parse(xml_in)
     else:
@@ -847,6 +1411,55 @@ def run_ts(directory,
            checkpoint_stride=1000,
            properties=None,
            xml_in=None):
+    """Run a transition state search and return the located saddle point.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated before the run.
+    atoms : ase.Atoms or list of ase.Atoms
+        Starting guess for the saddle point. If a list is given, the last
+        frame is used.
+    server : str, optional
+        Command that starts the i-PI server. Default is "i-pi input.xml".
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "ts".
+    driver : str, optional
+        Driver name passed to :func:`~nqetools.driver.prep_driver`.
+        Default is "ase-mace".
+    driver_args : dict, optional
+        Extra keyword arguments for the driver. Default is None.
+    total_steps : int, optional
+        Maximum number of search steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    tol_energy : float, optional
+        Energy convergence tolerance. Default is 5.0e-6.
+    tol_force : float, optional
+        Force convergence tolerance. Default is 5.0e-6.
+    tol_position : float, optional
+        Position convergence tolerance. Default is 1.0e-6.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is
+        None.
+
+    Returns
+    -------
+    tuple of (list of ase.Atoms, dict, dict)
+        The search trajectory, the parsed scalar output, and the
+        descriptions of those output columns.
+
+    Notes
+    -----
+    The Hessian left in the run directory is what :func:`run_instanton`
+    reads to start its own optimisation.
+    """
     print(f"Running the transition state search with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}
@@ -895,6 +1508,57 @@ def prep_instanton_xml(directory,
                        properties=None,
                        xml_in=None,
                        file_in="init.xyz"):
+    """Write the i-PI input for an instanton optimisation.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to write input.xml and the structure file into. A
+        Hessian from a transition state search must already be present.
+    atoms : ase.Atoms
+        Transition state structure, used as the starting orbit.
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "instanton".
+    driver : str, optional
+        Driver name, used to select the force provider. Default is
+        "ase-mace".
+    total_steps : int, optional
+        Maximum number of optimiser steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium, which is how the
+        kinetic isotope effect is obtained. Default is False.
+    n_beads : int, optional
+        Number of ring-polymer beads in the half polymer. Default is 4.
+    temperature : float, optional
+        Temperature in K, which sets the imaginary-time period and so the
+        extent of the instanton orbit. Default is 300.0.
+    tol_energy : float, optional
+        Energy convergence tolerance. Default is 5.0e-6.
+    tol_force : float, optional
+        Force convergence tolerance. Default is 5.0e-6.
+    tol_position : float, optional
+        Position convergence tolerance. Default is 1.0e-6.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the INST.xml template.
+        Default is None.
+    file_in : str, optional
+        Name of the structure file to write. Default is "init.xyz".
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Open paths are enabled for every atom, since the instanton orbit is a
+    linear polymer with free ends rather than a closed ring.
+    """
     n_atoms = len(atoms)
     n_doft = 3 * n_atoms
 
@@ -958,6 +1622,63 @@ def run_instanton(directory,
                   checkpoint_stride=1000,
                   properties=None,
                   xml_in=None):
+    """Run an instanton optimisation, seeded from a transition state.
+
+    Copies the final Hessian out of a completed transition state search
+    into the new run directory, then optimises the ring-polymer orbit.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated before the run.
+    atoms : ase.Atoms or list of ase.Atoms
+        Transition state structure. If a list is given, the last frame is
+        used.
+    directory_ts : str
+        Directory of the completed transition state search, supplying the
+        starting Hessian.
+    server : str, optional
+        Command that starts the i-PI server. Default is "i-pi input.xml".
+    outfile : str, optional
+        Prefix for i-PI output files. Default is "instanton".
+    driver : str, optional
+        Driver name passed to :func:`~nqetools.driver.prep_driver`.
+        Default is "ase-mace".
+    driver_args : dict, optional
+        Extra keyword arguments for the driver. Default is None.
+    total_steps : int, optional
+        Maximum number of optimiser steps. Default is 1000.
+    deuterate : bool, optional
+        If True, replace hydrogen masses with deuterium. Default is False.
+    n_beads : int, optional
+        Number of ring-polymer beads in the half polymer. Default is 4.
+    n_procs : int, optional
+        Number of driver processes, capped at `n_beads`. Defaults to
+        `n_beads`.
+    temperature : float, optional
+        Temperature in K. Default is 300.0.
+    tol_energy : float, optional
+        Energy convergence tolerance. Default is 5.0e-6.
+    tol_force : float, optional
+        Force convergence tolerance. Default is 5.0e-6.
+    tol_position : float, optional
+        Position convergence tolerance. Default is 1.0e-6.
+    stride : int, optional
+        Interval between trajectory writes. Default is 1.
+    checkpoint_stride : int, optional
+        Interval between checkpoint writes. Default is 1000.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is
+        None.
+
+    Returns
+    -------
+    None
+        Results are left in the run directory for
+        :func:`run_instanton_post_process` to pick up.
+    """
     print(f"Running the instanton with the driver: {driver}", flush=True)
     if driver_args is None:
         driver_args = {}

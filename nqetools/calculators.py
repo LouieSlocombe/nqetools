@@ -1,3 +1,15 @@
+"""ASE calculator presets and quantum chemistry driver routines.
+
+Wraps NWChem, ORCA and Q-Chem behind preset factory functions, so a level
+of theory can be selected by name rather than assembled by hand each
+time. The ORCA presets are graded from 'cheap' to 'gold' to make the
+accuracy and cost trade-off explicit.
+
+Also provides the calculations that run on top of those calculators:
+geometry optimisation, vibrational spectra, Hessians, free energies and
+global conformer searches.
+"""
+
 import os
 import re
 import tempfile
@@ -998,7 +1010,6 @@ def calculate_free_energy(atoms,
         else:
             energy = grab_value(orca_file, 'Final Gibbs free energy', '...')
 
-        # Return energy, enthalpy, and entropy
         return energy, energy - entropy, entropy
 
 

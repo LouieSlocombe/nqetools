@@ -1,3 +1,10 @@
+"""Tests for instanton rate theory.
+
+Ranges from parsing individual post-processing outputs to end-to-end
+runs that take a reaction from minimisation through transition state
+search and instanton optimisation to a tunnelling-corrected rate.
+"""
+
 import os
 
 import numpy as np
@@ -7,6 +14,7 @@ import nqetools as nqe
 
 def test_parse_react_thermo_data():
     # Zundel system
+    """Parse the reactant partition functions from post-processing output."""
     print(flush=True)
     temperature = 300.0
     directory = 'data/instanton/react_phonon/'
@@ -28,6 +36,7 @@ def test_parse_react_thermo_data():
 
 def test_parse_ts_thermo_data():
     # Zundel system
+    """Parse the transition state partition functions from post-processing output."""
     print(flush=True)
     temperature = 300.0
     directory = 'data/instanton/ts/'
@@ -48,6 +57,7 @@ def test_parse_ts_thermo_data():
 
 def test_calc_forward_rate():
     # Zundel system
+    """Compute a classical TST forward rate from parsed partition functions."""
     print(flush=True)
     temperature = 300.0
     react_directory = 'data/instanton/react_phonon/'
@@ -68,6 +78,7 @@ def test_calc_forward_rate():
 
 def test_parse_inst_thermo_data():
     # CBE system
+    """Parse the instanton partition functions from post-processing output."""
     print(flush=True)
     temperature = 300.0
     n_beads = 40
@@ -95,6 +106,7 @@ def test_parse_inst_thermo_data():
 # Warning this takes 5 minutes to run
 def test_calc_instanton_kappa_bead():
     # CBE system
+    """Compute the tunnelling factor from transition state and instanton data."""
     print(flush=True)
     temperature = 300.0
     n_beads = 40
@@ -137,6 +149,7 @@ def test_calc_instanton_kappa_bead():
 
 def test_ch4hcbe_end_to_end():
     # CBE system
+    """Run CH4+H from minimisation to tunnelling-corrected rate with the analytic PES."""
     print(flush=True)
 
     directory_opti = 'opti'
@@ -216,6 +229,7 @@ def test_ch4hcbe_end_to_end():
 
 def test_ch4hcbe_end_to_end_orca():
     # CBE system
+    """Run CH4+H from minimisation to tunnelling-corrected rate with ORCA."""
     print(flush=True)
 
     directory_opti = 'opti'
@@ -296,6 +310,7 @@ def test_ch4hcbe_end_to_end_orca():
 
 def test_ch4hcbe_temperature():
     # CBE system
+    """Compute the CH4+H tunnelling factor across a range of temperatures."""
     print(flush=True)
 
     directory_opti = 'opti'
@@ -371,6 +386,7 @@ def test_ch4hcbe_temperature():
 
 
 def test_thermo():
+    """Combine a classical rate and a tunnelling factor into a corrected rate."""
     print(flush=True)
     temperature = 300.0
     n_beads = 40

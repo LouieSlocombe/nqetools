@@ -1,3 +1,10 @@
+"""Tests for calculators, tunnelling corrections and file handling.
+
+Covers the quantum chemistry calculator presets, the analytic tunnelling
+corrections, ASE socket and QM/MM setups, and the PDB and XYZ cleaning
+routines.
+"""
+
 import os
 import sys
 import time
@@ -187,6 +194,7 @@ def test_exe_md():
 
 
 def test_nwchem_socket():
+    """Optimise water with NWChem over ASE's socket interface."""
     print(flush=True)
     # https://wiki.fysik.dtu.dk/ase/ase/calculators/socketio/socketio.html
     atoms = molecule('H2O')
@@ -211,6 +219,7 @@ def test_nwchem_socket():
 
 
 def test_ase_server_socket():
+    """Drive an optimisation with ASE as server and a separate client process."""
     print(flush=True)
     # https://wiki.fysik.dtu.dk/ase/ase/calculators/socketio/socketio.html#run-server-and-client-manually
 
@@ -233,6 +242,7 @@ def test_ase_server_socket():
 
 
 def test_py_socket():
+    """Optimise water with ASE's in-process Python socket client."""
     print(flush=True)
     atoms = molecule('H2O', vacuum=3.0)
     atoms.rattle(stdev=0.1)
@@ -246,6 +256,7 @@ def test_py_socket():
 
 
 def test_get_ipi_driver():
+    """Check the i-PI driver executable is found on the system."""
     print(flush=True)
     driver_path = nqe.get_ipi_driver()
     ref_path = "/home/louie/anaconda3/envs/ipi_env2/lib/python3.12/site-packages/ipi/bin/i-pi-driver"
@@ -253,6 +264,7 @@ def test_get_ipi_driver():
 
 
 def test_load_xyz_with_cell():
+    """Read an i-PI XYZ trajectory and recover its cell."""
     print(flush=True)
     atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
     target_positions = [[0.54044999, -0.97484999, -0.21658],
@@ -350,6 +362,7 @@ def test_eckart_correction():
 
 
 def test_fit_exp_decay():
+    """Recover known parameters by fitting an exponential decay."""
     print(flush=True)
     rng = np.random.default_rng(seed=42)
     x_data = np.linspace(0, 10, 60)
@@ -373,6 +386,7 @@ def test_fit_exp_decay():
 
 
 def test_extrapolate_inf_bead_limit():
+    """Extrapolate a bead-convergence series to the infinite-bead limit."""
     print(flush=True)
     n_beads = [10, 20, 40, 80]
     kappa = [18.486247675370873, 11.481103709870357, 10.127813329699068, 9.809437521247709]
@@ -382,6 +396,7 @@ def test_extrapolate_inf_bead_limit():
 
 
 def test_orca_onion():
+    """Build a layered ONIOM-style ORCA calculator."""
     print(flush=True)
     print("Testing ORCA ONIOM calculator", flush=True)
 
@@ -402,6 +417,7 @@ def test_orca_onion():
 
 
 def test_prepare_neb():
+    """Run a nudged elastic band between two ethane conformers."""
     print(flush=True)
     n_images = 15
     f_max = 0.01
@@ -450,6 +466,7 @@ def test_prepare_neb():
 
 
 def test_ase_qmmm():
+    """Set up a QM/MM partition with ASE's SimpleQMMM."""
     print(flush=True)
     m1 = molecule('H2O')
     m2 = molecule('C2H6')
@@ -477,6 +494,7 @@ def test_ase_qmmm():
 
 
 def test_ase_qmmm_orca_mace():
+    """Set up a QM/MM partition with ORCA as QM and MACE as MM."""
     print(flush=True)
     m1 = molecule('H2O')
     m2 = molecule('C2H6')
@@ -503,6 +521,7 @@ def test_ase_qmmm_orca_mace():
 def test_ase_eiqmmm():
     # Broken as ORCA does not have AttributeError: 'ORCA' object has no attribute 'embed'
 
+    """Set up an electrostatically embedded QM/MM partition."""
     from ase.calculators.qmmm import EIQMMM, Embedding, LJInteractions
     from ase.calculators.tip3p import TIP3P, epsilon0, sigma0
     from ase.data import s22
@@ -530,6 +549,7 @@ def test_ase_eiqmmm():
 
 
 def test_xyz_to_sdf():
+    """Convert an XYZ structure to SDF, inferring bonds."""
     print(flush=True)
 
     atoms = molecule('H2O')
@@ -547,6 +567,7 @@ def test_xyz_to_sdf():
 
 
 def test_extract_nonstandard_res():
+    """Extract non-standard residues from a PDB file."""
     print(flush=True)
 
     input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
@@ -564,6 +585,7 @@ def test_extract_nonstandard_res():
 
 
 def test_get_non_standard_residues():
+    """Identify the non-standard residues in a PDB file."""
     print(flush=True)
     pdb_file = "tests/data/pdb/gt_wob_solv.pdb"
     non_standard_mols = nqe.get_non_standard_residues(pdb_file)
@@ -571,6 +593,7 @@ def test_get_non_standard_residues():
 
 
 def test_list_non_standard_residues():
+    """List the non-standard residue names in a PDB file."""
     print(flush=True)
     pdb_file = "tests/data/pdb/gt_wob_solv.pdb"
     non_standard_residues = nqe.list_non_standard_residues(pdb_file)
@@ -584,6 +607,7 @@ def test_list_non_standard_residues():
 
 
 def test_clean_pdb_ions():
+    """Strip ions from a PDB file."""
     print(flush=True)
     input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
     output_pdb = 'cleaned_gt_wob_solv.pdb'
@@ -611,6 +635,7 @@ def test_clean_pdb_ions():
 
 
 def test_relabel_residues_in_pdb():
+    """Rename residues in a PDB file."""
     print(flush=True)
     input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
     output_pdb = 'relabelled_gt_wob_solv.pdb'
@@ -628,6 +653,7 @@ def test_relabel_residues_in_pdb():
 
 
 def test_remove_water_residues_in_pdb():
+    """Strip water molecules from a PDB file."""
     print(flush=True)
     input_pdb = 'tests/data/pdb/gt_wob_solv.pdb'
     output_pdb = 'nowater_gt_wob_solv.pdb'
