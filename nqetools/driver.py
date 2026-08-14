@@ -201,22 +201,6 @@ client.run(atoms)
     return None
 
 
-def write_cp2k_driver():
-    """Write a CP2K i-PI client input deck.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    ValueError
-        Always. CP2K support is not implemented yet; see the i-PI
-        ``examples/clients/cp2k/npt_classical`` reference setup.
-    """
-    raise ValueError("Driver cp2k is not recognized.")
-
-
 def write_ase_nwchem_driver(
         directory,
         in_file="init.xyz",

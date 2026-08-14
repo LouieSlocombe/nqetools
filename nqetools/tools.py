@@ -16,7 +16,6 @@ import os
 import sys
 import tempfile
 import textwrap
-import time
 
 import ipi
 import numpy as np
@@ -113,26 +112,6 @@ def has_pbc(atoms: Atoms) -> bool:
         True if the atoms object has PBC, False otherwise.
     """
     return any(atoms.pbc)
-
-
-def remove_pbc(atoms: Atoms) -> None:
-    """Removes the periodic boundary conditions from an ASE atoms object.
-    This is important for calculations involving isolated molecules where
-    periodicity (like in crystals) is not desired. It ensures that the system
-    is treated as an isolated entity without interactions from periodic images.
-
-    Parameters
-    ----------
-    atoms : ase.Atoms
-        The ASE atoms object from which to remove periodic boundary conditions.
-
-    Returns
-    -------
-    None
-    """
-    atoms.set_cell([0, 0, 0])
-    atoms.set_pbc([0, 0, 0])
-    return None
 
 
 def add_hydrogen_halfway(atoms, index1, index2):
@@ -267,33 +246,6 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
     atoms += Atoms('H', positions=[hydrogen_position])
 
     return atoms
-
-
-def time_force_call(atoms, calc, n_reps=3):
-    """Measure the time taken to calculate forces on an atomic structure multiple times.
-
-    Parameters
-    ----------
-    atoms : ase.Atoms
-        ASE Atoms object containing the atomic structure.
-    calc : ase.Calculator
-        Calculator to be used for the force calculations.
-    n_reps : int, optional
-        Number of repetitions for the force calculation. Default is 3.
-
-    Returns
-    -------
-    None
-    """
-    times = np.zeros(n_reps, dtype=float)
-    t0 = time.time()
-    for i in range(n_reps):
-        tmp = atoms.copy()
-        tmp.calc = calc
-        tmp.get_forces()
-        times[i] = time.time() - t0
-        print(f'Time taken={times[i]:.3} s', flush=True)
-    print(f'Average time taken={np.mean(times):.3} s std={np.std(times):.3}', flush=True)
 
 
 def align_mols(atoms1, atoms2):
