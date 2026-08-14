@@ -5,7 +5,7 @@ itself: locating the driver executable, putting it on the path, and
 clearing stale unix sockets left behind by interrupted runs.
 
 The second manipulates ASE structures - adding and moving atoms,
-measuring distances, clustering by connectivity, and toggling periodic
+measuring distances, clustering by connectivity, and checking for periodic
 boundary conditions - as preparation for the calculations set up
 elsewhere in the package.
 """
@@ -348,13 +348,64 @@ def get_file_extension(file_path):
     return file_extension
 
 
+def _connected_groups(atoms: Atoms, cutoff_scale: float = 1.0,
+                      skin: float = 0.3) -> list[list[int]]:
+    """Connected components of the bonding graph, in discovery order.
+
+    Bonds are inferred from ASE's natural cutoffs rather than from any
+    explicit topology, so this works on bare coordinates. The traversal is a
+    depth-first search from each unvisited atom in turn.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The atoms object to analyse.
+    cutoff_scale : float, optional
+        Multiplier on the natural cutoffs. Values above 1.0 make bonding
+        more permissive. Default is 1.0.
+    skin : float, optional
+        Extra separation, in Angstrom, still counted as bonded. Default is
+        0.3, matching ASE's own default for :class:`NeighborList`.
+
+    Returns
+    -------
+    list of list of int
+        One list of atom indices per connected group. Empty if `atoms`
+        contains no atoms.
+    """
+    if len(atoms) == 0:
+        return []
+
+    cutoffs = [cutoff_scale * c for c in natural_cutoffs(atoms)]
+    neighbours = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=skin)
+    neighbours.update(atoms)
+
+    visited = [False] * len(atoms)
+    groups = []
+
+    for start in range(len(atoms)):
+        if visited[start]:
+            continue
+        group, stack = [], [start]
+        while stack:
+            current = stack.pop()
+            if visited[current]:
+                continue
+            visited[current] = True
+            group.append(current)
+            indices, _offsets = neighbours.get_neighbors(current)
+            stack.extend(i for i in indices if not visited[i])
+        groups.append(group)
+
+    return groups
+
+
 def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     """Clusters atoms based on their natural cutoffs.
 
-    This function uses the NeighborList to determine clusters of atoms
-    based on their natural cutoffs. It iterates through each atom,
-    checking if it has been visited, and if not, it performs a depth-first
-    search to find all connected atoms, forming a cluster.
+    Groups atoms by connectivity, inferring bonds from ASE's natural
+    cutoffs, and returns each group as its own Atoms object. Atoms within a
+    group keep the order the search found them in.
 
     Parameters
     ----------
@@ -370,30 +421,7 @@ def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     list[ase.Atoms]
         A list of ASE Atoms objects, each representing a cluster.
     """
-    cutoffs = natural_cutoffs(atoms)
-
-    cutoffs = [cutoff * multi for cutoff in cutoffs]
-
-    nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
-    nl.update(atoms)
-
-    visited = [False] * len(atoms)
-    clusters_indices = []
-
-    for i in range(len(atoms)):
-        if visited[i]:
-            continue
-        cluster, stack = [], [i]
-        while stack:
-            j = stack.pop()
-            if not visited[j]:
-                visited[j] = True
-                cluster.append(j)
-                indices, _ = nl.get_neighbors(j)
-                stack.extend(neighbor for neighbor in indices if not visited[neighbor])
-        clusters_indices.append(cluster)
-
-    return [atoms[indices] for indices in clusters_indices]
+    return [atoms[group] for group in _connected_groups(atoms, multi)]
 
 
 def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
@@ -717,36 +745,10 @@ def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> list[list[int]]:
         One list of atom indices per connected group. Empty if `atoms`
         contains no atoms.
     """
-    if len(atoms) == 0:
-        return []
-    cutoffs = [cutoff_scale * c for c in natural_cutoffs(atoms)]
-    nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
-    nl.update(atoms)
-
-    adj = [[] for _ in range(len(atoms))]
-    for i in range(len(atoms)):
-        indices, _offsets = nl.get_neighbors(i)
-        for j in indices:
-            adj[i].append(j)
-
-    # BFS to get connected components
-    seen: set[int] = set()
-    groups: list[list[int]] = []
-    for i in range(len(atoms)):
-        if i in seen:
-            continue
-        stack = [i]
-        comp = []
-        seen.add(i)
-        while stack:
-            u = stack.pop()
-            comp.append(u)
-            for v in adj[u]:
-                if v not in seen:
-                    seen.add(v)
-                    stack.append(v)
-        groups.append(sorted(comp))
-    return groups
+    # skin=0.0 holds this to the natural cutoffs exactly. cluster_atoms takes
+    # ASE's default 0.3 A of slack instead and so bonds a little more readily,
+    # which is why the two callers do not share a cutoff policy.
+    return [sorted(group) for group in _connected_groups(atoms, cutoff_scale, skin=0.0)]
 
 
 def combine_without_overlaps(
