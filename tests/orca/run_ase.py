@@ -13,7 +13,7 @@ from ase.io import read
 
 atoms = read("init.xyz", 0)
 
-orca_path = os.environ.get('ORCA_PATH')
+orca_path = os.environ.get("ORCA_PATH")
 profile = OrcaProfile(command=orca_path)
 
 calc = ORCA(profile=profile, orcasimpleinput="B3LYP D3BJ def2-SVP TightSCF EnGrad")

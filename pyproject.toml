@@ -108,8 +108,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "nqetools/__init__.py" = ["F401"]
-# PLUMED/driver input templates embedded as strings keep their exact whitespace
-"nqetools/plumed.py" = ["W291", "W293"]
+# Driver scripts embedded as strings keep their exact whitespace
 "nqetools/driver.py" = ["W291", "W293"]
 # Adapted third-party scripts (PLUMED opes tools, ASE QChem calculator)
 "nqetools/opes/*" = ["UP031", "RUF005", "E741"]

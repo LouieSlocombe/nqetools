@@ -35,7 +35,12 @@ from rdkit import Chem
 from reactiontools import n_plot
 from scipy import constants
 
-from .io import remove_water_residues_in_pdb, clean_ions_in_pdb, relabel_residues_in_pdb, remove_residues_in_pdb
+from .io import (
+    remove_water_residues_in_pdb,
+    clean_ions_in_pdb,
+    relabel_residues_in_pdb,
+    remove_residues_in_pdb,
+)
 
 
 def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
@@ -56,10 +61,6 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
     rm_heterogens : bool, optional
         If True, remove heterogen atoms like water, ions, and ligands.
         Default is True.
-
-    Returns
-    -------
-    None
     """
     fixer = PDBFixer(filename=file_in)
     fixer.findMissingResidues()
@@ -70,9 +71,8 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
     fixer.findMissingAtoms()
     fixer.addMissingAtoms()
     fixer.addMissingHydrogens(ph)
-    with open(file_out, 'w') as f:
+    with open(file_out, "w") as f:
         app.PDBFile.writeFile(fixer.topology, fixer.positions, f)
-    return None
 
 
 def zero_velocities(n_atoms):
@@ -88,7 +88,9 @@ def zero_velocities(n_atoms):
     list of openmm.Vec3
         A list of zero velocity vectors, each scaled by the unit of nanometer/picosecond.
     """
-    return [openmm.Vec3(0, 0, 0) for _ in range(n_atoms)] * (unit.nanometer / unit.picosecond)
+    return [openmm.Vec3(0, 0, 0) for _ in range(n_atoms)] * (
+        unit.nanometer / unit.picosecond
+    )
 
 
 def write_multimodel_pdb(topology, positions, fh, model_index):
@@ -107,10 +109,6 @@ def write_multimodel_pdb(topology, positions, fh, model_index):
         An open file handle where the PDB model will be written.
     model_index : int
         The index of the model to be written, used to distinguish models in the PDB file.
-
-    Returns
-    -------
-    None
     """
     app.PDBFile.writeModel(topology, positions, fh, modelIndex=model_index)
 
@@ -200,16 +198,13 @@ def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=
         The temperature of the system, used to calculate the thermal de Broglie wavelength.
     scale_factor : float, optional
         A scaling factor applied to the thermal wavelength perturbation. Default is 0.1.
-
-    Returns
-    -------
-    None
     """
     system = simulation.system
     n_atoms = system.getNumParticles()
 
-    masses_val = np.array([system.getParticleMass(i).value_in_unit(unit.dalton)
-                           for i in range(n_atoms)])
+    masses_val = np.array(
+        [system.getParticleMass(i).value_in_unit(unit.dalton) for i in range(n_atoms)]
+    )
     masses_quantity = masses_val * unit.dalton
 
     lambdas = get_thermal_de_broglie_wavelength(masses_quantity, temperature)
@@ -250,41 +245,40 @@ def init_beads(modeller, simulation, n_beads, perturb=0.002):
     perturb : float, optional
         The magnitude of the random perturbation applied to the initial positions.
         Default is 0.002.
-
-    Returns
-    -------
-    None
     """
     rng = np.random.default_rng(0)
     pos0 = modeller.positions
     n_atoms = len(pos0)
     for b in range(n_beads):
         jiggle = perturb * rng.normal(size=(n_atoms, 3))
-        bead_pos = [openmm.Vec3(p.x + dx, p.y + dy, p.z + dz)
-                    for p, (dx, dy, dz) in zip(pos0, jiggle, strict=True)]
+        bead_pos = [
+            openmm.Vec3(p.x + dx, p.y + dy, p.z + dz)
+            for p, (dx, dy, dz) in zip(pos0, jiggle, strict=True)
+        ]
         simulation.integrator.setPositions(b, bead_pos * unit.nanometer)
         simulation.integrator.setVelocities(b, zero_velocities(n_atoms))
 
 
-def md_workflow(file_in,
-                ff='amber19-all.xml',
-                water_model='amber19/opc3.xml',
-                padding=1.0,
-                temperature=300.0,
-                pressure=1.0,
-                friction_coeff=1.0,
-                time_step=0.004,
-                report_pdb=1_000,
-                report_std=1_000,
-                report_data=100,
-                file_out='output.pdb',
-                data_out='md_log.txt',
-                n_nvt=10_000,
-                n_npt=50_000,
-                box_shape='dodecahedron',
-                gbaoab=True,
-                platform='CPU',
-                ):
+def md_workflow(
+    file_in,
+    ff="amber19-all.xml",
+    water_model="amber19/opc3.xml",
+    padding=1.0,
+    temperature=300.0,
+    pressure=1.0,
+    friction_coeff=1.0,
+    time_step=0.004,
+    report_pdb=1_000,
+    report_std=1_000,
+    report_data=100,
+    file_out="output.pdb",
+    data_out="md_log.txt",
+    n_nvt=10_000,
+    n_npt=50_000,
+    box_shape="dodecahedron",
+    gbaoab=True,
+    platform="CPU",
+):
     """Solvate, equilibrate and run MD on a PDB structure in one pass.
 
     Builds the system from a PDB file, adds hydrogens and solvent,
@@ -332,10 +326,6 @@ def md_workflow(file_in,
     platform : str, optional
         OpenMM platform to run on. Default is "CPU".
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     The 4 fs default timestep relies on the HBonds constraints applied
@@ -347,23 +337,29 @@ def md_workflow(file_in,
     modeller.deleteWater()
     modeller.addHydrogens(forcefield)
 
-    modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+    modeller.addSolvent(
+        forcefield, padding=padding * unit.nanometer, boxShape=box_shape
+    )
 
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
-                                     nonbondedCutoff=1.0 * unit.nanometer,
-                                     constraints=app.HBonds)
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=app.HBonds,
+    )
 
     if gbaoab:
-        integrator = GeodesicBAOABIntegrator(temperature * unit.kelvin,
-                                             friction_coeff / unit.picosecond,
-                                             time_step * unit.picoseconds)
+        integrator = GeodesicBAOABIntegrator(
+            temperature * unit.kelvin,
+            friction_coeff / unit.picosecond,
+            time_step * unit.picoseconds,
+        )
     else:
-        integrator = openmm.LangevinIntegrator(temperature * unit.kelvin,
-                                               friction_coeff / unit.picosecond,
-                                               time_step * unit.picoseconds)
+        integrator = openmm.LangevinIntegrator(
+            temperature * unit.kelvin,
+            friction_coeff / unit.picosecond,
+            time_step * unit.picoseconds,
+        )
 
     platform = openmm.Platform.getPlatformByName(platform)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
@@ -373,34 +369,37 @@ def md_workflow(file_in,
     simulation.minimizeEnergy()
 
     simulation.reporters.append(app.PDBReporter(file_out, report_pdb))
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      report_std,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True))
-    simulation.reporters.append(app.StateDataReporter(data_out,
-                                                      report_data,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout, report_std, step=True, potentialEnergy=True, temperature=True
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            data_out,
+            report_data,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     print("Running NVT", flush=True)
     simulation.step(n_nvt)
 
-    system.addForce(openmm.MonteCarloBarostat(pressure * unit.bar,
-                                              temperature * unit.kelvin))
+    system.addForce(
+        openmm.MonteCarloBarostat(pressure * unit.bar, temperature * unit.kelvin)
+    )
     simulation.context.reinitialize(preserveState=True)
     print("Running NPT", flush=True)
     simulation.step(n_npt)
 
-    return None
 
-
-def md_analysis(file_in='md_log.txt'):
+def md_analysis(file_in="md_log.txt"):
     """Plot the energy, temperature and volume traces from an MD log.
 
     Reads the comma-separated log written by :func:`md_workflow` and
@@ -411,17 +410,13 @@ def md_analysis(file_in='md_log.txt'):
     file_in : str, optional
         Path to the state data log. Default is "md_log.txt".
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Column order is assumed to match the reporter configured in
         :func:`md_workflow`: step, time, potential, kinetic, total,
         temperature, volume.
     """
-    data = np.loadtxt(file_in, delimiter=',')
+    data = np.loadtxt(file_in, delimiter=",")
 
     time = data[:, 1]
     potential_energy = data[:, 2]
@@ -431,27 +426,27 @@ def md_analysis(file_in='md_log.txt'):
     volume = data[:, 6]
 
     plt.plot(time, potential_energy, lw=2)
-    n_plot('Time (ps)', 'Potential Energy (kJ/mol)')
+    n_plot("Time (ps)", "Potential Energy (kJ/mol)")
     plt.show()
 
     plt.plot(time, kinetic_energy, lw=2)
-    n_plot('Time (ps)', 'Kinetic Energy (kJ/mol)')
+    n_plot("Time (ps)", "Kinetic Energy (kJ/mol)")
     plt.show()
 
     plt.plot(time, total_energy, lw=2)
-    n_plot('Time (ps)', 'Total Energy (kJ/mol)')
+    n_plot("Time (ps)", "Total Energy (kJ/mol)")
     plt.show()
 
     plt.plot(time, temperature, lw=2)
-    n_plot('Time (ps)', 'Temperature (K)')
+    n_plot("Time (ps)", "Temperature (K)")
     plt.show()
 
     plt.plot(time, volume, lw=2)
-    n_plot('Time (ps)', 'Volume (nm^3)')
+    n_plot("Time (ps)", "Volume (nm^3)")
     plt.show()
 
 
-def make_sdf(pdb_file, lig_name='LIG'):
+def make_sdf(pdb_file, lig_name="LIG"):
     """Converts a ligand from a PDB file to an SDF file.
 
     This function reads a PDB file, extracts the ligand specified by its residue name,
@@ -464,21 +459,16 @@ def make_sdf(pdb_file, lig_name='LIG'):
         Path to the input PDB file.
     lig_name : str, optional
         Residue name of the ligand to extract. Default is 'LIG'.
-
-    Returns
-    -------
-    None
     """
     u = mda.Universe(pdb_file)
     elements = mda.topology.guessers.guess_types(u.atoms.names)
-    u.add_TopologyAttr('elements', elements)
+    u.add_TopologyAttr("elements", elements)
     lig = u.select_atoms(f"resname {lig_name}")
     mol = lig.convert_to("RDKIT")
     Chem.MolToMolFile(mol, f"{lig_name}.sdf", kekulize=False)
-    return None
 
 
-def pdb_patcher(pdb_file, lig_name='LIG'):
+def pdb_patcher(pdb_file, lig_name="LIG"):
     """Modifies a PDB file to replace placeholder residue names and characters.
 
     This function reads a PDB file, replaces occurrences of the character 'x' with a space,
@@ -491,21 +481,16 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
         Path to the PDB file to be modified.
     lig_name : str, optional
         The new residue name to replace 'UNK'. Default is 'LIG'.
-
-    Returns
-    -------
-    None
     """
     with open(pdb_file) as f:
         pdb_data = f.read()
-    pdb_data = pdb_data.replace('x', ' ')
-    pdb_data = pdb_data.replace('UNK', lig_name)
-    with open(pdb_file, 'w') as f:
+    pdb_data = pdb_data.replace("x", " ")
+    pdb_data = pdb_data.replace("UNK", lig_name)
+    with open(pdb_file, "w") as f:
         f.write(pdb_data)
-    return None
 
 
-def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
+def combine_sdf_pdb(input_pdb, lig_name="LIG", patch=True):
     """Combines a ligand from an SDF file with a receptor from a PDB file into a single PDB file.
 
     This function reads a receptor structure from a PDB file and a ligand structure from an SDF file,
@@ -520,33 +505,30 @@ def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
         Residue name of the ligand to be added. Default is 'LIG'.
     patch : bool, optional
         If True, applies the `pdb_patcher` function to the combined PDB file. Default is True.
-
-    Returns
-    -------
-    None
     """
     pdb = app.PDBFile(input_pdb)
-    molecule = Molecule.from_file(f'{lig_name}.sdf')
+    molecule = Molecule.from_file(f"{lig_name}.sdf")
     ligand_ff_topology = molecule.to_topology()
     ligand_omm_topology = ligand_ff_topology.to_openmm()
     ligand_positions = ligand_ff_topology.get_positions().to_openmm()
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.add(ligand_omm_topology, ligand_positions)
-    with open(input_pdb, 'w') as f:
+    with open(input_pdb, "w") as f:
         app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
     if patch:
         pdb_patcher(input_pdb, lig_name=lig_name)
-    return None
 
 
-def prepare_lig_system(input_pdb,
-                       combined_pdb='combined_system.pdb',
-                       clean_pdb='cleaned.pdb',
-                       rm_ions=None,
-                       residue_map=None,
-                       rm_files=True,
-                       save_lig_sdf=False,
-                       lig_name='LIG'):
+def prepare_lig_system(
+    input_pdb,
+    combined_pdb="combined_system.pdb",
+    clean_pdb="cleaned.pdb",
+    rm_ions=None,
+    residue_map=None,
+    rm_files=True,
+    save_lig_sdf=False,
+    lig_name="LIG",
+):
     """Prepares a ligand-receptor system for molecular simulations.
 
     This function processes a PDB file to clean up water residues, optionally remove ions,
@@ -590,29 +572,33 @@ def prepare_lig_system(input_pdb,
     make_sdf(clean_pdb, lig_name=lig_name)
 
     fix_pdb(clean_pdb, combined_pdb, rm_heterogens=False)
-    remove_residues_in_pdb(combined_pdb, combined_pdb, names=[lig_name])  # drop the ligand, kept separately as SDF
+    remove_residues_in_pdb(
+        combined_pdb, combined_pdb, names=[lig_name]
+    )  # drop the ligand, kept separately as SDF
 
     combine_sdf_pdb(combined_pdb, lig_name=lig_name, patch=True)
 
     pdb_data = app.PDBFile(combined_pdb)
-    molecule = Molecule.from_file(f'{lig_name}.sdf')
+    molecule = Molecule.from_file(f"{lig_name}.sdf")
 
     if rm_files:
         os.remove(clean_pdb)
         os.remove(combined_pdb)
     if not save_lig_sdf:
-        os.remove(f'{lig_name}.sdf')
+        os.remove(f"{lig_name}.sdf")
     return pdb_data, molecule
 
 
-def prepare_ligand_ff(standard_ff,
-                      molecule,
-                      gen_cache=False,
-                      use_cache=False,
-                      cache="gaff-molecules.json",
-                      n_conf=10,
-                      pc_methods='mmff94',
-                      gaff_ver='gaff-2.11'):
+def prepare_ligand_ff(
+    standard_ff,
+    molecule,
+    gen_cache=False,
+    use_cache=False,
+    cache="gaff-molecules.json",
+    n_conf=10,
+    pc_methods="mmff94",
+    gaff_ver="gaff-2.11",
+):
     """Prepares a ligand-specific force field using the General Amber Force Field (GAFF).
 
     This function generates or loads GAFF parameters for a given molecule and integrates
@@ -645,18 +631,23 @@ def prepare_ligand_ff(standard_ff,
         The prepared force field object with GAFF parameters integrated.
     """
     if use_cache:
-        print('Using cached GAFF parameters...', flush=True)
-        gaff = GAFFTemplateGenerator(molecules=molecule, cache=cache, forcefield=gaff_ver)
+        print("Using cached GAFF parameters...", flush=True)
+        gaff = GAFFTemplateGenerator(
+            molecules=molecule, cache=cache, forcefield=gaff_ver
+        )
         forcefield = app.ForceField(*standard_ff)
         forcefield.registerTemplateGenerator(gaff.generator)
     else:
-        print('Generating GAFF parameters...', flush=True)
+        print("Generating GAFF parameters...", flush=True)
         molecule.generate_conformers(n_conformers=n_conf)
-        molecule.assign_partial_charges(partial_charge_method=pc_methods,
-                                        use_conformers=molecule.conformers)
+        molecule.assign_partial_charges(
+            partial_charge_method=pc_methods, use_conformers=molecule.conformers
+        )
         if gen_cache:
-            print('Generating GAFF cache file...', flush=True)
-            gaff = GAFFTemplateGenerator(molecules=molecule, cache=cache, forcefield=gaff_ver)
+            print("Generating GAFF cache file...", flush=True)
+            gaff = GAFFTemplateGenerator(
+                molecules=molecule, cache=cache, forcefield=gaff_ver
+            )
             forcefield = app.ForceField(*standard_ff)
             forcefield.registerTemplateGenerator(gaff.generator)
             forcefield.createSystem(topology=molecule.to_topology().to_openmm())
@@ -668,7 +659,7 @@ def prepare_ligand_ff(standard_ff,
     return forcefield
 
 
-def deuterate_system(modeller, system, option='all', target_resname=None):
+def deuterate_system(modeller, system, option="all", target_resname=None):
     """Replaces hydrogen atoms with deuterium in a molecular system.
 
     This function modifies the masses of hydrogen atoms in the system to the mass of deuterium
@@ -686,10 +677,6 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
         'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'. Default is 'all'.
     target_resname : str, optional
         The residue name of the ligand to deuterate. Required if `option` is 'ligand'.
-
-    Returns
-    -------
-    None
         The system's particle masses are modified in place.
 
     Raises
@@ -710,52 +697,103 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
     deuterium_mass = app.element.deuterium.mass
 
     protein_residues = {
-        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
-        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP',
-        'TYR', 'VAL', 'HID', 'HIE', 'HIP', 'CYX', 'LYN', 'ASH', 'GLH',
-        'ACE', 'NME', 'NAC'
+        "ALA",
+        "ARG",
+        "ASN",
+        "ASP",
+        "CYS",
+        "GLN",
+        "GLU",
+        "GLY",
+        "HIS",
+        "ILE",
+        "LEU",
+        "LYS",
+        "MET",
+        "PHE",
+        "PRO",
+        "SER",
+        "THR",
+        "TRP",
+        "TYR",
+        "VAL",
+        "HID",
+        "HIE",
+        "HIP",
+        "CYX",
+        "LYN",
+        "ASH",
+        "GLH",
+        "ACE",
+        "NME",
+        "NAC",
     }
 
     dna_residues = {
-        'DA', 'DC', 'DG', 'DT',
-        'DA5', 'DC5', 'DG5', 'DT5',  # 5' terminals
-        'DA3', 'DC3', 'DG3', 'DT3'  # 3' terminals
+        "DA",
+        "DC",
+        "DG",
+        "DT",
+        "DA5",
+        "DC5",
+        "DG5",
+        "DT5",  # 5' terminals
+        "DA3",
+        "DC3",
+        "DG3",
+        "DT3",  # 3' terminals
     }
 
     rna_residues = {
-        'A', 'C', 'G', 'U',
-        'RA', 'RC', 'RG', 'RU',  # Common in Amber force fields
-        'A5', 'C5', 'G5', 'U5',  # 5' terminals
-        'A3', 'C3', 'G3', 'U3'  # 3' terminals
+        "A",
+        "C",
+        "G",
+        "U",
+        "RA",
+        "RC",
+        "RG",
+        "RU",  # Common in Amber force fields
+        "A5",
+        "C5",
+        "G5",
+        "U5",  # 5' terminals
+        "A3",
+        "C3",
+        "G3",
+        "U3",  # 3' terminals
     }
 
-    water_residues = {'HOH', 'H2O', 'TIP3', 'WAT', 'SOL'}
+    water_residues = {"HOH", "H2O", "TIP3", "WAT", "SOL"}
 
     nucleic_residues = dna_residues.union(rna_residues)
 
     target_residues = set()
-    if option == 'all':
+    if option == "all":
         pass
-    elif option == 'water':
+    elif option == "water":
         target_residues = water_residues
-    elif option == 'protein':
+    elif option == "protein":
         target_residues = protein_residues
-    elif option == 'dna':
+    elif option == "dna":
         target_residues = dna_residues
-    elif option == 'rna':
+    elif option == "rna":
         target_residues = rna_residues
-    elif option == 'nucleic':
+    elif option == "nucleic":
         target_residues = nucleic_residues
-    elif option == 'ligand':
+    elif option == "ligand":
         if target_resname is None:
-            raise ValueError("If option is 'ligand', you must provide a 'target_resname'.")
+            raise ValueError(
+                "If option is 'ligand', you must provide a 'target_resname'."
+            )
         target_residues = {target_resname}
     else:
-        raise ValueError("Option must be 'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'")
+        raise ValueError(
+            "Option must be 'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'"
+        )
 
-    if option == 'all':
+    if option == "all":
         for atom in modeller.topology.atoms():
-            if atom.element and atom.element.symbol == 'H':
+            if atom.element and atom.element.symbol == "H":
                 system.setParticleMass(atom.index, deuterium_mass)
     else:
         found_target = False
@@ -763,12 +801,12 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
             if residue.name in target_residues:
                 found_target = True
                 for atom in residue.atoms():
-                    if atom.element and atom.element.symbol == 'H':
+                    if atom.element and atom.element.symbol == "H":
                         system.setParticleMass(atom.index, deuterium_mass)
 
-        if not found_target and option == 'ligand':
+        if not found_target and option == "ligand":
             print(f"Warning: No ligand named '{target_resname}' was found.")
-        elif not found_target and option != 'all':
+        elif not found_target and option != "all":
             print(f"Warning: No residues matching option '{option}' were found.")
 
 
@@ -811,12 +849,16 @@ def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
 
         if found_chain is None:
             available_chains = [c.id for c in topology.chains()]
-            print(f"Error: Chain '{chain_id}' not found. Available chains: {available_chains}")
+            print(
+                f"Error: Chain '{chain_id}' not found. Available chains: {available_chains}"
+            )
             return None
 
         residues = list(found_chain.residues())
         if residue_index < 0 or residue_index >= len(residues):
-            print(f"Error: Residue index {residue_index} is out of bounds for Chain {chain_id}.")
+            print(
+                f"Error: Residue index {residue_index} is out of bounds for Chain {chain_id}."
+            )
             print(f"Chain {chain_id} contains {len(residues)} residues.")
             return None
 
@@ -828,7 +870,9 @@ def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
 
         if residue_index < 0 or residue_index >= len(residues):
             print(f"Error: Residue index {residue_index} is out of bounds.")
-            print(f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1}).")
+            print(
+                f"The file contains {len(residues)} residues (indices 0 to {len(residues) - 1})."
+            )
             return None
 
         target_residue = residues[residue_index]
@@ -837,7 +881,8 @@ def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
     atom_indices = [atom.index for atom in target_residue.atoms()]
 
     print(
-        f"Successfully retrieved residue: {target_residue.name} (Chain: {target_residue.chain.id}, Index: {target_residue.index}, PDB ID: {target_residue.id})")
+        f"Successfully retrieved residue: {target_residue.name} (Chain: {target_residue.chain.id}, Index: {target_residue.index}, PDB ID: {target_residue.id})"
+    )
     return atom_indices
 
 
@@ -856,10 +901,6 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
         A list of atom indices to keep in the output PDB file.
     output_pdb_path : str
         Path to save the output PDB file containing the selected atoms.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -882,28 +923,31 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
 
     modeller.delete(atoms_to_delete)
 
-    print(f"Writing selection ({len(all_atoms) - num_deleted} atoms) to {output_pdb_path}...")
-    with open(output_pdb_path, 'w') as f:
+    print(
+        f"Writing selection ({len(all_atoms) - num_deleted} atoms) to {output_pdb_path}..."
+    )
+    with open(output_pdb_path, "w") as f:
         app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
 
 
-def run_openmm_relaxation(modeller,
-                          forcefield,
-                          output_prefix='minimized',
-                          temperature=300.0 * unit.kelvin,
-                          gamma=1.0 / unit.picosecond,
-                          time_step=1.0 * unit.femtoseconds,
-                          n_1=1_000,
-                          n_2=1_000,
-                          n_3=2_000,
-                          backbone_names=None,
-                          ks_1=100.0,
-                          ks_2=10.0,
-                          ks_3=0.0,
-                          platform_name='CPU',
-                          potential=None,
-                          ml_idx=None,
-                          ):
+def run_openmm_relaxation(
+    modeller,
+    forcefield,
+    output_prefix="minimized",
+    temperature=300.0 * unit.kelvin,
+    gamma=1.0 / unit.picosecond,
+    time_step=1.0 * unit.femtoseconds,
+    n_1=1_000,
+    n_2=1_000,
+    n_3=2_000,
+    backbone_names=None,
+    ks_1=100.0,
+    ks_2=10.0,
+    ks_3=0.0,
+    platform_name="CPU",
+    potential=None,
+    ml_idx=None,
+):
     """Minimise a structure in three stages of decreasing restraint.
 
     Backbone atoms are held by a harmonic restraint that is relaxed
@@ -953,10 +997,6 @@ def run_openmm_relaxation(modeller,
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -966,12 +1006,12 @@ def run_openmm_relaxation(modeller,
         that the minimisation can relax bond lengths too.
     """
     if backbone_names is None:
-        backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+        backbone_names = ["CA", "C", "N", "P", "O3"]
 
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1008,7 +1048,9 @@ def run_openmm_relaxation(modeller,
         )
 
     current_positions = modeller.positions
-    restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
+    restraint = openmm.CustomExternalForce(
+        "k * periodicdistance(x, y, z, x0, y0, z0)^2"
+    )
     restraint.addGlobalParameter("k", 0.0)
     restraint.addPerParticleParameter("x0")
     restraint.addPerParticleParameter("y0")
@@ -1023,44 +1065,46 @@ def run_openmm_relaxation(modeller,
 
     system.addForce(restraint)
     print(f"Restraints applied to {len(atom_indices)} backbone atoms.", flush=True)
-    integrator = openmm.LangevinMiddleIntegrator(temperature,
-                                                 gamma,
-                                                 time_step)
+    integrator = openmm.LangevinMiddleIntegrator(temperature, gamma, time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(current_positions)
 
-    print(f"\n--- Stage 1: Strong Backbone Restraints ({ks_1} kJ/mol/nm^2) ---", flush=True)
-    k_strong = ks_1 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    print(
+        f"\n--- Stage 1: Strong Backbone Restraints ({ks_1} kJ/mol/nm^2) ---",
+        flush=True,
+    )
+    k_strong = ks_1 * unit.kilojoules_per_mole / (unit.nanometer**2)
     simulation.context.setParameter("k", k_strong)
     simulation.minimizeEnergy(maxIterations=n_1)
 
     print("\n--- Stage 2: Weak Backbone Restraints (10 kJ/mol/nm^2) ---", flush=True)
-    k_weak = ks_2 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    k_weak = ks_2 * unit.kilojoules_per_mole / (unit.nanometer**2)
     simulation.context.setParameter("k", k_weak)
     simulation.minimizeEnergy(maxIterations=n_2)
 
     print("\n--- Stage 3: Unrestrained Relaxation ---", flush=True)
-    k_vweak = ks_3 * unit.kilojoules_per_mole / (unit.nanometer ** 2)
+    k_vweak = ks_3 * unit.kilojoules_per_mole / (unit.nanometer**2)
     simulation.context.setParameter("k", k_vweak)
     simulation.minimizeEnergy(maxIterations=n_3)
 
     final_state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}.pdb', 'w') as f:
+    with open(f"{output_prefix}.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)
     print(f"\nProcess complete. Saved to {output_prefix}", flush=True)
 
 
-def run_openmm_relaxation_simple(modeller,
-                                 forcefield,
-                                 output_prefix='minimized',
-                                 temperature=300.0 * unit.kelvin,
-                                 gamma=1.0 / unit.picosecond,
-                                 time_step=1.0 * unit.femtoseconds,
-                                 n_report=1,
-                                 platform_name='CUDA',
-                                 potential=None,
-                                 ml_idx=None,
-                                 ):
+def run_openmm_relaxation_simple(
+    modeller,
+    forcefield,
+    output_prefix="minimized",
+    temperature=300.0 * unit.kelvin,
+    gamma=1.0 / unit.picosecond,
+    time_step=1.0 * unit.femtoseconds,
+    n_report=1,
+    platform_name="CUDA",
+    potential=None,
+    ml_idx=None,
+):
     """Minimise a structure in a single unrestrained pass.
 
     The plain counterpart to :func:`run_openmm_relaxation`, for systems
@@ -1093,10 +1137,6 @@ def run_openmm_relaxation_simple(modeller,
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -1105,7 +1145,7 @@ def run_openmm_relaxation_simple(modeller,
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1141,58 +1181,65 @@ def run_openmm_relaxation_simple(modeller,
             removeCMMotion=True,
         )
 
-    integrator = openmm.LangevinMiddleIntegrator(temperature,
-                                                 gamma,
-                                                 time_step)
+    integrator = openmm.LangevinMiddleIntegrator(temperature, gamma, time_step)
 
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
 
-    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(app.PDBReporter(f"{output_prefix}_steps.pdb", n_report))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     print("Minimizing energy", flush=True)
     simulation.minimizeEnergy()
 
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     final_state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}.pdb', 'w') as f:
+    with open(f"{output_prefix}.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, final_state.getPositions(), f)
     print(f"\nProcess complete. Saved to {output_prefix}", flush=True)
 
 
-def run_openmm_heating(modeller,
-                       forcefield,
-                       output_prefix='equilibrate',
-                       k1=100.0,
-                       backbone_names=None,
-                       target_temp=300.0 * unit.kelvin,
-                       temp_step=50.0 * unit.kelvin,
-                       gamma=1.0 / unit.picosecond,
-                       time_step=1.0 * unit.femtoseconds,
-                       n_report=1_000,
-                       steps_per_stage=5_000,
-                       steps_final=10_000,
-                       platform_name='CPU',
-                       deuterate=False,
-                       deuterate_option='water',
-                       potential=None,
-                       ml_idx=None,
-                       ):
+def run_openmm_heating(
+    modeller,
+    forcefield,
+    output_prefix="equilibrate",
+    k1=100.0,
+    backbone_names=None,
+    target_temp=300.0 * unit.kelvin,
+    temp_step=50.0 * unit.kelvin,
+    gamma=1.0 / unit.picosecond,
+    time_step=1.0 * unit.femtoseconds,
+    n_report=1_000,
+    steps_per_stage=5_000,
+    steps_final=10_000,
+    platform_name="CPU",
+    deuterate=False,
+    deuterate_option="water",
+    potential=None,
+    ml_idx=None,
+):
     """Heat a system to its target temperature in stages.
 
     Temperature is raised in increments of `temp_step`, with the backbone
@@ -1243,22 +1290,18 @@ def run_openmm_heating(modeller,
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
     forces the CUDA platform.
     """
     if backbone_names is None:
-        backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+        backbone_names = ["CA", "C", "N", "P", "O3"]
 
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1297,8 +1340,12 @@ def run_openmm_heating(modeller,
         deuterate_system(modeller, system, option=deuterate_option)
 
     print("Applying backbone restraints for heating...", flush=True)
-    restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
-    restraint.addGlobalParameter("k", k1 * unit.kilojoules_per_mole / (unit.nanometer ** 2))
+    restraint = openmm.CustomExternalForce(
+        "k * periodicdistance(x, y, z, x0, y0, z0)^2"
+    )
+    restraint.addGlobalParameter(
+        "k", k1 * unit.kilojoules_per_mole / (unit.nanometer**2)
+    )
     restraint.addPerParticleParameter("x0")
     restraint.addPerParticleParameter("y0")
     restraint.addPerParticleParameter("z0")
@@ -1309,29 +1356,35 @@ def run_openmm_heating(modeller,
     system.addForce(restraint)
 
     current_temp = 0 * unit.kelvin
-    integrator = openmm.LangevinMiddleIntegrator(current_temp,
-                                                 gamma,
-                                                 time_step)
+    integrator = openmm.LangevinMiddleIntegrator(current_temp, gamma, time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
 
     print(f"\n--- Starting Gentle Heating (0K -> {target_temp}) ---", flush=True)
-    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(app.PDBReporter(f"{output_prefix}_steps.pdb", n_report))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     temp = temp_step
     while temp <= target_temp:
@@ -1342,35 +1395,39 @@ def run_openmm_heating(modeller,
         simulation.step(steps_per_stage)
         temp += temp_step
     print("\n--- Heating Complete ---", flush=True)
-    print(f"Running final equilibration at {target_temp} for {steps_final} steps...", flush=True)
+    print(
+        f"Running final equilibration at {target_temp} for {steps_final} steps...",
+        flush=True,
+    )
     simulation.step(steps_final)
 
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}.pdb', 'w') as f:
+    with open(f"{output_prefix}.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
     print(f"Saved equilibrated structure to {output_prefix}", flush=True)
 
 
-def run_openmm_npt(modeller,
-                   forcefield,
-                   output_prefix='npt_equilibrated',
-                   pressure=1.0 * unit.bar,
-                   temperature=300.0 * unit.kelvin,
-                   gamma=1.0 / unit.picosecond,
-                   time_step=1.0 * unit.femtoseconds,
-                   barostat_freq=50,
-                   backbone_names=None,
-                   k=10.0,
-                   n_report=500,
-                   n_1=5_000,
-                   n_2=25_000,
-                   platform_name='CPU',
-                   deuterate=False,
-                   deuterate_option='water',
-                   potential=None,
-                   ml_idx=None,
-                   ):
+def run_openmm_npt(
+    modeller,
+    forcefield,
+    output_prefix="npt_equilibrated",
+    pressure=1.0 * unit.bar,
+    temperature=300.0 * unit.kelvin,
+    gamma=1.0 / unit.picosecond,
+    time_step=1.0 * unit.femtoseconds,
+    barostat_freq=50,
+    backbone_names=None,
+    k=10.0,
+    n_report=500,
+    n_1=5_000,
+    n_2=25_000,
+    platform_name="CPU",
+    deuterate=False,
+    deuterate_option="water",
+    potential=None,
+    ml_idx=None,
+):
     """Equilibrate a system at constant pressure.
 
     Adds a Monte Carlo barostat and runs a restrained stage followed by
@@ -1423,22 +1480,18 @@ def run_openmm_npt(modeller,
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
     forces the CUDA platform.
     """
     if backbone_names is None:
-        backbone_names = ['CA', 'C', 'N', 'P', 'O3']
+        backbone_names = ["CA", "C", "N", "P", "O3"]
 
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1479,8 +1532,12 @@ def run_openmm_npt(modeller,
 
     print("Adding MonteCarloBarostat...", flush=True)
     system.addForce(openmm.MonteCarloBarostat(pressure, temperature, barostat_freq))
-    restraint = openmm.CustomExternalForce("k * periodicdistance(x, y, z, x0, y0, z0)^2")
-    restraint.addGlobalParameter("k", k * unit.kilojoules_per_mole / (unit.nanometer ** 2))
+    restraint = openmm.CustomExternalForce(
+        "k * periodicdistance(x, y, z, x0, y0, z0)^2"
+    )
+    restraint.addGlobalParameter(
+        "k", k * unit.kilojoules_per_mole / (unit.nanometer**2)
+    )
     restraint.addPerParticleParameter("x0")
     restraint.addPerParticleParameter("y0")
     restraint.addPerParticleParameter("z0")
@@ -1492,29 +1549,35 @@ def run_openmm_npt(modeller,
             atom_indices.append(atom.index)
     system.addForce(restraint)
 
-    integrator = openmm.LangevinMiddleIntegrator(temperature,
-                                                 gamma,
-                                                 time_step)
+    integrator = openmm.LangevinMiddleIntegrator(temperature, gamma, time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
 
-    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(app.PDBReporter(f"{output_prefix}_steps.pdb", n_report))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     print("\n--- Phase 1: Restrained NPT (Relaxing Density) ---", flush=True)
     simulation.step(n_1)
@@ -1523,31 +1586,32 @@ def run_openmm_npt(modeller,
     simulation.context.setParameter("k", 0.0)
     simulation.step(n_2)
 
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}.pdb', 'w') as f:
+    with open(f"{output_prefix}.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
     print(f"\nDensity equilibration complete. Saved to {output_prefix}", flush=True)
 
 
-def run_openmm_prod(modeller,
-                    forcefield,
-                    plumed_script_path=None,
-                    pressure=1.0 * unit.bar,
-                    temperature=300.0 * unit.kelvin,
-                    gamma=1.0 / unit.picosecond,
-                    time_step=1.0 * unit.femtoseconds,
-                    barostat_freq=50,
-                    n_report=1_000,
-                    steps=500_000,
-                    output_prefix='prod',
-                    platform_name='CPU',
-                    deuterate=False,
-                    deuterate_option='water',
-                    potential=None,
-                    ml_idx=None,
-                    ):
+def run_openmm_prod(
+    modeller,
+    forcefield,
+    plumed_script_path=None,
+    pressure=1.0 * unit.bar,
+    temperature=300.0 * unit.kelvin,
+    gamma=1.0 / unit.picosecond,
+    time_step=1.0 * unit.femtoseconds,
+    barostat_freq=50,
+    n_report=1_000,
+    steps=500_000,
+    output_prefix="prod",
+    platform_name="CPU",
+    deuterate=False,
+    deuterate_option="water",
+    potential=None,
+    ml_idx=None,
+):
     """Run classical production MD, optionally biased with PLUMED.
 
     Parameters
@@ -1591,10 +1655,6 @@ def run_openmm_prod(modeller,
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -1603,7 +1663,7 @@ def run_openmm_prod(modeller,
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1653,59 +1713,69 @@ def run_openmm_prod(modeller,
 
         plumed_force = PlumedForce(script_content)
         system.addForce(plumed_force)
-    integrator = openmm.LangevinMiddleIntegrator(temperature,
-                                                 gamma,
-                                                 time_step)
+    integrator = openmm.LangevinMiddleIntegrator(temperature, gamma, time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     simulation.context.setPositions(modeller.positions)
     simulation.context.setVelocitiesToTemperature(temperature)
 
-    simulation.reporters.append(app.PDBReporter(f'{output_prefix}_steps.pdb', n_report))
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(app.PDBReporter(f"{output_prefix}_steps.pdb", n_report))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
-    simulation.reporters.append(app.CheckpointReporter(f'{output_prefix}.chk', n_report * 10))
+    simulation.reporters.append(
+        app.CheckpointReporter(f"{output_prefix}.chk", n_report * 10)
+    )
     print(f"Starting production run for {steps} steps...", flush=True)
     simulation.step(steps)
     print("Production run complete.", flush=True)
 
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}.pdb', 'w') as f:
+    with open(f"{output_prefix}.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
 
-def run_openmm_rpmd_equilibration(modeller,
-                                  forcefield,
-                                  output_prefix='rpmd_ready',
-                                  n_beads=32,
-                                  temperature=300 * unit.kelvin,
-                                  pressure=1.0 * unit.bar,
-                                  barostat_freq=50,
-                                  friction=1.0 / unit.picosecond,
-                                  timestep=0.5 * unit.femtoseconds,
-                                  n_report=1_000,
-                                  n_1=2_000,
-                                  n_2=10_000,
-                                  platform_name='CPU',
-                                  deuterate=False,
-                                  deuterate_option='water',
-                                  potential=None,
-                                  ml_idx=None,
-                                  atoms_to_watch=None):
+def run_openmm_rpmd_equilibration(
+    modeller,
+    forcefield,
+    output_prefix="rpmd_ready",
+    n_beads=32,
+    temperature=300 * unit.kelvin,
+    pressure=1.0 * unit.bar,
+    barostat_freq=50,
+    friction=1.0 / unit.picosecond,
+    timestep=0.5 * unit.femtoseconds,
+    n_report=1_000,
+    n_1=2_000,
+    n_2=10_000,
+    platform_name="CPU",
+    deuterate=False,
+    deuterate_option="water",
+    potential=None,
+    ml_idx=None,
+    atoms_to_watch=None,
+):
     """Equilibrate a ring-polymer MD system and save a checkpoint.
 
     Runs in two stages: a first at half the requested timestep, letting
@@ -1760,10 +1830,6 @@ def run_openmm_rpmd_equilibration(modeller,
         Indices of atoms whose quantum spread is logged each report. Default
         is None, which disables the spread reporter.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -1775,7 +1841,7 @@ def run_openmm_rpmd_equilibration(modeller,
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1822,41 +1888,55 @@ def run_openmm_rpmd_equilibration(modeller,
     simulation.context.setVelocitiesToTemperature(temperature)
 
     if atoms_to_watch is not None:
-        simulation.reporters.append(RPMDQuantumSpreadReporter(
-            file=f'{output_prefix}_spread.log',
+        simulation.reporters.append(
+            RPMDQuantumSpreadReporter(
+                file=f"{output_prefix}_spread.log",
+                reportInterval=n_report,
+                atom_indices=atoms_to_watch,
+            )
+        )
+
+    simulation.reporters.append(
+        RPMDCentroidReporter(
+            topology=modeller.topology,
+            file_name=f"{output_prefix}_centroid.pdb",
             reportInterval=n_report,
-            atom_indices=atoms_to_watch,
-        ))
+            num_beads=n_beads,
+        )
+    )
 
-    simulation.reporters.append(RPMDCentroidReporter(
-        topology=modeller.topology,
-        file_name=f"{output_prefix}_centroid.pdb",
-        reportInterval=n_report,
-        num_beads=n_beads,
-    ))
+    simulation.reporters.append(
+        RPMDBeadReporter(
+            topology=modeller.topology,
+            file_base_name=output_prefix,
+            reportInterval=n_report,
+            num_beads=n_beads,
+        )
+    )
 
-    simulation.reporters.append(RPMDBeadReporter(
-        topology=modeller.topology,
-        file_base_name=output_prefix,
-        reportInterval=n_report,
-        num_beads=n_beads,
-    ))
-
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     print("\n--- Stage 1: Bead Expansion  ---", flush=True)
     integrator.setStepSize(timestep * 0.5)
@@ -1867,33 +1947,35 @@ def run_openmm_rpmd_equilibration(modeller,
     simulation.step(n_2)
 
     print("\n--- Saving State ---", flush=True)
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}_centroid.pdb', 'w') as f:
+    with open(f"{output_prefix}_centroid.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
     print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
 
 
-def run_openmm_rpmd_contracted(modeller,
-                               forcefield,
-                               plumed_script_path=None,
-                               checkpoint_file='rpmd_ready.chk',
-                               output_prefix='prod_contracted',
-                               n_beads=32,
-                               temperature=300 * unit.kelvin,
-                               pressure=1.0 * unit.bar,
-                               barostat_freq=50,
-                               friction=1.0 / unit.picosecond,
-                               timestep=0.5 * unit.femtoseconds,
-                               steps=100_000,
-                               n_report=1_000,
-                               contractions=None,
-                               platform_name='CPU',
-                               deuterate=False,
-                               deuterate_option='water',
-                               potential=None,
-                               ml_idx=None,
-                               atoms_to_watch=None):
+def run_openmm_rpmd_contracted(
+    modeller,
+    forcefield,
+    plumed_script_path=None,
+    checkpoint_file="rpmd_ready.chk",
+    output_prefix="prod_contracted",
+    n_beads=32,
+    temperature=300 * unit.kelvin,
+    pressure=1.0 * unit.bar,
+    barostat_freq=50,
+    friction=1.0 / unit.picosecond,
+    timestep=0.5 * unit.femtoseconds,
+    steps=100_000,
+    n_report=1_000,
+    contractions=None,
+    platform_name="CPU",
+    deuterate=False,
+    deuterate_option="water",
+    potential=None,
+    ml_idx=None,
+    atoms_to_watch=None,
+):
     """Run ring-polymer production MD with ring-polymer contraction.
 
     Contraction evaluates the slowly varying parts of the force field on
@@ -1952,10 +2034,6 @@ def run_openmm_rpmd_contracted(modeller,
         Indices of atoms whose quantum spread is logged each report. Default
         is None, which disables the spread reporter.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -1964,7 +2042,7 @@ def run_openmm_rpmd_contracted(modeller,
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -1974,7 +2052,7 @@ def run_openmm_rpmd_contracted(modeller,
     if contractions is None:
         contractions = {
             1: 8,  # Nonbonded Direct Space (calculate on every 4th bead)
-            2: 1  # PME Reciprocal Space (calculate only on centroid)
+            2: 1,  # PME Reciprocal Space (calculate only on centroid)
         }
 
     if run_mixed:
@@ -2030,98 +2108,128 @@ def run_openmm_rpmd_contracted(modeller,
         if isinstance(force, openmm.NonbondedForce):
             force.setForceGroup(1)
             force.setReciprocalSpaceForceGroup(2)
-            print(f"  - {force.__class__.__name__}: Direct->Group 1, Reciprocal->Group 2")
+            print(
+                f"  - {force.__class__.__name__}: Direct->Group 1, Reciprocal->Group 2"
+            )
 
-        elif isinstance(force, (openmm.HarmonicBondForce,
-                                openmm.HarmonicAngleForce,
-                                openmm.PeriodicTorsionForce,
-                                openmm.RBTorsionForce,
-                                openmm.CMAPTorsionForce)):
+        elif isinstance(
+            force,
+            (
+                openmm.HarmonicBondForce,
+                openmm.HarmonicAngleForce,
+                openmm.PeriodicTorsionForce,
+                openmm.RBTorsionForce,
+                openmm.CMAPTorsionForce,
+            ),
+        ):
             force.setForceGroup(0)
             print(f"  - {force.__class__.__name__}: Group 0")
 
         else:  # Barostat and anything else, evaluated on every bead
             force.setForceGroup(0)
 
-    print(f"\nInitializing RPMDIntegrator with contractions: {contractions}", flush=True)
-    integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, timestep, contractions)
+    print(
+        f"\nInitializing RPMDIntegrator with contractions: {contractions}", flush=True
+    )
+    integrator = openmm.RPMDIntegrator(
+        n_beads, temperature, friction, timestep, contractions
+    )
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
     if not os.path.exists(checkpoint_file):
-        print(f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.", flush=True)
+        print(
+            f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.",
+            flush=True,
+        )
         return
 
     print(f"Loading state from {checkpoint_file}...", flush=True)
     simulation.loadCheckpoint(checkpoint_file)
 
     if atoms_to_watch is not None:
-        simulation.reporters.append(RPMDQuantumSpreadReporter(
-            file=f'{output_prefix}_spread.log',
+        simulation.reporters.append(
+            RPMDQuantumSpreadReporter(
+                file=f"{output_prefix}_spread.log",
+                reportInterval=n_report,
+                atom_indices=atoms_to_watch,
+            )
+        )
+
+    simulation.reporters.append(
+        RPMDCentroidReporter(
+            topology=modeller.topology,
+            file_name=f"{output_prefix}_centroid.pdb",
             reportInterval=n_report,
-            atom_indices=atoms_to_watch,
-        ))
+            num_beads=n_beads,
+        )
+    )
 
-    simulation.reporters.append(RPMDCentroidReporter(
-        topology=modeller.topology,
-        file_name=f"{output_prefix}_centroid.pdb",
-        reportInterval=n_report,
-        num_beads=n_beads,
-    ))
+    simulation.reporters.append(
+        RPMDBeadReporter(
+            topology=modeller.topology,
+            file_base_name=output_prefix,
+            reportInterval=n_report,
+            num_beads=n_beads,
+        )
+    )
 
-    simulation.reporters.append(RPMDBeadReporter(
-        topology=modeller.topology,
-        file_base_name=output_prefix,
-        reportInterval=n_report,
-        num_beads=n_beads,
-    ))
-
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     print(f"\nStarting Production Run ({steps} steps)...")
     simulation.step(steps)
     print("Done.", flush=True)
 
     print("\n--- Saving State ---", flush=True)
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}_centroid.pdb', 'w') as f:
+    with open(f"{output_prefix}_centroid.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
     print(f"Saved centroid visualization to {output_prefix}_centroid.pdb", flush=True)
 
 
-def run_openmm_rpmd_prod(modeller,
-                         forcefield,
-                         plumed_script_path=None,
-                         checkpoint_file='rpmd_ready.chk',
-                         output_prefix='prod',
-                         n_beads=32,
-                         pressure=1.0 * unit.bar,
-                         temperature=300.0 * unit.kelvin,
-                         gamma=1.0 / unit.picosecond,
-                         time_step=1.0 * unit.femtoseconds,
-                         barostat_freq=50,
-                         n_report=1_000,
-                         steps=500_000,
-                         platform_name='CPU',
-                         deuterate=False,
-                         deuterate_option='water',
-                         potential=None,
-                         ml_idx=None,
-                         atoms_to_watch=None):
+def run_openmm_rpmd_prod(
+    modeller,
+    forcefield,
+    plumed_script_path=None,
+    checkpoint_file="rpmd_ready.chk",
+    output_prefix="prod",
+    n_beads=32,
+    pressure=1.0 * unit.bar,
+    temperature=300.0 * unit.kelvin,
+    gamma=1.0 / unit.picosecond,
+    time_step=1.0 * unit.femtoseconds,
+    barostat_freq=50,
+    n_report=1_000,
+    steps=500_000,
+    platform_name="CPU",
+    deuterate=False,
+    deuterate_option="water",
+    potential=None,
+    ml_idx=None,
+    atoms_to_watch=None,
+):
     """Run ring-polymer production MD on the full ring polymer.
 
     The uncontracted counterpart of
@@ -2176,10 +2284,6 @@ def run_openmm_rpmd_prod(modeller,
         Indices of atoms whose quantum spread is logged each report. Default
         is None, which disables the spread reporter.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -2188,7 +2292,7 @@ def run_openmm_rpmd_prod(modeller,
     if potential is not None and ml_idx is not None:
         print("Adding ML potential to the system...", flush=True)
         run_mixed = True
-        platform_name = 'CUDA'
+        platform_name = "CUDA"
     else:
         run_mixed = False
 
@@ -2238,61 +2342,76 @@ def run_openmm_rpmd_prod(modeller,
 
         plumed_force = PlumedForce(script_content)
         system.addForce(plumed_force)
-    integrator = openmm.RPMDIntegrator(temperature,
-                                       gamma,
-                                       time_step)
+    integrator = openmm.RPMDIntegrator(temperature, gamma, time_step)
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
     if not os.path.exists(checkpoint_file):
-        print(f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.", flush=True)
+        print(
+            f"Error: Checkpoint {checkpoint_file} not found. Run equilibration first.",
+            flush=True,
+        )
         return
 
     print(f"Loading state from {checkpoint_file}...", flush=True)
     simulation.loadCheckpoint(checkpoint_file)
 
     if atoms_to_watch is not None:
-        simulation.reporters.append(RPMDQuantumSpreadReporter(
-            file=f'{output_prefix}_spread.log',
+        simulation.reporters.append(
+            RPMDQuantumSpreadReporter(
+                file=f"{output_prefix}_spread.log",
+                reportInterval=n_report,
+                atom_indices=atoms_to_watch,
+            )
+        )
+
+    simulation.reporters.append(
+        RPMDCentroidReporter(
+            topology=modeller.topology,
+            file_name=f"{output_prefix}_centroid.pdb",
             reportInterval=n_report,
-            atom_indices=atoms_to_watch,
-        ))
+            num_beads=n_beads,
+        )
+    )
 
-    simulation.reporters.append(RPMDCentroidReporter(
-        topology=modeller.topology,
-        file_name=f"{output_prefix}_centroid.pdb",
-        reportInterval=n_report,
-        num_beads=n_beads,
-    ))
+    simulation.reporters.append(
+        RPMDBeadReporter(
+            topology=modeller.topology,
+            file_base_name=output_prefix,
+            reportInterval=n_report,
+            num_beads=n_beads,
+        )
+    )
 
-    simulation.reporters.append(RPMDBeadReporter(
-        topology=modeller.topology,
-        file_base_name=output_prefix,
-        reportInterval=n_report,
-        num_beads=n_beads,
-    ))
-
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      n_report,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
-    simulation.reporters.append(app.StateDataReporter(f'{output_prefix}.log',
-                                                      n_report,
-                                                      step=True,
-                                                      time=True,
-                                                      potentialEnergy=True,
-                                                      kineticEnergy=True,
-                                                      totalEnergy=True,
-                                                      temperature=True,
-                                                      volume=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            n_report,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
+    simulation.reporters.append(
+        app.StateDataReporter(
+            f"{output_prefix}.log",
+            n_report,
+            step=True,
+            time=True,
+            potentialEnergy=True,
+            kineticEnergy=True,
+            totalEnergy=True,
+            temperature=True,
+            volume=True,
+        )
+    )
 
     print(f"Starting production run for {steps} steps...", flush=True)
     simulation.step(steps)
     print("Production run complete.", flush=True)
 
-    simulation.saveCheckpoint(f'{output_prefix}.chk')
+    simulation.saveCheckpoint(f"{output_prefix}.chk")
     state = simulation.context.getState(getPositions=True, getVelocities=True)
-    with open(f'{output_prefix}.pdb', 'w') as f:
+    with open(f"{output_prefix}.pdb", "w") as f:
         app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
 
 
@@ -2326,13 +2445,66 @@ def _calculate_quantum_spread(integrator, atom_indices=None):
     coords = np.array(all_bead_positions)
     centroid = np.mean(coords, axis=0)
     diff = coords - centroid
-    sq_dist = np.sum(diff ** 2, axis=2)  # sum x,y,z components -> (n_beads, n_atoms)
+    sq_dist = np.sum(diff**2, axis=2)  # sum x,y,z components -> (n_beads, n_atoms)
     mean_sq_dist = np.mean(sq_dist, axis=0)
     quantum_rg = np.sqrt(mean_sq_dist)
     return quantum_rg * unit.nanometers
 
 
-class RPMDQuantumSpreadReporter:
+def _close_pdb_files(topology, files):
+    """Write the PDB footer to each open file and close it.
+
+    Errors are swallowed because interpreter shutdown may already have torn
+    down what this needs, and a failure here would mask the real reason the
+    run ended. Each file is handled separately so one failure does not leave
+    the rest unterminated.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+        Topology the footer is written for.
+    files : iterable of file object
+        Open PDB files to terminate and close.
+    """
+    for handle in files:
+        try:
+            app.PDBFile.writeFooter(topology, handle)
+            handle.close()
+        except Exception:
+            pass
+
+
+class _RPMDReporterBase:
+    """Shared scheduling for the ring-polymer reporters.
+
+    OpenMM asks a reporter how many steps remain until it next wants data,
+    and what to assemble for it. All three reporters below answer the same
+    way, and none of them want anything assembled: the bead positions they
+    report on come from the RPMD integrator directly, since the state OpenMM
+    would hand them holds only the centroid.
+
+    Subclasses set ``_reportInterval`` in their own ``__init__``.
+    """
+
+    def describeNextReport(self, simulation):
+        """Report how many steps remain until the next report is due.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+
+        Returns
+        -------
+        tuple
+            Steps until the next report, followed by flags for whether
+            positions, velocities, forces and energies are needed.
+        """
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+
+class RPMDQuantumSpreadReporter(_RPMDReporterBase):
     """Log the quantum delocalisation of selected atoms during RPMD.
 
     Writes the radius of gyration of each atom's ring polymer, which
@@ -2363,30 +2535,13 @@ class RPMDQuantumSpreadReporter:
         """
         self._reportInterval = reportInterval
         self._atom_indices = atom_indices
-        self._out = open(file, 'w')
+        self._out = open(file, "w")
 
         if names:
             header = "Step\t" + "\t".join([f"Rg_{n}(nm)" for n in names])
         else:
             header = "Step\t" + "\t".join([f"Rg_Atom{i}(nm)" for i in atom_indices])
         self._out.write(header + "\n")
-
-    def describeNextReport(self, simulation):
-        """Report how many steps remain until the next report is due.
-
-        Parameters
-        ----------
-        simulation : openmm.app.Simulation
-            The simulation requesting the report.
-
-        Returns
-        -------
-        tuple
-            Steps until the next report, followed by flags for whether
-            positions, velocities, forces and energies are needed.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False)
 
     def report(self, simulation, state):
         """Write the radius of gyration of each watched atom.
@@ -2403,10 +2558,6 @@ class RPMDQuantumSpreadReporter:
             Current state of the simulation. Unused; bead positions are read
             from the RPMD integrator instead, since the state holds only the
             centroid.
-
-        Returns
-        -------
-        None
         """
         integrator = simulation.integrator
 
@@ -2422,20 +2573,11 @@ class RPMDQuantumSpreadReporter:
         self._out.flush()
 
     def __del__(self):
-        """Close the log file when the reporter is destroyed.
-
-        Parameters
-        ----------
-
-
-        Returns
-        -------
-        None
-        """
+        """Close the log file when the reporter is destroyed."""
         self._out.close()
 
 
-class RPMDBeadReporter:
+class RPMDBeadReporter(_RPMDReporterBase):
     """Write the trajectory of every individual bead to its own PDB file.
 
     OpenMM's built-in reporters see only the centroid, so the bead
@@ -2471,26 +2613,9 @@ class RPMDBeadReporter:
         self._files = []
         for i in range(num_beads):
             filename = f"{file_base_name}_bead_{i}.pdb"
-            f = open(filename, 'w')
+            f = open(filename, "w")
             app.PDBFile.writeHeader(topology, f)
             self._files.append(f)
-
-    def describeNextReport(self, simulation):
-        """Report how many steps remain until the next report is due.
-
-        Parameters
-        ----------
-        simulation : openmm.app.Simulation
-            The simulation requesting the report.
-
-        Returns
-        -------
-        tuple
-            Steps until the next report, followed by flags for whether
-            positions, velocities, forces and energies are needed.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False)
 
     def report(self, simulation, state):
         """Write the current positions of every bead, one file each.
@@ -2504,10 +2629,6 @@ class RPMDBeadReporter:
             from the RPMD integrator instead, since the state holds only the
             centroid.
 
-        Returns
-        -------
-        None
-
         Notes
         -----
         Files are flushed every tenth frame so an interrupted run still
@@ -2516,10 +2637,14 @@ class RPMDBeadReporter:
         integrator = simulation.integrator
 
         for i in range(self._num_beads):
-            bead_state = integrator.getState(i, getPositions=True, enforcePeriodicBox=True)
+            bead_state = integrator.getState(
+                i, getPositions=True, enforcePeriodicBox=True
+            )
             positions = bead_state.getPositions()
 
-            app.PDBFile.writeModel(self._topology, positions, self._files[i], self._next_frame_index)
+            app.PDBFile.writeModel(
+                self._topology, positions, self._files[i], self._next_frame_index
+            )
 
             if self._next_frame_index % 10 == 0:
                 self._files[i].flush()
@@ -2527,29 +2652,11 @@ class RPMDBeadReporter:
         self._next_frame_index += 1
 
     def __del__(self):
-        """Write the PDB footer to every bead file and close them.
-
-        Errors are swallowed because interpreter shutdown may already have
-        torn down what this needs, and a failure here would mask the real
-        reason the run ended.
-
-        Parameters
-        ----------
+        """Write the PDB footer to every bead file and close them."""
+        _close_pdb_files(self._topology, self._files)
 
 
-        Returns
-        -------
-        None
-        """
-        for f in self._files:
-            try:
-                app.PDBFile.writeFooter(self._topology, f)
-                f.close()
-            except Exception:
-                pass
-
-
-class RPMDCentroidReporter:
+class RPMDCentroidReporter(_RPMDReporterBase):
     """Write the bead-averaged positions to a single PDB file.
 
     The centroid is the closest thing a ring polymer has to a classical
@@ -2575,34 +2682,13 @@ class RPMDCentroidReporter:
             Number of beads in the RPMD integrator, used to average over.
         topology : openmm.app.Topology
             Topology written into the PDB header.
-
-        Returns
-        -------
-        None
         """
         self._reportInterval = reportInterval
         self._num_beads = num_beads
         self._topology = topology
         self._next_frame_index = 0
-        self._out = open(file_name, 'w')
+        self._out = open(file_name, "w")
         app.PDBFile.writeHeader(topology, self._out)
-
-    def describeNextReport(self, simulation):
-        """Report how many steps remain until the next report is due.
-
-        Parameters
-        ----------
-        simulation : openmm.app.Simulation
-            The simulation requesting the report.
-
-        Returns
-        -------
-        tuple
-            Steps until the next report, followed by flags for whether
-            positions, velocities, forces and energies are needed.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False)
 
     def report(self, simulation, state):
         """Write the bead-averaged positions as one PDB model.
@@ -2618,48 +2704,33 @@ class RPMDCentroidReporter:
             Current state of the simulation. Unused; bead positions are read
             from the RPMD integrator instead, since the state holds only the
             centroid.
-
-        Returns
-        -------
-        None
         """
         integrator = simulation.integrator
 
         # asNumpy=True for vector efficiency, though OpenMM Quantities also support math
-        sum_pos = integrator.getState(0, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
+        sum_pos = integrator.getState(
+            0, getPositions=True, enforcePeriodicBox=True
+        ).getPositions(asNumpy=True)
 
         for i in range(1, self._num_beads):
-            pos = integrator.getState(i, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
+            pos = integrator.getState(
+                i, getPositions=True, enforcePeriodicBox=True
+            ).getPositions(asNumpy=True)
             sum_pos += pos
 
         centroid_pos = sum_pos / self._num_beads
 
-        app.PDBFile.writeModel(self._topology, centroid_pos, self._out, self._next_frame_index)
+        app.PDBFile.writeModel(
+            self._topology, centroid_pos, self._out, self._next_frame_index
+        )
         self._next_frame_index += 1
 
         if self._next_frame_index % 10 == 0:
             self._out.flush()
 
     def __del__(self):
-        """Write the PDB footer and close the file.
-
-        Errors are swallowed because interpreter shutdown may already have
-        torn down what this needs, and a failure here would mask the real
-        reason the run ended.
-
-        Parameters
-        ----------
-
-
-        Returns
-        -------
-        None
-        """
-        try:
-            app.PDBFile.writeFooter(self._topology, self._out)
-            self._out.close()
-        except Exception:
-            pass
+        """Write the PDB footer and close the file."""
+        _close_pdb_files(self._topology, [self._out])
 
 
 def count_dna_and_estimate_charge(topology):
@@ -2686,9 +2757,18 @@ def count_dna_and_estimate_charge(topology):
         accounted for.
     """
     dna_residue_names = {
-        "DA", "DC", "DG", "DT",  # internal
-        "DA5", "DC5", "DG5", "DT5",  # 5'-terminal
-        "DA3", "DC3", "DG3", "DT3",  # 3'-terminal
+        "DA",
+        "DC",
+        "DG",
+        "DT",  # internal
+        "DA5",
+        "DC5",
+        "DG5",
+        "DT5",  # 5'-terminal
+        "DA3",
+        "DC3",
+        "DG3",
+        "DT3",  # 3'-terminal
     }
 
     num_dna_residues = 0

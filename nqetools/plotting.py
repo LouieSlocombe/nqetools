@@ -17,21 +17,98 @@ plot in both packages comes out looking the same.
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from pathlib import Path
 from reactiontools import ax_plot
 
 from .calcs import moving_average
 
 
-def plot_step_energy(data,
-                     fig=None,
-                     ax=None,
-                     diff=True,
-                     save=True,
-                     show=True,
-                     filename="step_energy",
-                     fig_size=(8, 3),
-                     y_scale='log'):
+def _new_axes(fig, ax, fig_size):
+    """Return the given figure and axes, creating a fresh pair if either is missing.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure or None
+        Figure to draw into.
+    ax : matplotlib.axes.Axes or None
+        Axes to draw into.
+    fig_size : tuple of float
+        Size in inches of the figure to create, if one is needed.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
+        The pair to draw into.
+    """
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    return fig, ax
+
+
+def _finish_plot(fig, ax, xlabel, ylabel, save, show, filename):
+    """Label the axes in the house style, then optionally save and show.
+
+    PNG and PDF are written together so there is always both a copy to drop
+    into a document and one to embed at full resolution.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        Figure that was drawn into.
+    ax : matplotlib.axes.Axes
+        Axes that were drawn into.
+    xlabel, ylabel : str
+        Axis labels, passed to :func:`~reactiontools.ax_plot`.
+    save : bool
+        If True, write PNG and PDF copies.
+    show : bool
+        If True, display the figure.
+    filename : str
+        Stem for the saved files.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
+        `fig` and `ax` unchanged, for the caller to return on.
+    """
+    ax_plot(fig, ax, xlabel, ylabel)
+    if save:
+        plt.savefig(f"{filename}.png", dpi=600)
+        plt.savefig(f"{filename}.pdf")
+    if show:
+        plt.show()
+    return fig, ax
+
+
+def _inverse_temperature(temperatures):
+    """Inverse temperatures for an Arrhenius axis, scaled to keep it readable.
+
+    Parameters
+    ----------
+    temperatures : list of float
+        Temperatures in K.
+
+    Returns
+    -------
+    list of float
+        1000/T, in inverse kelvin.
+    """
+    return [1000.0 / t for t in temperatures]
+
+
+def plot_step_energy(
+    data,
+    fig=None,
+    ax=None,
+    diff=True,
+    save=True,
+    show=True,
+    filename="step_energy",
+    fig_size=(8, 3),
+    y_scale="log",
+) -> tuple[Figure, Axes]:
     """Plot potential energy against optimiser step.
 
     Parameters
@@ -63,8 +140,7 @@ def plot_step_energy(data,
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
     step = data["step"]
     energy = data["potential"]
@@ -77,22 +153,21 @@ def plot_step_energy(data,
 
     ax.plot(step, energy, c="black", label="potential", lw=2)
     ax.set_yscale(y_scale)
-    ax_plot(fig, ax, r"Optimiser step", r"Energy (eV)")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+
+    return _finish_plot(
+        fig, ax, r"Optimiser step", r"Energy (eV)", save, show, filename
+    )
 
 
-def plot_time_potential_bias(data,
-                             fig=None,
-                             ax=None,
-                             save=True,
-                             show=True,
-                             filename="time_potential_bias",
-                             fig_size=(8, 3)):
+def plot_time_potential_bias(
+    data,
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="time_potential_bias",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot potential energy and enhanced-sampling bias against time.
 
     Both traces are offset to start at zero so their relative drift can be
@@ -123,33 +198,40 @@ def plot_time_potential_bias(data,
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
     time = data["time"]
 
-    ax.plot(time, np.subtract(data["potential"], data["potential"][0]), c="black", label="potential", lw=2)
-    ax.plot(time, np.subtract(data["ensemble_bias"], data["ensemble_bias"][0]), c="red", label="bias", lw=2)
-
+    ax.plot(
+        time,
+        np.subtract(data["potential"], data["potential"][0]),
+        c="black",
+        label="potential",
+        lw=2,
+    )
+    ax.plot(
+        time,
+        np.subtract(data["ensemble_bias"], data["ensemble_bias"][0]),
+        c="red",
+        label="bias",
+        lw=2,
+    )
     ax.legend(loc="best", ncols=1)
-    ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+
+    return _finish_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)", save, show, filename)
 
 
-def plot_time_temperature(data,
-                          fig=None,
-                          ax=None,
-                          window_size=100,
-                          mov_ave=True,
-                          save=True,
-                          show=True,
-                          filename="time_temperature",
-                          fig_size=(8, 3)):
+def plot_time_temperature(
+    data,
+    fig=None,
+    ax=None,
+    window_size=100,
+    mov_ave=True,
+    save=True,
+    show=True,
+    filename="time_temperature",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot instantaneous temperature against time.
 
     Parameters
@@ -182,35 +264,30 @@ def plot_time_temperature(data,
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
     if mov_ave:
         ave_temperature = moving_average(data["temperature"], window_size)
         # Offsets come from the actual output length so that odd window sizes,
         # which drop an uneven number of points from each end, still line up.
         lead = (window_size - 1) // 2
-        time = data["time"][lead:lead + len(ave_temperature)]
+        time = data["time"][lead : lead + len(ave_temperature)]
         ax.plot(time, ave_temperature, c="black", lw=2)
     else:
         ax.plot(data["time"], data["temperature"], c="black", lw=2)
 
-    ax_plot(fig, ax, r"$t$ (ps)", r"Temperature (K)")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(fig, ax, r"$t$ (ps)", r"Temperature (K)", save, show, filename)
 
 
-def plot_time_energy_conservation(data,
-                                  fig=None,
-                                  ax=None,
-                                  save=True,
-                                  show=True,
-                                  filename="time_conservation",
-                                  fig_size=(8, 3)):
+def plot_time_energy_conservation(
+    data,
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="time_conservation",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot potential and conserved energy against time.
 
     Drift in the conserved quantity is the standard diagnostic for an
@@ -242,32 +319,39 @@ def plot_time_energy_conservation(data,
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
     time = data["time"]
 
-    ax.plot(time, np.subtract(data["potential"], data["potential"][0]), c="black", label="Potential", lw=2)
-    ax.plot(time, np.subtract(data["conserved"], data["conserved"][0]), c="red", label="Total", lw=2)
-
+    ax.plot(
+        time,
+        np.subtract(data["potential"], data["potential"][0]),
+        c="black",
+        label="Potential",
+        lw=2,
+    )
+    ax.plot(
+        time,
+        np.subtract(data["conserved"], data["conserved"][0]),
+        c="red",
+        label="Total",
+        lw=2,
+    )
     ax.legend(loc="upper left", ncols=1)
-    ax_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+
+    return _finish_plot(fig, ax, r"$t$ (ps)", r"Energy (eV)", save, show, filename)
 
 
-def plot_arrhenius(temperatures: list[float],
-                   rates: list[float],
-                   fig=None,
-                   ax=None,
-                   save=True,
-                   show=True,
-                   filename="arrhenius",
-                   fig_size=(8, 3)) -> None:
+def plot_arrhenius(
+    temperatures: list[float],
+    rates: list[float],
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="arrhenius",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot an Arrhenius plot of ln(k) against inverse temperature.
 
     Curvature away from a straight line is the signature of quantum
@@ -299,33 +383,26 @@ def plot_arrhenius(temperatures: list[float],
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    inv_temp = [1000.0 / t for t in temperatures]  # Scaled by 1000 to keep the axis readable
+    ax.plot(_inverse_temperature(temperatures), np.log(rates), "o-", c="black", lw=2)
 
-    ln_rates = np.log(rates)
-
-    ax.plot(inv_temp, ln_rates, 'o-', c='black', lw=2)
-
-    ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(
+        fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)", save, show, filename
+    )
 
 
-def plot_arrhenius_2(temperatures: list[float],
-                     rates_c: list[float],
-                     rates_q: list[float],
-                     fig=None,
-                     ax=None,
-                     save=True,
-                     show=True,
-                     filename="arrhenius",
-                     fig_size=(8, 3)) -> None:
+def plot_arrhenius_2(
+    temperatures: list[float],
+    rates_c: list[float],
+    rates_q: list[float],
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="arrhenius",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot classical and quantum rates on a single Arrhenius plot.
 
     The gap between the two traces widens as temperature falls, showing
@@ -359,31 +436,28 @@ def plot_arrhenius_2(temperatures: list[float],
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    inv_temp = [1000.0 / t for t in temperatures]  # Scaled by 1000 to keep the axis readable
-
-    ax.plot(inv_temp, np.log(rates_c), 'o-', c='black', lw=2, label="Classical")
-    ax.plot(inv_temp, np.log(rates_q), 'o-', c='red', lw=2, label="Quantum")
+    inv_temp = _inverse_temperature(temperatures)
+    ax.plot(inv_temp, np.log(rates_c), "o-", c="black", lw=2, label="Classical")
+    ax.plot(inv_temp, np.log(rates_q), "o-", c="red", lw=2, label="Quantum")
     ax.legend()
-    ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+
+    return _finish_plot(
+        fig, ax, r"$1000/T$ (K$^{-1}$)", r"ln($k$)", save, show, filename
+    )
 
 
-def plot_kappa_temperature(temperatures: list[float],
-                           kappa: list[float],
-                           fig=None,
-                           ax=None,
-                           save=True,
-                           show=True,
-                           filename="kappa_temperature",
-                           fig_size=(8, 3)) -> None:
+def plot_kappa_temperature(
+    temperatures: list[float],
+    kappa: list[float],
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="kappa_temperature",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot the tunnelling enhancement factor against temperature.
 
     Parameters
@@ -412,28 +486,23 @@ def plot_kappa_temperature(temperatures: list[float],
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    ax.plot(temperatures, kappa, 'o-', c='black', lw=2)
+    ax.plot(temperatures, kappa, "o-", c="black", lw=2)
 
-    ax_plot(fig, ax, r"Temperature (K)", r"$\kappa$")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(fig, ax, r"Temperature (K)", r"$\kappa$", save, show, filename)
 
 
-def plot_kappa_temperature_inv(temperatures: list[float],
-                               kappa: list[float],
-                               fig=None,
-                               ax=None,
-                               save=True,
-                               show=True,
-                               filename="kappa_temperature_inv",
-                               fig_size=(8, 3)) -> None:
+def plot_kappa_temperature_inv(
+    temperatures: list[float],
+    kappa: list[float],
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="kappa_temperature_inv",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot the tunnelling enhancement factor against inverse temperature.
 
     Uses the same abscissa as the Arrhenius plots, so the two can be read
@@ -465,30 +534,25 @@ def plot_kappa_temperature_inv(temperatures: list[float],
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    inv_temp = [1000.0 / t for t in temperatures]  # Scaled by 1000 to keep the axis readable
+    ax.plot(_inverse_temperature(temperatures), kappa, "o-", c="black", lw=2)
 
-    ax.plot(inv_temp, kappa, 'o-', c='black', lw=2)
-
-    ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"$\kappa$")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(
+        fig, ax, r"$1000/T$ (K$^{-1}$)", r"$\kappa$", save, show, filename
+    )
 
 
-def plot_kie_temperature(temperatures: list[float],
-                         kie: list[float],
-                         fig=None,
-                         ax=None,
-                         save=True,
-                         show=True,
-                         filename="kie_temperature",
-                         fig_size=(8, 3)) -> None:
+def plot_kie_temperature(
+    temperatures: list[float],
+    kie: list[float],
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="kie_temperature",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot the kinetic isotope effect against inverse temperature.
 
     Parameters
@@ -517,31 +581,23 @@ def plot_kie_temperature(temperatures: list[float],
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    inv_temp = [1000.0 / t for t in temperatures]  # Scaled by 1000 to keep the axis readable
+    ax.plot(_inverse_temperature(temperatures), kie, "o-", c="black", lw=2)
 
-    ax.plot(inv_temp, kie, 'o-', c='black', lw=2)
-
-    ax_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"KIE")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(fig, ax, r"$1000/T$ (K$^{-1}$)", r"KIE", save, show, filename)
 
 
-def plot_bead_convergence(n_beads: list[float],
-                          kappa: list[float],
-                          fig=None,
-                          ax=None,
-                          save=True,
-                          show=True,
-                          filename="bead_temperature",
-                          fig_size=(8, 3)
-                          ) -> None:
+def plot_bead_convergence(
+    n_beads: list[float],
+    kappa: list[float],
+    fig=None,
+    ax=None,
+    save=True,
+    show=True,
+    filename="bead_temperature",
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot the tunnelling enhancement factor against ring-polymer size.
 
     Used to choose the smallest bead count at which the result has
@@ -573,24 +629,14 @@ def plot_bead_convergence(n_beads: list[float],
     tuple of (matplotlib.figure.Figure, matplotlib.axes.Axes)
         The figure and axes that were drawn into.
     """
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    ax.plot(n_beads, kappa, 'o-', c='black', lw=2)
+    ax.plot(n_beads, kappa, "o-", c="black", lw=2)
 
-    ax_plot(fig, ax, r"Number of Beads", r"$\kappa$")
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(fig, ax, r"Number of Beads", r"$\kappa$", save, show, filename)
 
 
-def _load_plumed_colvar(path,
-                        field,
-                        derivative=False,
-                        x="time"):
+def _load_plumed_colvar(path, field, derivative=False, x="time"):
     """Read one named column from a PLUMED COLVAR file.
 
     Column names are taken from the '#! FIELDS' header line, so fields can
@@ -628,7 +674,7 @@ def _load_plumed_colvar(path,
     if not header.startswith(prefix):
         raise ValueError("First line must start with '#! FIELDS'.")
 
-    names = header[len(prefix):].strip().split()
+    names = header[len(prefix) :].strip().split()
     if not names:
         raise ValueError("No column names found after '#! FIELDS'.")
 
@@ -654,16 +700,18 @@ def _load_plumed_colvar(path,
     return x_vals, y_vals
 
 
-def plot_plumed_field(path,
-                      field,
-                      fig=None,
-                      ax=None,
-                      x="time",
-                      save=True,
-                      show=True,
-                      filename="plumed_field",
-                      derivative=False,
-                      fig_size=(8, 3)):
+def plot_plumed_field(
+    path,
+    field,
+    fig=None,
+    ax=None,
+    x="time",
+    save=True,
+    show=True,
+    filename="plumed_field",
+    derivative=False,
+    fig_size=(8, 3),
+) -> tuple[Figure, Axes]:
     """Plot a named column from a PLUMED COLVAR file.
 
     Parameters
@@ -703,20 +751,10 @@ def plot_plumed_field(path,
         Propagated from :func:`_load_plumed_colvar` if the file header or
         the requested columns are unusable.
     """
-    x_vals, y_vals = _load_plumed_colvar(path,
-                                         field,
-                                         derivative=derivative,
-                                         x=x)
+    x_vals, y_vals = _load_plumed_colvar(path, field, derivative=derivative, x=x)
 
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=fig_size, constrained_layout=True)
+    fig, ax = _new_axes(fig, ax, fig_size)
 
-    ax.plot(x_vals, y_vals, 'o-', c='black', lw=2)
+    ax.plot(x_vals, y_vals, "o-", c="black", lw=2)
 
-    ax_plot(fig, ax, x, field)
-    if save:
-        plt.savefig(f"{filename}.png", dpi=600)
-        plt.savefig(f"{filename}.pdf")
-    if show:
-        plt.show()
-    return fig, ax
+    return _finish_plot(fig, ax, x, field, save, show, filename)

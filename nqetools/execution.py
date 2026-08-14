@@ -30,36 +30,40 @@ import ipi
 import numpy as np
 
 from .driver import prep_driver
-from .io import (write_xml,
-                 copy_hess,
-                 get_final_hess,
-                 write_xyz,
-                 read_ipi_xyz,
-                 remove_directory,
-                 find_nqetools_path)
+from .io import (
+    write_xml,
+    copy_hess,
+    get_final_hess,
+    write_xyz,
+    read_ipi_xyz,
+    remove_directory,
+    find_nqetools_path,
+)
 from .plumed import prep_plumed
 from .tools import rm_ipi_tmp, round_sf
-from .xml_parse import (append_properties,
-                         update_cell,
-                         update_checkpoint_stride,
-                         update_driver,
-                         update_dynamics_splitting,
-                         update_file,
-                         update_hessian,
-                         update_mass,
-                         update_motion_fix_com,
-                         update_nbeads,
-                         update_open_paths,
-                         update_optimiser,
-                         update_stride,
-                         update_temperature,
-                         update_timestep,
-                         update_title,
-                         update_tol,
-                         update_total_steps,
-                         add_plumed_xml,
-                         add_thermostat_section,
-                         add_trajectory_centroid)
+from .xml_parse import (
+    append_properties,
+    update_cell,
+    update_checkpoint_stride,
+    update_driver,
+    update_dynamics_splitting,
+    update_file,
+    update_hessian,
+    update_mass,
+    update_motion_fix_com,
+    update_nbeads,
+    update_open_paths,
+    update_optimiser,
+    update_stride,
+    update_temperature,
+    update_timestep,
+    update_title,
+    update_tol,
+    update_total_steps,
+    add_plumed_xml,
+    add_thermostat_section,
+    add_trajectory_centroid,
+)
 import multiprocessing
 
 
@@ -101,7 +105,9 @@ def run_command(command):
     str
         The output of the command.
     """
-    result = subprocess.run(command.split(), check=False, capture_output=True, text=True)
+    result = subprocess.run(
+        command.split(), check=False, capture_output=True, text=True
+    )
     return result.stdout
 
 
@@ -129,22 +135,23 @@ def check_driver_processes(n_processes, max_ratio=0.9, warn_only=False):
 
     if n_processes > safe_processes:
         if warn_only:
-            print(f"Warning: Requested {n_processes} driver processes, but only {available_cores} CPU cores available.")
-            print(f"Recommended maximum: {safe_processes} processes (using {int(max_ratio * 100)}% of cores).")
+            print(
+                f"Warning: Requested {n_processes} driver processes, but only {available_cores} CPU cores available."
+            )
+            print(
+                f"Recommended maximum: {safe_processes} processes (using {int(max_ratio * 100)}% of cores)."
+            )
             return n_processes
         else:
-            print(f"Adjusting driver processes from {n_processes} to {safe_processes} based on available CPU cores.")
+            print(
+                f"Adjusting driver processes from {n_processes} to {safe_processes} based on available CPU cores."
+            )
             return safe_processes
 
     return n_processes
 
 
-def run_ipi(directory,
-            server,
-            driver,
-            outfile,
-            n=1,
-            t_sleep=5.0):
+def run_ipi(directory, server, driver, outfile, n=1, t_sleep=5.0):
     """Runs the i-PI server and driver processes for a simulation.
 
     Parameters
@@ -161,14 +168,12 @@ def run_ipi(directory,
         Number of driver processes to start. Default is 1.
     t_sleep : float, optional
         Time to wait for the i-PI server to start. Default is 5.0 seconds.
-
-    Returns
-    -------
-    None
     """
     # Check before changing directory, so a refused run leaves the cwd untouched
     if os.path.exists(os.path.join(directory, outfile)):
-        raise FileExistsError(f"Output file {outfile} already exists in {directory}. Skipping the run.")
+        raise FileExistsError(
+            f"Output file {outfile} already exists in {directory}. Skipping the run."
+        )
 
     n = check_driver_processes(n)
 
@@ -181,15 +186,16 @@ def run_ipi(directory,
         # so any redirection has to happen here rather than in the command string
         driver_logs = [open(f"driver_{i}.out", "w") for i in range(n)]
         try:
-            driver_proc = [subprocess.Popen(driver.split(), stdout=log, stderr=subprocess.STDOUT)
-                           for log in driver_logs]
+            driver_proc = [
+                subprocess.Popen(driver.split(), stdout=log, stderr=subprocess.STDOUT)
+                for log in driver_logs
+            ]
             ipi_proc.wait()
             for process in driver_proc:
                 process.wait()
         finally:
             for log in driver_logs:
                 log.close()
-    return None
 
 
 def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None):
@@ -213,40 +219,36 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
         Grid bounds as ``[min, max]`` for one collective variable, or a
         list of such pairs for several. Bounds of None let PLUMED choose
         them. Default is [[0.21, 0.31], [-1, 1]].
-
-    Returns
-    -------
-    None
     """
-    print('Running plumed hills', flush=True)
+    print("Running plumed hills", flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
 
     kbt = temperature * 0.0083144621
 
-    hills_str = os.path.join(directory, 'HILLS')
-    fes_str = os.path.join(directory, 'FES')
+    hills_str = os.path.join(directory, "HILLS")
+    fes_str = os.path.join(directory, "FES")
 
     command = f"plumed sum_hills --hills {hills_str} --outfile {fes_str} --stride {stride} --kt {round_sf(kbt)} --mintozero"
 
     if len(np.shape(cv)) == 2:
         if all(item is None for item in chain.from_iterable(cv)):
             bins_values = ",".join([str(bins)] * len(cv))
-            command += f' --bin {bins_values}'
+            command += f" --bin {bins_values}"
         else:
             min_values = ",".join(str(c[0]) for c in cv)
             max_values = ",".join(str(c[1]) for c in cv)
             bins_values = ",".join([str(bins)] * len(cv))
-            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+            command += f" --min {min_values} --max {max_values} --bin {bins_values}"
     else:
         if cv[0] is None and cv[1] is None:
             bins_values = str(bins)
-            command += f' --bin {bins_values}'
+            command += f" --bin {bins_values}"
         else:
             min_values = str(cv[0])
             max_values = str(cv[1])
             bins_values = str(bins)
-            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+            command += f" --min {min_values} --max {max_values} --bin {bins_values}"
 
     print(f"Running command:\n{command}", flush=True)
 
@@ -254,7 +256,6 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
         subprocess.run(command.split(), check=False, stdin=file, text=True)
 
     print("Plumed hills run complete\n", flush=True)
-    return None
 
 
 def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
@@ -277,44 +278,40 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
         list of such pairs for several. Bounds of None let the grid be
         chosen automatically. Default is [[0.21, 0.31], [-1, 1]].
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Every stored state is written out, not just the last, so convergence
     can be checked across the run.
     """
-    print('Running plumed OPES hills', flush=True)
+    print("Running plumed OPES hills", flush=True)
     if cv is None:
         cv = [[0.21, 0.31], [-1, 1]]
 
     kbt = temperature * 0.0083144621
 
     path_to_opes = os.path.join(find_nqetools_path(), "opes", "fes_from_state.py")
-    command = f'{path_to_opes} --kt {round_sf(kbt)}'
+    command = f"{path_to_opes} --kt {round_sf(kbt)}"
 
     if len(np.shape(cv)) == 2:
         if all(item is None for item in chain.from_iterable(cv)):
             bins_values = ",".join([str(bins)] * len(cv))
-            command += f' --bin {bins_values}'
+            command += f" --bin {bins_values}"
         else:
             min_values = ",".join(str(c[0]) for c in cv)
             max_values = ",".join(str(c[1]) for c in cv)
             bins_values = ",".join([str(bins)] * len(cv))
-            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+            command += f" --min {min_values} --max {max_values} --bin {bins_values}"
     else:
         if cv[0] is None and cv[1] is None:
             bins_values = str(bins)
-            command += f' --bin {bins_values}'
+            command += f" --bin {bins_values}"
         else:
             min_values = str(cv[0])
             max_values = str(cv[1])
             bins_values = str(bins)
-            command += f' --min {min_values} --max {max_values} --bin {bins_values}'
+            command += f" --min {min_values} --max {max_values} --bin {bins_values}"
 
-    command += ' --all_stored'
+    command += " --all_stored"
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
@@ -323,16 +320,17 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
         subprocess.run(command.split(), check=False)
 
     print("Plumed OPES hills run complete\n", flush=True)
-    return None
 
 
-def run_instanton_post_process(directory,
-                               process_type='reactant',
-                               temperature=300.0,
-                               filter_list=None,
-                               ref_energy=None,
-                               n_beads=1,
-                               outfile='thermo_data.out'):
+def run_instanton_post_process(
+    directory,
+    process_type="reactant",
+    temperature=300.0,
+    filter_list=None,
+    ref_energy=None,
+    n_beads=1,
+    outfile="thermo_data.out",
+):
     """Run the instanton post-processing on a completed calculation.
 
     Invokes ``instanton_tools/postproc.py`` against the RESTART file to
@@ -359,36 +357,35 @@ def run_instanton_post_process(directory,
     outfile : str, optional
         File to capture stdout into. Default is 'thermo_data.out'.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Failures are reported on stderr rather than raised, so callers should
     check that the parsed output contains the expected fields.
     """
-    print(f'Running the {process_type} thermo/instanton post-processing', flush=True)
+    print(f"Running the {process_type} thermo/instanton post-processing", flush=True)
 
     path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "postproc.py")
-    command = f'python {path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}'
+    command = (
+        f"python {path_to_proc} RESTART -t {temperature} -c {process_type} -n {n_beads}"
+    )
     if filter_list is not None:
-        command += f' -f {filter_list}'
+        command += f" -f {filter_list}"
 
     if ref_energy is not None:
-        command += f' -e {ref_energy}'
+        command += f" -e {ref_energy}"
 
     print(f"Working directory: {directory}", flush=True)
     print(f"Running command:\n{command}", flush=True)
 
     # RESTART is passed as a bare name, so it resolves against the cwd
     with working_directory(directory), open(outfile, "w") as file:
-        result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(
+            command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True
+        )
         if result.returncode != 0:
             print(f"Error: {result.stderr}", flush=True)
 
     print("Thermo/Instanton post-processing complete\n", flush=True)
-    return None
 
 
 def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
@@ -408,16 +405,12 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
     new_n_beads : int
         Number of beads for the new calculation.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Reimplements the manual recipe from the i-PI PIQM2023 tutorial,
     ``05-RPI/tutorial-4.ipynb``.
     """
-    print('Running the instanton interpolation', flush=True)
+    print("Running the instanton interpolation", flush=True)
 
     os.makedirs(directory_new, exist_ok=True)
 
@@ -425,13 +418,21 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
         shutil.copy(os.path.join(directory_old, "init.xyz"), "init0")
         shutil.copy(os.path.join(directory_old, "hessian.dat"), "hess0")
 
-        path_to_proc = os.path.join(find_nqetools_path(), "instanton_tools", "interpolation.py")
-        command = f'python {path_to_proc} -m -xyz init0 -hess hess0 -n {new_n_beads}'
+        path_to_proc = os.path.join(
+            find_nqetools_path(), "instanton_tools", "interpolation.py"
+        )
+        command = f"python {path_to_proc} -m -xyz init0 -hess hess0 -n {new_n_beads}"
 
         print(f"Running command:\n{command}", flush=True)
 
         with open("interpolation.out", "w") as file:
-            result = subprocess.run(command.split(), check=False, stdout=file, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(
+                command.split(),
+                check=False,
+                stdout=file,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
             if result.returncode != 0:
                 print(f"Error: {result.stderr}", flush=True)
 
@@ -440,7 +441,7 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
 
         shutil.copy(os.path.join(directory_old, "input.xml"), "input.xml")
 
-        tree = et.parse('input.xml')
+        tree = et.parse("input.xml")
         root = tree.getroot()
         update_nbeads(root, new_n_beads)
 
@@ -449,27 +450,227 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
 
         update_hessian(root, n_doft, new_n_beads)
 
-        write_xml(root, 'input.xml')
+        write_xml(root, "input.xml")
 
     print("Instanton interpolation complete\n", flush=True)
-    return None
 
 
-def prep_optimise_xml(directory,
-                      atoms,
-                      outfile="min",
-                      driver="ase-mace",
-                      total_steps=100,
-                      deuterate=False,
-                      optimiser="lbfgs",
-                      tol_energy=1.0e-4,
-                      tol_force=1.0e-4,
-                      tol_position=1.0e-4,
-                      stride=1,
-                      checkpoint_stride=10,
-                      properties=None,
-                      xml_in=None,
-                      file_in="init.xyz"):
+def _prepare_run_directory(directory, atoms, driver_args):
+    """Clear the run directory and normalise the arguments every run shares.
+
+    Runs are destructive by design: the directory is removed and recreated so
+    a rerun cannot pick up stale output from the last one.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory. Removed and recreated.
+    atoms : ase.Atoms or list of ase.Atoms
+        Starting structure. A list is taken to be a trajectory, of which the
+        last frame is the structure to start from.
+    driver_args : dict or None
+        Extra keyword arguments for the driver.
+
+    Returns
+    -------
+    tuple of (ase.Atoms, dict)
+        The structure to start from and the driver arguments, with None
+        replaced by an empty dict.
+    """
+    if driver_args is None:
+        driver_args = {}
+
+    remove_directory(directory)
+    os.makedirs(directory, exist_ok=True)
+
+    if isinstance(atoms, list):
+        atoms = atoms[-1]
+
+    return atoms, driver_args
+
+
+def _collect_ipi_output(directory, outfile, n_beads=1):
+    """Read back the trajectory and scalar output i-PI wrote.
+
+    Parameters
+    ----------
+    directory : str
+        Run directory.
+    outfile : str
+        Prefix i-PI was given for its output files.
+    n_beads : int, optional
+        Number of beads. Above one the centroid trajectory is read, since the
+        individual bead positions are not the configuration of interest.
+        Default is 1.
+
+    Returns
+    -------
+    tuple of (list of ase.Atoms, dict, dict)
+        The trajectory, the parsed scalar output, and the descriptions of
+        those output columns.
+    """
+    trajectory = f"{outfile}.xc.xyz" if n_beads > 1 else f"{outfile}.pos_0.xyz"
+    atoms_out = read_ipi_xyz(os.path.join(directory, trajectory))
+    output_data, output_desc = ipi.read_output(
+        os.path.join(directory, f"{outfile}.out")
+    )
+    return atoms_out, output_data, output_desc
+
+
+def _load_ipi_template(template, xml_in=None):
+    """Parse the packaged i-PI template, or `xml_in` in its place.
+
+    Parameters
+    ----------
+    template : str
+        File name of the template in ``templates/``, such as "MIN.xml".
+    xml_in : str, optional
+        Path to an XML file to use instead of the template. Default is None.
+
+    Returns
+    -------
+    Element
+        Root of the parsed document, ready to be rewritten in place.
+    """
+    if xml_in is None:
+        xml_in = os.path.join(find_nqetools_path(), "templates", template)
+    return et.parse(xml_in).getroot()
+
+
+def _apply_common_updates(
+    root,
+    directory,
+    atoms,
+    file_in,
+    driver,
+    outfile,
+    deuterate,
+    total_steps,
+    properties=None,
+    extra_properties=None,
+):
+    """Apply the updates every i-PI input needs, whatever the run type.
+
+    Writes the starting geometry alongside the input, then points the input
+    at it and rewrites the cell, masses, driver socket, output prefix and
+    step count.
+
+    Parameters
+    ----------
+    root : Element
+        Root of the document to rewrite.
+    directory : str
+        Directory the structure file is written into.
+    atoms : ase.Atoms
+        Starting structure.
+    file_in : str
+        Name to give the structure file.
+    driver : str
+        Driver name, used to select the force provider.
+    outfile : str
+        Prefix for i-PI output files.
+    deuterate : bool
+        If True, replace hydrogen masses with deuterium.
+    total_steps : int
+        Step limit for the run.
+    properties : list of str, optional
+        Extra properties to append to the output list. Default is None.
+    extra_properties : list of str, optional
+        Properties appended before `properties`, for inputs that need one
+        regardless of what the caller asked for. Default is None.
+    """
+    if extra_properties is not None:
+        append_properties(root, extra_properties)
+    if properties is not None:
+        append_properties(root, properties)
+
+    write_xyz(atoms, os.path.join(directory, file_in))
+
+    update_file(root, file_in)
+    update_cell(root, atoms)
+    update_mass(root, atoms, f_deut=deuterate)
+    update_driver(root, atoms, driver)
+    update_title(root, outfile)
+    update_total_steps(root, total_steps)
+
+
+def _apply_dynamics_updates(
+    root, temperature, timestep, splitting, fix_com, thermostat, n_beads
+):
+    """Apply the updates shared by the plain and PLUMED-biased MD inputs.
+
+    Parameters
+    ----------
+    root : Element
+        Root of the document to rewrite.
+    temperature : float
+        Simulation temperature in K.
+    timestep : float
+        Integration timestep in fs.
+    splitting : str
+        Dynamics splitting scheme, such as "baoab".
+    fix_com : bool
+        If True, hold the centre of mass fixed.
+    thermostat : str or None
+        Name of a thermostat definition in ``thermostats/``, or None to leave
+        the template's own thermostat in place.
+    n_beads : int
+        Number of ring-polymer beads. Above one the centroid trajectory is
+        added and the path-integral estimators are used in place of the
+        classical ones.
+    """
+    update_temperature(root, temperature)
+    update_timestep(root, timestep)
+    update_dynamics_splitting(root, splitting)
+    update_motion_fix_com(root, fix_com)
+
+    if thermostat is not None:
+        add_thermostat_section(root, thermostat=thermostat)
+
+    if n_beads > 1:
+        add_trajectory_centroid(root)
+        update_nbeads(root, n_beads)
+        append_properties(root, ["kinetic_cv{electronvolt}", "pressure_cv{megapascal}"])
+    else:
+        append_properties(root, ["kinetic_md{electronvolt}", "pressure_md{megapascal}"])
+
+
+def _write_ipi_xml(root, directory, stride, checkpoint_stride):
+    """Set the output strides and write the finished input.xml.
+
+    Parameters
+    ----------
+    root : Element
+        Root of the rewritten document.
+    directory : str
+        Directory to write input.xml into.
+    stride : int
+        Interval between trajectory writes.
+    checkpoint_stride : int
+        Interval between checkpoint writes.
+    """
+    update_stride(root, stride)
+    update_checkpoint_stride(root, checkpoint_stride)
+    write_xml(root, os.path.join(directory, "input.xml"))
+
+
+def prep_optimise_xml(
+    directory,
+    atoms,
+    outfile="min",
+    driver="ase-mace",
+    total_steps=100,
+    deuterate=False,
+    optimiser="lbfgs",
+    tol_energy=1.0e-4,
+    tol_force=1.0e-4,
+    tol_position=1.0e-4,
+    stride=1,
+    checkpoint_stride=10,
+    properties=None,
+    xml_in=None,
+    file_in="init.xyz",
+):
     """Write the i-PI input for a geometry optimisation.
 
     Parameters
@@ -506,62 +707,45 @@ def prep_optimise_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
-    if xml_in is not None:
-        tree = et.parse(xml_in)
-    else:
-        tree = et.parse(os.path.join(find_nqetools_path(), "templates/MIN.xml"))
-    root = tree.getroot()
+    root = _load_ipi_template("MIN.xml", xml_in)
 
-    if properties is not None:
-        append_properties(root, properties)
-
-    write_xyz(atoms, os.path.join(directory, file_in))
-
-    update_file(root, file_in)
-
-    update_cell(root, atoms)
-
-    update_mass(root, atoms, f_deut=deuterate)
-
-    update_driver(root, atoms, driver)
-
-    update_title(root, outfile)
-
-    update_total_steps(root, total_steps)
+    _apply_common_updates(
+        root,
+        directory,
+        atoms,
+        file_in,
+        driver,
+        outfile,
+        deuterate,
+        total_steps,
+        properties,
+    )
 
     update_optimiser(root, optimiser)
-
     update_tol(root, tol_energy, tol_force, tol_position)
 
-    update_stride(root, stride)
-
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
+    _write_ipi_xml(root, directory, stride, checkpoint_stride)
 
 
-def run_optimise(directory,
-                 atoms,
-                 server="i-pi input.xml",
-                 outfile="min",
-                 driver="ase-mace",
-                 driver_args=None,
-                 total_steps=100,
-                 deuterate=False,
-                 optimiser="lbfgs",
-                 tol_energy=1.0e-4,
-                 tol_force=1.0e-4,
-                 tol_position=1.0e-4,
-                 stride=1,
-                 checkpoint_stride=1000,
-                 properties=None,
-                 xml_in=None):
+def run_optimise(
+    directory,
+    atoms,
+    server="i-pi input.xml",
+    outfile="min",
+    driver="ase-mace",
+    driver_args=None,
+    total_steps=100,
+    deuterate=False,
+    optimiser="lbfgs",
+    tol_energy=1.0e-4,
+    tol_force=1.0e-4,
+    tol_position=1.0e-4,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+):
     """Run a geometry optimisation and return the relaxed structure.
 
     Parameters
@@ -608,57 +792,52 @@ def run_optimise(directory,
         descriptions of those output columns.
     """
     print(f"Running the minimisation with the driver: {driver}", flush=True)
-    if driver_args is None:
-        driver_args = {}
+    atoms, driver_args = _prepare_run_directory(directory, atoms, driver_args)
 
-    remove_directory(directory)
+    prep_optimise_xml(
+        directory,
+        atoms,
+        outfile=outfile,
+        driver=driver,
+        total_steps=total_steps,
+        deuterate=deuterate,
+        optimiser=optimiser,
+        tol_energy=tol_energy,
+        tol_force=tol_force,
+        tol_position=tol_position,
+        stride=stride,
+        checkpoint_stride=checkpoint_stride,
+        properties=properties,
+        xml_in=xml_in,
+    )
 
-    os.makedirs(directory, exist_ok=True)
-
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
-    prep_optimise_xml(directory,
-                      atoms,
-                      outfile=outfile,
-                      driver=driver,
-                      total_steps=total_steps,
-                      deuterate=deuterate,
-                      optimiser=optimiser,
-                      tol_energy=tol_energy,
-                      tol_force=tol_force,
-                      tol_position=tol_position,
-                      stride=stride,
-                      checkpoint_stride=checkpoint_stride,
-                      properties=properties,
-                      xml_in=xml_in)
     driver = prep_driver(atoms, directory, driver, driver_args)
-
     run_ipi(directory, server, driver, f"{outfile}.out")
-    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+
     print("Minimisation complete\n", flush=True)
-    return atoms_out, output_data, output_desc
+    return _collect_ipi_output(directory, outfile)
 
 
-def prep_md_xml(directory,
-                atoms,
-                outfile="md",
-                driver="ase-mace",
-                total_steps=1000,
-                deuterate=False,
-                temperature=300.0,
-                timestep=1,
-                thermostat=None,
-                md_type="NVT",
-                splitting="baoab",
-                fix_com=False,
-                stride=10,
-                checkpoint_stride=1000,
-                n_beads=1,
-                properties=None,
-                xml_in=None,
-                file_in="init.xyz"):
+def prep_md_xml(
+    directory,
+    atoms,
+    outfile="md",
+    driver="ase-mace",
+    total_steps=1000,
+    deuterate=False,
+    temperature=300.0,
+    timestep=1,
+    thermostat=None,
+    md_type="NVT",
+    splitting="baoab",
+    fix_com=False,
+    stride=10,
+    checkpoint_stride=1000,
+    n_beads=1,
+    properties=None,
+    xml_in=None,
+    file_in="init.xyz",
+):
     """Write the i-PI input for a molecular dynamics run.
 
     Parameters
@@ -705,82 +884,50 @@ def prep_md_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
-    if xml_in is not None:
-        tree = et.parse(xml_in)
-    else:
-        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
-    root = tree.getroot()
+    root = _load_ipi_template(f"{md_type.upper()}.xml", xml_in)
 
-    if properties is not None:
-        append_properties(root, properties)
+    _apply_common_updates(
+        root,
+        directory,
+        atoms,
+        file_in,
+        driver,
+        outfile,
+        deuterate,
+        total_steps,
+        properties,
+    )
 
-    write_xyz(atoms, os.path.join(directory, file_in))
+    _apply_dynamics_updates(
+        root, temperature, timestep, splitting, fix_com, thermostat, n_beads
+    )
 
-    update_file(root, file_in)
-
-    update_cell(root, atoms)
-
-    update_mass(root, atoms, f_deut=deuterate)
-
-    update_driver(root, atoms, driver)
-
-    update_title(root, outfile)
-
-    update_total_steps(root, total_steps)
-
-    update_temperature(root, temperature)
-
-    update_timestep(root, timestep)
-
-    update_dynamics_splitting(root, splitting)
-
-    update_motion_fix_com(root, fix_com)
-
-    if thermostat is not None:
-        add_thermostat_section(root, thermostat=thermostat)
-
-    if n_beads > 1:
-        add_trajectory_centroid(root)
-
-        update_nbeads(root, n_beads)
-
-        append_properties(root, ['kinetic_cv{electronvolt}', 'pressure_cv{megapascal}'])
-    else:
-        append_properties(root, ['kinetic_md{electronvolt}', 'pressure_md{megapascal}'])
-
-    update_stride(root, stride)
-
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
+    _write_ipi_xml(root, directory, stride, checkpoint_stride)
 
 
-def run_md(directory,
-           atoms,
-           server="i-pi input.xml",
-           outfile="md",
-           driver="ase-mace",
-           driver_args=None,
-           total_steps=1000,
-           deuterate=False,
-           temperature=300.0,
-           timestep=1,
-           thermostat=None,
-           md_type="NVT",
-           splitting="baoab",
-           fix_com=False,
-           stride=10,
-           checkpoint_stride=1000,
-           n_beads=1,
-           n_procs=None,
-           properties=None,
-           xml_in=None):
+def run_md(
+    directory,
+    atoms,
+    server="i-pi input.xml",
+    outfile="md",
+    driver="ase-mace",
+    driver_args=None,
+    total_steps=1000,
+    deuterate=False,
+    temperature=300.0,
+    timestep=1,
+    thermostat=None,
+    md_type="NVT",
+    splitting="baoab",
+    fix_com=False,
+    stride=10,
+    checkpoint_stride=1000,
+    n_beads=1,
+    n_procs=None,
+    properties=None,
+    xml_in=None,
+):
     """Run molecular dynamics and return the resulting trajectory.
 
     Parameters
@@ -838,65 +985,59 @@ def run_md(directory,
         the centroid rather than a single bead.
     """
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
-    if driver_args is None:
-        driver_args = {}
+    atoms, driver_args = _prepare_run_directory(directory, atoms, driver_args)
+
     if n_procs is None or n_procs > n_beads:
         n_procs = n_beads
 
-    remove_directory(directory)
+    prep_md_xml(
+        directory,
+        atoms,
+        outfile=outfile,
+        driver=driver,
+        total_steps=total_steps,
+        deuterate=deuterate,
+        temperature=temperature,
+        timestep=timestep,
+        thermostat=thermostat,
+        md_type=md_type,
+        splitting=splitting,
+        fix_com=fix_com,
+        stride=stride,
+        checkpoint_stride=checkpoint_stride,
+        n_beads=n_beads,
+        properties=properties,
+        xml_in=xml_in,
+    )
 
-    os.makedirs(directory, exist_ok=True)
-
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
-    prep_md_xml(directory,
-                atoms,
-                outfile=outfile,
-                driver=driver,
-                total_steps=total_steps,
-                deuterate=deuterate,
-                temperature=temperature,
-                timestep=timestep,
-                thermostat=thermostat,
-                md_type=md_type,
-                splitting=splitting,
-                fix_com=fix_com,
-                stride=stride,
-                checkpoint_stride=checkpoint_stride,
-                n_beads=n_beads,
-                properties=properties,
-                xml_in=xml_in)
     driver = prep_driver(atoms, directory, driver, driver_args)
     run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
-    if n_beads > 1:
-        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
-    else:
-        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+
     print(f"MD ({md_type}) complete\n", flush=True)
-    return atoms_out, output_data, output_desc
+    return _collect_ipi_output(directory, outfile, n_beads)
 
 
-def prep_plumed_xml(directory,
-                    atoms,
-                    outfile="md",
-                    driver="ase-mace",
-                    total_steps=1000,
-                    deuterate=False,
-                    temperature=300.0,
-                    timestep=1.0,
-                    thermostat=None,
-                    md_type="NVT",
-                    splitting="baoab",
-                    fix_com=False,
-                    stride=10,
-                    checkpoint_stride=1000,
-                    n_beads=1,
-                    plumed_extras=None,
-                    properties=None,
-                    xml_in=None,
-                    file_in="init.xyz"):
+def prep_plumed_xml(
+    directory,
+    atoms,
+    outfile="md",
+    driver="ase-mace",
+    total_steps=1000,
+    deuterate=False,
+    temperature=300.0,
+    timestep=1.0,
+    thermostat=None,
+    md_type="NVT",
+    splitting="baoab",
+    fix_com=False,
+    stride=10,
+    checkpoint_stride=1000,
+    n_beads=1,
+    plumed_extras=None,
+    properties=None,
+    xml_in=None,
+    file_in="init.xyz",
+):
     """Write the i-PI input for a PLUMED-biased molecular dynamics run.
 
     Identical to :func:`prep_md_xml` except that a PLUMED force section is
@@ -947,88 +1088,57 @@ def prep_plumed_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
-    if xml_in is not None:
-        tree = et.parse(xml_in)
-    else:
-        tree = et.parse(os.path.join(find_nqetools_path(), f"templates/{md_type.upper()}.xml"))
-    root = tree.getroot()
+    root = _load_ipi_template(f"{md_type.upper()}.xml", xml_in)
 
-    append_properties(root, ['ensemble_bias{electronvolt}'])
+    # The bias has to be reported whatever else the caller asked for, since
+    # it is what the reweighting in post-processing works from.
+    _apply_common_updates(
+        root,
+        directory,
+        atoms,
+        file_in,
+        driver,
+        outfile,
+        deuterate,
+        total_steps,
+        properties,
+        extra_properties=["ensemble_bias{electronvolt}"],
+    )
 
-    if properties is not None:
-        append_properties(root, properties)
-
-    write_xyz(atoms, os.path.join(directory, file_in))
-
-    update_file(root, file_in)
-
-    update_cell(root, atoms)
-
-    update_mass(root, atoms, f_deut=deuterate)
-
-    update_driver(root, atoms, driver)
-
-    update_title(root, outfile)
-
-    update_total_steps(root, total_steps)
-
-    update_temperature(root, temperature)
-
-    update_timestep(root, timestep)
-
-    update_dynamics_splitting(root, splitting)
-
-    update_motion_fix_com(root, fix_com)
-
-    if thermostat is not None:
-        add_thermostat_section(root, thermostat=thermostat)
-
-    if n_beads > 1:
-        add_trajectory_centroid(root)
-
-        update_nbeads(root, n_beads)
-
-        append_properties(root, ['kinetic_cv{electronvolt}', 'pressure_cv{megapascal}'])
-    else:
-        append_properties(root, ['kinetic_md{electronvolt}', 'pressure_md{megapascal}'])
+    _apply_dynamics_updates(
+        root, temperature, timestep, splitting, fix_com, thermostat, n_beads
+    )
 
     add_plumed_xml(root, plumed_extras=plumed_extras)
 
-    update_stride(root, stride)
-
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
+    _write_ipi_xml(root, directory, stride, checkpoint_stride)
 
 
-def run_plumed_md(directory,
-                  atoms,
-                  server="i-pi input.xml",
-                  outfile="md",
-                  driver="ase-mace",
-                  driver_args=None,
-                  total_steps=1000,
-                  deuterate=False,
-                  temperature=300.0,
-                  timestep=1.0,
-                  thermostat=None,
-                  md_type="NVT",
-                  splitting="baoab",
-                  fix_com=False,
-                  stride=10,
-                  checkpoint_stride=1000,
-                  n_beads=1,
-                  n_procs=None,
-                  plumed_type="mtd-pos",
-                  plumed_args=None,
-                  properties=None,
-                  xml_in=None):
+def run_plumed_md(
+    directory,
+    atoms,
+    server="i-pi input.xml",
+    outfile="md",
+    driver="ase-mace",
+    driver_args=None,
+    total_steps=1000,
+    deuterate=False,
+    temperature=300.0,
+    timestep=1.0,
+    thermostat=None,
+    md_type="NVT",
+    splitting="baoab",
+    fix_com=False,
+    stride=10,
+    checkpoint_stride=1000,
+    n_beads=1,
+    n_procs=None,
+    plumed_type="mtd-pos",
+    plumed_args=None,
+    properties=None,
+    xml_in=None,
+):
     """Run PLUMED-biased molecular dynamics and return the trajectory.
 
     Builds the PLUMED input from `plumed_type` and `plumed_args`, then
@@ -1096,71 +1206,60 @@ def run_plumed_md(directory,
         the centroid rather than a single bead.
     """
     print(f"Running the MD ({md_type}) with the driver: {driver}", flush=True)
-    if plumed_args is None:
-        plumed_args = {'directory': directory,
-                       'temperature': temperature}
-    else:
-        plumed_args['directory'] = directory
-        plumed_args['temperature'] = temperature
 
-    if driver_args is None:
-        driver_args = {}
+    if plumed_args is None:
+        plumed_args = {}
+    plumed_args["directory"] = directory
+    plumed_args["temperature"] = temperature
+
+    atoms, driver_args = _prepare_run_directory(directory, atoms, driver_args)
 
     if n_procs is None or n_procs > n_beads:
         n_procs = n_beads
 
-    remove_directory(directory)
-
-    os.makedirs(directory, exist_ok=True)
-
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
     plumed_extras = prep_plumed(atoms, plumed_type, plumed_args)
 
-    prep_plumed_xml(directory,
-                    atoms,
-                    outfile=outfile,
-                    driver=driver,
-                    total_steps=total_steps,
-                    deuterate=deuterate,
-                    temperature=temperature,
-                    timestep=timestep,
-                    thermostat=thermostat,
-                    md_type=md_type,
-                    splitting=splitting,
-                    fix_com=fix_com,
-                    stride=stride,
-                    checkpoint_stride=checkpoint_stride,
-                    n_beads=n_beads,
-                    plumed_extras=plumed_extras,
-                    properties=properties,
-                    xml_in=xml_in)
+    prep_plumed_xml(
+        directory,
+        atoms,
+        outfile=outfile,
+        driver=driver,
+        total_steps=total_steps,
+        deuterate=deuterate,
+        temperature=temperature,
+        timestep=timestep,
+        thermostat=thermostat,
+        md_type=md_type,
+        splitting=splitting,
+        fix_com=fix_com,
+        stride=stride,
+        checkpoint_stride=checkpoint_stride,
+        n_beads=n_beads,
+        plumed_extras=plumed_extras,
+        properties=properties,
+        xml_in=xml_in,
+    )
 
     driver = prep_driver(atoms, directory, driver, driver_args)
-
     run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
 
-    if n_beads > 1:
-        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.xc.xyz"))
-    else:
-        atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
     print(f"MD ({md_type}) complete\n", flush=True)
-    return atoms_out, output_data, output_desc
+    return _collect_ipi_output(directory, outfile, n_beads)
 
 
-def prep_phonons_xml(directory,
-                     atoms,
-                     outfile="phonon",
-                     driver="ase-mace",
-                     total_steps=1000,
-                     deuterate=False,
-                     stride=1,
-                     checkpoint_stride=1000,
-                     properties=None,
-                     xml_in=None,
-                     file_in="init.xyz"):
+def prep_phonons_xml(
+    directory,
+    atoms,
+    outfile="phonon",
+    driver="ase-mace",
+    total_steps=1000,
+    deuterate=False,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+    file_in="init.xyz",
+):
     """Write the i-PI input for a phonon calculation.
 
     Parameters
@@ -1191,54 +1290,38 @@ def prep_phonons_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
-    if xml_in is not None:
-        tree = et.parse(xml_in)
-    else:
-        tree = et.parse(os.path.join(find_nqetools_path(), "templates/PHO.xml"))
-    root = tree.getroot()
+    root = _load_ipi_template("PHO.xml", xml_in)
 
-    if properties is not None:
-        append_properties(root, properties)
+    _apply_common_updates(
+        root,
+        directory,
+        atoms,
+        file_in,
+        driver,
+        outfile,
+        deuterate,
+        total_steps,
+        properties,
+    )
 
-    write_xyz(atoms, os.path.join(directory, file_in))
-
-    update_file(root, file_in)
-
-    update_cell(root, atoms)
-
-    update_mass(root, atoms, f_deut=deuterate)
-
-    update_driver(root, atoms, driver)
-
-    update_title(root, outfile)
-
-    update_total_steps(root, total_steps)
-
-    update_stride(root, stride)
-
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
+    _write_ipi_xml(root, directory, stride, checkpoint_stride)
 
 
-def run_phonons(directory,
-                atoms,
-                server="i-pi input.xml",
-                outfile="phonon",
-                driver="ase-mace",
-                driver_args=None,
-                total_steps=1000,
-                deuterate=False,
-                stride=1,
-                checkpoint_stride=1000,
-                properties=None,
-                xml_in=None):
+def run_phonons(
+    directory,
+    atoms,
+    server="i-pi input.xml",
+    outfile="phonon",
+    driver="ase-mace",
+    driver_args=None,
+    total_steps=1000,
+    deuterate=False,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+):
     """Run a phonon calculation to obtain the dynamical matrix.
 
     Parameters
@@ -1270,54 +1353,47 @@ def run_phonons(directory,
     xml_in : str, optional
         Path to an XML file to use instead of the template. Default is
         None.
-
-    Returns
-    -------
-    None
         Results are left in the run directory for the post-processing
         step to pick up.
     """
     print(f"Running the phonons with the driver: {driver}", flush=True)
-    if driver_args is None:
-        driver_args = {}
+    atoms, driver_args = _prepare_run_directory(directory, atoms, driver_args)
 
-    remove_directory(directory)
+    prep_phonons_xml(
+        directory,
+        atoms,
+        outfile=outfile,
+        driver=driver,
+        total_steps=total_steps,
+        deuterate=deuterate,
+        stride=stride,
+        checkpoint_stride=checkpoint_stride,
+        properties=properties,
+        xml_in=xml_in,
+    )
 
-    os.makedirs(directory, exist_ok=True)
-
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
-    prep_phonons_xml(directory,
-                     atoms,
-                     outfile=outfile,
-                     driver=driver,
-                     total_steps=total_steps,
-                     deuterate=deuterate,
-                     stride=stride,
-                     checkpoint_stride=checkpoint_stride,
-                     properties=properties,
-                     xml_in=xml_in)
     driver = prep_driver(atoms, directory, driver, driver_args)
     run_ipi(directory, server, driver, f"{outfile}.out")
+
     print("Phonons complete\n", flush=True)
-    return None
 
 
-def prep_ts_xml(directory,
-                atoms,
-                outfile="ts",
-                driver="ase-mace",
-                total_steps=1000,
-                deuterate=False,
-                tol_energy=5.0e-6,
-                tol_force=5.0e-6,
-                tol_position=1.0e-6,
-                stride=1,
-                checkpoint_stride=1000,
-                properties=None,
-                xml_in=None,
-                file_in="init.xyz"):
+def prep_ts_xml(
+    directory,
+    atoms,
+    outfile="ts",
+    driver="ase-mace",
+    total_steps=1000,
+    deuterate=False,
+    tol_energy=5.0e-6,
+    tol_force=5.0e-6,
+    tol_position=1.0e-6,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+    file_in="init.xyz",
+):
     """Write the i-PI input for a transition state search.
 
     Parameters
@@ -1353,64 +1429,48 @@ def prep_ts_xml(directory,
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     The tolerances are two orders of magnitude tighter than for a
     minimisation, because the Hessian produced here seeds the instanton
     search and a loosely converged saddle gives a poor starting orbit.
     """
-    if xml_in is not None:
-        tree = et.parse(xml_in)
-    else:
-        tree = et.parse(os.path.join(find_nqetools_path(), "templates/TS.xml"))
-    root = tree.getroot()
+    root = _load_ipi_template("TS.xml", xml_in)
 
-    if properties is not None:
-        append_properties(root, properties)
-
-    write_xyz(atoms, os.path.join(directory, file_in))
-
-    update_file(root, file_in)
-
-    update_cell(root, atoms)
-
-    update_mass(root, atoms, f_deut=deuterate)
-
-    update_driver(root, atoms, driver)
-
-    update_title(root, outfile)
-
-    update_total_steps(root, total_steps)
+    _apply_common_updates(
+        root,
+        directory,
+        atoms,
+        file_in,
+        driver,
+        outfile,
+        deuterate,
+        total_steps,
+        properties,
+    )
 
     update_tol(root, tol_energy, tol_force, tol_position)
 
-    update_stride(root, stride)
-
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
+    _write_ipi_xml(root, directory, stride, checkpoint_stride)
 
 
-def run_ts(directory,
-           atoms,
-           server="i-pi input.xml",
-           outfile="ts",
-           driver="ase-mace",
-           driver_args=None,
-           total_steps=1000,
-           deuterate=False,
-           tol_energy=5.0e-6,
-           tol_force=5.0e-6,
-           tol_position=1.0e-6,
-           stride=1,
-           checkpoint_stride=1000,
-           properties=None,
-           xml_in=None):
+def run_ts(
+    directory,
+    atoms,
+    server="i-pi input.xml",
+    outfile="ts",
+    driver="ase-mace",
+    driver_args=None,
+    total_steps=1000,
+    deuterate=False,
+    tol_energy=5.0e-6,
+    tol_force=5.0e-6,
+    tol_position=1.0e-6,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+):
     """Run a transition state search and return the located saddle point.
 
     Parameters
@@ -1461,53 +1521,49 @@ def run_ts(directory,
     reads to start its own optimisation.
     """
     print(f"Running the transition state search with the driver: {driver}", flush=True)
-    if driver_args is None:
-        driver_args = {}
+    atoms, driver_args = _prepare_run_directory(directory, atoms, driver_args)
 
-    remove_directory(directory)
+    prep_ts_xml(
+        directory,
+        atoms,
+        outfile=outfile,
+        driver=driver,
+        total_steps=total_steps,
+        deuterate=deuterate,
+        tol_energy=tol_energy,
+        tol_force=tol_force,
+        tol_position=tol_position,
+        stride=stride,
+        checkpoint_stride=checkpoint_stride,
+        properties=properties,
+        xml_in=xml_in,
+    )
 
-    os.makedirs(directory, exist_ok=True)
-
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
-    prep_ts_xml(directory,
-                atoms,
-                outfile=outfile,
-                driver=driver,
-                total_steps=total_steps,
-                deuterate=deuterate,
-                tol_energy=tol_energy,
-                tol_force=tol_force,
-                tol_position=tol_position,
-                stride=stride,
-                checkpoint_stride=checkpoint_stride,
-                properties=properties,
-                xml_in=xml_in)
     driver = prep_driver(atoms, directory, driver, driver_args)
     run_ipi(directory, server, driver, f"{outfile}.out")
-    atoms_out = read_ipi_xyz(os.path.join(directory, f"{outfile}.pos_0.xyz"))
-    output_data, output_desc = ipi.read_output(os.path.join(directory, f"{outfile}.out"))
+
     print("TS search complete\n", flush=True)
-    return atoms_out, output_data, output_desc
+    return _collect_ipi_output(directory, outfile)
 
 
-def prep_instanton_xml(directory,
-                       atoms,
-                       outfile="instanton",
-                       driver="ase-mace",
-                       total_steps=1000,
-                       deuterate=False,
-                       n_beads=4,
-                       temperature=300.0,
-                       tol_energy=5.0e-6,
-                       tol_force=5.0e-6,
-                       tol_position=1.0e-6,
-                       stride=1,
-                       checkpoint_stride=1000,
-                       properties=None,
-                       xml_in=None,
-                       file_in="init.xyz"):
+def prep_instanton_xml(
+    directory,
+    atoms,
+    outfile="instanton",
+    driver="ase-mace",
+    total_steps=1000,
+    deuterate=False,
+    n_beads=4,
+    temperature=300.0,
+    tol_energy=5.0e-6,
+    tol_force=5.0e-6,
+    tol_position=1.0e-6,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+    file_in="init.xyz",
+):
     """Write the i-PI input for an instanton optimisation.
 
     Parameters
@@ -1550,10 +1606,6 @@ def prep_instanton_xml(directory,
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Open paths are enabled for every atom, since the instanton orbit is a
@@ -1562,66 +1614,52 @@ def prep_instanton_xml(directory,
     n_atoms = len(atoms)
     n_doft = 3 * n_atoms
 
-    if xml_in is not None:
-        tree = et.parse(xml_in)
-    else:
-        tree = et.parse(os.path.join(find_nqetools_path(), "templates/INST.xml"))
-    root = tree.getroot()
+    root = _load_ipi_template("INST.xml", xml_in)
 
-    if properties is not None:
-        append_properties(root, properties)
-
-    write_xyz(atoms, os.path.join(directory, file_in))
-
-    update_file(root, file_in)
-
-    update_cell(root, atoms)
-
-    update_mass(root, atoms, f_deut=deuterate)
-
-    update_driver(root, atoms, driver)
-
-    update_title(root, outfile)
-
-    update_total_steps(root, total_steps)
+    _apply_common_updates(
+        root,
+        directory,
+        atoms,
+        file_in,
+        driver,
+        outfile,
+        deuterate,
+        total_steps,
+        properties,
+    )
 
     update_nbeads(root, n_beads)
-
+    # The hessian starts as the single-bead one copied in from the transition
+    # state search; i-PI grows it to the full ring polymer itself.
     update_hessian(root, n_doft, 1)
-
     update_open_paths(root, n_atoms)
-
     update_temperature(root, temperature)
-
     update_tol(root, tol_energy, tol_force, tol_position)
 
-    update_stride(root, stride)
-
-    update_checkpoint_stride(root, checkpoint_stride)
-
-    write_xml(root, os.path.join(directory, 'input.xml'))
-    return None
+    _write_ipi_xml(root, directory, stride, checkpoint_stride)
 
 
-def run_instanton(directory,
-                  atoms,
-                  directory_ts,
-                  server="i-pi input.xml",
-                  outfile="instanton",
-                  driver="ase-mace",
-                  driver_args=None,
-                  total_steps=1000,
-                  deuterate=False,
-                  n_beads=4,
-                  n_procs=None,
-                  temperature=300.0,
-                  tol_energy=5.0e-6,
-                  tol_force=5.0e-6,
-                  tol_position=1.0e-6,
-                  stride=1,
-                  checkpoint_stride=1000,
-                  properties=None,
-                  xml_in=None):
+def run_instanton(
+    directory,
+    atoms,
+    directory_ts,
+    server="i-pi input.xml",
+    outfile="instanton",
+    driver="ase-mace",
+    driver_args=None,
+    total_steps=1000,
+    deuterate=False,
+    n_beads=4,
+    n_procs=None,
+    temperature=300.0,
+    tol_energy=5.0e-6,
+    tol_force=5.0e-6,
+    tol_position=1.0e-6,
+    stride=1,
+    checkpoint_stride=1000,
+    properties=None,
+    xml_in=None,
+):
     """Run an instanton optimisation, seeded from a transition state.
 
     Copies the final Hessian out of a completed transition state search
@@ -1672,46 +1710,36 @@ def run_instanton(directory,
     xml_in : str, optional
         Path to an XML file to use instead of the template. Default is
         None.
-
-    Returns
-    -------
-    None
         Results are left in the run directory for
         :func:`run_instanton_post_process` to pick up.
     """
     print(f"Running the instanton with the driver: {driver}", flush=True)
-    if driver_args is None:
-        driver_args = {}
+    atoms, driver_args = _prepare_run_directory(directory, atoms, driver_args)
+
     if n_procs is None or n_procs > n_beads:
         n_procs = n_beads
 
-    remove_directory(directory)
-
-    os.makedirs(directory, exist_ok=True)
-
-    if isinstance(atoms, list):
-        atoms = atoms[-1]
-
     copy_hess(get_final_hess(directory_ts), directory)
 
-    prep_instanton_xml(directory,
-                       atoms,
-                       outfile=outfile,
-                       driver=driver,
-                       total_steps=total_steps,
-                       deuterate=deuterate,
-                       n_beads=n_beads,
-                       temperature=temperature,
-                       tol_energy=tol_energy,
-                       tol_force=tol_force,
-                       tol_position=tol_position,
-                       stride=stride,
-                       checkpoint_stride=checkpoint_stride,
-                       properties=properties,
-                       xml_in=xml_in)
+    prep_instanton_xml(
+        directory,
+        atoms,
+        outfile=outfile,
+        driver=driver,
+        total_steps=total_steps,
+        deuterate=deuterate,
+        n_beads=n_beads,
+        temperature=temperature,
+        tol_energy=tol_energy,
+        tol_force=tol_force,
+        tol_position=tol_position,
+        stride=stride,
+        checkpoint_stride=checkpoint_stride,
+        properties=properties,
+        xml_in=xml_in,
+    )
 
     driver = prep_driver(atoms, directory, driver, driver_args)
-
     run_ipi(directory, server, driver, f"{outfile}.out", n=n_procs)
+
     print("Instanton complete\n", flush=True)
-    return None

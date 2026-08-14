@@ -5,7 +5,7 @@ itself: locating the driver executable, putting it on the path, and
 clearing stale unix sockets left behind by interrupted runs.
 
 The second manipulates ASE structures - adding and moving atoms,
-measuring distances, clustering by connectivity, and toggling periodic
+measuring distances, clustering by connectivity, and checking for periodic
 boundary conditions - as preparation for the calculations set up
 elsewhere in the package.
 """
@@ -16,7 +16,6 @@ import os
 import sys
 import tempfile
 import textwrap
-import time
 
 import ipi
 import numpy as np
@@ -34,16 +33,11 @@ def add_ipi_paths(base: str | None = None) -> None:
     ----------
     base : str, optional
         The base directory for i-PI. Default is the i-PI directory in the user's home directory.
-
-    Returns
-    -------
-    None
     """
     if base is None:
         base = os.path.expanduser("~") + "/i-pi/"
     sys.path.append(base)
-    os.environ['PATH'] += f":{base}/bin/"
-    return None
+    os.environ["PATH"] += f":{base}/bin/"
 
 
 def get_ipi_driver() -> str:
@@ -57,8 +51,8 @@ def get_ipi_driver() -> str:
     str
         The full path to the i-PI driver executable.
     """
-    tmp = ipi.__file__.split('__init__.py')[0]
-    return os.path.join(tmp, 'bin', 'i-pi-driver')
+    tmp = ipi.__file__.split("__init__.py")[0]
+    return os.path.join(tmp, "bin", "i-pi-driver")
 
 
 def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
@@ -77,15 +71,11 @@ def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
         'ipi_*' socket owned by the current user is removed - including those of
         the caller's own concurrent runs, so prefer passing an address when one
         is known.
-
-    Returns
-    -------
-    None
     """
     if tmp_dir is None:
         tmp_dir = tempfile.gettempdir()
 
-    pattern = f'ipi_{address}' if address is not None else 'ipi_*'
+    pattern = f"ipi_{address}" if address is not None else "ipi_*"
     files = glob.glob(os.path.join(tmp_dir, pattern))
 
     uid = os.getuid()
@@ -96,7 +86,6 @@ def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
             os.remove(file)
         except FileNotFoundError:
             pass
-    return None
 
 
 def has_pbc(atoms: Atoms) -> bool:
@@ -113,26 +102,6 @@ def has_pbc(atoms: Atoms) -> bool:
         True if the atoms object has PBC, False otherwise.
     """
     return any(atoms.pbc)
-
-
-def remove_pbc(atoms: Atoms) -> None:
-    """Removes the periodic boundary conditions from an ASE atoms object.
-    This is important for calculations involving isolated molecules where
-    periodicity (like in crystals) is not desired. It ensures that the system
-    is treated as an isolated entity without interactions from periodic images.
-
-    Parameters
-    ----------
-    atoms : ase.Atoms
-        The ASE atoms object from which to remove periodic boundary conditions.
-
-    Returns
-    -------
-    None
-    """
-    atoms.set_cell([0, 0, 0])
-    atoms.set_pbc([0, 0, 0])
-    return None
 
 
 def add_hydrogen_halfway(atoms, index1, index2):
@@ -158,7 +127,7 @@ def add_hydrogen_halfway(atoms, index1, index2):
 
     midpoint = (pos1 + pos2) / 2.0
 
-    atoms += Atoms('H', positions=[midpoint])
+    atoms += Atoms("H", positions=[midpoint])
 
     return atoms
 
@@ -193,7 +162,9 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
     return atoms
 
 
-def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc, fmax=0.05):
+def optimise_atom_halfway(
+    atoms, atom_index, target_index1, target_index2, calc, fmax=0.05
+):
     """Relax a structure around an atom placed halfway between two others.
 
     The moved atom and its two targets are held fixed while the rest of
@@ -264,36 +235,9 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
 
     hydrogen_position = pos1 + direction * distance
 
-    atoms += Atoms('H', positions=[hydrogen_position])
+    atoms += Atoms("H", positions=[hydrogen_position])
 
     return atoms
-
-
-def time_force_call(atoms, calc, n_reps=3):
-    """Measure the time taken to calculate forces on an atomic structure multiple times.
-
-    Parameters
-    ----------
-    atoms : ase.Atoms
-        ASE Atoms object containing the atomic structure.
-    calc : ase.Calculator
-        Calculator to be used for the force calculations.
-    n_reps : int, optional
-        Number of repetitions for the force calculation. Default is 3.
-
-    Returns
-    -------
-    None
-    """
-    times = np.zeros(n_reps, dtype=float)
-    t0 = time.time()
-    for i in range(n_reps):
-        tmp = atoms.copy()
-        tmp.calc = calc
-        tmp.get_forces()
-        times[i] = time.time() - t0
-        print(f'Time taken={times[i]:.3} s', flush=True)
-    print(f'Average time taken={np.mean(times):.3} s std={np.std(times):.3}', flush=True)
 
 
 def align_mols(atoms1, atoms2):
@@ -319,7 +263,7 @@ def align_mols(atoms1, atoms2):
     return atoms1, atoms2
 
 
-def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
+def align_principal_axis(atoms: Atoms, axis: str = "z") -> Atoms:
     """Align a structure's largest principal axis with a Cartesian axis.
 
     Parameters
@@ -336,9 +280,9 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     """
 
     directions = {
-        'x': np.array([1.0, 0.0, 0.0]),
-        'y': np.array([0.0, 1.0, 0.0]),
-        'z': np.array([0.0, 0.0, 1.0]),
+        "x": np.array([1.0, 0.0, 0.0]),
+        "y": np.array([0.0, 1.0, 0.0]),
+        "z": np.array([0.0, 0.0, 1.0]),
     }
 
     if axis not in directions:
@@ -353,7 +297,7 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     principal_axis = evecs[2]
 
     target_vector = directions[axis]
-    atoms.rotate(principal_axis, target_vector, center='COM')
+    atoms.rotate(principal_axis, target_vector, center="COM")
 
     return atoms
 
@@ -396,13 +340,65 @@ def get_file_extension(file_path):
     return file_extension
 
 
+def _connected_groups(
+    atoms: Atoms, cutoff_scale: float = 1.0, skin: float = 0.3
+) -> list[list[int]]:
+    """Connected components of the bonding graph, in discovery order.
+
+    Bonds are inferred from ASE's natural cutoffs rather than from any
+    explicit topology, so this works on bare coordinates. The traversal is a
+    depth-first search from each unvisited atom in turn.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        The atoms object to analyse.
+    cutoff_scale : float, optional
+        Multiplier on the natural cutoffs. Values above 1.0 make bonding
+        more permissive. Default is 1.0.
+    skin : float, optional
+        Extra separation, in Angstrom, still counted as bonded. Default is
+        0.3, matching ASE's own default for :class:`NeighborList`.
+
+    Returns
+    -------
+    list of list of int
+        One list of atom indices per connected group. Empty if `atoms`
+        contains no atoms.
+    """
+    if len(atoms) == 0:
+        return []
+
+    cutoffs = [cutoff_scale * c for c in natural_cutoffs(atoms)]
+    neighbours = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=skin)
+    neighbours.update(atoms)
+
+    visited = [False] * len(atoms)
+    groups = []
+
+    for start in range(len(atoms)):
+        if visited[start]:
+            continue
+        group, stack = [], [start]
+        while stack:
+            current = stack.pop()
+            if visited[current]:
+                continue
+            visited[current] = True
+            group.append(current)
+            indices, _offsets = neighbours.get_neighbors(current)
+            stack.extend(i for i in indices if not visited[i])
+        groups.append(group)
+
+    return groups
+
+
 def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     """Clusters atoms based on their natural cutoffs.
 
-    This function uses the NeighborList to determine clusters of atoms
-    based on their natural cutoffs. It iterates through each atom,
-    checking if it has been visited, and if not, it performs a depth-first
-    search to find all connected atoms, forming a cluster.
+    Groups atoms by connectivity, inferring bonds from ASE's natural
+    cutoffs, and returns each group as its own Atoms object. Atoms within a
+    group keep the order the search found them in.
 
     Parameters
     ----------
@@ -418,30 +414,7 @@ def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
     list[ase.Atoms]
         A list of ASE Atoms objects, each representing a cluster.
     """
-    cutoffs = natural_cutoffs(atoms)
-
-    cutoffs = [cutoff * multi for cutoff in cutoffs]
-
-    nl = NeighborList(cutoffs, self_interaction=False, bothways=True)
-    nl.update(atoms)
-
-    visited = [False] * len(atoms)
-    clusters_indices = []
-
-    for i in range(len(atoms)):
-        if visited[i]:
-            continue
-        cluster, stack = [], [i]
-        while stack:
-            j = stack.pop()
-            if not visited[j]:
-                visited[j] = True
-                cluster.append(j)
-                indices, _ = nl.get_neighbors(j)
-                stack.extend(neighbor for neighbor in indices if not visited[neighbor])
-        clusters_indices.append(cluster)
-
-    return [atoms[indices] for indices in clusters_indices]
+    return [atoms[group] for group in _connected_groups(atoms, multi)]
 
 
 def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
@@ -512,11 +485,9 @@ def move_com_to_origin(atoms: Atoms) -> Atoms:
     return atoms
 
 
-def move_clusters_to_distance(cluster1: Atoms,
-                              cluster2: Atoms,
-                              index1: int,
-                              index2: int,
-                              target_distance: float) -> Atoms:
+def move_clusters_to_distance(
+    cluster1: Atoms, cluster2: Atoms, index1: int, index2: int, target_distance: float
+) -> Atoms:
     """Separate two clusters to a set distance between chosen atoms.
 
     Both clusters move rigidly along the vector joining the two target
@@ -551,7 +522,9 @@ def move_clusters_to_distance(cluster1: Atoms,
     current_distance = np.linalg.norm(vec)
 
     if current_distance == 0:
-        raise ValueError("The selected atoms are at the same position; cannot determine a valid direction.")
+        raise ValueError(
+            "The selected atoms are at the same position; cannot determine a valid direction."
+        )
 
     unit_vec = vec / float(current_distance)
 
@@ -565,10 +538,9 @@ def move_clusters_to_distance(cluster1: Atoms,
     return combined_atoms
 
 
-def move_to_distances(atoms: Atoms,
-                      index1: int,
-                      index2: int,
-                      distances: list[float]) -> list[Atoms]:
+def move_to_distances(
+    atoms: Atoms, index1: int, index2: int, distances: list[float]
+) -> list[Atoms]:
     """Move two clusters of atoms to specified distances along the vector connecting two target atoms.
 
     This function splits the input `Atoms` object into two clusters, calculates the vector
@@ -603,13 +575,17 @@ def move_to_distances(atoms: Atoms,
 
     moved_atoms_list = []
     for distance in distances:
-        moved_atoms = move_clusters_to_distance(cluster1, cluster2, index1, index2, distance)
+        moved_atoms = move_clusters_to_distance(
+            cluster1, cluster2, index1, index2, distance
+        )
         moved_atoms_list.append(moved_atoms)
 
     return moved_atoms_list
 
 
-def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray]) -> list[float]:
+def get_fes_times(
+    timestep: float, total_steps: int, fes_arrays: list[np.ndarray]
+) -> list[float]:
     """Calculate time stamps for FES arrays based on simulation parameters.
 
     Parameters
@@ -633,13 +609,15 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
     # Total time in ps (convert fs to ps by dividing by 1000)
     total_time = (timestep * total_steps) / 1000.0
 
-    time_points = [i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
-                   for i in range(n_arrays)]
+    time_points = [
+        i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
+        for i in range(n_arrays)
+    ]
 
     return [round_sf(t, sig_figs=2) for t in time_points]
 
 
-def make_dimer(atoms, translate=None, angle=180, axis='z'):
+def make_dimer(atoms, translate=None, angle=180, axis="z"):
     """Create a dimer by combining two copies of a molecule.
 
     This function takes an ASE Atoms object, centers the first molecule,
@@ -765,44 +743,18 @@ def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> list[list[int]]:
         One list of atom indices per connected group. Empty if `atoms`
         contains no atoms.
     """
-    if len(atoms) == 0:
-        return []
-    cutoffs = [cutoff_scale * c for c in natural_cutoffs(atoms)]
-    nl = NeighborList(cutoffs, self_interaction=False, bothways=True, skin=0.0)
-    nl.update(atoms)
-
-    adj = [[] for _ in range(len(atoms))]
-    for i in range(len(atoms)):
-        indices, _offsets = nl.get_neighbors(i)
-        for j in indices:
-            adj[i].append(j)
-
-    # BFS to get connected components
-    seen: set[int] = set()
-    groups: list[list[int]] = []
-    for i in range(len(atoms)):
-        if i in seen:
-            continue
-        stack = [i]
-        comp = []
-        seen.add(i)
-        while stack:
-            u = stack.pop()
-            comp.append(u)
-            for v in adj[u]:
-                if v not in seen:
-                    seen.add(v)
-                    stack.append(v)
-        groups.append(sorted(comp))
-    return groups
+    # skin=0.0 holds this to the natural cutoffs exactly. cluster_atoms takes
+    # ASE's default 0.3 A of slack instead and so bonds a little more readily,
+    # which is why the two callers do not share a cutoff policy.
+    return [sorted(group) for group in _connected_groups(atoms, cutoff_scale, skin=0.0)]
 
 
 def combine_without_overlaps(
-        A: Atoms,
-        B: Atoms,
-        *,
-        bond_cutoff_scale: float = 1.0,
-        overlap_cutoff_scale: float = 1.0,
+    A: Atoms,
+    B: Atoms,
+    *,
+    bond_cutoff_scale: float = 1.0,
+    overlap_cutoff_scale: float = 1.0,
 ) -> Atoms:
     """Merge two structures, dropping whole molecules of B that clash with A.
 
@@ -855,7 +807,9 @@ def combine_without_overlaps(
         AB = A + B
 
         ov_cutoffs = [overlap_cutoff_scale * c for c in natural_cutoffs(AB)]
-        nl_ab = NeighborList(ov_cutoffs, self_interaction=False, bothways=True, skin=0.0)
+        nl_ab = NeighborList(
+            ov_cutoffs, self_interaction=False, bothways=True, skin=0.0
+        )
         nl_ab.update(AB)
 
         nA = len(A)
@@ -935,9 +889,12 @@ def largest_bonded_cluster_indices(atoms: Atoms) -> list[int]:
                     stack.append(v)
 
         # Keep the largest; break ties by smallest index in the cluster
-        if (len(cluster) > len(largest_cluster) or
-                (len(cluster) == len(largest_cluster) and cluster and min(cluster) < (
-                        min(largest_cluster) if largest_cluster else float('inf')))):
+        if len(cluster) > len(largest_cluster) or (
+            len(cluster) == len(largest_cluster)
+            and cluster
+            and min(cluster)
+            < (min(largest_cluster) if largest_cluster else float("inf"))
+        ):
             largest_cluster = cluster
 
     return sorted(largest_cluster)

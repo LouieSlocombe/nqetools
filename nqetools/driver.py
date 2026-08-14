@@ -12,22 +12,24 @@ returning the shell command that launches the client.
 
 import ipi
 import os
+import shutil
 import torch
 
-from .calculators import (nwchem_calc_preset)
+from .calculators import nwchem_calc_preset
 from .tools import get_ipi_driver
 
 
 def write_ase_mace_driver(
-        directory,
-        out_file="run-ase-mace.py",
-        in_file="init.xyz",
-        host="driver",
-        model="small",
-        model_type="off",
-        device=None,
-        default_dtype="float64",
-        enable_cueq=False):
+    directory,
+    out_file="run-ase-mace.py",
+    in_file="init.xyz",
+    host="driver",
+    model="small",
+    model_type="off",
+    device=None,
+    default_dtype="float64",
+    enable_cueq=False,
+):
     """Write an i-PI client script driven by a MACE machine-learning potential.
 
     Parameters
@@ -53,10 +55,6 @@ def write_ase_mace_driver(
     enable_cueq : bool, optional
         If True, enable cuEquivariance acceleration. Default is False.
 
-    Returns
-    -------
-    None
-
     Raises
     ------
     AssertionError
@@ -67,10 +65,10 @@ def write_ase_mace_driver(
     The 'anicc' family takes no model or dtype arguments, so it is emitted
     with a reduced call signature.
     """
-    assert model_type in ["off", "mp", "anicc", 'omol']
+    assert model_type in ["off", "mp", "anicc", "omol"]
 
     if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if model_type == "off" or model_type == "mp" or model_type == "omol":
         in_str = f"""
@@ -94,22 +92,22 @@ client.run(atoms, use_stress=True)
             """
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
-    return None
 
 
 def write_ase_qmmm_mace_driver(
-        directory,
-        out_file="run-ase-qmmm-mace.py",
-        in_file="init.xyz",
-        qm_indices=None,
-        qm_model_type="omol",
-        qm_model="medium",
-        mm_model_type="off",
-        mm_model="small",
-        device=None,
-        default_dtype="float64",
-        enable_cueq=False,
-        host="driver"):
+    directory,
+    out_file="run-ase-qmmm-mace.py",
+    in_file="init.xyz",
+    qm_indices=None,
+    qm_model_type="omol",
+    qm_model="medium",
+    mm_model_type="off",
+    mm_model="small",
+    device=None,
+    default_dtype="float64",
+    enable_cueq=False,
+    host="driver",
+):
     """Write an i-PI client script using a MACE-based QM/MM partition.
 
     Two MACE models are combined through ASE's ``SimpleQMMM``: an accurate
@@ -144,10 +142,6 @@ def write_ase_qmmm_mace_driver(
     host : str, optional
         Unix socket name used to reach the i-PI server. Default is "driver".
 
-    Returns
-    -------
-    None
-
     Raises
     ------
     AssertionError
@@ -162,11 +156,15 @@ def write_ase_qmmm_mace_driver(
     if qm_indices is None:
         qm_indices = [0]
 
-    assert qm_model_type in ["off", "mp", "anicc", "omol"], "QM model type must be one of: off, mp, anicc, omol"
-    assert mm_model_type in ["off", "mp", "anicc", "omol"], "MM model type must be one of: off, mp, anicc, omol"
+    assert qm_model_type in ["off", "mp", "anicc", "omol"], (
+        "QM model type must be one of: off, mp, anicc, omol"
+    )
+    assert mm_model_type in ["off", "mp", "anicc", "omol"], (
+        "MM model type must be one of: off, mp, anicc, omol"
+    )
 
     if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     in_str = f"""
 from ase.io import read
@@ -198,36 +196,19 @@ client.run(atoms)
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
 
-    return None
-
-
-def write_cp2k_driver():
-    """Write a CP2K i-PI client input deck.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    ValueError
-        Always. CP2K support is not implemented yet; see the i-PI
-        ``examples/clients/cp2k/npt_classical`` reference setup.
-    """
-    raise ValueError("Driver cp2k is not recognized.")
-
 
 def write_ase_nwchem_driver(
-        directory,
-        in_file="init.xyz",
-        out_file="run-ase-nwchem.py",
-        charge=0,
-        xc="B3LYP",
-        multi=1,
-        basis_set="6-31G**",
-        disp=None,
-        solv=None,
-        host="driver"):
+    directory,
+    in_file="init.xyz",
+    out_file="run-ase-nwchem.py",
+    charge=0,
+    xc="B3LYP",
+    multi=1,
+    basis_set="6-31G**",
+    disp=None,
+    solv=None,
+    host="driver",
+):
     """Write an i-PI client script driven by an NWChem DFT calculation.
 
     Parameters
@@ -253,10 +234,6 @@ def write_ase_nwchem_driver(
         Implicit solvent model, either 'WATER' or 'PROTEIN'. Default is None.
     host : str, optional
         Unix socket name used to reach the i-PI server. Default is "driver".
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -330,19 +307,20 @@ client.run(atoms, use_stress=False)
     """
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
-    return None
 
 
-def write_nwchem_driver(atoms,
-                        directory,
-                        task='optimize',
-                        charge=0,
-                        xc='B3LYP',
-                        multiplicity=1,
-                        basis_set='6-311++G**',
-                        disp=None,
-                        solv=None,
-                        host='driver'):
+def write_nwchem_driver(
+    atoms,
+    directory,
+    task="optimize",
+    charge=0,
+    xc="B3LYP",
+    multiplicity=1,
+    basis_set="6-311++G**",
+    disp=None,
+    solv=None,
+    host="driver",
+):
     """Prepares and writes the input file for an NWChem calculation.
 
     Parameters
@@ -367,40 +345,38 @@ def write_nwchem_driver(atoms,
         The solvation model to use. Default is None.
     host : str, optional
         The host for the SocketClient. Default is 'driver'.
-
-    Returns
-    -------
-    None
     """
-    calc = nwchem_calc_preset(directory=directory,
-                              task=task,
-                              charge=charge,
-                              xc=xc,
-                              multiplicity=multiplicity,
-                              basis_set=basis_set,
-                              disp=disp,
-                              solv=solv,
-                              host=host)
-    calc.prefix = os.path.join(directory, 'nwchem')
+    calc = nwchem_calc_preset(
+        directory=directory,
+        task=task,
+        charge=charge,
+        xc=xc,
+        multiplicity=multiplicity,
+        basis_set=basis_set,
+        disp=disp,
+        solv=solv,
+        host=host,
+    )
+    calc.prefix = os.path.join(directory, "nwchem")
     calc.write_input(atoms)
-    return None
 
 
 def write_ase_orca_driver(
-        directory,
-        in_file="init.xyz",
-        out_file="run-ase-orca.py",
-        charge=0,
-        xc="BLYP",
-        multi=1,
-        basis_set="6-311G",
-        disp=False,
-        solv=False,
-        calc_type='DFT',
-        atom_list=None,
-        calc_extra=None,
-        scf_option=None,
-        n_procs=10):
+    directory,
+    in_file="init.xyz",
+    out_file="run-ase-orca.py",
+    charge=0,
+    xc="BLYP",
+    multi=1,
+    basis_set="6-311G",
+    disp=False,
+    solv=False,
+    calc_type="DFT",
+    atom_list=None,
+    calc_extra=None,
+    scf_option=None,
+    n_procs=10,
+):
     """Write an i-PI client script driven by an ORCA calculation.
 
     Parameters
@@ -438,10 +414,6 @@ def write_ase_orca_driver(
         Additional SCF convergence keyword. Default is None.
     n_procs : int, optional
         Number of MPI processes for ORCA. Default is 10.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -596,15 +568,11 @@ def move_zundel_driver_pes_files(directory):
     ----------
     directory : str
         The target directory where the PES files will be copied.
-
-    Returns
-    -------
-    None
     """
-    base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
-    files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']
+    base = os.path.join(ipi.__file__.split("__init__.py")[0], "drivers", "f90", "pes")
+    files = ["h5o2.dms4B.coeff.com.dat", "h5o2.pes4B.coeff.dat"]
     for file in files:
-        os.system(f"cp {os.path.join(base, file)} {directory}")
+        shutil.copy(os.path.join(base, file), directory)
 
 
 def prep_driver(atoms, directory, f_driver, driver_args):

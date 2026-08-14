@@ -28,9 +28,9 @@ from .calculators import calculate_free_energy
 K2au = unit_to_internal("temperature", "kelvin", 1.0)
 
 
-def parse_react_thermo_data(directory,
-                            filename='thermo_data.out',
-                            ref_filename='phonon.out'):
+def parse_react_thermo_data(
+    directory, filename="thermo_data.out", ref_filename="phonon.out"
+):
     """Parse reactant partition functions and reference energy.
 
     Parameters
@@ -60,9 +60,11 @@ def parse_react_thermo_data(directory,
     data = {}
     temp = None
     output_data, _output_desc = ipi.read_output(os.path.join(directory, ref_filename))
-    if output_data.get('potential') is None:
-        raise ValueError(f"Could not find potential energy in {ref_filename} in {directory}")
-    data['energy'] = output_data['potential'][-1]
+    if output_data.get("potential") is None:
+        raise ValueError(
+            f"Could not find potential energy in {ref_filename} in {directory}"
+        )
+    data["energy"] = output_data["potential"][-1]
 
     filepath = os.path.join(directory, filename)
 
@@ -70,25 +72,27 @@ def parse_react_thermo_data(directory,
         lines = f.readlines()
 
     for i, line in enumerate(lines):
-        if 'We have a negative frequency' in line:
-            raise ValueError(f"Negative frequency found in {filepath}. Check the optimisation/phonon calculation.")
-        if 'Qtras(bohr^-3) | Qrot     | logQvib_rp' in line:
+        if "We have a negative frequency" in line:
+            raise ValueError(
+                f"Negative frequency found in {filepath}. Check the optimisation/phonon calculation."
+            )
+        if "Qtras(bohr^-3) | Qrot     | logQvib_rp" in line:
             data_line = lines[i + 1].strip()
-            values = data_line.split('|')
-            data['Qtras'] = float(values[0].strip())
-            data['Qrot'] = float(values[1].strip())
-            data['logQvib_rp'] = float(values[2].strip())
-        elif 'Temperature:' in line:
+            values = data_line.split("|")
+            data["Qtras"] = float(values[0].strip())
+            data["Qrot"] = float(values[1].strip())
+            data["logQvib_rp"] = float(values[2].strip())
+        elif "Temperature:" in line:
             temp = float(line.split()[1])
     if temp is None:
         raise ValueError(f"Could not find temperature in {filepath}")
 
-    data['V/kBT'] = float(data['energy'] / (kB * temp))
+    data["V/kBT"] = float(data["energy"] / (kB * temp))
 
     return data
 
 
-def parse_ts_thermo_data(directory, filename='thermo_data.out'):
+def parse_ts_thermo_data(directory, filename="thermo_data.out"):
     """Parse the TS thermo_data.out file and extract thermodynamic values.
 
     Parameters
@@ -111,14 +115,14 @@ def parse_ts_thermo_data(directory, filename='thermo_data.out'):
     data = {}
 
     for line in lines:
-        if 'Qtras:' in line:
-            data['Qtras'] = float(line.split(':')[1].strip())
-        elif 'Qrot:' in line:
-            data['Qrot'] = float(line.split(':')[1].strip())
-        elif 'logQvib:' in line:
-            data['logQvib'] = float(line.split(':')[1].strip())
-        elif 'V/kBT' in line:
-            data['V/kBT'] = float(line.split()[-1].strip())
+        if "Qtras:" in line:
+            data["Qtras"] = float(line.split(":")[1].strip())
+        elif "Qrot:" in line:
+            data["Qrot"] = float(line.split(":")[1].strip())
+        elif "logQvib:" in line:
+            data["logQvib"] = float(line.split(":")[1].strip())
+        elif "V/kBT" in line:
+            data["V/kBT"] = float(line.split()[-1].strip())
 
     if not data:
         raise ValueError(f"Could not find thermodynamic data in {filepath}")
@@ -126,7 +130,7 @@ def parse_ts_thermo_data(directory, filename='thermo_data.out'):
     return data
 
 
-def parse_inst_thermo_data(directory, filename='thermo_data.out'):
+def parse_inst_thermo_data(directory, filename="thermo_data.out"):
     """Parse the thermo_data.out file and extract thermodynamic values.
 
     Parameters
@@ -149,24 +153,26 @@ def parse_inst_thermo_data(directory, filename='thermo_data.out'):
     data = {}
 
     for i, line in enumerate(lines):
-        if 'Temperature:' in line:
-            data['Temperature'] = float(line.split()[1])
-        elif 'NBEADS:' in line:
-            data['NBEADS'] = int(line.split()[1])
-        elif '1/(betaP*hbar)' in line:
-            data['1/(betaP*hbar)'] = float(line.split('=')[1].strip())
-        elif 'BN' in line and 'Qt' in line:
+        if "Temperature:" in line:
+            data["Temperature"] = float(line.split()[1])
+        elif "NBEADS:" in line:
+            data["NBEADS"] = int(line.split()[1])
+        elif "1/(betaP*hbar)" in line:
+            data["1/(betaP*hbar)"] = float(line.split("=")[1].strip())
+        elif "BN" in line and "Qt" in line:
             data_line = lines[i + 1]
-            values = data_line.split('|')
-            bn_parts = values[0].strip().replace('(', '').replace(')', '').split()
+            values = data_line.split("|")
+            bn_parts = values[0].strip().replace("(", "").replace(")", "").split()
 
-            data.update({
-                'BN': float(bn_parts[0]),
-                'Qt': float(values[1].strip()),
-                'Qrot': float(values[2].strip()),
-                'log(Qvib*N)': float(values[3].strip()),
-                'S/hbar': float(values[4].split('(')[0].strip()),
-            })
+            data.update(
+                {
+                    "BN": float(bn_parts[0]),
+                    "Qt": float(values[1].strip()),
+                    "Qrot": float(values[2].strip()),
+                    "log(Qvib*N)": float(values[3].strip()),
+                    "S/hbar": float(values[4].split("(")[0].strip()),
+                }
+            )
             return data
 
     raise ValueError(f"Could not find thermodynamic data in {filepath}")
@@ -187,32 +193,38 @@ def calc_instanton_kappa(ts_data, inst_data):
     float
         Tunnelling factor (kappa).
     """
-    f_trn = inst_data['Qt'] / ts_data['Qtras']
-    f_rot = inst_data['Qrot'] / ts_data['Qrot']
+    f_trn = inst_data["Qt"] / ts_data["Qtras"]
+    f_rot = inst_data["Qrot"] / ts_data["Qrot"]
 
-    beta = 1.0 / (inst_data['Temperature'] * K2au)
-    prefactor = np.sqrt((2.0 * np.pi * inst_data['NBEADS'] * inst_data['BN']) / (beta * 1.0 ** 2))
-    f_vib = prefactor * np.exp(inst_data['log(Qvib*N)']) / np.exp(ts_data['logQvib'])
-    exp_factor = np.exp(-inst_data['S/hbar'] + ts_data['V/kBT'])
+    beta = 1.0 / (inst_data["Temperature"] * K2au)
+    prefactor = np.sqrt(
+        (2.0 * np.pi * inst_data["NBEADS"] * inst_data["BN"]) / (beta * 1.0**2)
+    )
+    f_vib = prefactor * np.exp(inst_data["log(Qvib*N)"]) / np.exp(ts_data["logQvib"])
+    exp_factor = np.exp(-inst_data["S/hbar"] + ts_data["V/kBT"])
 
-    print(f'f_trn: {f_trn:.3f}, f_rot: {f_rot:.3f}, f_vib: {f_vib:.3f}, exp: {exp_factor:.3f}', flush=True)
+    print(
+        f"f_trn: {f_trn:.3f}, f_rot: {f_rot:.3f}, f_vib: {f_vib:.3f}, exp: {exp_factor:.3f}",
+        flush=True,
+    )
 
     kappa = f_trn * f_rot * f_vib * exp_factor
     if kappa < 1.0:
-        print(f'Warning: kappa < 1.0, {kappa}', flush=True)
+        print(f"Warning: kappa < 1.0, {kappa}", flush=True)
         kappa = 1.0
 
     return kappa
 
 
 def calc_kappa_full(
-        dir_react,
-        dir_ts,
-        dir_instanton,
-        temperature,
-        n_beads,
-        filter_list=None,
-        ref_energy=True):
+    dir_react,
+    dir_ts,
+    dir_instanton,
+    temperature,
+    n_beads,
+    filter_list=None,
+    ref_energy=True,
+):
     """Calculates the tunnelling factor (kappa) using reactant, transition state, and instanton data.
 
     This function processes the thermodynamic data for the reactant, transition state (TS),
@@ -240,42 +252,50 @@ def calc_kappa_full(
     float
         The calculated tunnelling factor (kappa).
     """
-    run_instanton_post_process(dir_react,
-                               process_type='reactant',
-                               temperature=temperature,
-                               filter_list=filter_list)
+    run_instanton_post_process(
+        dir_react,
+        process_type="reactant",
+        temperature=temperature,
+        filter_list=filter_list,
+    )
     react_data = parse_react_thermo_data(dir_react)
 
     if ref_energy:
-        ref_energy = react_data['energy']
+        ref_energy = react_data["energy"]
     else:
         ref_energy = None
 
-    run_instanton_post_process(dir_ts,
-                               process_type='TS',
-                               temperature=temperature,
-                               filter_list=filter_list,
-                               ref_energy=ref_energy)
+    run_instanton_post_process(
+        dir_ts,
+        process_type="TS",
+        temperature=temperature,
+        filter_list=filter_list,
+        ref_energy=ref_energy,
+    )
     data_ts = parse_ts_thermo_data(dir_ts)
 
-    run_instanton_post_process(dir_instanton,
-                               process_type='instanton',
-                               temperature=temperature,
-                               n_beads=n_beads,
-                               filter_list=filter_list,
-                               ref_energy=ref_energy)
+    run_instanton_post_process(
+        dir_instanton,
+        process_type="instanton",
+        temperature=temperature,
+        n_beads=n_beads,
+        filter_list=filter_list,
+        ref_energy=ref_energy,
+    )
     data_inst = parse_inst_thermo_data(dir_instanton)
 
     return calc_instanton_kappa(data_ts, data_inst)
 
 
-def calc_forward_rate(dir_react,
-                      dir_ts,
-                      temperature,
-                      filter_list=None,
-                      use_part_funcs=True,
-                      debug=False,
-                      barrier=None):
+def calc_forward_rate(
+    dir_react,
+    dir_ts,
+    temperature,
+    filter_list=None,
+    use_part_funcs=True,
+    debug=False,
+    barrier=None,
+):
     """Calculate the classical TST forward rate from partition functions.
 
     Evaluates the Eyring expression using partition functions extracted
@@ -314,31 +334,35 @@ def calc_forward_rate(dir_react,
     Reactant energies are used as the reference for the transition state,
     so the barrier is measured relative to the reactant minimum.
     """
-    run_instanton_post_process(dir_react,
-                               process_type='reactant',
-                               temperature=temperature,
-                               filter_list=filter_list)
+    run_instanton_post_process(
+        dir_react,
+        process_type="reactant",
+        temperature=temperature,
+        filter_list=filter_list,
+    )
     react_data = parse_react_thermo_data(dir_react)
 
-    run_instanton_post_process(dir_ts,
-                               process_type='TS',
-                               temperature=temperature,
-                               filter_list=filter_list,
-                               ref_energy=react_data['energy'])
+    run_instanton_post_process(
+        dir_ts,
+        process_type="TS",
+        temperature=temperature,
+        filter_list=filter_list,
+        ref_energy=react_data["energy"],
+    )
     ts_data = parse_ts_thermo_data(dir_ts)
 
-    q_vib_react = np.exp(react_data['logQvib_rp'])
-    q_vib_ts = np.exp(ts_data['logQvib'])
+    q_vib_react = np.exp(react_data["logQvib_rp"])
+    q_vib_ts = np.exp(ts_data["logQvib"])
 
-    react_part = react_data['Qtras'] * react_data['Qrot'] * q_vib_react
-    ts_part = ts_data['Qtras'] * ts_data['Qrot'] * q_vib_ts
+    react_part = react_data["Qtras"] * react_data["Qrot"] * q_vib_react
+    ts_part = ts_data["Qtras"] * ts_data["Qrot"] * q_vib_ts
     if use_part_funcs:
         partition_function_ratio = ts_part / react_part
     else:
         partition_function_ratio = 1.0
 
     if barrier is None:
-        boltzmann_factor = np.exp(-ts_data['V/kBT'])
+        boltzmann_factor = np.exp(-ts_data["V/kBT"])
     else:
         boltzmann_factor = np.exp(-barrier / (kB * temperature))
 
@@ -353,10 +377,9 @@ def calc_forward_rate(dir_react,
     return prefactor * partition_function_ratio * boltzmann_factor
 
 
-def calc_forward_rate_orca(atoms_react,
-                           atoms_ts,
-                           temperature=300.0,
-                           calc_settings=None):
+def calc_forward_rate_orca(
+    atoms_react, atoms_ts, temperature=300.0, calc_settings=None
+):
     """Calculate the Eyring TST forward rate from ORCA Gibbs free energies.
 
     Parameters
@@ -379,8 +402,12 @@ def calc_forward_rate_orca(atoms_react,
         calc_settings = {}
 
     # calculate_free_energy returns (gibbs, enthalpy, entropy); only Gibbs is needed here
-    e_react, _, _ = calculate_free_energy(atoms_react, temperature=temperature, **calc_settings)
-    e_ts, _, _ = calculate_free_energy(atoms_ts, temperature=temperature, **calc_settings)
+    e_react, _, _ = calculate_free_energy(
+        atoms_react, temperature=temperature, **calc_settings
+    )
+    e_ts, _, _ = calculate_free_energy(
+        atoms_ts, temperature=temperature, **calc_settings
+    )
 
     # The activation free energy is the TS energy relative to the reactant
     boltzmann_factor = np.exp(-(e_ts - e_react) / (kB * temperature))
@@ -484,7 +511,9 @@ def extrapolate_inf_bead_limit(x, y, plot=False):
     if plot:
         plt.scatter(x, y, marker="o")
         t_fine = np.linspace(x.min(), x.max(), 400)
-        plt.plot(t_fine, exp_decay(t_fine, *popt), color='black', linewidth=2, linestyle='--')
+        plt.plot(
+            t_fine, exp_decay(t_fine, *popt), color="black", linewidth=2, linestyle="--"
+        )
         n_plot("Number of instanton beads", r"$\kappa$")
         plt.show()
 
