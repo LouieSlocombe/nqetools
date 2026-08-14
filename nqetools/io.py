@@ -54,9 +54,14 @@ def read_ipi_xyz(filename, convert_units=True):
         while True:
             try:
                 ret = read_file("xyz", file_handle)
-                frames.append(ase.Atoms(ret["atoms"].names,
-                                        positions=ret["atoms"].q.reshape((-1, 3)),
-                                        cell=ret["cell"].h.T, pbc=True))
+                frames.append(
+                    ase.Atoms(
+                        ret["atoms"].names,
+                        positions=ret["atoms"].q.reshape((-1, 3)),
+                        cell=ret["cell"].h.T,
+                        pbc=True,
+                    )
+                )
             except EOFError:
                 break
 
@@ -299,7 +304,7 @@ def find_nqetools_path():
     ImportError
         If the nqetools package is not found.
     """
-    spec = importlib.util.find_spec('nqetools')
+    spec = importlib.util.find_spec("nqetools")
     if not spec:
         raise ImportError("nqetools package not found")
     return os.path.dirname(spec.origin)
@@ -348,19 +353,19 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         """
         if comment is None:
             return fallback
-        m = re.search(r'charge\s*[:=]?\s*([+-]?\d+)', comment, flags=re.I)
+        m = re.search(r"charge\s*[:=]?\s*([+-]?\d+)", comment, flags=re.I)
         if m:
             try:
                 return int(m.group(1))
             except ValueError:
                 pass
-        m = re.search(r'(?:q\s*[:=])\s*([+-]?\d+)', comment, flags=re.I)
+        m = re.search(r"(?:q\s*[:=])\s*([+-]?\d+)", comment, flags=re.I)
         if m:
             try:
                 return int(m.group(1))
             except ValueError:
                 pass
-        m = re.search(r'(^|\s)([+-]\d+)(\s|$)', comment)
+        m = re.search(r"(^|\s)([+-]\d+)(\s|$)", comment)
         if m:
             try:
                 return int(m.group(2))
@@ -382,8 +387,8 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             A list of tuples, each containing the comment line and atom block for a frame.
         """
         frames = []
-        with open(path, encoding='utf-8') as fh:
-            lines = [ln.rstrip('\n') for ln in fh]
+        with open(path, encoding="utf-8") as fh:
+            lines = [ln.rstrip("\n") for ln in fh]
         i = 0
         n_total = len(lines)
         while i < n_total:
@@ -394,7 +399,9 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             try:
                 n = int(lines[i].strip())
             except ValueError:
-                raise ValueError(f"Expected atom count at line {i + 1}, got: {lines[i]!r}") from None
+                raise ValueError(
+                    f"Expected atom count at line {i + 1}, got: {lines[i]!r}"
+                ) from None
             i += 1
             if i >= n_total:
                 raise ValueError("Unexpected EOF after atom count.")
@@ -402,7 +409,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             i += 1
             if i + n > n_total:
                 raise ValueError("Unexpected EOF in atom coordinate block.")
-            block = lines[i:i + n]
+            block = lines[i : i + n]
             i += n
             frames.append((comment, block))
         if not frames:
@@ -475,9 +482,9 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
             except Exception:
                 Chem.SanitizeMol(
                     mol,
-                    sanitizeOps=Chem.SanitizeFlags.SANITIZE_FINDRADICALS |
-                                Chem.SanitizeFlags.SANITIZE_SETAROMATICITY |
-                                Chem.SanitizeFlags.SANITIZE_SYMMRINGS
+                    sanitizeOps=Chem.SanitizeFlags.SANITIZE_FINDRADICALS
+                    | Chem.SanitizeFlags.SANITIZE_SETAROMATICITY
+                    | Chem.SanitizeFlags.SANITIZE_SYMMRINGS,
                 )
 
         if kekulize:
@@ -495,9 +502,9 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
     return n_written
 
 
-def extract_nonstandard_res(pdb_file_path: str,
-                            output_dir: str = ".",
-                            sdf: bool = False) -> list:
+def extract_nonstandard_res(
+    pdb_file_path: str, output_dir: str = ".", sdf: bool = False
+) -> list:
     """Extracts non-standard residues from a PDB file and saves them as XYZ files.
 
     This function identifies residues in a PDB file that are not part of a predefined
@@ -526,18 +533,54 @@ def extract_nonstandard_res(pdb_file_path: str,
 
     manual_standard_residues = {
         # Standard 20 protein residues
-        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
-        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
+        "ALA",
+        "ARG",
+        "ASN",
+        "ASP",
+        "CYS",
+        "GLN",
+        "GLU",
+        "GLY",
+        "HIS",
+        "ILE",
+        "LEU",
+        "LYS",
+        "MET",
+        "PHE",
+        "PRO",
+        "SER",
+        "THR",
+        "TRP",
+        "TYR",
+        "VAL",
         # Standard DNA residues (desoxy)
-        'DA', 'DC', 'DG', 'DT',
+        "DA",
+        "DC",
+        "DG",
+        "DT",
         # Standard RNA residues (ribo)
-        'A', 'C', 'G', 'U', 'RA', 'RC', 'RG', 'RU',
+        "A",
+        "C",
+        "G",
+        "U",
+        "RA",
+        "RC",
+        "RG",
+        "RU",
         # Common alternative protonation states for Histidine
-        'HID', 'HIE', 'HIP',
+        "HID",
+        "HIE",
+        "HIP",
         # Common synonyms
-        'ADE', 'CYT', 'GUA', 'THY', 'URA',
+        "ADE",
+        "CYT",
+        "GUA",
+        "THY",
+        "URA",
         # Water
-        'HOH', 'WAT', 'SOL'
+        "HOH",
+        "WAT",
+        "SOL",
     }
 
     residues_to_ignore = manual_standard_residues.copy()
@@ -547,7 +590,6 @@ def extract_nonstandard_res(pdb_file_path: str,
 
     for residue in topology.residues():
         if residue.name not in residues_to_ignore:
-
             res_name = residue.name
             res_id = residue.id
             chain_id = residue.chain.id
@@ -562,7 +604,10 @@ def extract_nonstandard_res(pdb_file_path: str,
             if num_atoms <= 1:
                 continue
 
-            print(f"Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})", flush=True)
+            print(
+                f"Found non-standard residue: {res_name} (Chain {chain_id}, ResID {res_id})",
+                flush=True,
+            )
 
             xyz_content = [str(num_atoms)]
             comment = f"Residue: {res_name}, Chain: {chain_id}, ResID: {res_id}, Source: {os.path.basename(pdb_file_path)}"
@@ -571,15 +616,20 @@ def extract_nonstandard_res(pdb_file_path: str,
             for atom in atoms_in_residue:
                 element = atom.element.symbol
                 pos = positions_angstrom[atom.index]
-                xyz_line = f"{element:<2}   {pos[0]:>12.6f} {pos[1]:>12.6f} {pos[2]:>12.6f}"
+                xyz_line = (
+                    f"{element:<2}   {pos[0]:>12.6f} {pos[1]:>12.6f} {pos[2]:>12.6f}"
+                )
                 xyz_content.append(xyz_line)
 
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 f.write("\n".join(xyz_content))
                 f.write("\n")
 
             generated_files.append(output_path)
-            print(f"Successfully wrote {num_atoms} atoms to {os.path.splitext(output_path)[0]}", flush=True)
+            print(
+                f"Successfully wrote {num_atoms} atoms to {os.path.splitext(output_path)[0]}",
+                flush=True,
+            )
 
     if sdf:
         for xyz_file in generated_files:
@@ -610,21 +660,65 @@ def get_non_standard_residues(pdb_file):
     """
     standard_residues = {
         # Standard 20 protein residues
-        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
-        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
+        "ALA",
+        "ARG",
+        "ASN",
+        "ASP",
+        "CYS",
+        "GLN",
+        "GLU",
+        "GLY",
+        "HIS",
+        "ILE",
+        "LEU",
+        "LYS",
+        "MET",
+        "PHE",
+        "PRO",
+        "SER",
+        "THR",
+        "TRP",
+        "TYR",
+        "VAL",
         # Standard DNA residues (desoxy)
-        'DA', 'DC', 'DG', 'DT',
+        "DA",
+        "DC",
+        "DG",
+        "DT",
         # Standard RNA residues (ribo)
-        'A', 'C', 'G', 'U', 'RA', 'RC', 'RG', 'RU',
+        "A",
+        "C",
+        "G",
+        "U",
+        "RA",
+        "RC",
+        "RG",
+        "RU",
         # Common alternative protonation states for Histidine
-        'HID', 'HIE', 'HIP',
+        "HID",
+        "HIE",
+        "HIP",
         # Common synonyms
-        'ADE', 'CYT', 'GUA', 'THY', 'URA',
+        "ADE",
+        "CYT",
+        "GUA",
+        "THY",
+        "URA",
         # Water
-        'HOH', 'WAT', 'SOL',
+        "HOH",
+        "WAT",
+        "SOL",
         # Ions
-        'NA', 'CL', 'K', 'MG', 'CA',
-        'Na+', 'Cl-', 'K+', 'Mg2+', 'Ca2+'
+        "NA",
+        "CL",
+        "K",
+        "MG",
+        "CA",
+        "Na+",
+        "Cl-",
+        "K+",
+        "Mg2+",
+        "Ca2+",
     }
 
     # Load the PDB file without sanitization or hydrogen removal
@@ -635,7 +729,7 @@ def get_non_standard_residues(pdb_file):
 
     non_standard_mols = []
     for residue_key, fragment_mol in mols_by_residue.items():
-        res_name = residue_key.split('_')[0].strip()
+        res_name = residue_key.split("_")[0].strip()
         if res_name not in standard_residues:
             print(f"  > Found non-standard residue: {residue_key}")
             print(Chem.MolToSmiles(fragment_mol))
@@ -665,21 +759,65 @@ def list_non_standard_residues(pdb_file):
     """
     standard_residues = {
         # Standard 20 protein residues
-        'ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLN', 'GLU', 'GLY', 'HIS',
-        'ILE', 'LEU', 'LYS', 'MET', 'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL',
+        "ALA",
+        "ARG",
+        "ASN",
+        "ASP",
+        "CYS",
+        "GLN",
+        "GLU",
+        "GLY",
+        "HIS",
+        "ILE",
+        "LEU",
+        "LYS",
+        "MET",
+        "PHE",
+        "PRO",
+        "SER",
+        "THR",
+        "TRP",
+        "TYR",
+        "VAL",
         # Standard DNA residues (desoxy)
-        'DA', 'DC', 'DG', 'DT',
+        "DA",
+        "DC",
+        "DG",
+        "DT",
         # Standard RNA residues (ribo)
-        'A', 'C', 'G', 'U', 'RA', 'RC', 'RG', 'RU',
+        "A",
+        "C",
+        "G",
+        "U",
+        "RA",
+        "RC",
+        "RG",
+        "RU",
         # Common alternative protonation states for Histidine
-        'HID', 'HIE', 'HIP',
+        "HID",
+        "HIE",
+        "HIP",
         # Common synonyms
-        'ADE', 'CYT', 'GUA', 'THY', 'URA',
+        "ADE",
+        "CYT",
+        "GUA",
+        "THY",
+        "URA",
         # Water
-        'HOH', 'WAT', 'SOL',
+        "HOH",
+        "WAT",
+        "SOL",
         # Ions
-        'NA', 'CL', 'K', 'MG', 'CA',
-        'Na+', 'Cl-', 'K+', 'Mg2+', 'Ca2+'
+        "NA",
+        "CL",
+        "K",
+        "MG",
+        "CA",
+        "Na+",
+        "Cl-",
+        "K+",
+        "Mg2+",
+        "Ca2+",
     }
 
     # Load the PDB file without sanitization or hydrogen removal
@@ -688,13 +826,15 @@ def list_non_standard_residues(pdb_file):
 
     non_standard_mols = []
     for residue_key, _fragment_mol in mols_by_residue.items():
-        res_name = residue_key.split('_')[0].strip()
+        res_name = residue_key.split("_")[0].strip()
         if res_name not in standard_residues:
             non_standard_mols.append(residue_key)
     return non_standard_mols
 
 
-def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: list[str], pdb_output_path: str) -> list[str]:
+def clean_ions_in_pdb(
+    pdb_input_path: str, ions_to_remove: list[str], pdb_output_path: str
+) -> list[str]:
     """Removes specified ion residues from a PDB file and saves the cleaned structure.
 
     This function identifies ion residues in a PDB file based on their names and removes
@@ -723,7 +863,7 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: list[str], pdb_output
 
     for res in modeller.topology.residues():
         res_name_upper = res.name.upper()
-        if res_name_upper in ['HOH', 'WAT']:
+        if res_name_upper in ["HOH", "WAT"]:
             continue
         # Identify single-atom residues as potential ions
         if len(list(res.atoms())) == 1:
@@ -732,7 +872,9 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: list[str], pdb_output
                 residues_to_delete.append(res)
 
     print(f"-> Found all potential ion types: {sorted(all_found_ion_types)}")
-    print(f"-> Will remove {len(residues_to_delete)} residues matching: {ions_to_remove}")
+    print(
+        f"-> Will remove {len(residues_to_delete)} residues matching: {ions_to_remove}"
+    )
 
     if residues_to_delete:
         modeller.delete(residues_to_delete)
@@ -740,7 +882,7 @@ def clean_ions_in_pdb(pdb_input_path: str, ions_to_remove: list[str], pdb_output
     else:
         print("No matching ion residues found to remove.")
 
-    with open(pdb_output_path, 'w') as f:
+    with open(pdb_output_path, "w") as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
     print(f"Cleaned PDB saved to: {pdb_output_path}")
 
@@ -791,7 +933,7 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
 
     print("Saving modified topology and positions...")
     if isinstance(output_file, str):
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             PDBFile.writeFile(topology, positions, f)
         print(f"Successfully saved modified PDB to: {output_file}")
     else:
@@ -816,8 +958,9 @@ def remove_residues_in_pdb(input_pdb, output_pdb, names):
     pdb = PDBFile(input_pdb)
     modeller = Modeller(pdb.topology, pdb.positions)
 
-    residues_to_delete = [res for res in modeller.topology.residues()
-                          if res.name in names]
+    residues_to_delete = [
+        res for res in modeller.topology.residues() if res.name in names
+    ]
 
     print(f"Found {len(residues_to_delete)} residues to delete.")
 
@@ -827,7 +970,7 @@ def remove_residues_in_pdb(input_pdb, output_pdb, names):
     else:
         print("No matching residues found to delete.")
 
-    with open(output_pdb, 'w') as f:
+    with open(output_pdb, "w") as f:
         PDBFile.writeFile(modeller.topology, modeller.positions, f)
 
 

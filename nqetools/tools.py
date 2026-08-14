@@ -37,7 +37,7 @@ def add_ipi_paths(base: str | None = None) -> None:
     if base is None:
         base = os.path.expanduser("~") + "/i-pi/"
     sys.path.append(base)
-    os.environ['PATH'] += f":{base}/bin/"
+    os.environ["PATH"] += f":{base}/bin/"
 
 
 def get_ipi_driver() -> str:
@@ -51,8 +51,8 @@ def get_ipi_driver() -> str:
     str
         The full path to the i-PI driver executable.
     """
-    tmp = ipi.__file__.split('__init__.py')[0]
-    return os.path.join(tmp, 'bin', 'i-pi-driver')
+    tmp = ipi.__file__.split("__init__.py")[0]
+    return os.path.join(tmp, "bin", "i-pi-driver")
 
 
 def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
@@ -75,7 +75,7 @@ def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
     if tmp_dir is None:
         tmp_dir = tempfile.gettempdir()
 
-    pattern = f'ipi_{address}' if address is not None else 'ipi_*'
+    pattern = f"ipi_{address}" if address is not None else "ipi_*"
     files = glob.glob(os.path.join(tmp_dir, pattern))
 
     uid = os.getuid()
@@ -127,7 +127,7 @@ def add_hydrogen_halfway(atoms, index1, index2):
 
     midpoint = (pos1 + pos2) / 2.0
 
-    atoms += Atoms('H', positions=[midpoint])
+    atoms += Atoms("H", positions=[midpoint])
 
     return atoms
 
@@ -162,7 +162,9 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
     return atoms
 
 
-def optimise_atom_halfway(atoms, atom_index, target_index1, target_index2, calc, fmax=0.05):
+def optimise_atom_halfway(
+    atoms, atom_index, target_index1, target_index2, calc, fmax=0.05
+):
     """Relax a structure around an atom placed halfway between two others.
 
     The moved atom and its two targets are held fixed while the rest of
@@ -233,7 +235,7 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
 
     hydrogen_position = pos1 + direction * distance
 
-    atoms += Atoms('H', positions=[hydrogen_position])
+    atoms += Atoms("H", positions=[hydrogen_position])
 
     return atoms
 
@@ -261,7 +263,7 @@ def align_mols(atoms1, atoms2):
     return atoms1, atoms2
 
 
-def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
+def align_principal_axis(atoms: Atoms, axis: str = "z") -> Atoms:
     """Align a structure's largest principal axis with a Cartesian axis.
 
     Parameters
@@ -278,9 +280,9 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     """
 
     directions = {
-        'x': np.array([1.0, 0.0, 0.0]),
-        'y': np.array([0.0, 1.0, 0.0]),
-        'z': np.array([0.0, 0.0, 1.0]),
+        "x": np.array([1.0, 0.0, 0.0]),
+        "y": np.array([0.0, 1.0, 0.0]),
+        "z": np.array([0.0, 0.0, 1.0]),
     }
 
     if axis not in directions:
@@ -295,7 +297,7 @@ def align_principal_axis(atoms: Atoms, axis: str = 'z') -> Atoms:
     principal_axis = evecs[2]
 
     target_vector = directions[axis]
-    atoms.rotate(principal_axis, target_vector, center='COM')
+    atoms.rotate(principal_axis, target_vector, center="COM")
 
     return atoms
 
@@ -338,8 +340,9 @@ def get_file_extension(file_path):
     return file_extension
 
 
-def _connected_groups(atoms: Atoms, cutoff_scale: float = 1.0,
-                      skin: float = 0.3) -> list[list[int]]:
+def _connected_groups(
+    atoms: Atoms, cutoff_scale: float = 1.0, skin: float = 0.3
+) -> list[list[int]]:
     """Connected components of the bonding graph, in discovery order.
 
     Bonds are inferred from ASE's natural cutoffs rather than from any
@@ -482,11 +485,9 @@ def move_com_to_origin(atoms: Atoms) -> Atoms:
     return atoms
 
 
-def move_clusters_to_distance(cluster1: Atoms,
-                              cluster2: Atoms,
-                              index1: int,
-                              index2: int,
-                              target_distance: float) -> Atoms:
+def move_clusters_to_distance(
+    cluster1: Atoms, cluster2: Atoms, index1: int, index2: int, target_distance: float
+) -> Atoms:
     """Separate two clusters to a set distance between chosen atoms.
 
     Both clusters move rigidly along the vector joining the two target
@@ -521,7 +522,9 @@ def move_clusters_to_distance(cluster1: Atoms,
     current_distance = np.linalg.norm(vec)
 
     if current_distance == 0:
-        raise ValueError("The selected atoms are at the same position; cannot determine a valid direction.")
+        raise ValueError(
+            "The selected atoms are at the same position; cannot determine a valid direction."
+        )
 
     unit_vec = vec / float(current_distance)
 
@@ -535,10 +538,9 @@ def move_clusters_to_distance(cluster1: Atoms,
     return combined_atoms
 
 
-def move_to_distances(atoms: Atoms,
-                      index1: int,
-                      index2: int,
-                      distances: list[float]) -> list[Atoms]:
+def move_to_distances(
+    atoms: Atoms, index1: int, index2: int, distances: list[float]
+) -> list[Atoms]:
     """Move two clusters of atoms to specified distances along the vector connecting two target atoms.
 
     This function splits the input `Atoms` object into two clusters, calculates the vector
@@ -573,13 +575,17 @@ def move_to_distances(atoms: Atoms,
 
     moved_atoms_list = []
     for distance in distances:
-        moved_atoms = move_clusters_to_distance(cluster1, cluster2, index1, index2, distance)
+        moved_atoms = move_clusters_to_distance(
+            cluster1, cluster2, index1, index2, distance
+        )
         moved_atoms_list.append(moved_atoms)
 
     return moved_atoms_list
 
 
-def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray]) -> list[float]:
+def get_fes_times(
+    timestep: float, total_steps: int, fes_arrays: list[np.ndarray]
+) -> list[float]:
     """Calculate time stamps for FES arrays based on simulation parameters.
 
     Parameters
@@ -603,13 +609,15 @@ def get_fes_times(timestep: float, total_steps: int, fes_arrays: list[np.ndarray
     # Total time in ps (convert fs to ps by dividing by 1000)
     total_time = (timestep * total_steps) / 1000.0
 
-    time_points = [i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
-                   for i in range(n_arrays)]
+    time_points = [
+        i * total_time / (n_arrays - 1) if n_arrays > 1 else total_time
+        for i in range(n_arrays)
+    ]
 
     return [round_sf(t, sig_figs=2) for t in time_points]
 
 
-def make_dimer(atoms, translate=None, angle=180, axis='z'):
+def make_dimer(atoms, translate=None, angle=180, axis="z"):
     """Create a dimer by combining two copies of a molecule.
 
     This function takes an ASE Atoms object, centers the first molecule,
@@ -742,11 +750,11 @@ def _bonded_groups(atoms: Atoms, cutoff_scale: float = 1.0) -> list[list[int]]:
 
 
 def combine_without_overlaps(
-        A: Atoms,
-        B: Atoms,
-        *,
-        bond_cutoff_scale: float = 1.0,
-        overlap_cutoff_scale: float = 1.0,
+    A: Atoms,
+    B: Atoms,
+    *,
+    bond_cutoff_scale: float = 1.0,
+    overlap_cutoff_scale: float = 1.0,
 ) -> Atoms:
     """Merge two structures, dropping whole molecules of B that clash with A.
 
@@ -799,7 +807,9 @@ def combine_without_overlaps(
         AB = A + B
 
         ov_cutoffs = [overlap_cutoff_scale * c for c in natural_cutoffs(AB)]
-        nl_ab = NeighborList(ov_cutoffs, self_interaction=False, bothways=True, skin=0.0)
+        nl_ab = NeighborList(
+            ov_cutoffs, self_interaction=False, bothways=True, skin=0.0
+        )
         nl_ab.update(AB)
 
         nA = len(A)
@@ -879,9 +889,12 @@ def largest_bonded_cluster_indices(atoms: Atoms) -> list[int]:
                     stack.append(v)
 
         # Keep the largest; break ties by smallest index in the cluster
-        if (len(cluster) > len(largest_cluster) or
-                (len(cluster) == len(largest_cluster) and cluster and min(cluster) < (
-                        min(largest_cluster) if largest_cluster else float('inf')))):
+        if len(cluster) > len(largest_cluster) or (
+            len(cluster) == len(largest_cluster)
+            and cluster
+            and min(cluster)
+            < (min(largest_cluster) if largest_cluster else float("inf"))
+        ):
             largest_cluster = cluster
 
     return sorted(largest_cluster)

@@ -44,10 +44,9 @@ def test_move_clusters_to_distance():
 
     water2.translate([2, 0, 0])  # initial separation of 2 Angstroms
 
-    moved_atoms = nqe.move_clusters_to_distance(water1, water2,
-                                                index1=idx1,
-                                                index2=idx2,
-                                                target_distance=target_distance)
+    moved_atoms = nqe.move_clusters_to_distance(
+        water1, water2, index1=idx1, index2=idx2, target_distance=target_distance
+    )
     view(moved_atoms)
 
     distance = moved_atoms.get_distance(idx1, idx2 + len(water1))
@@ -70,10 +69,7 @@ def test_move_to_distances():
 
     combined = water + water2
 
-    moved_atoms = nqe.move_to_distances(combined,
-                                        index1,
-                                        index2,
-                                        distances)
+    moved_atoms = nqe.move_to_distances(combined, index1, index2, distances)
 
     distance1 = moved_atoms[0].get_distance(index1, index2)
     distance2 = moved_atoms[1].get_distance(index1, index2)
@@ -86,7 +82,14 @@ def test_get_fes_times():
     print(flush=True)
     dt = 1.0
     n_steps = 5000
-    fake_data = [np.array(0.0), np.array(1.0), np.array(2.0), np.array(3.0), np.array(4.0), np.array(5.0)]
+    fake_data = [
+        np.array(0.0),
+        np.array(1.0),
+        np.array(2.0),
+        np.array(3.0),
+        np.array(4.0),
+        np.array(5.0),
+    ]
     val = nqe.get_fes_times(dt, n_steps, fake_data)
     assert val == fake_data
 
@@ -106,7 +109,10 @@ def test_convert_code_to_string():
         return a + b
 
     s = nqe.convert_code_to_string(add)
-    assert s == "def add(a: int, b: int) -> int:\n    \"\"\"Return the sum of *a* and *b*.\"\"\"\n    return a + b\n"
+    assert (
+        s
+        == 'def add(a: int, b: int) -> int:\n    """Return the sum of *a* and *b*."""\n    return a + b\n'
+    )
 
 
 def test_get_distance():

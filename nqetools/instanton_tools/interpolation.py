@@ -130,10 +130,12 @@ if input_geo != "None" or chk != "None":
 
     print(" ", flush=True)
     print(
-        f"We have a half ring polymer made of {nbeads} beads and {natoms} atoms.", flush=True
+        f"We have a half ring polymer made of {nbeads} beads and {natoms} atoms.",
+        flush=True,
     )
     print(
-        f"We will expand the ring polymer to get a half polymer of {nbeadsNew} beads.", flush=True
+        f"We will expand the ring polymer to get a half polymer of {nbeadsNew} beads.",
+        flush=True,
     )
 
     # Mirror to the full ring before rescaling: the closed-path transform is
@@ -156,9 +158,13 @@ if input_geo != "None" or chk != "None":
     print("Check new_instanton.xyz", flush=True)
     print("", flush=True)
     print(
-        f"Don't forget to change the number of beads to the new value ({nbeadsNew}) in your input file", flush=True
+        f"Don't forget to change the number of beads to the new value ({nbeadsNew}) in your input file",
+        flush=True,
     )
-    print("when starting your new simulation with an increased number of beads.", flush=True)
+    print(
+        "when starting your new simulation with an increased number of beads.",
+        flush=True,
+    )
     print("", flush=True)
 
 if input_hess != "None" or chk != "None":
@@ -214,7 +220,7 @@ if input_hess != "None" or chk != "None":
             diag = rpc.b1tob2(h2)
             new_h[i, j:size2:size0] += diag
 
-    new_h_half = new_h[:, 0: size2 // 2]
+    new_h_half = new_h[:, 0 : size2 // 2]
     np.savetxt(out, new_h_half.reshape(1, new_h_half.size))
 
     print("The new physical Hessian (half polymer) was generated", flush=True)
@@ -223,7 +229,8 @@ if input_hess != "None" or chk != "None":
     print("Remeber to adapt/add the following line in your input file:", flush=True)
     print("", flush=True)
     print(
-        f" <hessian mode='file' shape='({3 * natoms}, {natoms * 3 * nbeadsNew})' >hessian.dat</hessian>", flush=True
+        f" <hessian mode='file' shape='({3 * natoms}, {natoms * 3 * nbeadsNew})' >hessian.dat</hessian>",
+        flush=True,
     )
     print("", flush=True)
 

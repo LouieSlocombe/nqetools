@@ -30,7 +30,7 @@ def list_to_string(items):
     str
         The string representation of the list.
     """
-    return '[' + ', '.join(items) + ']'
+    return "[" + ", ".join(items) + "]"
 
 
 def update_properties(root, prop_list):
@@ -43,7 +43,7 @@ def update_properties(root, prop_list):
     prop_list : list of str
         A list of properties to update in the XML tree.
     """
-    for properties in root.iter('properties'):
+    for properties in root.iter("properties"):
         properties.text = list_to_string(prop_list)
 
 
@@ -57,9 +57,12 @@ def append_properties(root, prop_list):
     prop_list : list of str
         A list of properties to append to the existing properties in the XML tree.
     """
-    for properties in root.iter('properties'):
-        current_props = properties.text.split(',')
-        current_props = [prop.strip().strip('[').strip(']').strip('\n').strip() for prop in current_props]
+    for properties in root.iter("properties"):
+        current_props = properties.text.split(",")
+        current_props = [
+            prop.strip().strip("[").strip("]").strip("\n").strip()
+            for prop in current_props
+        ]
         updated_props = current_props + prop_list
         properties.text = list_to_string(updated_props)
 
@@ -83,8 +86,12 @@ def get_masses(atoms, f_deut=False, m_d=2.0141):
     """
     if f_deut:
         print("Using deuterium masses.", flush=True)
-        masses = [m_d if symbol == 'H' else mass for symbol, mass in
-                  zip(atoms.get_chemical_symbols(), atoms.get_masses(), strict=True)]
+        masses = [
+            m_d if symbol == "H" else mass
+            for symbol, mass in zip(
+                atoms.get_chemical_symbols(), atoms.get_masses(), strict=True
+            )
+        ]
     else:
         masses = atoms.get_masses()
     return [str(m) for m in masses]
@@ -111,14 +118,14 @@ def update_mass(root, atoms, f_deut=False, m_d=2.0141):
     """
     masses = get_masses(atoms, f_deut, m_d)
     if f_deut:
-        masses_element = et.Element('masses', {'mode': 'manual', 'units': 'ase'})
+        masses_element = et.Element("masses", {"mode": "manual", "units": "ase"})
         masses_element.text = list_to_string(masses)
-        for rank in root.iter('initialize'):
+        for rank in root.iter("initialize"):
             rank.append(masses_element)
     return masses
 
 
-def update_file(root, filename='init.xyz', units='angstrom'):
+def update_file(root, filename="init.xyz", units="angstrom"):
     """Updates the 'file' element within 'initialize' elements in the XML tree.
 
     Parameters
@@ -130,12 +137,12 @@ def update_file(root, filename='init.xyz', units='angstrom'):
     units : str, optional
         The units to set for the 'file' element. Default is 'angstrom'.
     """
-    for rank in root.iter('initialize'):
+    for rank in root.iter("initialize"):
         for child in rank:
             if child.tag == "file":
                 child.text = filename
-                child.set('mode', get_file_extension(filename).replace('.', ''))
-                child.set('units', units)
+                child.set("mode", get_file_extension(filename).replace(".", ""))
+                child.set("units", units)
 
 
 def update_cell(root, atoms):
@@ -149,13 +156,13 @@ def update_cell(root, atoms):
         An object representing the atoms, which must have a `get_cell` method that returns an object with a `lengths` method.
     """
     cell_l = atoms.get_cell().lengths()
-    for rank in root.iter('initialize'):
-        cell_element = rank.find('cell')
+    for rank in root.iter("initialize"):
+        cell_element = rank.find("cell")
         if cell_element is None:
-            cell_element = et.SubElement(rank, 'cell')
-        cell_element.attrib['units'] = 'angstrom'
-        cell_element.attrib['mode'] = 'abc'
-        cell_element.text = f'[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]'
+            cell_element = et.SubElement(rank, "cell")
+        cell_element.attrib["units"] = "angstrom"
+        cell_element.attrib["mode"] = "abc"
+        cell_element.text = f"[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]"
 
 
 def update_driver(root, atoms, f_driver):
@@ -170,60 +177,69 @@ def update_driver(root, atoms, f_driver):
     f_driver : str
         The type of driver to use.
     """
-    assert f_driver in ["zundel", "cbe", "mace", "ase-mace","ase-qmmm-mace", "ase-nwchem", "ase-orca", "nwchem"]
+    assert f_driver in [
+        "zundel",
+        "cbe",
+        "mace",
+        "ase-mace",
+        "ase-qmmm-mace",
+        "ase-nwchem",
+        "ase-orca",
+        "nwchem",
+    ]
     f_pbcs = has_pbc(atoms)
     if f_driver == "zundel":
-        for rank in root.iter('ffsocket'):
-            rank.attrib.update({'name': 'driver', 'mode': 'unix'})
-            rank.attrib.pop('pbc', None)
+        for rank in root.iter("ffsocket"):
+            rank.attrib.update({"name": "driver", "mode": "unix"})
+            rank.attrib.pop("pbc", None)
             for child in rank:
-                if child.tag == 'address':
-                    child.text = 'zundel'
-        for rank in root.iter('forces'):
+                if child.tag == "address":
+                    child.text = "zundel"
+        for rank in root.iter("forces"):
             for child in rank:
-                if child.tag == 'force':
-                    child.attrib['forcefield'] = 'driver'
+                if child.tag == "force":
+                    child.attrib["forcefield"] = "driver"
 
     elif f_driver == "cbe":
-        for rank in root.iter('ffsocket'):
-            rank.attrib.update({'name': 'cbe', 'mode': 'unix'})
-            rank.attrib.pop('pbc', None)
+        for rank in root.iter("ffsocket"):
+            rank.attrib.update({"name": "cbe", "mode": "unix"})
+            rank.attrib.pop("pbc", None)
             for child in rank:
-                if child.tag == 'address':
-                    child.text = 'localhost'
-        for rank in root.iter('forces'):
+                if child.tag == "address":
+                    child.text = "localhost"
+        for rank in root.iter("forces"):
             for child in rank:
-                if child.tag == 'force':
-                    child.attrib['forcefield'] = 'cbe'
+                if child.tag == "force":
+                    child.attrib["forcefield"] = "cbe"
 
     elif f_driver == "ase-orca":
         print("Using ASE-ORCA driver", flush=True)
-        for rank in root.iter('ffsocket'):
-            rank.attrib.update({'name': 'driver', 'mode': 'inet', 'pbc': str(f_pbcs)})
+        for rank in root.iter("ffsocket"):
+            rank.attrib.update({"name": "driver", "mode": "inet", "pbc": str(f_pbcs)})
             for child in rank:
-                if child.tag == 'address':
-                    child.text = 'localhost'
-                elif child.tag == 'port':
-                    child.text = '10200'
-            if rank.find('port') is None:
-                port_elem = et.SubElement(rank, 'port')
-                port_elem.text = '10200'
+                if child.tag == "address":
+                    child.text = "localhost"
+                elif child.tag == "port":
+                    child.text = "10200"
+            if rank.find("port") is None:
+                port_elem = et.SubElement(rank, "port")
+                port_elem.text = "10200"
 
-        for rank in root.iter('forces'):
+        for rank in root.iter("forces"):
             for child in rank:
-                if child.tag == 'force':
-                    child.attrib['forcefield'] = 'driver'
+                if child.tag == "force":
+                    child.attrib["forcefield"] = "driver"
 
     elif f_driver in ["mace", "ase-mace", "ase-qmmm-mace", "ase-nwchem", "nwchem"]:
-        for rank in root.iter('ffsocket'):
-            rank.attrib.update({'name': 'driver', 'mode': 'unix', 'pbc': str(f_pbcs)})
+        for rank in root.iter("ffsocket"):
+            rank.attrib.update({"name": "driver", "mode": "unix", "pbc": str(f_pbcs)})
             for child in rank:
-                if child.tag == 'address':
-                    child.text = 'driver'
-        for rank in root.iter('forces'):
+                if child.tag == "address":
+                    child.text = "driver"
+        for rank in root.iter("forces"):
             for child in rank:
-                if child.tag == 'force':
-                    child.attrib['forcefield'] = 'driver'
+                if child.tag == "force":
+                    child.attrib["forcefield"] = "driver"
 
 
 def update_nbeads(root, n_beads):
@@ -236,8 +252,8 @@ def update_nbeads(root, n_beads):
     n_beads : int
         The number of beads to set in the 'initialize' elements.
     """
-    for rank in root.iter('initialize'):
-        rank.set('nbeads', str(n_beads))
+    for rank in root.iter("initialize"):
+        rank.set("nbeads", str(n_beads))
 
 
 def update_hessian(root, n_doft, n_beads):
@@ -252,8 +268,8 @@ def update_hessian(root, n_doft, n_beads):
     n_beads : int
         The number of beads.
     """
-    for subchild in root.iterfind('.//motion/instanton/hessian'):
-        subchild.attrib['shape'] = f'({int(n_doft)}, {int(n_doft * n_beads)})'
+    for subchild in root.iterfind(".//motion/instanton/hessian"):
+        subchild.attrib["shape"] = f"({int(n_doft)}, {int(n_doft * n_beads)})"
 
 
 def update_temperature(root, temperature):
@@ -267,10 +283,10 @@ def update_temperature(root, temperature):
         The temperature value to set.
     """
     # update the temperature in the ensemble section
-    for child in root.iterfind('.//ensemble/temperature'):
+    for child in root.iterfind(".//ensemble/temperature"):
         child.text = str(temperature)
     # update the temperature in the velocity section
-    for child in root.iterfind('.//initialize/velocities'):
+    for child in root.iterfind(".//initialize/velocities"):
         child.text = str(temperature)
 
 
@@ -284,8 +300,8 @@ def update_title(root, title):
     title : str
         The title to set in the 'output' elements.
     """
-    for rank in root.iter('output'):
-        rank.set('prefix', title)
+    for rank in root.iter("output"):
+        rank.set("prefix", title)
 
 
 def update_total_steps(root, total_steps):
@@ -298,7 +314,7 @@ def update_total_steps(root, total_steps):
     total_steps : int
         The total number of steps to set.
     """
-    for rank in root.iter('total_steps'):
+    for rank in root.iter("total_steps"):
         rank.text = str(total_steps)
 
 
@@ -312,8 +328,8 @@ def update_optimiser(root, optimiser_mode):
     optimiser_mode : str
         The mode to set in the optimiser element.
     """
-    for rank in root.iter('optimizer'):
-        rank.set('mode', optimiser_mode)
+    for rank in root.iter("optimizer"):
+        rank.set("mode", optimiser_mode)
 
 
 def update_tol(root, energy, force, position):
@@ -330,16 +346,16 @@ def update_tol(root, energy, force, position):
     position : float
         The position tolerance value to set.
     """
-    for rank in root.iter('optimizer'):
-        for child in rank.iter('tolerances'):
-            child.find('energy').text = str(energy)
-            child.find('force').text = str(force)
-            child.find('position').text = str(position)
-    for rank in root.iter('instanton'):
-        for child in rank.iter('tolerances'):
-            child.find('energy').text = str(energy)
-            child.find('force').text = str(force)
-            child.find('position').text = str(position)
+    for rank in root.iter("optimizer"):
+        for child in rank.iter("tolerances"):
+            child.find("energy").text = str(energy)
+            child.find("force").text = str(force)
+            child.find("position").text = str(position)
+    for rank in root.iter("instanton"):
+        for child in rank.iter("tolerances"):
+            child.find("energy").text = str(energy)
+            child.find("force").text = str(force)
+            child.find("position").text = str(position)
 
 
 def update_open_paths(root, n_atoms):
@@ -353,7 +369,7 @@ def update_open_paths(root, n_atoms):
         The number of atoms to generate the open paths list.
     """
     open_paths = list(range(n_atoms))
-    for child in root.iterfind('.//normal_modes/open_paths'):
+    for child in root.iterfind(".//normal_modes/open_paths"):
         child.text = str(open_paths)
 
 
@@ -367,7 +383,7 @@ def update_timestep(root, timestep):
     timestep : float
         The timestep value to set.
     """
-    for child in root.iterfind('.//motion/dynamics/timestep'):
+    for child in root.iterfind(".//motion/dynamics/timestep"):
         child.text = str(timestep)
 
 
@@ -382,8 +398,8 @@ def update_stride(root, stride):
         The new stride value to set for the elements.
     """
     for element in root.iter():
-        if element.tag in ['properties', 'trajectory']:
-            element.set('stride', str(stride))
+        if element.tag in ["properties", "trajectory"]:
+            element.set("stride", str(stride))
 
 
 def update_checkpoint_stride(root, stride):
@@ -396,9 +412,9 @@ def update_checkpoint_stride(root, stride):
     stride : int
         The new stride value to set for the checkpoint elements.
     """
-    for output in root.iter('output'):
-        for checkpoint in output.iter('checkpoint'):
-            checkpoint.set('stride', str(stride))
+    for output in root.iter("output"):
+        for checkpoint in output.iter("checkpoint"):
+            checkpoint.set("stride", str(stride))
 
 
 def find_parent(root, child):
@@ -429,15 +445,17 @@ def add_plumed_smotion_section(root):
     root : Element
         The root element of the XML tree.
     """
-    smotion = et.Element('smotion', {'mode': 'metad'})
-    metad = et.SubElement(smotion, 'metad')
-    metaff_element = et.SubElement(metad, 'metaff')
-    metaff_element.text = '[ plumed ]'
-    for simulation in root.iter('simulation'):
+    smotion = et.Element("smotion", {"mode": "metad"})
+    metad = et.SubElement(smotion, "metad")
+    metaff_element = et.SubElement(metad, "metaff")
+    metaff_element.text = "[ plumed ]"
+    for simulation in root.iter("simulation"):
         simulation.append(smotion)
 
 
-def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{angstrom}"):
+def add_trajectory_centroid(
+    root, stride="10", filename="xc", text="x_centroid{angstrom}"
+):
     """Adds a <trajectory> element to the <output> tag in the XML tree.
 
     Parameters
@@ -451,13 +469,11 @@ def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{a
     text : str, optional
         The text content for the trajectory element. Default is "x_centroid{angstrom}".
     """
-    trajectory = et.Element('trajectory', {
-        'stride': str(stride),
-        'filename': filename,
-        'format': 'xyz'
-    })
+    trajectory = et.Element(
+        "trajectory", {"stride": str(stride), "filename": filename, "format": "xyz"}
+    )
     trajectory.text = text
-    for output in root.iter('output'):
+    for output in root.iter("output"):
         output.append(trajectory)
 
 
@@ -473,18 +489,23 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
     stride : int, optional
         The stride attribute for the trajectory element. Default is 10.
     """
-    trajectory = et.Element('trajectory', {
-        'stride': str(stride),
-        'filename': 'colvar',
-        'bead': '0',
-        'extra_type': ','.join(plumed_extras)
-    })
-    trajectory.text = 'extras_bias'
-    for output in root.iter('output'):
+    trajectory = et.Element(
+        "trajectory",
+        {
+            "stride": str(stride),
+            "filename": "colvar",
+            "bead": "0",
+            "extra_type": ",".join(plumed_extras),
+        },
+    )
+    trajectory.text = "extras_bias"
+    for output in root.iter("output"):
         output.append(trajectory)
 
 
-def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+def add_plumed_ff_section(
+    root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"
+):
     """Adds a PLUMED force field section to the XML tree.
 
     Parameters
@@ -498,20 +519,22 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
     plumed_dat : str, optional
         The name of the PLUMED data file to use. Default is "plumed.dat".
     """
-    ffplumed = et.Element('ffplumed', {'name': 'plumed'})
+    ffplumed = et.Element("ffplumed", {"name": "plumed"})
 
-    file_element = et.SubElement(ffplumed, 'file', {'mode': 'xyz', 'units': 'angstrom', 'cell_units': 'angstrom'})
+    file_element = et.SubElement(
+        ffplumed, "file", {"mode": "xyz", "units": "angstrom", "cell_units": "angstrom"}
+    )
     file_element.text = file_name
 
-    plumed_dat_element = et.SubElement(ffplumed, 'plumed_dat')
+    plumed_dat_element = et.SubElement(ffplumed, "plumed_dat")
     plumed_dat_element.text = plumed_dat
 
     if plumed_extras is not None:
-        plumed_plumed_extras_element = et.SubElement(ffplumed, 'plumed_extras')
+        plumed_plumed_extras_element = et.SubElement(ffplumed, "plumed_extras")
         plumed_plumed_extras_element.text = list_to_string(plumed_extras)
 
     # Insert the ffplumed section after the ffsocket element
-    for ffsocket in root.iter('ffsocket'):
+    for ffsocket in root.iter("ffsocket"):
         parent = find_parent(root, ffsocket)
         if parent is not None:
             index = list(parent).index(ffsocket)
@@ -530,20 +553,24 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
     nbeads : int, optional
         The number of beads to set in the force element. Default is 1.
     """
-    bias = et.Element('bias')
+    bias = et.Element("bias")
 
-    force = et.SubElement(bias, 'force', {'forcefield': 'plumed', 'nbeads': str(nbeads)})
+    force = et.SubElement(
+        bias, "force", {"forcefield": "plumed", "nbeads": str(nbeads)}
+    )
     if plumed_extras is not None:
-        plumed_extras_element = et.SubElement(force, 'interpolate_extras')
+        plumed_extras_element = et.SubElement(force, "interpolate_extras")
         plumed_extras_element.text = list_to_string(plumed_extras)
 
-    for ensemble in root.iter('ensemble'):
-        for temperature in ensemble.iter('temperature'):
+    for ensemble in root.iter("ensemble"):
+        for temperature in ensemble.iter("temperature"):
             index = list(ensemble).index(temperature)
             ensemble.insert(index + 1, bias)
 
 
-def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
+def add_plumed_xml(
+    root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"
+):
     """Adds PLUMED-related sections to the XML tree.
 
     Parameters
@@ -557,19 +584,16 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
     plumed_dat : str, optional
         The name of the PLUMED data file to use. Default is "plumed.dat".
     """
-    add_plumed_ff_section(root,
-                          plumed_extras=plumed_extras,
-                          file_name=file_name,
-                          plumed_dat=plumed_dat)
-    add_plumed_bias_section(root,
-                            plumed_extras=plumed_extras,
-                            nbeads=1)
+    add_plumed_ff_section(
+        root, plumed_extras=plumed_extras, file_name=file_name, plumed_dat=plumed_dat
+    )
+    add_plumed_bias_section(root, plumed_extras=plumed_extras, nbeads=1)
     add_plumed_smotion_section(root)
 
     add_trajectory_plumed_extras(root, plumed_extras)
 
 
-def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
+def add_trajectory_file(root, filename="pos", stride=20, text="positions"):
     """Adds or updates a <trajectory> element in the <output> tag in the XML tree.
     If a trajectory element with the same filename exists, updates it;
     otherwise adds a new element.
@@ -594,13 +618,12 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
     if output_element is not None:
         existing_traj = output_element.find(f".//trajectory[@filename='{filename}']")
         if existing_traj is not None:
-            existing_traj.set('stride', str(stride))
+            existing_traj.set("stride", str(stride))
             existing_traj.text = text
         else:
-            new_trajectory = et.Element('trajectory', {
-                'filename': filename,
-                'stride': str(stride)
-            })
+            new_trajectory = et.Element(
+                "trajectory", {"filename": filename, "stride": str(stride)}
+            )
             new_trajectory.text = text
             output_element.append(new_trajectory)
     else:
@@ -624,13 +647,13 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
 
     tree = et.parse(os.path.join(xml_path, thermostat + ".xml"))
 
-    for thermostat in root.iter('thermostat'):
+    for thermostat in root.iter("thermostat"):
         parent = find_parent(root, thermostat)
         if parent is not None:
             parent.remove(thermostat)
 
-    for thermostat in tree.iter('thermostat'):
-        for rank in root.iter('dynamics'):
+    for thermostat in tree.iter("thermostat"):
+        for rank in root.iter("dynamics"):
             rank.append(thermostat)
 
 

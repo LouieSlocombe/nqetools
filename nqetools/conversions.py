@@ -16,7 +16,7 @@ J_to_kJ = 1.0e-3
 avo_num = const["Avogadro constant"][0]  # mol^-1
 
 eV_to_kJpermol = eV_to_J * J_to_kJ * avo_num
-eVperA2_to_kJpermolpernm2 = eV_to_kJpermol / A_to_nm ** 2
+eVperA2_to_kJpermolpernm2 = eV_to_kJpermol / A_to_nm**2
 
 
 def convert_atom_list_bohr_to_angstrom(atoms_list: list[Atoms]) -> list[Atoms]:

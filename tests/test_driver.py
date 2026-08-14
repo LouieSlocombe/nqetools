@@ -20,7 +20,7 @@ def test_zundel_driver():
     atoms = nqe.read_ipi_xyz("data/h5o2+.xyz")[-1]
 
     directory = "zundel_opti"
-    nqe.run_optimise(directory, atoms, driver='zundel', total_steps=2)
+    nqe.run_optimise(directory, atoms, driver="zundel", total_steps=2)
     nqe.remove_directory(directory)
     pass
 
@@ -33,7 +33,7 @@ def test_cbe_driver():
     atoms = nqe.read_ipi_xyz("data/ch4hcbe.xyz")[-1]
 
     directory = "cbe_opti"
-    nqe.run_optimise(directory, atoms, driver='cbe', total_steps=2)
+    nqe.run_optimise(directory, atoms, driver="cbe", total_steps=2)
     nqe.remove_directory(directory)
     pass
 
@@ -43,11 +43,11 @@ def test_ase_mace_driver():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
 
     directory = "mace_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-mace', total_steps=2)
+    nqe.run_optimise(directory, atoms, driver="ase-mace", total_steps=2)
     nqe.remove_directory(directory)
     pass
 
@@ -57,13 +57,17 @@ def test_mace_driver():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
 
     directory = "mace_opti"
-    driver = 'mace'
-    driver_args = {'model': f'/home/{getpass.getuser()}/.cache/mace/MACE-OFF23_small.model'}
-    nqe.run_optimise(directory, atoms, driver=driver, driver_args=driver_args, total_steps=2)
+    driver = "mace"
+    driver_args = {
+        "model": f"/home/{getpass.getuser()}/.cache/mace/MACE-OFF23_small.model"
+    }
+    nqe.run_optimise(
+        directory, atoms, driver=driver, driver_args=driver_args, total_steps=2
+    )
     nqe.remove_directory(directory)
     pass
 
@@ -73,15 +77,19 @@ def test_ase_mace_driver_omol():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
 
     directory = "mace_opti"
-    driver_args = {'model_type': 'omol',
-                   'model': 'extra_large',
-                   'device': 'cuda',
-                   'default_dtype': 'float32'}
-    nqe.run_optimise(directory, atoms, driver='ase-mace', driver_args=driver_args, total_steps=2)
+    driver_args = {
+        "model_type": "omol",
+        "model": "extra_large",
+        "device": "cuda",
+        "default_dtype": "float32",
+    }
+    nqe.run_optimise(
+        directory, atoms, driver="ase-mace", driver_args=driver_args, total_steps=2
+    )
     nqe.remove_directory(directory)
     pass
 
@@ -91,12 +99,11 @@ def test_ase_mace_driver_omol_eq():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
     from mace.calculators import mace_omol
-    atoms.calc = mace_omol(device="cuda",
-                           default_dtype="float64",
-                           enable_cueq=False)
+
+    atoms.calc = mace_omol(device="cuda", default_dtype="float64", enable_cueq=False)
 
     directory = "mace_opti"
     nqe.remove_directory(directory)
@@ -108,26 +115,26 @@ def test_ase_mace_driver_qmmm():
     print(flush=True)
     print("Testing MACE driver", flush=True)
 
-    atoms1 = ase.build.molecule('H2O')
-    atoms2 = ase.build.molecule('H2O')
+    atoms1 = ase.build.molecule("H2O")
+    atoms2 = ase.build.molecule("H2O")
     atoms2.translate([0.0, 0.0, 3.0])
     atoms = atoms1 + atoms2
 
     atoms.center(vacuum=10.0)
 
     directory = "mace_opti"
-    driver_args = {'qm_indices': [0],
-                   'qm_model_type': 'omol',
-                   'qm_model': 'extra_large',
-                   'mm_model_type': 'off',
-                   'mm_model': 'small',
-                   'device': 'cuda',
-                   'default_dtype': 'float32'}
-    nqe.run_optimise(directory,
-                     atoms,
-                     driver='ase-qmmm-mace',
-                     total_steps=2,
-                     driver_args=driver_args)
+    driver_args = {
+        "qm_indices": [0],
+        "qm_model_type": "omol",
+        "qm_model": "extra_large",
+        "mm_model_type": "off",
+        "mm_model": "small",
+        "device": "cuda",
+        "default_dtype": "float32",
+    }
+    nqe.run_optimise(
+        directory, atoms, driver="ase-qmmm-mace", total_steps=2, driver_args=driver_args
+    )
     nqe.remove_directory(directory)
     pass
 
@@ -142,11 +149,13 @@ def test_ase_orca_driver():
     print(flush=True)
     print("Testing ORCA driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
 
     directory = "orca_opti"
-    nqe.run_optimise(directory, atoms, driver='ase-orca', driver_args={'n_procs': 1}, total_steps=2)
+    nqe.run_optimise(
+        directory, atoms, driver="ase-orca", driver_args={"n_procs": 1}, total_steps=2
+    )
     nqe.remove_directory(directory)
     pass
 
@@ -156,21 +165,21 @@ def test_ase_orca_driver_qmmm():
     print(flush=True)
     print("Testing ORCA driver", flush=True)
 
-    atoms1 = ase.build.molecule('H2O')
-    atoms2 = ase.build.molecule('H2O')
+    atoms1 = ase.build.molecule("H2O")
+    atoms2 = ase.build.molecule("H2O")
     atoms2.translate([0.0, 0.0, 3.0])
     atoms = atoms1 + atoms2
 
     atoms.center(vacuum=10.0)
 
     directory = "orca_opti"
-    nqe.run_optimise(directory,
-                     atoms,
-                     driver='ase-orca',
-                     total_steps=2,
-                     driver_args={'calc_type': 'QM/XTB2',
-                                  'atom_list': '0:2',
-                                  'n_procs': 1})
+    nqe.run_optimise(
+        directory,
+        atoms,
+        driver="ase-orca",
+        total_steps=2,
+        driver_args={"calc_type": "QM/XTB2", "atom_list": "0:2", "n_procs": 1},
+    )
     nqe.remove_directory(directory)
     pass
 
@@ -186,12 +195,12 @@ def test_ase_nwchem_driver():
     print(flush=True)
     print("Testing NWChem driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
 
     directory = "nwchem_opti"
 
-    nqe.run_optimise(directory, atoms, driver='ase-nwchem', total_steps=2)
+    nqe.run_optimise(directory, atoms, driver="ase-nwchem", total_steps=2)
     nqe.remove_directory(directory)
     pass
 
@@ -207,11 +216,11 @@ def test_nwchem_driver():
     print(flush=True)
     print("Testing NWChem driver", flush=True)
 
-    atoms = ase.build.molecule('H2O')
+    atoms = ase.build.molecule("H2O")
     atoms.center(vacuum=5.0)
 
     directory = "nwchem_opti"
 
-    nqe.run_optimise(directory, atoms, driver='nwchem', total_steps=2)
+    nqe.run_optimise(directory, atoms, driver="nwchem", total_steps=2)
     nqe.remove_directory(directory)
     pass

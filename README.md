@@ -160,7 +160,7 @@ import reactiontools as rt
 
 calc = rt.orca_calc_preset(**rt.orca_preset_dft_gold)
 
-surfaces = rt.sum_hills_files("FES")               # FES0.dat, FES1.dat, ...
+surfaces = rt.sum_hills_files("FES")  # FES0.dat, FES1.dat, ...
 rt.plot_fes_1d(surfaces, source_unit="kJ/mol", energy_unit="eV")
 ```
 

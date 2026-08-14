@@ -29,6 +29,7 @@ instanton run needs::
     python postproc.py RESTART -c reactant  -t 10 -n 32
     python postproc.py RESTART -c instanton -t 10 -freq eigenvalues_reactant.dat
 """
+
 import argparse
 import sys
 
@@ -173,7 +174,7 @@ def get_double(q0, nbeads0, natoms, h0):
     for i in range(nbeads0):
         x = i * ii + iii
         y = ((nbeads0 - 1) - i) * ii
-        h[x: x + ii, x: x + ii] = h0[y: y + ii, y: y + ii]
+        h[x : x + ii, x : x + ii] = h0[y : y + ii, y : y + ii]
 
     return q, nbeads, h
 
@@ -290,7 +291,10 @@ def get_rp_freq(w0, nbeads, temp, mode="rate"):
     ww = []
 
     if np.amin(w0) < 0.0:
-        print("@get_rp_freq: We have a negative frequency, something is going wrong.", flush=True)
+        print(
+            "@get_rp_freq: We have a negative frequency, something is going wrong.",
+            flush=True,
+        )
         sys.exit()
 
     if mode == "rate":
@@ -360,7 +364,9 @@ def save_frequencies(d, nzeros, filename="freq.dat"):
     print(f"We saved the frequencies in {filename}", flush=True)
 
 
-print(f"\nWe are ready to start. Reading {inputt} ... (This can take a while)", flush=True)
+print(
+    f"\nWe are ready to start. Reading {inputt} ... (This can take a while)", flush=True
+)
 
 simulation = Simulation.load_from_xml(
     open(inputt), custom_verbosity="quiet", request_banner=False, read_only=True
@@ -374,7 +380,8 @@ natoms = simulation.syslist[0].motion.beads.natoms
 if case == "reactant":
     if nbeadsR == 0:
         print(
-            "We have to specify number of beads for computing the partition function in the reactant case", flush=True
+            "We have to specify number of beads for computing the partition function in the reactant case",
+            flush=True,
         )
         sys.exit()
 
@@ -421,7 +428,8 @@ elif case == "instanton":
 
     if np.absolute(temp - temp2) / K2au > 2:
         print(
-            "\n Mismatch between provided temperature and temperature in the calculation", flush=True
+            "\n Mismatch between provided temperature and temperature in the calculation",
+            flush=True,
         )
         sys.exit()
 
@@ -440,9 +448,12 @@ elif case == "instanton":
         if input_freq is None:
             print(
                 'Please provide a name of the file containing the list of the frequencies for the minimum using "-freq" flag',
-                flush=True
+                flush=True,
             )
-            print(" You can generate that file using this script in the case reactant.", flush=True)
+            print(
+                " You can generate that file using this script in the case reactant.",
+                flush=True,
+            )
             sys.exit()
 
         print((f"Our linear polymer has  {nbeads}"), flush=True)
@@ -459,7 +470,7 @@ elif case == "instanton":
             if asr != "none":
                 print(
                     "We are changing asr to none since we consider a fixed ended linear polimer for the post-processing",
-                    flush=True
+                    flush=True,
                 )
                 asr = "none"
     else:
@@ -491,10 +502,10 @@ if not quiet or case == "reactant" or case == "TS":
     save_frequencies(d, nzeros)
 
 if case == "reactant":
-    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
+    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar**2)) ** 1.5
 
     if asr == "poly":
-        Qrot = (8 * np.pi * detI / (hbar ** 6 * beta ** 3)) ** 0.5
+        Qrot = (8 * np.pi * detI / (hbar**6 * beta**3)) ** 0.5
     else:
         Qrot = 1.0
 
@@ -510,21 +521,22 @@ if case == "reactant":
     outfile.close()
 
     print((f"\nWe are done. Reactants. Nbeads {nbeadsR}"), flush=True)
-    print(("{:14s} | {:8s} | {:8s}".format("Qtras(bohr^-3)", "Qrot", "logQvib_rp")), flush=True)
+    print(
+        ("{:14s} | {:8s} | {:8s}".format("Qtras(bohr^-3)", "Qrot", "logQvib_rp")),
+        flush=True,
+    )
     print((f"{Qtras:14.3f} | {Qrot:8.3f} |{logQvib_rp:8.3f}\n"), flush=True)
     print("A file with the eigenvalues in atomic units was generated\n", flush=True)
 
 elif case == "TS":
-    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
+    Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar**2)) ** 1.5
 
     if asr == "poly":
-        Qrot = (8 * np.pi * detI / (hbar ** 6 * beta ** 3)) ** 0.5
+        Qrot = (8 * np.pi * detI / (hbar**6 * beta**3)) ** 0.5
     else:
         Qrot = 1.0
 
-    logQvib = -np.sum(
-        np.log(2 * np.sinh(beta * hbar * np.sqrt(np.delete(d, 0)) / 2.0))
-    )
+    logQvib = -np.sum(np.log(2 * np.sinh(beta * hbar * np.sqrt(np.delete(d, 0)) / 2.0)))
 
     U = pots.sum() - V0
 
@@ -534,18 +546,17 @@ elif case == "TS":
     print((f"Qrot: {Qrot}"), flush=True)
     print((f"logQvib: {logQvib}"), flush=True)
     print(
-        (
-            f"Potential energy at TS:  {U / eV2au} eV, V/kBT {U / (kb * temp)}\n"
-        ), flush=True
+        (f"Potential energy at TS:  {U / eV2au} eV, V/kBT {U / (kb * temp)}\n"),
+        flush=True,
     )
 
 elif case == "instanton":
     if mode == "rate":
-        Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar ** 2)) ** 1.5
+        Qtras = ((np.sum(m)) / (2 * np.pi * beta * hbar**2)) ** 1.5
 
         if asr == "poly" and not quiet:
-            Qrot = (8 * np.pi * detI / (hbar ** 6 * betaP ** 3)) ** 0.5
-            Qrot /= nbeads ** 3
+            Qrot = (8 * np.pi * detI / (hbar**6 * betaP**3)) ** 0.5
+            Qrot /= nbeads**3
         else:
             Qrot = 1.0
 
@@ -559,12 +570,13 @@ elif case == "instanton":
                 ten_eigv = np.sign(d[0:10]) * np.absolute(d[0:10]) ** 0.5 / cm2au
                 print(f"{ten_eigv}", flush=True)
                 print(
-                    "Please check that this you don't have any unwanted zero frequency", flush=True
+                    "Please check that this you don't have any unwanted zero frequency",
+                    flush=True,
                 )
             logQvib = (
-                    -np.sum(np.log(betaP * hbar * np.sqrt(np.absolute(np.delete(d, 1)))))
-                    + nzeros * np.log(nbeads)
-                    + np.log(nbeads)
+                -np.sum(np.log(betaP * hbar * np.sqrt(np.absolute(np.delete(d, 1)))))
+                + nzeros * np.log(nbeads)
+                + np.log(nbeads)
             )
         else:
             logQvib = 0.0
@@ -575,7 +587,8 @@ elif case == "instanton":
         action2 = spring_pot(nbeads, pos, omega2, m3) / (temp * nbeads * kb)
 
         print(
-            f"\nWe are done. Instanton rate. Nbeads {nbeads} (diff only {nbeads / 2})", flush=True
+            f"\nWe are done. Instanton rate. Nbeads {nbeads} (diff only {nbeads / 2})",
+            flush=True,
         )
         print(
             "   {:8s} {:8s}  | {:11s} | {:11s} | {:11s} | {:8s} ( {:8s},{:8s} ) |".format(
@@ -587,10 +600,12 @@ elif case == "instanton":
                 "S/hbar",
                 "S1/hbar",
                 "S2/hbar",
-            ), flush=True
+            ),
+            flush=True,
         )
         print(
-            f"{BN:8.3f} ( {BN * nbeads:8.3f} ) | {Qtras:11.3f} | {Qrot:11.3f} | {logQvib:11.3f} | {action1 + action2:8.3f} ( {action1:8.3f} {action2:8.3f} ) |", flush=True
+            f"{BN:8.3f} ( {BN * nbeads:8.3f} ) | {Qtras:11.3f} | {Qrot:11.3f} | {logQvib:11.3f} | {action1 + action2:8.3f} ( {action1:8.3f} {action2:8.3f} ) |",
+            flush=True,
         )
         print("\n\n", flush=True)
 
@@ -605,7 +620,7 @@ elif case == "instanton":
             d_min[i] = float(aux[i])
         d_min = d_min.reshape(natoms * 3)
         out.close()
-        ww = get_rp_freq(np.sign(d_min) * d_min ** 2, nbeads, temp, mode="splitting")
+        ww = get_rp_freq(np.sign(d_min) * d_min**2, nbeads, temp, mode="splitting")
         react = np.sum(np.log(ww))
 
         action1 = (pots.sum() - nbeads * V0) * 1 / (temp * nbeads * kb)
@@ -613,7 +628,8 @@ elif case == "instanton":
         action = action1 + action2
         if action / hbar > 5.0:
             print(
-                "WARNING, S/h seems to big. Probably a proper energy shift is missing.", flush=True
+                "WARNING, S/h seems to big. Probably a proper energy shift is missing.",
+                flush=True,
             )
 
         BN = np.sum(beads.m3[1:, :] * (beads.q[1:, :] - beads.q[:-1, :]) ** 2)
@@ -625,7 +641,7 @@ elif case == "instanton":
             phi = 1
 
         tetaphi = (
-                betaP * hbar * np.sqrt(action / (2 * hbar * np.pi)) * np.exp(-action / hbar)
+            betaP * hbar * np.sqrt(action / (2 * hbar * np.pi)) * np.exp(-action / hbar)
         )
         teta = tetaphi / phi
         h = -teta / betaP
@@ -635,22 +651,28 @@ elif case == "instanton":
         print("", flush=True)
         print(f"V0  {V0 / eV2au} eV ( {V0 / cal2au / 1000} Kcal/mol) ", flush=True)
         print(
-            f"S1/hbar {action1 / hbar} ,S2/hbar {action2 / hbar} ,S/hbar {action / hbar}", flush=True
+            f"S1/hbar {action1 / hbar} ,S2/hbar {action2 / hbar} ,S/hbar {action / hbar}",
+            flush=True,
         )
         print(f"BN {BN} a.u.", flush=True)
         print(
-            f"BN/(hbar^2 * betaN)  {BN / ((hbar ** 2) * betaP)}  (should be same as S/hbar) ", flush=True
+            f"BN/(hbar^2 * betaN)  {BN / ((hbar**2) * betaP)}  (should be same as S/hbar) ",
+            flush=True,
         )
         print("", flush=True)
         if quiet:
-            print("phi is not computed because you specified the quiet option", flush=True)
             print(
-                (f"We can provied only Tetaphi which value is {tetaphi} a.u. "), flush=True
+                "phi is not computed because you specified the quiet option", flush=True
+            )
+            print(
+                (f"We can provied only Tetaphi which value is {tetaphi} a.u. "),
+                flush=True,
             )
         else:
             print((f"phi {phi} a.u.   Teta {tetaphi / phi} a.u. "), flush=True)
             print(
-                f"Tunnelling splitting matrix element (h)  {h} a.u ({h / cm2au} cm^-1)", flush=True
+                f"Tunnelling splitting matrix element (h)  {h} a.u ({h / cm2au} cm^-1)",
+                flush=True,
             )
     else:
         print("We can not recongnize the mode.", flush=True)

@@ -25,36 +25,37 @@ def test_openmm_ml():
     """Relax a system with a pure machine-learning potential."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = MLPotential('mace-off23-small')
+    forcefield = MLPotential("mace-off23-small")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA')
-    os.remove('minimized.pdb')
+    nqe.run_openmm_relaxation(modeller, forcefield, platform_name="CUDA")
+    os.remove("minimized.pdb")
 
 
 def test_openmm_ml_mixed_system():
     """Relax a system with a mixed ML/MM potential."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = app.ForceField('amber14-all.xml',
-                                'amber14/tip3pfb.xml')
-    potential = MLPotential('mace-off23-small')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+    potential = MLPotential("mace-off23-small")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
     padding = 1.5
-    box_shape = 'dodecahedron'
-    modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+    box_shape = "dodecahedron"
+    modeller.addSolvent(
+        forcefield, padding=padding * unit.nanometer, boxShape=box_shape
+    )
 
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
-    nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA', potential=potential, ml_idx=ml_atoms)
-    os.remove('minimized.pdb')
+    nqe.run_openmm_relaxation(
+        modeller, forcefield, platform_name="CUDA", potential=potential, ml_idx=ml_atoms
+    )
+    os.remove("minimized.pdb")
 
 
 def test_prepare_ligand_ff():
@@ -62,28 +63,31 @@ def test_prepare_ligand_ff():
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
     cache_name = "gaff-molecules.json"
-    rm_ions = ['Na+', 'Cl-', 'NA']
-    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
-    pdb_data, molecule = nqe.prepare_lig_system(input_pdb,
-                                                rm_ions=rm_ions,
-                                                residue_map=residue_map,
-                                                lig_name='LIG')
+    rm_ions = ["Na+", "Cl-", "NA"]
+    residue_map = {"DGN": "DG", "DTN": "DT", "GTP": "LIG"}
+    pdb_data, molecule = nqe.prepare_lig_system(
+        input_pdb, rm_ions=rm_ions, residue_map=residue_map, lig_name="LIG"
+    )
     modeller = app.Modeller(pdb_data.topology, pdb_data.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
-    nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"),
-                          molecule,
-                          gen_cache=True,
-                          use_cache=False,
-                          cache=cache_name)
+    nqe.prepare_ligand_ff(
+        ("amber14-all.xml", "amber14/tip3pfb.xml"),
+        molecule,
+        gen_cache=True,
+        use_cache=False,
+        cache=cache_name,
+    )
 
     assert os.path.exists(cache_name)
 
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"),
-                                       molecule,
-                                       gen_cache=False,
-                                       use_cache=True,
-                                       cache=cache_name)
+    forcefield = nqe.prepare_ligand_ff(
+        ("amber14-all.xml", "amber14/tip3pfb.xml"),
+        molecule,
+        gen_cache=False,
+        use_cache=True,
+        cache=cache_name,
+    )
     forcefield.createSystem(modeller.topology)
 
     os.remove(cache_name)
@@ -94,35 +98,36 @@ def test_nonstandard_ligand():
     print(flush=True)
     input_pdb = "tests/data/pdb/gt_wob_pol.pdb"
 
-    rm_ions = ['Na+', 'Cl-', 'NA']
-    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
-    pdb_data, molecule = nqe.prepare_lig_system(input_pdb,
-                                                rm_ions=rm_ions,
-                                                residue_map=residue_map,
-                                                lig_name='LIG')
+    rm_ions = ["Na+", "Cl-", "NA"]
+    residue_map = {"DGN": "DG", "DTN": "DT", "GTP": "LIG"}
+    pdb_data, molecule = nqe.prepare_lig_system(
+        input_pdb, rm_ions=rm_ions, residue_map=residue_map, lig_name="LIG"
+    )
     pdb_topology = pdb_data.topology
     pdb_positions = pdb_data.positions
     modeller = app.Modeller(pdb_topology, pdb_positions)
     modeller.deleteWater()
     modeller.addHydrogens()
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule)
+    forcefield = nqe.prepare_ligand_ff(
+        ("amber14-all.xml", "amber14/tip3pfb.xml"), molecule
+    )
 
-    nqe.run_openmm_relaxation(modeller, forcefield, platform_name='CUDA')
-    os.remove('minimized.pdb')
+    nqe.run_openmm_relaxation(modeller, forcefield, platform_name="CUDA")
+    os.remove("minimized.pdb")
 
 
 def _get_total_mass(system):
     """Sum the particle masses of an OpenMM system.
 
-        Parameters
-        ----------
-        system : openmm.System
-            System to total the masses of.
+    Parameters
+    ----------
+    system : openmm.System
+        System to total the masses of.
 
-        Returns
-        -------
-        openmm.unit.Quantity
-            The total mass.
+    Returns
+    -------
+    openmm.unit.Quantity
+        The total mass.
     """
     total_mass = 0.0 * unit.dalton
     for i in range(system.getNumParticles()):
@@ -133,27 +138,27 @@ def _get_total_mass(system):
 def test_deuterate_system():
     """Check deuteration raises the total mass by the expected amount."""
     print(flush=True)
-    pdb = app.PDBFile('tests/data/pdb/input.pdb')
-    forcefield = app.ForceField('amber14/protein.ff14SB.xml', 'amber14/tip3p.xml')
+    pdb = app.PDBFile("tests/data/pdb/input.pdb")
+    forcefield = app.ForceField("amber14/protein.ff14SB.xml", "amber14/tip3p.xml")
     modeller = app.Modeller(pdb.topology, pdb.positions)
-    modeller.addSolvent(forcefield,
-                        model='tip3p',
-                        padding=1.0 * unit.nanometer)
+    modeller.addSolvent(forcefield, model="tip3p", padding=1.0 * unit.nanometer)
 
-    system = forcefield.createSystem(modeller.topology,
-                                     nonbondedMethod=app.PME,
-                                     constraints=app.HBonds,
-                                     rigidWater=True)
+    system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME,
+        constraints=app.HBonds,
+        rigidWater=True,
+    )
 
     mass_before = _get_total_mass(system)
 
     h_count = 0
     for atom in modeller.topology.atoms():
-        if atom.element.symbol == 'H':
+        if atom.element.symbol == "H":
             h_count += 1
 
     print(f"--- Applying Deuteration to {h_count} Hydrogens (Option='water') ---")
-    nqe.deuterate_system(modeller, system, option='all')
+    nqe.deuterate_system(modeller, system, option="all")
 
     mass_after = _get_total_mass(system)
     print(f"{'Mass Before':<20} | {mass_before.value_in_unit(unit.dalton):.4f} Da")
@@ -170,11 +175,17 @@ def test_deuterate_system():
     print(f"{'Mass Before':<20} | {mass_before.value_in_unit(unit.dalton):.4f} Da")
     print(f"{'Mass After':<20} | {mass_after.value_in_unit(unit.dalton):.4f} Da")
     print("-" * 40)
-    print(f"{'Actual Increase':<20} | {(mass_after - mass_before).value_in_unit(unit.dalton):.4f} Da")
-    print(f"{'Expected Increase':<20} | {expected_increase.value_in_unit(unit.dalton):.4f} Da")
+    print(
+        f"{'Actual Increase':<20} | {(mass_after - mass_before).value_in_unit(unit.dalton):.4f} Da"
+    )
+    print(
+        f"{'Expected Increase':<20} | {expected_increase.value_in_unit(unit.dalton):.4f} Da"
+    )
 
     tolerance = 1e-3
-    diff = abs((mass_after - mass_before) - expected_increase).value_in_unit(unit.dalton)
+    diff = abs((mass_after - mass_before) - expected_increase).value_in_unit(
+        unit.dalton
+    )
 
     if diff < tolerance:
         print("\n[SUCCESS] The system mass increased exactly as expected.")
@@ -188,22 +199,26 @@ def test_plumed():
     timestep = 1.0 * unit.femtosecond
     friction_coeff = 1.0 / unit.picosecond
     total_steps = 100_000
-    pdb_file = 'tests/data/pdb/gt_wob_pol.pdb'
-    pdb_out = 'pdb_out.pdb'
+    pdb_file = "tests/data/pdb/gt_wob_pol.pdb"
+    pdb_out = "pdb_out.pdb"
 
-    directory = 'md_plumed'
+    directory = "md_plumed"
     cwd = os.getcwd()
 
-    rm_ions = ['Na+', 'Cl-', 'NA']
-    residue_map = {'DGN': 'DG', 'DTN': 'DT', 'GTP': 'LIG'}
+    rm_ions = ["Na+", "Cl-", "NA"]
+    residue_map = {"DGN": "DG", "DTN": "DT", "GTP": "LIG"}
 
-    pdb_data, molecule = nqe.prepare_lig_system(pdb_file, rm_ions=rm_ions, residue_map=residue_map, rm_files=False)
-    forcefield = nqe.prepare_ligand_ff(("amber14-all.xml", "amber14/tip3pfb.xml"), molecule, pc_methods='am1bcc')
+    pdb_data, molecule = nqe.prepare_lig_system(
+        pdb_file, rm_ions=rm_ions, residue_map=residue_map, rm_files=False
+    )
+    forcefield = nqe.prepare_ligand_ff(
+        ("amber14-all.xml", "amber14/tip3pfb.xml"), molecule, pc_methods="am1bcc"
+    )
 
-    idx1 = nqe.get_atoms_in_residue('combined_system.pdb', 0, chain_id='F')
-    idx2 = nqe.get_atoms_in_residue('combined_system.pdb', 4, chain_id='B')
-    selection_str1 = ','.join([f'{i}' for i in idx1])
-    selection_str2 = ','.join([f'{i}' for i in idx2])
+    idx1 = nqe.get_atoms_in_residue("combined_system.pdb", 0, chain_id="F")
+    idx2 = nqe.get_atoms_in_residue("combined_system.pdb", 4, chain_id="B")
+    selection_str1 = ",".join([f"{i}" for i in idx1])
+    selection_str2 = ",".join([f"{i}" for i in idx2])
 
     nqe.remove_directory(directory)
 
@@ -211,15 +226,15 @@ def test_plumed():
     os.chdir(directory)
 
     modeller = app.Modeller(pdb_data.topology, pdb_data.positions)
-    modeller.addSolvent(forcefield,
-                        padding=1.0 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.0 * unit.nanometer, boxShape="dodecahedron"
+    )
 
     system = forcefield.createSystem(
         modeller.topology,
         nonbondedMethod=app.PME,
         nonbondedCutoff=1.0 * unit.nanometer,
-        constraints=app.HBonds
+        constraints=app.HBonds,
     )
 
     system.addForce(openmm.MonteCarloBarostat(1.0 * unit.bar, temperature, 25))
@@ -232,37 +247,37 @@ opes: METAD ARG=dist PACE=500 HEIGHT=100 SIGMA=0.05 FILE=HILLS
 PRINT ARG=* STRIDE=100 FILE=COLVAR
 FLUSH STRIDE=1
 """
-    with open('plumed.dat', 'w') as f:
+    with open("plumed.dat", "w") as f:
         f.write(plumed_script)
 
     system.addForce(PlumedForce(plumed_script))
-    integrator = openmm.LangevinIntegrator(
-        temperature,
-        friction_coeff,
-        timestep
-    )
+    integrator = openmm.LangevinIntegrator(temperature, friction_coeff, timestep)
 
-    platform = openmm.Platform.getPlatformByName('CUDA')
+    platform = openmm.Platform.getPlatformByName("CUDA")
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
     simulation.context.setPositions(modeller.positions)
     simulation.minimizeEnergy()
 
     simulation.context.setVelocitiesToTemperature(temperature)
-    simulation.reporters.append(app.StateDataReporter(sys.stdout,
-                                                      1000,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      progress=True,
-                                                      remainingTime=True,
-                                                      speed=True,
-                                                      totalSteps=total_steps,
-                                                      separator='\t'))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            sys.stdout,
+            1000,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            progress=True,
+            remainingTime=True,
+            speed=True,
+            totalSteps=total_steps,
+            separator="\t",
+        )
+    )
 
     simulation.reporters.append(app.PDBReporter(pdb_out, 10_000))
 
-    simulation.reporters.append(app.DCDReporter('trajectory.dcd', 10_000))
+    simulation.reporters.append(app.DCDReporter("trajectory.dcd", 10_000))
     simulation.step(total_steps)
 
     os.chdir(cwd)
@@ -272,33 +287,54 @@ FLUSH STRIDE=1
     plot_save = True
     plot_show = True
 
-    nqe.run_plumed_hills(directory,
-                         temperature=300,
-                         bins=n_bins,
-                         cv=cv_limits)
+    nqe.run_plumed_hills(directory, temperature=300, bins=n_bins, cv=cv_limits)
 
     # run_plumed_hills writes FES0.dat, FES1.dat, ... into `directory`; the
     # surfaces are read and plotted by reactiontools, which sorts them by
     # their numeric suffix rather than lexically. PLUMED writes kJ/mol.
-    fes_files = rt.sum_hills_files(os.path.join(directory, 'FES'))
+    fes_files = rt.sum_hills_files(os.path.join(directory, "FES"))
     fes_times = nqe.get_fes_times(2.0, total_steps, fes_files)
 
-    rt.plot_fes_1d(fes_files,
-                   labels=fes_times,
-                   label_template=r"$t={:g}$ ps",
-                   source_unit='kJ/mol',
-                   energy_unit='eV',
-                   filename='fes_md' if plot_save else None,
-                   show=plot_show)
+    rt.plot_fes_1d(
+        fes_files,
+        labels=fes_times,
+        label_template=r"$t={:g}$ ps",
+        source_unit="kJ/mol",
+        energy_unit="eV",
+        filename="fes_md" if plot_save else None,
+        show=plot_show,
+    )
 
 
 def test_get_atoms_in_residue():
     """Look up the atom indices belonging to one residue."""
     print(flush=True)
-    input_pdb = 'tests/data/pdb/input.pdb'
+    input_pdb = "tests/data/pdb/input.pdb"
     indexes = nqe.get_atoms_in_residue(input_pdb, 0)
     print(indexes)
-    ref_indexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    ref_indexes = [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+    ]
     assert indexes == ref_indexes
 
 
@@ -306,77 +342,77 @@ def test_run_openmm_relaxation():
     """Run the staged restrained minimisation."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3p.xml")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    modeller.addSolvent(forcefield,
-                        padding=1.5 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.5 * unit.nanometer, boxShape="dodecahedron"
+    )
     nqe.run_openmm_relaxation(modeller, forcefield)
-    os.remove('minimized.pdb')
+    os.remove("minimized.pdb")
 
 
 def test_run_openmm_heating():
     """Run the staged heating equilibration."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3p.xml")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    modeller.addSolvent(forcefield,
-                        padding=1.5 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.5 * unit.nanometer, boxShape="dodecahedron"
+    )
     nqe.run_openmm_heating(modeller, forcefield)
-    os.remove('equilibrated.pdb')
+    os.remove("equilibrated.pdb")
 
 
 def test_run_openmm_heating_deuterate():
     """Run the staged heating equilibration on a deuterated system."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3p.xml")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    modeller.addSolvent(forcefield,
-                        padding=1.5 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.5 * unit.nanometer, boxShape="dodecahedron"
+    )
     nqe.run_openmm_heating(modeller, forcefield, deuterate=True)
-    os.remove('equilibrated.pdb')
+    os.remove("equilibrated.pdb")
 
 
 def test_run_openmm_npt():
     """Run the constant-pressure equilibration."""
     print(flush=True)
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3p.xml")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    modeller.addSolvent(forcefield,
-                        padding=1.5 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.5 * unit.nanometer, boxShape="dodecahedron"
+    )
     nqe.run_openmm_npt(modeller, forcefield)
-    os.remove('npt_equilibrated.pdb')
+    os.remove("npt_equilibrated.pdb")
 
 
 def test_eq_workflow():
     """Run relaxation, heating and NPT equilibration in sequence."""
     print(flush=True)
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3p.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3p.xml")
     pdb = app.PDBFile("tests/data/pdb/input.pdb")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
-    modeller.addSolvent(forcefield,
-                        padding=1.5 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.5 * unit.nanometer, boxShape="dodecahedron"
+    )
 
     nqe.run_openmm_relaxation(modeller, forcefield)
 
@@ -388,9 +424,9 @@ def test_eq_workflow():
     modeller = app.Modeller(pdb.topology, pdb.positions)
     nqe.run_openmm_npt(modeller, forcefield)
 
-    os.remove('minimized.pdb')
-    os.remove('equilibrated.pdb')
-    os.remove('npt_equilibrated.pdb')
+    os.remove("minimized.pdb")
+    os.remove("equilibrated.pdb")
+    os.remove("npt_equilibrated.pdb")
 
 
 def test_eq_workflow_mixed():
@@ -398,29 +434,30 @@ def test_eq_workflow_mixed():
     print(flush=True)
 
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = app.ForceField('amber14-all.xml',
-                                'amber14/tip3pfb.xml')
-    potential = MLPotential('mace-off23-small')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+    potential = MLPotential("mace-off23-small")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
     padding = 2.0
-    box_shape = 'dodecahedron'
-    modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+    box_shape = "dodecahedron"
+    modeller.addSolvent(
+        forcefield, padding=padding * unit.nanometer, boxShape=box_shape
+    )
 
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
 
-    nqe.run_openmm_relaxation(modeller, forcefield, potential=potential, ml_idx=ml_atoms)
+    nqe.run_openmm_relaxation(
+        modeller, forcefield, potential=potential, ml_idx=ml_atoms
+    )
     nqe.run_openmm_heating(modeller, forcefield, potential=potential, ml_idx=ml_atoms)
     nqe.run_openmm_npt(modeller, forcefield, potential=potential, ml_idx=ml_atoms)
 
-    os.remove('minimized.pdb')
-    os.remove('equilibrated.pdb')
-    os.remove('npt_equilibrated.pdb')
+    os.remove("minimized.pdb")
+    os.remove("equilibrated.pdb")
+    os.remove("npt_equilibrated.pdb")
 
 
 def test_openmm_rpmd():
@@ -454,12 +491,16 @@ def test_openmm_rpmd():
     platform = openmm.Platform.getPlatformByName("CUDA")
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            stdout,
+            report_every,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
 
     nqe.init_beads(modeller, simulation, n_beads)
     simulation.step(n_steps)
@@ -499,12 +540,16 @@ def test_openmm_qtb():
 
     platform = openmm.Platform.getPlatformByName("CUDA")
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            stdout,
+            report_every,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
 
     simulation.step(n_steps)
 
@@ -526,9 +571,9 @@ def test_openmm_rpmd_solvated():
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    modeller.addSolvent(forcefield,
-                        padding=1.0 * unit.nanometer,
-                        boxShape='dodecahedron')
+    modeller.addSolvent(
+        forcefield, padding=1.0 * unit.nanometer, boxShape="dodecahedron"
+    )
 
     has_box = modeller.topology.getUnitCellDimensions() is not None
     system = forcefield.createSystem(
@@ -543,12 +588,16 @@ def test_openmm_rpmd_solvated():
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
     platform = openmm.Platform.getPlatformByName("CUDA")
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            stdout,
+            report_every,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
 
     nqe.init_beads(modeller, simulation, n_beads)
     simulation.step(n_steps)
@@ -565,7 +614,7 @@ def test_openmm_rpmd_ml():
     dt = 0.5 * unit.femtosecond
 
     pdb = app.PDBFile(in_pdb)
-    potential = MLPotential('mace-off23-small')
+    potential = MLPotential("mace-off23-small")
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
@@ -584,12 +633,16 @@ def test_openmm_rpmd_ml():
     platform = openmm.Platform.getPlatformByName("CUDA")
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            stdout,
+            report_every,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
 
     nqe.init_beads(modeller, simulation, n_beads)
     simulation.step(n_steps)
@@ -607,27 +660,29 @@ def test_openmm_rpmd_mixed():
     dt = 0.5 * unit.femtosecond
 
     padding = 1.5
-    box_shape = 'dodecahedron'
+    box_shape = "dodecahedron"
 
     pdb = app.PDBFile(in_pdb)
-    potential = MLPotential('mace-off23-small')
+    potential = MLPotential("mace-off23-small")
     forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
 
     modeller = app.Modeller(pdb.topology, pdb.positions)
     modeller.deleteWater()
     modeller.addHydrogens()
 
-    modeller.addSolvent(forcefield,
-                        padding=padding * unit.nanometer,
-                        boxShape=box_shape)
+    modeller.addSolvent(
+        forcefield, padding=padding * unit.nanometer, boxShape=box_shape
+    )
 
     has_box = modeller.topology.getUnitCellDimensions() is not None
-    mm_system = forcefield.createSystem(modeller.topology,
-                                        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
-                                        nonbondedCutoff=1.0 * unit.nanometer,
-                                        constraints=None,
-                                        rigidWater=False,
-                                        removeCMMotion=True)
+    mm_system = forcefield.createSystem(
+        modeller.topology,
+        nonbondedMethod=app.PME if has_box else app.CutoffNonPeriodic,
+        nonbondedCutoff=1.0 * unit.nanometer,
+        constraints=None,
+        rigidWater=False,
+        removeCMMotion=True,
+    )
 
     chains = list(modeller.topology.chains())
     ml_atoms = [atom.index for atom in chains[0].atoms()]
@@ -636,21 +691,23 @@ def test_openmm_rpmd_mixed():
     print(f"Number of ML atoms: {len(ml_atoms)}", flush=True)
     print(f"Number of MM atoms: {n_atoms - len(ml_atoms)}", flush=True)
 
-    system = potential.createMixedSystem(modeller.topology,
-                                         mm_system,
-                                         ml_atoms)
+    system = potential.createMixedSystem(modeller.topology, mm_system, ml_atoms)
 
     integrator = openmm.RPMDIntegrator(n_beads, temperature, friction, dt)
 
     platform = openmm.Platform.getPlatformByName("CUDA")
     simulation = app.Simulation(modeller.topology, system, integrator, platform)
 
-    simulation.reporters.append(app.StateDataReporter(stdout,
-                                                      report_every,
-                                                      step=True,
-                                                      potentialEnergy=True,
-                                                      temperature=True,
-                                                      speed=True))
+    simulation.reporters.append(
+        app.StateDataReporter(
+            stdout,
+            report_every,
+            step=True,
+            potentialEnergy=True,
+            temperature=True,
+            speed=True,
+        )
+    )
 
     nqe.init_beads(modeller, simulation, n_beads)
     simulation.step(n_steps)
@@ -659,7 +716,7 @@ def test_openmm_rpmd_mixed():
 def test_rpmd_quantum_spread_reporter():
     """Check the quantum spread reporter logs a radius of gyration per atom."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
 
     modeller = app.Modeller(pdb.topology, pdb.positions)
     has_box = modeller.topology.getUnitCellDimensions() is not None
@@ -673,10 +730,9 @@ def test_rpmd_quantum_spread_reporter():
     )
 
     n_beads = 32
-    integrator = openmm.RPMDIntegrator(n_beads,
-                                       300 * unit.kelvin,
-                                       1.0 / unit.picosecond,
-                                       0.5 * unit.femtosecond)
+    integrator = openmm.RPMDIntegrator(
+        n_beads, 300 * unit.kelvin, 1.0 / unit.picosecond, 0.5 * unit.femtosecond
+    )
 
     simulation = app.Simulation(modeller.topology, system, integrator)
     for i in range(n_beads):
@@ -686,22 +742,24 @@ def test_rpmd_quantum_spread_reporter():
     atoms_to_watch = [0, 1]
     atom_names = ["Atom0", "Atom1"]
 
-    simulation.reporters.append(nqe.RPMDQuantumSpreadReporter(
-        file="quantum_spread.txt",
-        reportInterval=1,
-        atom_indices=atoms_to_watch,
-        names=atom_names
-    ))
+    simulation.reporters.append(
+        nqe.RPMDQuantumSpreadReporter(
+            file="quantum_spread.txt",
+            reportInterval=1,
+            atom_indices=atoms_to_watch,
+            names=atom_names,
+        )
+    )
 
     print("Running RPMD with Quantum Spread reporting...")
     simulation.step(500)
     print("Done. Check 'quantum_spread.txt'.")
-    data = np.loadtxt("quantum_spread.txt", skiprows=1, delimiter='\t')
+    data = np.loadtxt("quantum_spread.txt", skiprows=1, delimiter="\t")
 
     plt.plot(data[:, 0], data[:, 1], label=atom_names[0])
     plt.plot(data[:, 0], data[:, 2], label=atom_names[1])
-    plt.xlabel('Step')
-    plt.ylabel('Quantum Rg (nm)')
+    plt.xlabel("Step")
+    plt.ylabel("Quantum Rg (nm)")
     plt.legend()
     plt.show()
 
@@ -711,7 +769,7 @@ def test_rpmd_quantum_spread_reporter():
 def test_rpmd_bead_reporter():
     """Check the bead reporter writes one trajectory file per bead."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
 
     modeller = app.Modeller(pdb.topology, pdb.positions)
     has_box = modeller.topology.getUnitCellDimensions() is not None
@@ -725,31 +783,32 @@ def test_rpmd_bead_reporter():
     )
 
     n_beads = 4
-    integrator = openmm.RPMDIntegrator(n_beads,
-                                       300 * unit.kelvin,
-                                       1.0 / unit.picosecond,
-                                       0.5 * unit.femtosecond)
+    integrator = openmm.RPMDIntegrator(
+        n_beads, 300 * unit.kelvin, 1.0 / unit.picosecond, 0.5 * unit.femtosecond
+    )
 
     simulation = app.Simulation(modeller.topology, system, integrator)
 
     nqe.init_beads(modeller, simulation, n_beads)
 
-    simulation.reporters.append(nqe.RPMDBeadReporter(
-        topology=modeller.topology,
-        file_base_name="out",
-        reportInterval=10,
-        num_beads=n_beads,
-    ))
+    simulation.reporters.append(
+        nqe.RPMDBeadReporter(
+            topology=modeller.topology,
+            file_base_name="out",
+            reportInterval=10,
+            num_beads=n_beads,
+        )
+    )
 
     simulation.step(100)
     for i in range(n_beads):
-        os.remove(f'out_bead_{i}.pdb')
+        os.remove(f"out_bead_{i}.pdb")
 
 
 def test_rpmd_centroid_reporter():
     """Check the centroid reporter writes the bead-averaged trajectory."""
     pdb = app.PDBFile("tests/data/pdb/input_aaa.pdb")
-    forcefield = app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+    forcefield = app.ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
 
     modeller = app.Modeller(pdb.topology, pdb.positions)
     has_box = modeller.topology.getUnitCellDimensions() is not None
@@ -763,24 +822,25 @@ def test_rpmd_centroid_reporter():
     )
 
     n_beads = 4
-    integrator = openmm.RPMDIntegrator(n_beads,
-                                       300 * unit.kelvin,
-                                       1.0 / unit.picosecond,
-                                       0.5 * unit.femtosecond)
+    integrator = openmm.RPMDIntegrator(
+        n_beads, 300 * unit.kelvin, 1.0 / unit.picosecond, 0.5 * unit.femtosecond
+    )
 
     simulation = app.Simulation(modeller.topology, system, integrator)
 
     nqe.init_beads(modeller, simulation, n_beads)
 
-    simulation.reporters.append(nqe.RPMDCentroidReporter(
-        topology=modeller.topology,
-        file_name="centroid.pdb",
-        reportInterval=10,
-        num_beads=n_beads,
-    ))
+    simulation.reporters.append(
+        nqe.RPMDCentroidReporter(
+            topology=modeller.topology,
+            file_name="centroid.pdb",
+            reportInterval=10,
+            num_beads=n_beads,
+        )
+    )
 
     simulation.step(100)
-    os.remove('centroid.pdb')
+    os.remove("centroid.pdb")
 
 
 def test_count_dna_and_estimate_charge():
@@ -806,7 +866,9 @@ def test_fep():
     positions = host_guest.positions
     topology = host_guest.topology
 
-    ligand_atoms = [atom.index for atom in topology.atoms() if atom.residue.name == 'B2']
+    ligand_atoms = [
+        atom.index for atom in topology.atoms() if atom.residue.name == "B2"
+    ]
     factory = alchemy.AbsoluteAlchemicalFactory(consistent_exceptions=False)
     alchemical_region = alchemy.AlchemicalRegion(alchemical_atoms=ligand_atoms)
     alchemical_system = factory.create_alchemical_system(system, alchemical_region)
@@ -818,7 +880,9 @@ def test_fep():
 
     temperature = 300 * unit.kelvin
 
-    integrator = openmm.LangevinIntegrator(temperature, 1.0 / unit.picosecond, 2.0 * unit.femtoseconds)
+    integrator = openmm.LangevinIntegrator(
+        temperature, 1.0 / unit.picosecond, 2.0 * unit.femtoseconds
+    )
     context = openmm.Context(alchemical_system, integrator)
     context.setPositions(positions)
 
@@ -831,7 +895,9 @@ def test_fep():
     print("Starting Alchemical FEP...")
 
     for k in range(n_steps):
-        print(f"Sampling Window {k + 1}/{n_steps} (Elec: {lambda_electrostatics[k]}, VdW: {lambda_sterics[k]})")
+        print(
+            f"Sampling Window {k + 1}/{n_steps} (Elec: {lambda_electrostatics[k]}, VdW: {lambda_sterics[k]})"
+        )
         alchemical_state.lambda_electrostatics = lambda_electrostatics[k]
         alchemical_state.lambda_sterics = lambda_sterics[k]
         alchemical_state.apply_to_context(context)
@@ -869,16 +935,20 @@ def test_fep():
         [_nequil, g, _Neff_max] = timeseries.detect_equilibration(u_kln[k, k, :])
         indices = timeseries.subsample_correlated_data(u_kln[k, k, :], g=g)
         N_k[k] = len(indices)
-        u_kln[k, :, 0:N_k[k]] = u_kln[k, :, indices].T
+        u_kln[k, :, 0 : N_k[k]] = u_kln[k, :, indices].T
 
     mbar = MBAR(u_kln, N_k)
     results = mbar.compute_free_energy_differences(compute_uncertainty=True)
 
-    print("Free energy change to insert a particle = ", results['Delta_f'][n_steps - 1, 0])
-    print("Statistical uncertainty = ", results['dDelta_f'][n_steps - 1, 0])
+    print(
+        "Free energy change to insert a particle = ", results["Delta_f"][n_steps - 1, 0]
+    )
+    print("Statistical uncertainty = ", results["dDelta_f"][n_steps - 1, 0])
 
     mbar = MBAR(u_kln, [1] * n_steps)
     result = mbar.compute_free_energy_differences()
-    delta_f = result['Delta_f'][0, -1]
-    delta_f_error = result['dDelta_f'][0, -1]
-    print(f"Free Energy Difference (Complex Leg): {delta_f:.3f} +/- {delta_f_error:.3f} kT")
+    delta_f = result["Delta_f"][0, -1]
+    delta_f_error = result["dDelta_f"][0, -1]
+    print(
+        f"Free Energy Difference (Complex Leg): {delta_f:.3f} +/- {delta_f_error:.3f} kT"
+    )

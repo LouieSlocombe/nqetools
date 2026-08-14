@@ -20,11 +20,13 @@ from scipy import constants
 from .conversions import eV_to_kJpermol
 
 
-def correlate(x: np.ndarray,
-              y: np.ndarray,
-              xbar: float | None = None,
-              ybar: float | None = None,
-              normalise: bool = True) -> np.ndarray:
+def correlate(
+    x: np.ndarray,
+    y: np.ndarray,
+    xbar: float | None = None,
+    ybar: float | None = None,
+    normalise: bool = True,
+) -> np.ndarray:
     """Compute the correlation function of two quantities.
 
     Parameters
@@ -50,13 +52,13 @@ def correlate(x: np.ndarray,
     if ybar is None:
         ybar = y.mean()
 
-    cf = np.correlate(x - xbar, y - ybar, mode='same')
-    return cf[len(x) // 2:] / (((x - xbar) * (y - ybar)).sum() if normalise else 1)
+    cf = np.correlate(x - xbar, y - ybar, mode="same")
+    return cf[len(x) // 2 :] / (((x - xbar) * (y - ybar)).sum() if normalise else 1)
 
 
-def autocorrelate(x: np.ndarray,
-                  xbar: float | None = None,
-                  normalise: bool = True) -> np.ndarray:
+def autocorrelate(
+    x: np.ndarray, xbar: float | None = None, normalise: bool = True
+) -> np.ndarray:
     """Compute the autocorrelation function of a trajectory.
 
     Parameters
@@ -75,8 +77,8 @@ def autocorrelate(x: np.ndarray,
     """
     if xbar is None:
         xbar = x.mean()
-    acf = np.correlate(x - xbar, x - xbar, mode='same')
-    return acf[len(x) // 2:] / (((x - xbar) * (x - xbar)).sum() if normalise else 1)
+    acf = np.correlate(x - xbar, x - xbar, mode="same")
+    return acf[len(x) // 2 :] / (((x - xbar) * (x - xbar)).sum() if normalise else 1)
 
 
 def moving_average(arr: np.ndarray, window_size: int) -> np.ndarray:
@@ -111,7 +113,9 @@ def freq_from_eigvals(eigvals: np.ndarray) -> np.ndarray:
     numpy.ndarray
         Array of frequencies in inverse centimeters (cm^-1).
     """
-    cm2hartree = 1. / (constants.physical_constants['hartree-inverse meter relationship'][0] / 100)
+    cm2hartree = 1.0 / (
+        constants.physical_constants["hartree-inverse meter relationship"][0] / 100
+    )
     freq_invcm = np.zeros(eigvals.shape)
     for i, eig in enumerate(eigvals):
         freq_invcm[i] = np.sign(eig) * np.absolute(eig) ** 0.5 / cm2hartree
@@ -131,10 +135,14 @@ def calculate_temperature_crossover(omega: float) -> float:
     float
         Temperature crossover value.
     """
-    cm2hartree = 1. / (constants.physical_constants['hartree-inverse meter relationship'][0] / 100)
-    boltzmann_au = constants.physical_constants['Boltzmann constant in eV/K'][0] * \
-                   constants.physical_constants['electron volt-hartree relationship'][0]
-    return 1. / (2 * np.pi / (omega * cm2hartree) * boltzmann_au)
+    cm2hartree = 1.0 / (
+        constants.physical_constants["hartree-inverse meter relationship"][0] / 100
+    )
+    boltzmann_au = (
+        constants.physical_constants["Boltzmann constant in eV/K"][0]
+        * constants.physical_constants["electron volt-hartree relationship"][0]
+    )
+    return 1.0 / (2 * np.pi / (omega * cm2hartree) * boltzmann_au)
 
 
 def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
@@ -152,9 +160,13 @@ def calculate_good_nbeads(omega_max: float, temperature: float) -> int:
     int
         Number of beads, rounded up so that the inequality holds strictly.
     """
-    cm2hartree = 1. / (constants.physical_constants['hartree-inverse meter relationship'][0] / 100)
-    boltzmann_au = constants.physical_constants['Boltzmann constant in eV/K'][0] * \
-                   constants.physical_constants['electron volt-hartree relationship'][0]
+    cm2hartree = 1.0 / (
+        constants.physical_constants["hartree-inverse meter relationship"][0] / 100
+    )
+    boltzmann_au = (
+        constants.physical_constants["Boltzmann constant in eV/K"][0]
+        * constants.physical_constants["electron volt-hartree relationship"][0]
+    )
     omega_max = omega_max * cm2hartree
     nbeads = (1.0 * omega_max) / (boltzmann_au * temperature)
     # Round up: truncating would return a bead count that fails the inequality
@@ -235,11 +247,11 @@ def bell_correction(e_barrier: float, a: float, mu: float) -> float:
 
 
 def _eckart_inner(
-        e_list: np.ndarray,
-        frequency: float,
-        e_reac: float,
-        e_ts: float,
-        e_prod: float,
+    e_list: np.ndarray,
+    frequency: float,
+    e_reac: float,
+    e_ts: float,
+    e_prod: float,
 ) -> np.ndarray:
     """Compute the micro-canonical Eckart tunnelling correction factor (κ) for an energy grid.
 
@@ -281,30 +293,65 @@ def _eckart_inner(
     alpha_1 = 2.0 * constants.pi * d_v1 / frequency
     alpha_2 = 2.0 * constants.pi * d_v2 / frequency
     denom = 1.0 / np.sqrt(alpha_1) + 1.0 / np.sqrt(alpha_2)
-    two_pi_d = 2.0 * np.sqrt(abs(alpha_1 * alpha_2 - (constants.pi ** 2) / 4.0))
+    two_pi_d = 2.0 * np.sqrt(abs(alpha_1 * alpha_2 - (constants.pi**2) / 4.0))
 
     kappa = np.zeros_like(e_list, dtype=float)
-    r0 = np.searchsorted(e_list, e0, side="left")  # first index at or above the reference energy
+    r0 = np.searchsorted(
+        e_list, e0, side="left"
+    )  # first index at or above the reference energy
 
     for r in range(r0, len(e_list)):
-        x_i = (e_list[r] - e0) / d_v1  # dimensionless energy relative to the forward barrier
+        x_i = (
+            e_list[r] - e0
+        ) / d_v1  # dimensionless energy relative to the forward barrier
         two_pi_a = 2.0 * np.sqrt(alpha_1 * x_i) / denom
         two_pi_b = 2.0 * np.sqrt(abs((x_i - 1.0) * alpha_1 + alpha_2)) / denom
 
         if max(two_pi_a, two_pi_b, two_pi_d) < 200.0:
             num = np.cosh(two_pi_a - two_pi_b) + np.cosh(two_pi_d)
             den = np.cosh(two_pi_a + two_pi_b) + np.cosh(two_pi_d)
-        elif any(x > 10.0 for x in
-                 [two_pi_a - two_pi_b - two_pi_d, two_pi_b - two_pi_a - two_pi_d, two_pi_a + two_pi_b - two_pi_d]):
+        elif any(
+            x > 10.0
+            for x in [
+                two_pi_a - two_pi_b - two_pi_d,
+                two_pi_b - two_pi_a - two_pi_d,
+                two_pi_a + two_pi_b - two_pi_d,
+            ]
+        ):
             # large-argument approximation to avoid overflow in the exponentials below
-            kappa[r] = 1.0 - sum(np.exp(-x) for x in [2.0 * two_pi_a, 2.0 * two_pi_b, two_pi_a + two_pi_b - two_pi_d,
-                                                      two_pi_a + two_pi_b + two_pi_d])
+            kappa[r] = 1.0 - sum(
+                np.exp(-x)
+                for x in [
+                    2.0 * two_pi_a,
+                    2.0 * two_pi_b,
+                    two_pi_a + two_pi_b - two_pi_d,
+                    two_pi_a + two_pi_b + two_pi_d,
+                ]
+            )
             continue
         else:
-            num = sum(np.exp(x) for x in
-                      [two_pi_a - two_pi_b - two_pi_d, -two_pi_a + two_pi_b - two_pi_d, -2.0 * two_pi_d]) + 1.0
-            den = sum(np.exp(x) for x in
-                      [two_pi_a + two_pi_b - two_pi_d, -two_pi_a - two_pi_b - two_pi_d, -2.0 * two_pi_d]) + 1.0
+            num = (
+                sum(
+                    np.exp(x)
+                    for x in [
+                        two_pi_a - two_pi_b - two_pi_d,
+                        -two_pi_a + two_pi_b - two_pi_d,
+                        -2.0 * two_pi_d,
+                    ]
+                )
+                + 1.0
+            )
+            den = (
+                sum(
+                    np.exp(x)
+                    for x in [
+                        two_pi_a + two_pi_b - two_pi_d,
+                        -two_pi_a - two_pi_b - two_pi_d,
+                        -2.0 * two_pi_d,
+                    ]
+                )
+                + 1.0
+            )
 
         kappa[r] = 1.0 - num / den
 
@@ -312,11 +359,11 @@ def _eckart_inner(
 
 
 def eckart_correction(
-        temperature: float,
-        frequency: float,
-        e_reac: float,
-        e_ts: float,
-        e_prod: float,
+    temperature: float,
+    frequency: float,
+    e_reac: float,
+    e_ts: float,
+    e_prod: float,
 ) -> float:
     """Compute the Eckart tunnelling correction factor (κ) for a reaction at a given temperature.
 
@@ -359,13 +406,17 @@ def eckart_correction(
     e_ts *= 1e3
     e_prod *= 1e3
 
-    frequency = constants.h * abs(frequency) * constants.c * 100.0 * constants.N_A  # cm⁻¹ -> J/mol
+    frequency = (
+        constants.h * abs(frequency) * constants.c * 100.0 * constants.N_A
+    )  # cm⁻¹ -> J/mol
 
     e0 = max(e_reac, e_prod)
     d_v1, d_v2 = sorted([e_ts - e_reac, e_ts - e_prod])
 
     if d_v1 < 0 or d_v2 < 0:
-        raise ValueError(f"Invalid barrier heights: d_v1={d_v1 / 1e3:.3f} kJ/mol, d_v2={d_v2 / 1e3:.3f} kJ/mol")
+        raise ValueError(
+            f"Invalid barrier heights: d_v1={d_v1 / 1e3:.3f} kJ/mol, d_v2={d_v2 / 1e3:.3f} kJ/mol"
+        )
     if d_v1 > d_v2:
         raise ValueError("Eckart requirement d_v1 ≤ d_v2 violated.")
 
@@ -373,5 +424,9 @@ def eckart_correction(
     upper = e0 + 2.0 * (e_ts - e0) + 40.0 * constants.R * temperature
     e_list = np.arange(e0, upper, d_e)
     kappa_e = _eckart_inner(e_list, frequency, e_reac, e_ts, e_prod)
-    return np.exp(d_v1 * beta) * np.sum(kappa_e * np.exp(-beta * (e_list - e0))) * d_e * beta
-
+    return (
+        np.exp(d_v1 * beta)
+        * np.sum(kappa_e * np.exp(-beta * (e_list - e0)))
+        * d_e
+        * beta
+    )
