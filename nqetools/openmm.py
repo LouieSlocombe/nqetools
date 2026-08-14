@@ -56,10 +56,6 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
     rm_heterogens : bool, optional
         If True, remove heterogen atoms like water, ions, and ligands.
         Default is True.
-
-    Returns
-    -------
-    None
     """
     fixer = PDBFixer(filename=file_in)
     fixer.findMissingResidues()
@@ -72,7 +68,6 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
     fixer.addMissingHydrogens(ph)
     with open(file_out, 'w') as f:
         app.PDBFile.writeFile(fixer.topology, fixer.positions, f)
-    return None
 
 
 def zero_velocities(n_atoms):
@@ -107,10 +102,6 @@ def write_multimodel_pdb(topology, positions, fh, model_index):
         An open file handle where the PDB model will be written.
     model_index : int
         The index of the model to be written, used to distinguish models in the PDB file.
-
-    Returns
-    -------
-    None
     """
     app.PDBFile.writeModel(topology, positions, fh, modelIndex=model_index)
 
@@ -200,10 +191,6 @@ def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=
         The temperature of the system, used to calculate the thermal de Broglie wavelength.
     scale_factor : float, optional
         A scaling factor applied to the thermal wavelength perturbation. Default is 0.1.
-
-    Returns
-    -------
-    None
     """
     system = simulation.system
     n_atoms = system.getNumParticles()
@@ -250,10 +237,6 @@ def init_beads(modeller, simulation, n_beads, perturb=0.002):
     perturb : float, optional
         The magnitude of the random perturbation applied to the initial positions.
         Default is 0.002.
-
-    Returns
-    -------
-    None
     """
     rng = np.random.default_rng(0)
     pos0 = modeller.positions
@@ -332,10 +315,6 @@ def md_workflow(file_in,
     platform : str, optional
         OpenMM platform to run on. Default is "CPU".
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     The 4 fs default timestep relies on the HBonds constraints applied
@@ -397,8 +376,6 @@ def md_workflow(file_in,
     print("Running NPT", flush=True)
     simulation.step(n_npt)
 
-    return None
-
 
 def md_analysis(file_in='md_log.txt'):
     """Plot the energy, temperature and volume traces from an MD log.
@@ -410,10 +387,6 @@ def md_analysis(file_in='md_log.txt'):
     ----------
     file_in : str, optional
         Path to the state data log. Default is "md_log.txt".
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -464,10 +437,6 @@ def make_sdf(pdb_file, lig_name='LIG'):
         Path to the input PDB file.
     lig_name : str, optional
         Residue name of the ligand to extract. Default is 'LIG'.
-
-    Returns
-    -------
-    None
     """
     u = mda.Universe(pdb_file)
     elements = mda.topology.guessers.guess_types(u.atoms.names)
@@ -475,7 +444,6 @@ def make_sdf(pdb_file, lig_name='LIG'):
     lig = u.select_atoms(f"resname {lig_name}")
     mol = lig.convert_to("RDKIT")
     Chem.MolToMolFile(mol, f"{lig_name}.sdf", kekulize=False)
-    return None
 
 
 def pdb_patcher(pdb_file, lig_name='LIG'):
@@ -491,10 +459,6 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
         Path to the PDB file to be modified.
     lig_name : str, optional
         The new residue name to replace 'UNK'. Default is 'LIG'.
-
-    Returns
-    -------
-    None
     """
     with open(pdb_file) as f:
         pdb_data = f.read()
@@ -502,7 +466,6 @@ def pdb_patcher(pdb_file, lig_name='LIG'):
     pdb_data = pdb_data.replace('UNK', lig_name)
     with open(pdb_file, 'w') as f:
         f.write(pdb_data)
-    return None
 
 
 def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
@@ -520,10 +483,6 @@ def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
         Residue name of the ligand to be added. Default is 'LIG'.
     patch : bool, optional
         If True, applies the `pdb_patcher` function to the combined PDB file. Default is True.
-
-    Returns
-    -------
-    None
     """
     pdb = app.PDBFile(input_pdb)
     molecule = Molecule.from_file(f'{lig_name}.sdf')
@@ -536,7 +495,6 @@ def combine_sdf_pdb(input_pdb, lig_name='LIG', patch=True):
         app.PDBFile.writeFile(modeller.topology, modeller.positions, f)
     if patch:
         pdb_patcher(input_pdb, lig_name=lig_name)
-    return None
 
 
 def prepare_lig_system(input_pdb,
@@ -686,10 +644,6 @@ def deuterate_system(modeller, system, option='all', target_resname=None):
         'all', 'water', 'protein', 'dna', 'rna', 'nucleic', or 'ligand'. Default is 'all'.
     target_resname : str, optional
         The residue name of the ligand to deuterate. Required if `option` is 'ligand'.
-
-    Returns
-    -------
-    None
         The system's particle masses are modified in place.
 
     Raises
@@ -857,10 +811,6 @@ def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
     output_pdb_path : str
         Path to save the output PDB file containing the selected atoms.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     - If the selection is empty, a warning is printed, and the output PDB file will be empty.
@@ -952,10 +902,6 @@ def run_openmm_relaxation(modeller,
     ml_idx : list of int, optional
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -1092,10 +1038,6 @@ def run_openmm_relaxation_simple(modeller,
     ml_idx : list of int, optional
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -1242,10 +1184,6 @@ def run_openmm_heating(modeller,
     ml_idx : list of int, optional
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -1423,10 +1361,6 @@ def run_openmm_npt(modeller,
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Passing both `potential` and `ml_idx` builds a mixed ML/MM system and
@@ -1590,10 +1524,6 @@ def run_openmm_prod(modeller,
     ml_idx : list of int, optional
         Indices of the atoms to treat with `potential`. Has no effect unless
         `potential` is also given. Default is None.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -1759,10 +1689,6 @@ def run_openmm_rpmd_equilibration(modeller,
     atoms_to_watch : list of int, optional
         Indices of atoms whose quantum spread is logged each report. Default
         is None, which disables the spread reporter.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -1951,10 +1877,6 @@ def run_openmm_rpmd_contracted(modeller,
     atoms_to_watch : list of int, optional
         Indices of atoms whose quantum spread is logged each report. Default
         is None, which disables the spread reporter.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -2175,10 +2097,6 @@ def run_openmm_rpmd_prod(modeller,
     atoms_to_watch : list of int, optional
         Indices of atoms whose quantum spread is logged each report. Default
         is None, which disables the spread reporter.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -2439,10 +2357,6 @@ class RPMDQuantumSpreadReporter(_RPMDReporterBase):
             Current state of the simulation. Unused; bead positions are read
             from the RPMD integrator instead, since the state holds only the
             centroid.
-
-        Returns
-        -------
-        None
         """
         integrator = simulation.integrator
 
@@ -2458,12 +2372,7 @@ class RPMDQuantumSpreadReporter(_RPMDReporterBase):
         self._out.flush()
 
     def __del__(self):
-        """Close the log file when the reporter is destroyed.
-
-        Returns
-        -------
-        None
-        """
+        """Close the log file when the reporter is destroyed."""
         self._out.close()
 
 
@@ -2519,10 +2428,6 @@ class RPMDBeadReporter(_RPMDReporterBase):
             from the RPMD integrator instead, since the state holds only the
             centroid.
 
-        Returns
-        -------
-        None
-
         Notes
         -----
         Files are flushed every tenth frame so an interrupted run still
@@ -2542,12 +2447,7 @@ class RPMDBeadReporter(_RPMDReporterBase):
         self._next_frame_index += 1
 
     def __del__(self):
-        """Write the PDB footer to every bead file and close them.
-
-        Returns
-        -------
-        None
-        """
+        """Write the PDB footer to every bead file and close them."""
         _close_pdb_files(self._topology, self._files)
 
 
@@ -2577,10 +2477,6 @@ class RPMDCentroidReporter(_RPMDReporterBase):
             Number of beads in the RPMD integrator, used to average over.
         topology : openmm.app.Topology
             Topology written into the PDB header.
-
-        Returns
-        -------
-        None
         """
         self._reportInterval = reportInterval
         self._num_beads = num_beads
@@ -2603,10 +2499,6 @@ class RPMDCentroidReporter(_RPMDReporterBase):
             Current state of the simulation. Unused; bead positions are read
             from the RPMD integrator instead, since the state holds only the
             centroid.
-
-        Returns
-        -------
-        None
         """
         integrator = simulation.integrator
 
@@ -2626,12 +2518,7 @@ class RPMDCentroidReporter(_RPMDReporterBase):
             self._out.flush()
 
     def __del__(self):
-        """Write the PDB footer and close the file.
-
-        Returns
-        -------
-        None
-        """
+        """Write the PDB footer and close the file."""
         _close_pdb_files(self._topology, [self._out])
 
 

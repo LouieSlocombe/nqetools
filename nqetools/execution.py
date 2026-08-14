@@ -161,10 +161,6 @@ def run_ipi(directory,
         Number of driver processes to start. Default is 1.
     t_sleep : float, optional
         Time to wait for the i-PI server to start. Default is 5.0 seconds.
-
-    Returns
-    -------
-    None
     """
     # Check before changing directory, so a refused run leaves the cwd untouched
     if os.path.exists(os.path.join(directory, outfile)):
@@ -189,7 +185,6 @@ def run_ipi(directory,
         finally:
             for log in driver_logs:
                 log.close()
-    return None
 
 
 def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None):
@@ -213,10 +208,6 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
         Grid bounds as ``[min, max]`` for one collective variable, or a
         list of such pairs for several. Bounds of None let PLUMED choose
         them. Default is [[0.21, 0.31], [-1, 1]].
-
-    Returns
-    -------
-    None
     """
     print('Running plumed hills', flush=True)
     if cv is None:
@@ -254,7 +245,6 @@ def run_plumed_hills(directory, temperature=300.0, bins=100, stride=100, cv=None
         subprocess.run(command.split(), check=False, stdin=file, text=True)
 
     print("Plumed hills run complete\n", flush=True)
-    return None
 
 
 def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
@@ -276,10 +266,6 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
         Grid bounds as ``[min, max]`` for one collective variable, or a
         list of such pairs for several. Bounds of None let the grid be
         chosen automatically. Default is [[0.21, 0.31], [-1, 1]].
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -323,7 +309,6 @@ def run_plumed_hills_opes(directory, temperature=300.0, bins=100, cv=None):
         subprocess.run(command.split(), check=False)
 
     print("Plumed OPES hills run complete\n", flush=True)
-    return None
 
 
 def run_instanton_post_process(directory,
@@ -359,10 +344,6 @@ def run_instanton_post_process(directory,
     outfile : str, optional
         File to capture stdout into. Default is 'thermo_data.out'.
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Failures are reported on stderr rather than raised, so callers should
@@ -388,7 +369,6 @@ def run_instanton_post_process(directory,
             print(f"Error: {result.stderr}", flush=True)
 
     print("Thermo/Instanton post-processing complete\n", flush=True)
-    return None
 
 
 def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
@@ -407,10 +387,6 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
         Directory to create and populate for the next run.
     new_n_beads : int
         Number of beads for the new calculation.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -452,7 +428,6 @@ def run_instanton_interpolation(directory_old, directory_new, new_n_beads):
         write_xml(root, 'input.xml')
 
     print("Instanton interpolation complete\n", flush=True)
-    return None
 
 
 def _prepare_run_directory(directory, atoms, driver_args):
@@ -693,10 +668,6 @@ def prep_optimise_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
     root = _load_ipi_template("MIN.xml", xml_in)
 
@@ -859,10 +830,6 @@ def prep_md_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
     root = _load_ipi_template(f"{md_type.upper()}.xml", xml_in)
 
@@ -1051,10 +1018,6 @@ def prep_plumed_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
     root = _load_ipi_template(f"{md_type.upper()}.xml", xml_in)
 
@@ -1241,10 +1204,6 @@ def prep_phonons_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
     root = _load_ipi_template("PHO.xml", xml_in)
 
@@ -1297,10 +1256,6 @@ def run_phonons(directory,
     xml_in : str, optional
         Path to an XML file to use instead of the template. Default is
         None.
-
-    Returns
-    -------
-    None
         Results are left in the run directory for the post-processing
         step to pick up.
     """
@@ -1372,10 +1327,6 @@ def prep_ts_xml(directory,
         Default is None.
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -1539,10 +1490,6 @@ def prep_instanton_xml(directory,
     file_in : str, optional
         Name of the structure file to write. Default is "init.xyz".
 
-    Returns
-    -------
-    None
-
     Notes
     -----
     Open paths are enabled for every atom, since the instanton orbit is a
@@ -1636,10 +1583,6 @@ def run_instanton(directory,
     xml_in : str, optional
         Path to an XML file to use instead of the template. Default is
         None.
-
-    Returns
-    -------
-    None
         Results are left in the run directory for
         :func:`run_instanton_post_process` to pick up.
     """

@@ -42,14 +42,9 @@ def update_properties(root, prop_list):
         The root element of the XML tree.
     prop_list : list of str
         A list of properties to update in the XML tree.
-
-    Returns
-    -------
-    None
     """
     for properties in root.iter('properties'):
         properties.text = list_to_string(prop_list)
-    return None
 
 
 def append_properties(root, prop_list):
@@ -61,17 +56,12 @@ def append_properties(root, prop_list):
         The root element of the XML tree.
     prop_list : list of str
         A list of properties to append to the existing properties in the XML tree.
-
-    Returns
-    -------
-    None
     """
     for properties in root.iter('properties'):
         current_props = properties.text.split(',')
         current_props = [prop.strip().strip('[').strip(']').strip('\n').strip() for prop in current_props]
         updated_props = current_props + prop_list
         properties.text = list_to_string(updated_props)
-    return None
 
 
 def get_masses(atoms, f_deut=False, m_d=2.0141):
@@ -139,10 +129,6 @@ def update_file(root, filename='init.xyz', units='angstrom'):
         The new filename to set for the 'file' element. Default is 'init.xyz'.
     units : str, optional
         The units to set for the 'file' element. Default is 'angstrom'.
-
-    Returns
-    -------
-    None
     """
     for rank in root.iter('initialize'):
         for child in rank:
@@ -150,7 +136,6 @@ def update_file(root, filename='init.xyz', units='angstrom'):
                 child.text = filename
                 child.set('mode', get_file_extension(filename).replace('.', ''))
                 child.set('units', units)
-    return None
 
 
 def update_cell(root, atoms):
@@ -162,10 +147,6 @@ def update_cell(root, atoms):
         The root element of the XML tree.
     atoms : object
         An object representing the atoms, which must have a `get_cell` method that returns an object with a `lengths` method.
-
-    Returns
-    -------
-    None
     """
     cell_l = atoms.get_cell().lengths()
     for rank in root.iter('initialize'):
@@ -175,7 +156,6 @@ def update_cell(root, atoms):
         cell_element.attrib['units'] = 'angstrom'
         cell_element.attrib['mode'] = 'abc'
         cell_element.text = f'[{cell_l[0]}, {cell_l[1]}, {cell_l[2]}]'
-    return None
 
 
 def update_driver(root, atoms, f_driver):
@@ -189,10 +169,6 @@ def update_driver(root, atoms, f_driver):
         An object representing the atoms, which must have periodic boundary conditions (PBC).
     f_driver : str
         The type of driver to use.
-
-    Returns
-    -------
-    None
     """
     assert f_driver in ["zundel", "cbe", "mace", "ase-mace","ase-qmmm-mace", "ase-nwchem", "ase-orca", "nwchem"]
     f_pbcs = has_pbc(atoms)
@@ -248,7 +224,6 @@ def update_driver(root, atoms, f_driver):
             for child in rank:
                 if child.tag == 'force':
                     child.attrib['forcefield'] = 'driver'
-    return None
 
 
 def update_nbeads(root, n_beads):
@@ -260,14 +235,9 @@ def update_nbeads(root, n_beads):
         The root element of the XML tree.
     n_beads : int
         The number of beads to set in the 'initialize' elements.
-
-    Returns
-    -------
-    None
     """
     for rank in root.iter('initialize'):
         rank.set('nbeads', str(n_beads))
-    return None
 
 
 def update_hessian(root, n_doft, n_beads):
@@ -281,14 +251,9 @@ def update_hessian(root, n_doft, n_beads):
         The number of degrees of freedom.
     n_beads : int
         The number of beads.
-
-    Returns
-    -------
-    None
     """
     for subchild in root.iterfind('.//motion/instanton/hessian'):
         subchild.attrib['shape'] = f'({int(n_doft)}, {int(n_doft * n_beads)})'
-    return None
 
 
 def update_temperature(root, temperature):
@@ -300,10 +265,6 @@ def update_temperature(root, temperature):
         The root element of the XML tree.
     temperature : float
         The temperature value to set.
-
-    Returns
-    -------
-    None
     """
     # update the temperature in the ensemble section
     for child in root.iterfind('.//ensemble/temperature'):
@@ -311,7 +272,6 @@ def update_temperature(root, temperature):
     # update the temperature in the velocity section
     for child in root.iterfind('.//initialize/velocities'):
         child.text = str(temperature)
-    return None
 
 
 def update_title(root, title):
@@ -323,14 +283,9 @@ def update_title(root, title):
         The root element of the XML tree.
     title : str
         The title to set in the 'output' elements.
-
-    Returns
-    -------
-    None
     """
     for rank in root.iter('output'):
         rank.set('prefix', title)
-    return None
 
 
 def update_total_steps(root, total_steps):
@@ -342,14 +297,9 @@ def update_total_steps(root, total_steps):
         The root element of the XML tree.
     total_steps : int
         The total number of steps to set.
-
-    Returns
-    -------
-    None
     """
     for rank in root.iter('total_steps'):
         rank.text = str(total_steps)
-    return None
 
 
 def update_optimiser(root, optimiser_mode):
@@ -361,14 +311,9 @@ def update_optimiser(root, optimiser_mode):
         The root element of the XML tree.
     optimiser_mode : str
         The mode to set in the optimiser element.
-
-    Returns
-    -------
-    None
     """
     for rank in root.iter('optimizer'):
         rank.set('mode', optimiser_mode)
-    return None
 
 
 def update_tol(root, energy, force, position):
@@ -384,10 +329,6 @@ def update_tol(root, energy, force, position):
         The force tolerance value to set.
     position : float
         The position tolerance value to set.
-
-    Returns
-    -------
-    None
     """
     for rank in root.iter('optimizer'):
         for child in rank.iter('tolerances'):
@@ -399,7 +340,6 @@ def update_tol(root, energy, force, position):
             child.find('energy').text = str(energy)
             child.find('force').text = str(force)
             child.find('position').text = str(position)
-    return None
 
 
 def update_open_paths(root, n_atoms):
@@ -411,15 +351,10 @@ def update_open_paths(root, n_atoms):
         The root element of the XML tree.
     n_atoms : int
         The number of atoms to generate the open paths list.
-
-    Returns
-    -------
-    None
     """
     open_paths = list(range(n_atoms))
     for child in root.iterfind('.//normal_modes/open_paths'):
         child.text = str(open_paths)
-    return None
 
 
 def update_timestep(root, timestep):
@@ -431,14 +366,9 @@ def update_timestep(root, timestep):
         The root element of the XML tree.
     timestep : float
         The timestep value to set.
-
-    Returns
-    -------
-    None
     """
     for child in root.iterfind('.//motion/dynamics/timestep'):
         child.text = str(timestep)
-    return None
 
 
 def update_stride(root, stride):
@@ -450,15 +380,10 @@ def update_stride(root, stride):
         The root element of the XML tree.
     stride : int
         The new stride value to set for the elements.
-
-    Returns
-    -------
-    None
     """
     for element in root.iter():
         if element.tag in ['properties', 'trajectory']:
             element.set('stride', str(stride))
-    return None
 
 
 def update_checkpoint_stride(root, stride):
@@ -470,10 +395,6 @@ def update_checkpoint_stride(root, stride):
         The root element of the XML tree.
     stride : int
         The new stride value to set for the checkpoint elements.
-
-    Returns
-    -------
-    None
     """
     for output in root.iter('output'):
         for checkpoint in output.iter('checkpoint'):
@@ -498,7 +419,6 @@ def find_parent(root, child):
     for parent in root.iter():
         if child in parent:
             return parent
-    return None
 
 
 def add_plumed_smotion_section(root):
@@ -508,10 +428,6 @@ def add_plumed_smotion_section(root):
     ----------
     root : Element
         The root element of the XML tree.
-
-    Returns
-    -------
-    None
     """
     smotion = et.Element('smotion', {'mode': 'metad'})
     metad = et.SubElement(smotion, 'metad')
@@ -519,7 +435,6 @@ def add_plumed_smotion_section(root):
     metaff_element.text = '[ plumed ]'
     for simulation in root.iter('simulation'):
         simulation.append(smotion)
-    return None
 
 
 def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{angstrom}"):
@@ -535,10 +450,6 @@ def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{a
         The filename attribute for the trajectory element. Default is "xc".
     text : str, optional
         The text content for the trajectory element. Default is "x_centroid{angstrom}".
-
-    Returns
-    -------
-    None
     """
     trajectory = et.Element('trajectory', {
         'stride': str(stride),
@@ -548,7 +459,6 @@ def add_trajectory_centroid(root, stride="10", filename="xc", text="x_centroid{a
     trajectory.text = text
     for output in root.iter('output'):
         output.append(trajectory)
-    return None
 
 
 def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
@@ -562,10 +472,6 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
         A list of extra types to include in the trajectory element.
     stride : int, optional
         The stride attribute for the trajectory element. Default is 10.
-
-    Returns
-    -------
-    None
     """
     trajectory = et.Element('trajectory', {
         'stride': str(stride),
@@ -576,7 +482,6 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
     trajectory.text = 'extras_bias'
     for output in root.iter('output'):
         output.append(trajectory)
-    return None
 
 
 def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
@@ -592,10 +497,6 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
         The name of the file to use in the PLUMED section. Default is "init.xyz".
     plumed_dat : str, optional
         The name of the PLUMED data file to use. Default is "plumed.dat".
-
-    Returns
-    -------
-    None
     """
     ffplumed = et.Element('ffplumed', {'name': 'plumed'})
 
@@ -615,7 +516,6 @@ def add_plumed_ff_section(root, plumed_extras=None, file_name="init.xyz", plumed
         if parent is not None:
             index = list(parent).index(ffsocket)
             parent.insert(index + 1, ffplumed)
-    return None
 
 
 def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
@@ -629,10 +529,6 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
         A list of extra types to include in the interpolate_extras element. Default is None.
     nbeads : int, optional
         The number of beads to set in the force element. Default is 1.
-
-    Returns
-    -------
-    None
     """
     bias = et.Element('bias')
 
@@ -645,7 +541,6 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
         for temperature in ensemble.iter('temperature'):
             index = list(ensemble).index(temperature)
             ensemble.insert(index + 1, bias)
-    return None
 
 
 def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"):
@@ -661,10 +556,6 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
         The name of the file to use in the PLUMED sections. Default is "init.xyz".
     plumed_dat : str, optional
         The name of the PLUMED data file to use. Default is "plumed.dat".
-
-    Returns
-    -------
-    None
     """
     add_plumed_ff_section(root,
                           plumed_extras=plumed_extras,
@@ -676,7 +567,6 @@ def add_plumed_xml(root, plumed_extras=None, file_name="init.xyz", plumed_dat="p
     add_plumed_smotion_section(root)
 
     add_trajectory_plumed_extras(root, plumed_extras)
-    return None
 
 
 def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
@@ -694,10 +584,6 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
         The stride attribute for the trajectory element. Default is 20.
     text : str, optional
         The text content for the trajectory element. Default is 'positions'.
-
-    Returns
-    -------
-    None
 
     Raises
     ------
@@ -719,7 +605,6 @@ def add_trajectory_file(root, filename='pos', stride=20, text='positions'):
             output_element.append(new_trajectory)
     else:
         raise ValueError("The output element was not found in the XML tree.")
-    return None
 
 
 def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path=None):
@@ -733,10 +618,6 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
         The name of the thermostat file (without extension) to use. Default is "smart_sampling_1ps_n6_w2".
     xml_path : str, optional
         The path to the directory containing the thermostat XML files. Default is None.
-
-    Returns
-    -------
-    None
     """
     if xml_path is None:
         xml_path = os.path.join(find_nqetools_path(), "thermostats")
@@ -751,7 +632,6 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
     for thermostat in tree.iter('thermostat'):
         for rank in root.iter('dynamics'):
             rank.append(thermostat)
-    return None
 
 
 def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> None:
@@ -764,10 +644,6 @@ def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> Non
     splitting : str, optional
         The new splitting value. Default is "baoab".
         Valid values are: ["baoab", "obabo"].
-
-    Returns
-    -------
-    None
 
     Raises
     ------
@@ -783,7 +659,6 @@ def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> Non
         dynamics.set("splitting", splitting)
     else:
         raise ValueError("No dynamics element found in the XML tree.")
-    return None
 
 
 def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
@@ -795,10 +670,6 @@ def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
         The root element of the XML tree.
     fix_com : bool, optional
         Whether to fix the centre of mass. Default is False.
-
-    Returns
-    -------
-    None
 
     Raises
     ------
@@ -815,4 +686,3 @@ def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
             fixcom_elem.text = str(fix_com)
     else:
         raise ValueError("No motion element found in the XML tree.")
-    return None

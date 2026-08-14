@@ -116,10 +116,6 @@ def write_xml(root, file):
         The root element of the XML tree.
     file : str
         The path to the file where the XML tree will be written.
-
-    Returns
-    -------
-    None
     """
     directory = os.path.dirname(file)
     if directory:
@@ -127,7 +123,6 @@ def write_xml(root, file):
     tree = et.ElementTree(root)
     et.indent(tree.getroot(), space="\t", level=0)
     tree.write(file)
-    return None
 
 
 def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
@@ -172,16 +167,11 @@ def remove_directory(directory):
     ----------
     directory : str
         The path to the directory to be removed.
-
-    Returns
-    -------
-    None
     """
     if os.path.exists(directory):
         shutil.rmtree(directory)
     else:
         pass
-    return None
 
 
 def copy_and_rename_file(src, dst_dir, new_name):
@@ -195,13 +185,8 @@ def copy_and_rename_file(src, dst_dir, new_name):
         The path to the destination directory.
     new_name : str
         The new name for the copied file.
-
-    Returns
-    -------
-    None
     """
     shutil.copy(src, os.path.join(dst_dir, new_name))
-    return None
 
 
 def list_files_with_pattern(directory, pattern):
@@ -275,10 +260,6 @@ def copy_xyz(file_in, new_dir, file_out="init.xyz"):
         The path to the destination directory.
     file_out : str, optional
         The name for the output file. Default is "init.xyz".
-
-    Returns
-    -------
-    None
     """
     os.makedirs(new_dir, exist_ok=True)
     file_path = os.path.join(new_dir, file_out)
@@ -287,7 +268,6 @@ def copy_xyz(file_in, new_dir, file_out="init.xyz"):
         ase.io.write(file_path, atoms)
     else:
         ase.io.write(file_path, atoms[-1])
-    return None
 
 
 def copy_hess(file_in, new_dir, file_out="hessian.dat"):
@@ -301,14 +281,9 @@ def copy_hess(file_in, new_dir, file_out="hessian.dat"):
         The path to the destination directory.
     file_out : str, optional
         The name for the output file. Default is "hessian.dat".
-
-    Returns
-    -------
-    None
     """
     os.makedirs(new_dir, exist_ok=True)
     copy_and_rename_file(file_in, new_dir, file_out)
-    return None
 
 
 def find_nqetools_path():
@@ -837,10 +812,6 @@ def remove_residues_in_pdb(input_pdb, output_pdb, names):
         Path to the output PDB file where the modified structure will be saved.
     names : list of str
         A list of residue names to be removed from the PDB file.
-
-    Returns
-    -------
-    None
     """
     pdb = PDBFile(input_pdb)
     modeller = Modeller(pdb.topology, pdb.positions)
@@ -876,10 +847,6 @@ def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
     water_names : set of str, optional
         A set of residue names to be treated as water. If None, defaults to
         `{"HOH", "WAT"}`.
-
-    Returns
-    -------
-    None
     """
     if water_names is None:
         water_names = {"HOH", "WAT"}

@@ -33,16 +33,11 @@ def add_ipi_paths(base: str | None = None) -> None:
     ----------
     base : str, optional
         The base directory for i-PI. Default is the i-PI directory in the user's home directory.
-
-    Returns
-    -------
-    None
     """
     if base is None:
         base = os.path.expanduser("~") + "/i-pi/"
     sys.path.append(base)
     os.environ['PATH'] += f":{base}/bin/"
-    return None
 
 
 def get_ipi_driver() -> str:
@@ -76,10 +71,6 @@ def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
         'ipi_*' socket owned by the current user is removed - including those of
         the caller's own concurrent runs, so prefer passing an address when one
         is known.
-
-    Returns
-    -------
-    None
     """
     if tmp_dir is None:
         tmp_dir = tempfile.gettempdir()
@@ -95,7 +86,6 @@ def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
             os.remove(file)
         except FileNotFoundError:
             pass
-    return None
 
 
 def has_pbc(atoms: Atoms) -> bool:

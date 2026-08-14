@@ -54,10 +54,6 @@ def write_ase_mace_driver(
     enable_cueq : bool, optional
         If True, enable cuEquivariance acceleration. Default is False.
 
-    Returns
-    -------
-    None
-
     Raises
     ------
     AssertionError
@@ -95,7 +91,6 @@ client.run(atoms, use_stress=True)
             """
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
-    return None
 
 
 def write_ase_qmmm_mace_driver(
@@ -144,10 +139,6 @@ def write_ase_qmmm_mace_driver(
         If True, enable cuEquivariance acceleration. Default is False.
     host : str, optional
         Unix socket name used to reach the i-PI server. Default is "driver".
-
-    Returns
-    -------
-    None
 
     Raises
     ------
@@ -199,8 +190,6 @@ client.run(atoms)
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
 
-    return None
-
 
 def write_ase_nwchem_driver(
         directory,
@@ -238,10 +227,6 @@ def write_ase_nwchem_driver(
         Implicit solvent model, either 'WATER' or 'PROTEIN'. Default is None.
     host : str, optional
         Unix socket name used to reach the i-PI server. Default is "driver".
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -315,7 +300,6 @@ client.run(atoms, use_stress=False)
     """
     with open(os.path.join(directory, out_file), "w") as f:
         f.write(in_str)
-    return None
 
 
 def write_nwchem_driver(atoms,
@@ -352,10 +336,6 @@ def write_nwchem_driver(atoms,
         The solvation model to use. Default is None.
     host : str, optional
         The host for the SocketClient. Default is 'driver'.
-
-    Returns
-    -------
-    None
     """
     calc = nwchem_calc_preset(directory=directory,
                               task=task,
@@ -368,7 +348,6 @@ def write_nwchem_driver(atoms,
                               host=host)
     calc.prefix = os.path.join(directory, 'nwchem')
     calc.write_input(atoms)
-    return None
 
 
 def write_ase_orca_driver(
@@ -423,10 +402,6 @@ def write_ase_orca_driver(
         Additional SCF convergence keyword. Default is None.
     n_procs : int, optional
         Number of MPI processes for ORCA. Default is 10.
-
-    Returns
-    -------
-    None
 
     Notes
     -----
@@ -581,10 +556,6 @@ def move_zundel_driver_pes_files(directory):
     ----------
     directory : str
         The target directory where the PES files will be copied.
-
-    Returns
-    -------
-    None
     """
     base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
     files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']

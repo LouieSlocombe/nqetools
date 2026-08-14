@@ -206,10 +206,6 @@ class QChem(FileIOCalculator):
         **kwargs
             Further options written verbatim into the ``$rem`` block,
             upper-cased.
-
-        Returns
-        -------
-        None
         """
 
         FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
@@ -252,10 +248,6 @@ class QChem(FileIOCalculator):
         label : str
             Prefix of the calculation to read.
 
-        Returns
-        -------
-        None
-
         Raises
         ------
         NotImplementedError
@@ -269,10 +261,6 @@ class QChem(FileIOCalculator):
         Handles both conventional SCF and NEO-SCF output, which report
         their energies and gradients under different headings and in
         different layouts.
-
-        Returns
-        -------
-        None
             Results are stored in ``self.results``.
 
         Raises
@@ -341,10 +329,6 @@ class QChem(FileIOCalculator):
         system_changes : list of str, optional
             Changes since the last calculation, passed through to ASE.
             Default is None.
-
-        Returns
-        -------
-        None
         """
         FileIOCalculator.write_input(self, atoms, properties, system_changes)
         filename = self.label + '.inp'
