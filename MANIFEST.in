@@ -1,5 +1,0 @@
-recursive-include nqetools/templates *
-recursive-include nqetools/thermostats *
-recursive-include nqetools/opes *
-recursive-include nqetools/instanton_tools *
-include README.md

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,8 +7,9 @@ name = "nqetools"
 version = "0.1.0"
 description = "A centralised set of tools for doing nuclear quantum calculations."
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.12"
-license = { text = "MIT" }
+requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENSE"]
 
 authors = [
     { name = "Louie Slocombe", email = "louies@hotmail.co.uk" },
@@ -19,13 +20,6 @@ dependencies = [
     "scipy",
     "pandas",
     "matplotlib",
-    "opt_einsum",
-    "jax",
-    "jaxlib",
-    "ml_dtypes",
-    "sympy",
-    "pyfftw",
-    "chemiscope",
     "ase",
     "i-pi",
     "py-plumed",
@@ -33,24 +27,26 @@ dependencies = [
     "openmm-ml",
     "openmm-plumed",
     "openff-toolkit",
-    "torch",
-    "nnpops",
-    "openmm-torch",
     "openmmforcefields",
     "openmmtools",
-    "ambertools",
     "pdbfixer",
     "rdkit",
     "mdanalysis",
+    "torch",
     "mace-torch",
+    # Loaded dynamically rather than imported, so they look unused to a grep:
+    # nnpops and openmm-torch back the MACE/ANI potentials in openmm-ml, and
+    # ambertools supplies the parameterisation tools openmmforcefields shells
+    # out to. Do not prune these as dead dependencies.
+    "nnpops",
+    "openmm-torch",
+    "ambertools",
     "reactiontools @ git+https://github.com/LouieSlocombe/reactiontools.git",
 ]
 
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Chemistry",
@@ -60,13 +56,13 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "pytest",
-]
-dev = [
-    "jupyterlab",
-    "pytest",
+    "pymbar", # tests/test_openmm.py uses MBAR for the free-energy checks
 ]
 notebook = [
     "jupyterlab",
+]
+dev = [
+    "nqetools[test,notebook]",
 ]
 
 [project.urls]
@@ -74,22 +70,28 @@ Homepage = "https://github.com/LouieSlocombe/nqetools"
 Repository = "https://github.com/LouieSlocombe/nqetools"
 
 [tool.setuptools]
-include-package-data = true
+# The package-data table below is the only source of non-Python files; nothing
+# is picked up implicitly from a MANIFEST.in.
+include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["nqetools", "nqetools.*"]
+# templates/, thermostats/, opes/ and instanton_tools/ carry no __init__.py and
+# are picked up as PEP 420 namespace packages. find_nqetools_path() in io.py
+# resolves the opes/ and instanton_tools/ scripts by path at runtime and
+# execution.py runs them as subprocesses, so this has to stay true.
+namespaces = true
 
 [tool.setuptools.package-data]
-"nqetools" = [
-    "templates/*",
-    "thermostats/*",
-    "opes/*",
-    "instanton_tools/*",
-]
+"nqetools.templates" = ["*.xml"]
+"nqetools.thermostats" = ["*.xml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E7", "E9", "F", "W", "B", "C4", "UP", "SIM", "RUF"]

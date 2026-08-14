@@ -1,45 +1,48 @@
+# Development environment for nqetools.
+#
+#   conda env create -f build_tools/environment.yml
+#   conda activate nqetools
+#   pip install --no-deps -e .
+#
+# The final step is separate on purpose: every runtime dependency is already
+# provided by conda-forge below, and several of them (ambertools, nnpops,
+# openmm-torch) have no PyPI distribution at all, so a plain `pip install -e .`
+# would try to resolve them and fail. They cannot go in the `pip:` block either
+# — conda passes that whole list to a single `pip install`, so a `--no-deps`
+# needed for nqetools would also strip the real dependencies of mace-torch.
 name: nqetools
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python>=3.12
+  - python=3.13
   - pip
   - pytest
+  - pymbar
+  - jupyterlab
   - numpy
   - scipy
   - pandas
   - matplotlib
-  - opt_einsum
-  - jax
-  - jaxlib
-  - ml_dtypes
-  - sympy
-  - pyfftw
-  - chemiscope
-  - jupyterlab
   - ase
-  - pyfftw
   - i-pi
   - py-plumed
   - openmm
   - openmm-ml
   - openmm-plumed
-  - openff-toolkit
-  - pytorch
-  - nnpops
   - openmm-torch
   - openmmforcefields
   - openmmtools
+  - openff-toolkit
+  - nnpops
   - ambertools
   - pdbfixer
   - rdkit
   - mdanalysis
+  # conda-forge calls this `pytorch`; the same package is `torch` on PyPI, which
+  # is why pyproject.toml spells it differently. Both are correct.
+  - pytorch
   - pip:
-      #    - torch
+      # PyPI-only; everything above comes from conda-forge.
       - mace-torch
-      #    - cuequivariance
-      #    - cuequivariance-torch
-      #    - cuequivariance-ops-torch-cu12
       - git+https://github.com/LouieSlocombe/reactiontools.git
-      - git+https://github.com/LouieSlocombe/geodesic_interpolate.git

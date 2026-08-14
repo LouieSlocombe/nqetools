@@ -35,6 +35,9 @@ and friends. They are no longer, so that there is one copy of the code
 rather than two drifting apart.
 """
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _package_version
+
 from .calcs import (correlate,
                     autocorrelate,
                     moving_average,
@@ -204,4 +207,9 @@ from .xml_parse import (update_properties,
                         update_dynamics_splitting,
                         update_motion_fix_com)
 
-__version__ = "0.1.0"
+# Single-sourced from the package metadata in pyproject.toml rather than
+# repeated here, so the two cannot drift apart.
+try:
+    __version__ = _package_version("nqetools")
+except PackageNotFoundError:  # running from a source tree without an install
+    __version__ = "0.0.0+unknown"

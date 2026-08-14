@@ -4,113 +4,70 @@ A package to help run NQE (nuclear quantum effects) calculations based on [i-pi]
 
 # Install instructions
 
-You must work from a fresh environment to prevent issues! 3.12 required for cuequivariance.
+Everything except PLUMED comes from one conda environment file. Work from a
+fresh environment — mixing this stack into an existing one causes hard-to-debug
+conflicts between the CUDA builds of PyTorch and OpenMM.
 
 ```
-conda create -n ipi_env python=3.12
+conda env create -f build_tools/environment.yml
+conda activate nqetools
+pip install --no-deps -e .
 ```
 
-Activate the env
+The `--no-deps` is deliberate. Every runtime dependency is already installed by
+conda-forge, and several of them (`ambertools`, `nnpops`, `openmm-torch`) have
+no PyPI distribution, so letting pip resolve them will fail.
+
+To install without a checkout, into an environment that already has the
+dependencies:
 
 ```
-conda activate ipi_env
+unset SSH_ASKPASS
+pip install git+https://github.com/LouieSlocombe/nqetools.git
 ```
 
-Add channels in this order
+Python 3.13 or newer is required. `build_tools/environment.yml` pins 3.13
+because that is where conda-forge currently has builds for the whole stack —
+`ambertools` and `nnpops` in particular lag new releases.
 
-```
-conda config --env --add channels conda-forge
-```
+PLUMED is the one piece the environment file cannot fully guarantee. OPES is an
+optional PLUMED module and is not necessarily enabled in a packaged build, so if
+you are running OPES, check first and build from source if it is missing. See
+[PLUMED](#plumed) below.
 
-Best to make them strict
+## GPU builds
 
-```
-conda config --set channel_priority true
-```
-
-To check your updated channel list, run:
-
-```
-conda config --show channels
-```
-
-Make sure to upgrade the conda env to force the channel priority
-
-```
-conda update conda --all -y
-```
-
-Install the basic requirements.
-
-```
-conda install pytest numpy scipy matplotlib opt_einsum jax jaxlib ml_dtypes sympy pyfftw chemiscope jupyterlab mdanalysis -y
-```
-
-## ASE and Sella
-
-Conda can be an older version, which is fine.
-
-```
-conda install ase sella -y
-```
-
-Alternatively, if it is very slow. But, not suggested:
-
-```
-pip3 install sella
-```
-
-Sella is used by the transition-state and IRC searches, which now live in
-[reactiontools](https://github.com/LouieSlocombe/reactiontools) — see
-[Reaction paths](#reaction-paths) below. It is pulled in automatically as part
-of the `nqetools` install.
-
-## MACE
-
-Mace has two options, but the torch option seems best. For model eval and training:
-Follow the instructions here. Using conda is probably better `https://pytorch.org/get-started/locally/`.
-First, check what version of CUDA you have, for example, 12.9.
+`environment.yml` lets conda choose the PyTorch build. To pin a specific CUDA
+version, check what you have:
 
 ```
 nvcc --version
 ```
 
-Install pytorch. It might look like this:
+then install the matching build before creating the rest of the environment,
+for example:
 
 ```
 pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu129
 ```
 
-It is worth ensuring the PyTorch backend can use the GPU from here. This should return True.
+Check the backend can actually see the GPU — this should return `True`:
 
 ```
 import torch
 torch.cuda.is_available()
 ```
 
-Next, install mace. Selecting mace-torch:
-
-```
-pip3 install mace-torch
-```
-
-You can speed up evaluations using cuequivariance.
+MACE evaluations can be sped up with cuequivariance. It is optional and not a
+declared dependency, so install it separately if you want it:
 
 ```
 pip3 install cuequivariance cuequivariance-torch cuequivariance-ops-torch-cu12
 ```
 
-If this fails, you should update libc6.
-
-```
-sudo apt update
-sudo apt full-upgrade -y
-sudo apt install --only-upgrade libc6 -y
-sudo apt install update-manager-core -y
-sudo do-release-upgrade
-```
-
-The above is the nuclear option; it won't work on a cluster to which you don't have sudo access.
+If this fails, it is usually because `libc6` is too old for the prebuilt
+wheels. On a machine you administer, upgrading the distribution fixes it; on a
+cluster you cannot, so skip cuequivariance there.
 
 ## PLUMED
 
@@ -126,31 +83,31 @@ Needed for OPES. See docs `https://www.plumed.org/doc-v2.9/user-doc/html/_instal
 - Download from `https://github.com/plumed/plumed2/releases`.
 - Extract `tar -xvzf plumed-2.9.3.tgz`
 - Change into directory `cd plumed-2.9.3`
-- Configure `./configure --prefix=$HOME/opt`
-- Configure `./configure --enable-modules=opes`
+- Configure — both flags in one invocation, a second `./configure` discards the
+  settings of the first: `./configure --prefix=$HOME/opt --enable-modules=opes`
 - `make -j 4`
 - `make install`
-- The kernel environmental variable must be added to the .bashrc.
+- The kernel environmental variable must be added to the .bashrc, pointing at
+  the install prefix you configured above:
 
 ```
-export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
+export PLUMED_KERNEL=$HOME/opt/lib/libplumedKernel.so
 ```
 
 ### Use conda
 
-But we can also use the conda-forge packages.
+`py-plumed` (the Python wrapper, `plumed` on PyPI) is already in
+`environment.yml`, and the conda-forge `plumed` build can be added with:
 
 ```
 conda install plumed -y
 ```
 
-Similarly, the Python wrappers can be installed with
+Whether that build has OPES enabled depends on the package, so check before
+relying on it. If it does not, keep the source build above and let the wrapper
+find it through `PLUMED_KERNEL`.
 
-```
-conda install py-plumed -y
-```
-
-You can check if Plumed is installed by checking if this returns the Plumed path
+You can check which kernel is being picked up:
 
 ```
 import plumed
@@ -161,28 +118,12 @@ You should see something along the lines of
 
 +++ Loading the PLUMED kernel runtime +++
 
-+++ PLUMED_KERNEL="/home/louie/plumed-2.9.3/src/lib/libplumedKernel.so" +++
++++ PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so" +++
 
 <plumed.Plumed object at 0x7f83768e2a00>
 
-You need to make sure that the path it seems to be pointing to is not in your python bin of the env. But, instead it is
-the one you built! You will need this as OPES is an optional module.
-
-## I-PI
-
-Conda is preferred not to mess up the ecosystem.
-
-```
-conda install i-pi -y
-```
-
-## NQETOOLS
-
-unset SSH_ASKPASS
-
-```
-pip install git+https://github.com/LouieSlocombe/nqetools.git
-```
+Make sure the path it reports is the one you built, not one inside your conda
+env — OPES is an optional module and only the source build has it.
 
 ## Reaction paths
 
@@ -204,6 +145,10 @@ These were previously re-exported from `nqetools` itself as `nqe.prepare_neb`,
 `nqe.optimise_ts`, `nqe.plot_neb` and friends. They are no longer, so that
 there is one copy of the code rather than two drifting apart. `nqe.plot_sella`
 is now `rt.plot_irc`; everything else kept its name.
+
+Sella drives the transition-state and IRC searches. It is a `reactiontools`
+dependency, so it arrives with that package and does not need installing
+separately.
 
 ### ORCA calculators and free-energy surfaces
 
@@ -252,19 +197,18 @@ We need to install the drivers for the code we want to use.
 
 ### I-PI drivers
 
-Make sure to install the drivers in the same environment as i-pi and update the path as needed.
+The drivers have to end up inside the installed `ipi` package, in the same
+environment i-pi itself lives in. Activate that environment first, then let the
+shell resolve where `ipi` actually is rather than hard-coding a path:
 
 ```
+conda activate nqetools
+IPI_PKG=$(python -c 'import ipi, os; print(os.path.dirname(ipi.__file__))')
+
 git clone https://github.com/i-pi/i-pi.git
-cd /home/louie/i-pi/drivers/f90
-make
-cp -r /home/louie/i-pi/drivers /home/louie/anaconda3/envs/ipi_env/lib/python3.13/site-packages/ipi
-```
-
-Need to add the bin
-
-```
-cp -r /home/louie/i-pi/bin /home/louie/anaconda3/envs/ipi_env/lib/python3.13/site-packages/ipi
+make -C i-pi/drivers/f90
+cp -r i-pi/drivers "$IPI_PKG"
+cp -r i-pi/bin "$IPI_PKG"
 ```
 
 ### CP2K
@@ -333,57 +277,64 @@ https://gle4md.org/index.html?page=matrix
 
 # SOL install instructions
 
+`conda env create` is usually too slow here, so this builds the stack by hand.
+`plumed` on PyPI is the same wrapper conda-forge calls `py-plumed` — install
+one, not both.
+
 ```
 module load mamba/latest
-mamba create -n ipi_env python=3.12
-source activate ipi_env
+mamba create -n nqetools python=3.13
+source activate nqetools
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-pip install ase mace-torch sella pyfftw
+pip install ase mace-torch
 tar -xvzf plumed-2.9.3.tgz
 cd plumed-2.9.3
-./configure --prefix=$HOME/opt
-./configure --enable-modules=opes
+./configure --prefix=$HOME/opt --enable-modules=opes
 make -j 4
 make install
-export PLUMED_KERNEL=$HOME/plumed-2.9.3/src/lib/libplumedKernel.so
+export PLUMED_KERNEL=$HOME/opt/lib/libplumedKernel.so
 pip install plumed
-pip install py-plumed
 pip install i-pi
-pip install chemiscope
+unset SSH_ASKPASS
+pip install git+https://github.com/LouieSlocombe/nqetools.git
 ```
 
 # ARCHER2 install instructions
 
+> **This path is currently broken.** `cray-python/3.10.10` is below the
+> `requires-python = ">=3.13"` floor in `pyproject.toml`, so the final
+> `pip install` will refuse outright. Load a Python 3.13+ module if the site
+> provides one, or bring your own interpreter (miniforge under `$WORK`). The
+> recipe below is otherwise still correct — only the interpreter needs
+> replacing.
+
 ```
 module load PrgEnv-gnu
-module load rocm 
-module load craype-accel-amd-gfx90a 
-module load craype-x86-milan 
-module load cray-python/3.10.10
-python -m venv $WORK/ipi_env
-source $WORK/ipi_env/bin/activate
+module load rocm
+module load craype-accel-amd-gfx90a
+module load craype-x86-milan
+module load cray-python/3.10.10   # too old — see the note above
+python -m venv $WORK/nqetools_env
+source $WORK/nqetools_env/bin/activate
 
 export PYTHONUSERBASE=$WORK/.local
 export PATH=$PYTHONUSERBASE/bin:$PATH
-export PYTHONPATH=$PYTHONUSERBASE/lib/python3.10/site-packages:$PYTHONPATH
+export PYTHONPATH=$PYTHONUSERBASE/lib/python3.13/site-packages:$PYTHONPATH
 export MPLCONFIGDIR=$WORK/.config/matplotlib
-
 
 pip install --upgrade pip
 
 tar -xvzf plumed-2.9.3.tgz
 cd plumed-2.9.3
-./configure --prefix=$WORK/opt
-./configure --enable-modules=opes
+./configure --prefix=$WORK/opt --enable-modules=opes
 make -j 8
 make install
-export PLUMED_KERNEL=$WORK/plumed-2.9.3/src/lib/libplumedKernel.so
-
+export PLUMED_KERNEL=$WORK/opt/lib/libplumedKernel.so
 
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2.4
-pip install ase mace-torch sella pyfftw
+pip install ase mace-torch
 pip install plumed
-pip install i-pi chemiscope
+pip install i-pi
 unset SSH_ASKPASS
 pip install git+https://github.com/LouieSlocombe/nqetools.git
 ```
