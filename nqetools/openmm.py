@@ -2332,7 +2332,60 @@ def _calculate_quantum_spread(integrator, atom_indices=None):
     return quantum_rg * unit.nanometers
 
 
-class RPMDQuantumSpreadReporter:
+def _close_pdb_files(topology, files):
+    """Write the PDB footer to each open file and close it.
+
+    Errors are swallowed because interpreter shutdown may already have torn
+    down what this needs, and a failure here would mask the real reason the
+    run ended. Each file is handled separately so one failure does not leave
+    the rest unterminated.
+
+    Parameters
+    ----------
+    topology : openmm.app.Topology
+        Topology the footer is written for.
+    files : iterable of file object
+        Open PDB files to terminate and close.
+    """
+    for handle in files:
+        try:
+            app.PDBFile.writeFooter(topology, handle)
+            handle.close()
+        except Exception:
+            pass
+
+
+class _RPMDReporterBase:
+    """Shared scheduling for the ring-polymer reporters.
+
+    OpenMM asks a reporter how many steps remain until it next wants data,
+    and what to assemble for it. All three reporters below answer the same
+    way, and none of them want anything assembled: the bead positions they
+    report on come from the RPMD integrator directly, since the state OpenMM
+    would hand them holds only the centroid.
+
+    Subclasses set ``_reportInterval`` in their own ``__init__``.
+    """
+
+    def describeNextReport(self, simulation):
+        """Report how many steps remain until the next report is due.
+
+        Parameters
+        ----------
+        simulation : openmm.app.Simulation
+            The simulation requesting the report.
+
+        Returns
+        -------
+        tuple
+            Steps until the next report, followed by flags for whether
+            positions, velocities, forces and energies are needed.
+        """
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+
+class RPMDQuantumSpreadReporter(_RPMDReporterBase):
     """Log the quantum delocalisation of selected atoms during RPMD.
 
     Writes the radius of gyration of each atom's ring polymer, which
@@ -2370,23 +2423,6 @@ class RPMDQuantumSpreadReporter:
         else:
             header = "Step\t" + "\t".join([f"Rg_Atom{i}(nm)" for i in atom_indices])
         self._out.write(header + "\n")
-
-    def describeNextReport(self, simulation):
-        """Report how many steps remain until the next report is due.
-
-        Parameters
-        ----------
-        simulation : openmm.app.Simulation
-            The simulation requesting the report.
-
-        Returns
-        -------
-        tuple
-            Steps until the next report, followed by flags for whether
-            positions, velocities, forces and energies are needed.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False)
 
     def report(self, simulation, state):
         """Write the radius of gyration of each watched atom.
@@ -2431,7 +2467,7 @@ class RPMDQuantumSpreadReporter:
         self._out.close()
 
 
-class RPMDBeadReporter:
+class RPMDBeadReporter(_RPMDReporterBase):
     """Write the trajectory of every individual bead to its own PDB file.
 
     OpenMM's built-in reporters see only the centroid, so the bead
@@ -2471,23 +2507,6 @@ class RPMDBeadReporter:
             app.PDBFile.writeHeader(topology, f)
             self._files.append(f)
 
-    def describeNextReport(self, simulation):
-        """Report how many steps remain until the next report is due.
-
-        Parameters
-        ----------
-        simulation : openmm.app.Simulation
-            The simulation requesting the report.
-
-        Returns
-        -------
-        tuple
-            Steps until the next report, followed by flags for whether
-            positions, velocities, forces and energies are needed.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False)
-
     def report(self, simulation, state):
         """Write the current positions of every bead, one file each.
 
@@ -2525,23 +2544,14 @@ class RPMDBeadReporter:
     def __del__(self):
         """Write the PDB footer to every bead file and close them.
 
-        Errors are swallowed because interpreter shutdown may already have
-        torn down what this needs, and a failure here would mask the real
-        reason the run ended.
-
         Returns
         -------
         None
         """
-        for f in self._files:
-            try:
-                app.PDBFile.writeFooter(self._topology, f)
-                f.close()
-            except Exception:
-                pass
+        _close_pdb_files(self._topology, self._files)
 
 
-class RPMDCentroidReporter:
+class RPMDCentroidReporter(_RPMDReporterBase):
     """Write the bead-averaged positions to a single PDB file.
 
     The centroid is the closest thing a ring polymer has to a classical
@@ -2578,23 +2588,6 @@ class RPMDCentroidReporter:
         self._next_frame_index = 0
         self._out = open(file_name, 'w')
         app.PDBFile.writeHeader(topology, self._out)
-
-    def describeNextReport(self, simulation):
-        """Report how many steps remain until the next report is due.
-
-        Parameters
-        ----------
-        simulation : openmm.app.Simulation
-            The simulation requesting the report.
-
-        Returns
-        -------
-        tuple
-            Steps until the next report, followed by flags for whether
-            positions, velocities, forces and energies are needed.
-        """
-        steps = self._reportInterval - simulation.currentStep % self._reportInterval
-        return (steps, False, False, False, False)
 
     def report(self, simulation, state):
         """Write the bead-averaged positions as one PDB model.
@@ -2635,19 +2628,11 @@ class RPMDCentroidReporter:
     def __del__(self):
         """Write the PDB footer and close the file.
 
-        Errors are swallowed because interpreter shutdown may already have
-        torn down what this needs, and a failure here would mask the real
-        reason the run ended.
-
         Returns
         -------
         None
         """
-        try:
-            app.PDBFile.writeFooter(self._topology, self._out)
-            self._out.close()
-        except Exception:
-            pass
+        _close_pdb_files(self._topology, [self._out])
 
 
 def count_dna_and_estimate_charge(topology):
