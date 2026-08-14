@@ -12,6 +12,7 @@ returning the shell command that launches the client.
 
 import ipi
 import os
+import shutil
 import torch
 
 from .calculators import (nwchem_calc_preset)
@@ -588,7 +589,7 @@ def move_zundel_driver_pes_files(directory):
     base = os.path.join(ipi.__file__.split('__init__.py')[0], 'drivers', 'f90', 'pes')
     files = ['h5o2.dms4B.coeff.com.dat', 'h5o2.pes4B.coeff.dat']
     for file in files:
-        os.system(f"cp {os.path.join(base, file)} {directory}")
+        shutil.copy(os.path.join(base, file), directory)
 
 
 def prep_driver(atoms, directory, f_driver, driver_args):

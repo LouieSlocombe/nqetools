@@ -17,6 +17,8 @@ plot in both packages comes out looking the same.
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from pathlib import Path
 from reactiontools import ax_plot
 
@@ -31,7 +33,7 @@ def plot_step_energy(data,
                      show=True,
                      filename="step_energy",
                      fig_size=(8, 3),
-                     y_scale='log'):
+                     y_scale='log') -> tuple[Figure, Axes]:
     """Plot potential energy against optimiser step.
 
     Parameters
@@ -92,7 +94,7 @@ def plot_time_potential_bias(data,
                              save=True,
                              show=True,
                              filename="time_potential_bias",
-                             fig_size=(8, 3)):
+                             fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot potential energy and enhanced-sampling bias against time.
 
     Both traces are offset to start at zero so their relative drift can be
@@ -149,7 +151,7 @@ def plot_time_temperature(data,
                           save=True,
                           show=True,
                           filename="time_temperature",
-                          fig_size=(8, 3)):
+                          fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot instantaneous temperature against time.
 
     Parameters
@@ -210,7 +212,7 @@ def plot_time_energy_conservation(data,
                                   save=True,
                                   show=True,
                                   filename="time_conservation",
-                                  fig_size=(8, 3)):
+                                  fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot potential and conserved energy against time.
 
     Drift in the conserved quantity is the standard diagnostic for an
@@ -267,7 +269,7 @@ def plot_arrhenius(temperatures: list[float],
                    save=True,
                    show=True,
                    filename="arrhenius",
-                   fig_size=(8, 3)) -> None:
+                   fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot an Arrhenius plot of ln(k) against inverse temperature.
 
     Curvature away from a straight line is the signature of quantum
@@ -325,7 +327,7 @@ def plot_arrhenius_2(temperatures: list[float],
                      save=True,
                      show=True,
                      filename="arrhenius",
-                     fig_size=(8, 3)) -> None:
+                     fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot classical and quantum rates on a single Arrhenius plot.
 
     The gap between the two traces widens as temperature falls, showing
@@ -383,7 +385,7 @@ def plot_kappa_temperature(temperatures: list[float],
                            save=True,
                            show=True,
                            filename="kappa_temperature",
-                           fig_size=(8, 3)) -> None:
+                           fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot the tunnelling enhancement factor against temperature.
 
     Parameters
@@ -433,7 +435,7 @@ def plot_kappa_temperature_inv(temperatures: list[float],
                                save=True,
                                show=True,
                                filename="kappa_temperature_inv",
-                               fig_size=(8, 3)) -> None:
+                               fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot the tunnelling enhancement factor against inverse temperature.
 
     Uses the same abscissa as the Arrhenius plots, so the two can be read
@@ -488,7 +490,7 @@ def plot_kie_temperature(temperatures: list[float],
                          save=True,
                          show=True,
                          filename="kie_temperature",
-                         fig_size=(8, 3)) -> None:
+                         fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot the kinetic isotope effect against inverse temperature.
 
     Parameters
@@ -541,7 +543,7 @@ def plot_bead_convergence(n_beads: list[float],
                           show=True,
                           filename="bead_temperature",
                           fig_size=(8, 3)
-                          ) -> None:
+                          ) -> tuple[Figure, Axes]:
     """Plot the tunnelling enhancement factor against ring-polymer size.
 
     Used to choose the smallest bead count at which the result has
@@ -663,7 +665,7 @@ def plot_plumed_field(path,
                       show=True,
                       filename="plumed_field",
                       derivative=False,
-                      fig_size=(8, 3)):
+                      fig_size=(8, 3)) -> tuple[Figure, Axes]:
     """Plot a named column from a PLUMED COLVAR file.
 
     Parameters

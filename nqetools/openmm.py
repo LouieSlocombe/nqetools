@@ -2424,10 +2424,6 @@ class RPMDQuantumSpreadReporter:
     def __del__(self):
         """Close the log file when the reporter is destroyed.
 
-        Parameters
-        ----------
-
-
         Returns
         -------
         None
@@ -2532,10 +2528,6 @@ class RPMDBeadReporter:
         Errors are swallowed because interpreter shutdown may already have
         torn down what this needs, and a failure here would mask the real
         reason the run ended.
-
-        Parameters
-        ----------
-
 
         Returns
         -------
@@ -2646,10 +2638,6 @@ class RPMDCentroidReporter:
         Errors are swallowed because interpreter shutdown may already have
         torn down what this needs, and a failure here would mask the real
         reason the run ended.
-
-        Parameters
-        ----------
-
 
         Returns
         -------

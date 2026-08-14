@@ -1608,10 +1608,14 @@ def write_plumed_mtd_pt_wob(atoms,
                             height=0.041,
                             bias=10,
                             ):
-    """Write metadynamics on a coordination difference, without a wall.
+    """Write metadynamics on a coordination difference, labelling the CV 'dc1'.
 
-    As :func:`write_plumed_mtd_pt1`, but with no upper wall on the
-    donor-acceptor separation, leaving the heavy atoms free to move.
+    Produces the same biasing scheme as :func:`write_plumed_mtd_pt1` - same
+    collective variable, same METAD directive, no wall on either - and
+    differs only in naming the combined coordinate ``dc1`` rather than
+    ``dc``, so the COLVAR column it returns is named to match. Kept as a
+    separate entry point because existing analysis scripts read that column
+    by name.
 
     Parameters
     ----------
@@ -1700,10 +1704,14 @@ def write_plumed_opes_pt_wob(atoms,
                              stride_hills=100,
                              explore=False,
                              ):
-    """Write OPES on a coordination difference, without a wall.
+    """Write OPES on a coordination difference, labelling the CV 'dc1'.
 
-    As :func:`write_plumed_opes_pt1`, but with no upper wall on the
-    donor-acceptor separation, leaving the heavy atoms free to move.
+    Produces the same biasing scheme as :func:`write_plumed_opes_pt1` - same
+    collective variable, same OPES directive, no wall on either - and
+    differs only in naming the combined coordinate ``dc1`` rather than
+    ``dc``, so the COLVAR column it returns is named to match. Kept as a
+    separate entry point because existing analysis scripts read that column
+    by name.
 
     Parameters
     ----------
