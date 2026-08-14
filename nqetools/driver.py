@@ -489,7 +489,9 @@ def orca_calc_preset(orca_path=None,
 
     # Configure the solvent model
     if f_solv is not None and f_solv is not False:
-        if f_solv:
+        # `is True`, not truthiness: a solvent name is truthy too, and testing
+        # it that way overwrote every name with WATER.
+        if f_solv is True:
             f_solv = 'WATER'
         inpt_solv = '''
                                               %CPCM SMD TRUE
@@ -502,9 +504,7 @@ def orca_calc_preset(orca_path=None,
     if f_disp is None or f_disp is False:
         inpt_disp = ''
     else:
-        if f_disp:
-            f_disp = 'D4'
-        inpt_disp = f_disp
+        inpt_disp = 'D4' if f_disp is True else f_disp
 
     # Configure QM/MM atom list for QM/XTB2 calculations
     if atom_list is not None and calc_type == 'QM/XTB2':

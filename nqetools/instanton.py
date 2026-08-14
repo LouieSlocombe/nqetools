@@ -21,8 +21,8 @@ from ase.units import kB
 from scipy.constants import k, h
 from scipy.optimize import curve_fit
 from ipi.utils.units import unit_to_internal
+from reactiontools import n_plot
 from .execution import run_instanton_post_process
-from .plotting import n_plot
 from .calculators import calculate_free_energy
 
 K2au = unit_to_internal("temperature", "kelvin", 1.0)

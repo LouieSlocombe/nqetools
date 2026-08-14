@@ -269,39 +269,6 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
     return atoms
 
 
-def swap_bonding_configuration(atoms, donor_index, hydrogen_index, acceptor_index):
-    """Swap the bonding configuration from O-H...O to O...H-O in an Atoms object.
-
-    Parameters
-    ----------
-    atoms : Atoms
-        The ASE Atoms object.
-    donor_index : int
-        The index of the donor oxygen atom.
-    hydrogen_index : int
-        The index of the hydrogen atom.
-    acceptor_index : int
-        The index of the acceptor oxygen atom.
-
-    Returns
-    -------
-    Atoms
-        The updated Atoms object with the swapped bonding configuration.
-    """
-    atoms = atoms.copy()
-    donor_pos = atoms.positions[donor_index]
-    hydrogen_pos = atoms.positions[hydrogen_index]
-    acceptor_pos = atoms.positions[acceptor_index]
-
-    direction = acceptor_pos - donor_pos
-    direction /= np.linalg.norm(direction)
-    new_hydrogen_pos = acceptor_pos - direction * np.linalg.norm(hydrogen_pos - donor_pos)
-
-    atoms.positions[hydrogen_index] = new_hydrogen_pos
-
-    return atoms
-
-
 def time_force_call(atoms, calc, n_reps=3):
     """Measure the time taken to calculate forces on an atomic structure multiple times.
 
@@ -327,22 +294,6 @@ def time_force_call(atoms, calc, n_reps=3):
         times[i] = time.time() - t0
         print(f'Time taken={times[i]:.3} s', flush=True)
     print(f'Average time taken={np.mean(times):.3} s std={np.std(times):.3}', flush=True)
-
-
-def get_fmax(atoms):
-    """Calculate the maximum force on any atom in the given Atoms object.
-
-    Parameters
-    ----------
-    atoms : ase.Atoms
-        ASE Atoms object containing the atomic structure.
-
-    Returns
-    -------
-    float
-        The maximum force on any atom.
-    """
-    return np.sqrt((atoms.get_forces() ** 2).sum(axis=1).max())
 
 
 def align_mols(atoms1, atoms2):

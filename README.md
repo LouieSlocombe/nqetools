@@ -205,6 +205,47 @@ These were previously re-exported from `nqetools` itself as `nqe.prepare_neb`,
 there is one copy of the code rather than two drifting apart. `nqe.plot_sella`
 is now `rt.plot_irc`; everything else kept its name.
 
+### ORCA calculators and free-energy surfaces
+
+The same applies to the ORCA calculator presets and to reading and plotting
+free-energy surfaces, which have now moved across too:
+
+```python
+import reactiontools as rt
+
+calc = rt.orca_calc_preset(**rt.orca_preset_dft_gold)
+
+surfaces = rt.sum_hills_files("FES")               # FES0.dat, FES1.dat, ...
+rt.plot_fes_1d(surfaces, source_unit="kJ/mol", energy_unit="eV")
+```
+
+| Was | Now |
+| --- | --- |
+| `nqe.orca_calc_preset` | `rt.orca_calc_preset` |
+| `nqe.orca_preset_dft_cheap` … `nqe.orca_preset_ccsd_gold` | same names on `rt` |
+| `nqe.optimise_atoms` | `rt.orca_optimise_atoms` |
+| `nqe.calculate_goat` | `rt.orca_calculate_goat` |
+| `nqe.get_fmax` | `rt.get_fmax` |
+| `nqe.swap_bonding_configuration` | `rt.swap_bonding_configuration` |
+| `nqe.n_plot`, `nqe.ax_plot` | `rt.n_plot`, `rt.ax_plot` |
+| `nqe.search_fes_files` | `rt.sum_hills_files` |
+| `nqe.load_fes_data` | `rt.as_fes` |
+| `nqe.plot_fes_series_1d`, `nqe.plot_fes_series_1d_compare` | `rt.plot_fes_1d` |
+| `nqe.plot_fes_contourf`, `nqe.plot_fes_contourf_series`, `nqe.plot_fes_contourf_compare` | `rt.plot_fes_2d` |
+| `nqe.plot_fes_contour_compare` | `rt.plot_fes_2d_overlay` |
+| `nqe.plot_fes_sep` | `rt.plot_fes_slices` |
+
+Two behaviour changes worth knowing about. `rt.orca_calc_preset` defaults to
+`xc='r2SCAN-3c'` with no basis set, where the `nqetools` copy defaulted to
+`wB97X`/`def2-SVP` — pass them explicitly to reproduce older numbers. And the
+`reactiontools` copy fixes a bug the `nqetools` one had: `f_solv="TOLUENE"` was
+silently overwritten with `WATER`, and a named `f_disp` with `D4`.
+
+What stays in `nqetools`: the rate theory (`nqe.wigner_correction`,
+`nqe.eckart_correction`, the instanton functions), the Arrhenius, transmission
+coefficient and KIE plots, `nqe.get_fes_times`, and everything driving i-PI,
+PLUMED input generation and OpenMM.
+
 ## Driver installation
 
 We need to install the drivers for the code we want to use.

@@ -18,6 +18,7 @@ from openmmml import MLPotential
 from openmmplumed import PlumedForce
 
 import nqetools as nqe
+import reactiontools as rt
 
 
 def test_openmm_ml():
@@ -275,14 +276,20 @@ FLUSH STRIDE=1
                          temperature=300,
                          bins=n_bins,
                          cv=cv_limits)
-    fes_arrays_meta_md = nqe.load_fes_data(directory, n_bins)
-    fes_times = nqe.get_fes_times(2.0, total_steps, fes_arrays_meta_md)
 
-    nqe.plot_fes_series_1d(fes_arrays_meta_md,
-                           fes_times,
-                           filename='fes_md',
-                           save=plot_save,
-                           show=plot_show)
+    # run_plumed_hills writes FES0.dat, FES1.dat, ... into `directory`; the
+    # surfaces are read and plotted by reactiontools, which sorts them by
+    # their numeric suffix rather than lexically. PLUMED writes kJ/mol.
+    fes_files = rt.sum_hills_files(os.path.join(directory, 'FES'))
+    fes_times = nqe.get_fes_times(2.0, total_steps, fes_files)
+
+    rt.plot_fes_1d(fes_files,
+                   labels=fes_times,
+                   label_template=r"$t={:g}$ ps",
+                   source_unit='kJ/mol',
+                   energy_unit='eV',
+                   filename='fes_md' if plot_save else None,
+                   show=plot_show)
 
 
 def test_get_atoms_in_residue():

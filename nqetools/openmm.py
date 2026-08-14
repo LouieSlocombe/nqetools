@@ -32,10 +32,10 @@ from openmmplumed import PlumedForce
 from openmmtools.integrators import GeodesicBAOABIntegrator
 from pdbfixer import PDBFixer
 from rdkit import Chem
+from reactiontools import n_plot
 from scipy import constants
 
 from .io import remove_water_residues_in_pdb, clean_ions_in_pdb, relabel_residues_in_pdb, remove_residues_in_pdb
-from .plotting import n_plot
 
 
 def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):

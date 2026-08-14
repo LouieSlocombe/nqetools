@@ -18,6 +18,21 @@ Rates can be obtained two ways: approximate tunnelling corrections from
 :mod:`~nqetools.calcs`, or full ring-polymer instanton theory from
 :mod:`~nqetools.instanton`. Condensed-phase path-integral dynamics is
 handled separately through :mod:`~nqetools.openmm`.
+
+Reaction-path work is not here. Nudged elastic bands, saddle-point and IRC
+searches, ORCA calculators and free-energy surfaces all live in
+`reactiontools <https://github.com/LouieSlocombe/reactiontools>`_, which
+``nqetools`` installs as a dependency::
+
+    import reactiontools as rt
+
+    calc = rt.orca_calc_preset(**rt.orca_preset_dft_gold)
+    fes = rt.as_fes("FES0.dat", source_unit="kJ/mol", energy_unit="eV")
+
+Some of those were previously re-exported from ``nqetools`` itself, as
+``nqe.orca_calc_preset``, ``nqe.load_fes_data``, ``nqe.plot_fes_series_1d``
+and friends. They are no longer, so that there is one copy of the code
+rather than two drifting apart.
 """
 
 from .calcs import (correlate,
@@ -30,19 +45,11 @@ from .calcs import (correlate,
                     bell_correction,
                     eckart_correction)
 from .calculators import (nwchem_calc_preset,
-                          orca_calc_preset,
                           qchem_calc_preset,
-                          orca_preset_dft_cheap,
-                          orca_preset_dft_gold,
-                          orca_preset_xtb,
-                          orca_preset_mp2_gold,
-                          orca_preset_ccsd_gold,
-                          optimise_atoms,
                           calculate_vib_spectrum,
                           calculate_ccsd_energy,
                           calculate_free_energy,
-                          calculate_hessian,
-                          calculate_goat)
+                          calculate_hessian)
 from .conversions import (bohr_to_angstrom,
                           A_to_nm,
                           eV_to_J,
@@ -89,8 +96,6 @@ from .io import (read_ipi_xyz,
                  copy_xyz,
                  copy_hess,
                  find_nqetools_path,
-                 search_fes_files,
-                 load_fes_data,
                  xyz_to_sdf,
                  extract_nonstandard_res,
                  get_non_standard_residues,
@@ -132,21 +137,12 @@ from .plotting import (plot_step_energy,
                        plot_time_potential_bias,
                        plot_time_temperature,
                        plot_time_energy_conservation,
-                       plot_fes_series_1d,
-                       plot_fes_contourf_series,
-                       plot_fes_contourf_compare,
-                       plot_fes_contour_compare,
-                       plot_fes_contourf,
-                       plot_fes_sep,
-                       n_plot,
-                       ax_plot,
                        plot_arrhenius,
                        plot_arrhenius_2,
                        plot_kappa_temperature,
                        plot_kappa_temperature_inv,
                        plot_kie_temperature,
                        plot_bead_convergence,
-                       plot_fes_series_1d_compare,
                        plot_plumed_field)
 from .plumed import (prep_plumed,
                      write_plumed_mtd_pos,
@@ -161,8 +157,6 @@ from .tools import (add_ipi_paths,
                     has_pbc,
                     add_hydrogen_halfway,
                     add_hydrogen_at_distance,
-                    swap_bonding_configuration,
-                    get_fmax,
                     move_atom_halfway,
                     optimise_atom_halfway,
                     round_sf,

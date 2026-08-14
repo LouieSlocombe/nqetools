@@ -46,73 +46,6 @@ def test_calculate_good_nbeads():
     assert n_beads == 19
 
 
-def test_orca_calc():
-    """Tests the ORCA calculator from the nqetools module.
-
-    This function builds a water molecule, sets up the ORCA calculator,
-    runs the calculation to get the potential energy, and prints the energy
-    and the time taken for the calculation.
-    """
-    print(flush=True)
-    print("Testing ORCA calculator", flush=True)
-
-    atoms = ase.build.molecule('H2O')
-    calc = nqe.orca_calc_preset()
-
-    atoms.calc = calc
-
-    t1 = time.time()
-    energy = atoms.get_potential_energy()
-    t2 = time.time()
-    print(f"Energy: {energy} Time: {t2 - t1}", flush=True)
-    pass
-
-
-def test_orca_presets():
-    """Tests the ORCA calculator presets from the nqetools module.
-
-    This function tests various ORCA calculator presets by building a water molecule,
-    setting up the ORCA calculator with different presets, running the calculation to get
-    the potential energy, and printing the energy.
-    """
-    print(flush=True)
-    print("Testing ORCA calculator presets", flush=True)
-
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_cheap)
-    atoms = ase.build.molecule('H2O')
-    atoms.calc = calc
-    energy = atoms.get_potential_energy()
-    print(f"Energy: {energy}", flush=True)
-
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_dft_gold)
-    atoms = ase.build.molecule('H2O')
-    atoms.calc = calc
-    energy = atoms.get_potential_energy()
-    print(f"Energy: {energy}", flush=True)
-
-    # xtb calculation
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_xtb)
-    atoms = ase.build.molecule('H2O')
-    atoms.calc = calc
-    energy = atoms.get_potential_energy()
-    print(f"Energy: {energy}", flush=True)
-
-    # MP2 calculation
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_mp2_gold)
-    atoms = ase.build.molecule('H2O')
-    atoms.calc = calc
-    energy = atoms.get_potential_energy()
-    print(f"Energy: {energy}", flush=True)
-
-    # CCSD(T) calculation
-    calc = nqe.orca_calc_preset(**nqe.orca_preset_ccsd_gold)
-    atoms = ase.build.molecule('H2O')
-    atoms.calc = calc
-    energy = atoms.get_potential_energy()
-    print(f"Energy: {energy}", flush=True)
-    pass
-
-
 def test_mace_calc():
     """Tests the MACE calculator.
 
@@ -402,9 +335,14 @@ def test_orca_onion():
 
     atoms = read('data/onion_example.xyz')
 
-    calc = nqe.orca_calc_preset(calc_type='QM/XTB2',
-                                atom_list='0:11',
-                                n_procs=1)
+    # xc/basis_set were implicit when this preset lived in nqetools; they are
+    # spelled out now that it comes from reactiontools, whose defaults differ,
+    # so the reference energy below still refers to the same level of theory.
+    calc = rt.orca_calc_preset(calc_type='QM/XTB2',
+                               atom_list='0:11',
+                               n_procs=1,
+                               xc='wB97X',
+                               basis_set='def2-SVP')
 
     atoms.calc = calc
 
@@ -506,7 +444,7 @@ def test_ase_qmmm_orca_mace():
     mm_calc = mace_off(model="small",
                        device="cuda",
                        default_dtype="float64")
-    qm_calc = nqe.orca_calc_preset()
+    qm_calc = rt.orca_calc_preset(xc='wB97X', basis_set='def2-SVP')
 
     qmmm_calc = SimpleQMMM([0, 1, 2],
                            qm_calc,
@@ -537,7 +475,7 @@ def test_ase_eiqmmm():
 
     atoms.calc = EIQMMM(
         qm_idx,
-        nqe.orca_calc_preset(),
+        rt.orca_calc_preset(xc='wB97X', basis_set='def2-SVP'),
         TIP3P(),
         interaction,
         embedding=embedding,
