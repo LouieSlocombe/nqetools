@@ -1,0 +1,10 @@
+# Revisions to skip when running git blame: whole-repo reformats that would
+# otherwise attribute every line to whoever ran the formatter.
+#
+# Enable for this repo once with:
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub picks this file up automatically.
+
+# Apply ruff format across the repo
+5aa7dbd2389808fab0fbb37c7fe709c5ee353b09
