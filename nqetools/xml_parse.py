@@ -18,7 +18,7 @@ from .tools import has_pbc, get_file_extension
 
 
 def list_to_string(items):
-    """Converts a list to a string with brackets and commas.
+    """Convert a list to a string with brackets and commas.
 
     Parameters
     ----------
@@ -34,7 +34,7 @@ def list_to_string(items):
 
 
 def update_properties(root, prop_list):
-    """Updates the XML tree with properties from a given list.
+    """Update the XML tree with properties from a given list.
 
     Parameters
     ----------
@@ -48,7 +48,7 @@ def update_properties(root, prop_list):
 
 
 def append_properties(root, prop_list):
-    """Loads the current list of properties in the given root and appends a new input prop_list.
+    """Load the property list from the given root and append a new one.
 
     Parameters
     ----------
@@ -68,12 +68,12 @@ def append_properties(root, prop_list):
 
 
 def get_masses(atoms, f_deut=False, m_d=2.0141):
-    """Retrieves the masses of atoms, optionally using deuterium masses for hydrogen atoms.
+    """Retrieve atomic masses, optionally deuterating the hydrogens.
 
     Parameters
     ----------
-    atoms : object
-        An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
+    atoms : ase.Atoms
+        Structure whose chemical symbols and masses are read.
     f_deut : bool, optional
         Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
     m_d : float, optional
@@ -98,14 +98,14 @@ def get_masses(atoms, f_deut=False, m_d=2.0141):
 
 
 def update_mass(root, atoms, f_deut=False, m_d=2.0141):
-    """Updates the XML tree with the masses of atoms, optionally using deuterium masses for hydrogen atoms.
+    """Update the XML tree with atomic masses, optionally deuterated.
 
     Parameters
     ----------
     root : Element
         The root element of the XML tree.
-    atoms : object
-        An object representing the atoms, which must have `get_chemical_symbols` and `get_masses` methods.
+    atoms : ase.Atoms
+        Structure whose chemical symbols and masses are read.
     f_deut : bool, optional
         Flag to indicate whether to use deuterium masses for hydrogen atoms. Default is False.
     m_d : float, optional
@@ -126,7 +126,7 @@ def update_mass(root, atoms, f_deut=False, m_d=2.0141):
 
 
 def update_file(root, filename="init.xyz", units="angstrom"):
-    """Updates the 'file' element within 'initialize' elements in the XML tree.
+    """Update the 'file' element within 'initialize' elements in the XML tree.
 
     Parameters
     ----------
@@ -146,14 +146,16 @@ def update_file(root, filename="init.xyz", units="angstrom"):
 
 
 def update_cell(root, atoms):
-    """Updates the XML tree with the cell dimensions of the atoms. If no cell tag is present, it adds it.
+    """Update the XML tree with the cell dimensions of the atoms.
+
+    A <cell> element is created under each <initialize> that lacks one.
 
     Parameters
     ----------
     root : Element
         The root element of the XML tree.
-    atoms : object
-        An object representing the atoms, which must have a `get_cell` method that returns an object with a `lengths` method.
+    atoms : ase.Atoms
+        Structure whose cell lengths are read.
     """
     cell_l = atoms.get_cell().lengths()
     for rank in root.iter("initialize"):
@@ -166,14 +168,15 @@ def update_cell(root, atoms):
 
 
 def update_driver(root, atoms, f_driver):
-    """Updates the XML tree with driver information based on the specified driver type.
+    """Update the XML tree with driver information based on the specified driver type.
 
     Parameters
     ----------
     root : Element
         The root element of the XML tree.
-    atoms : object
-        An object representing the atoms, which must have periodic boundary conditions (PBC).
+    atoms : ase.Atoms
+        Structure the run will start from. Its PBC flags decide whether a
+        cell is written.
     f_driver : str
         The type of driver to use.
     """
@@ -243,7 +246,7 @@ def update_driver(root, atoms, f_driver):
 
 
 def update_nbeads(root, n_beads):
-    """Updates the XML tree to set the number of beads in the 'initialize' elements.
+    """Update the XML tree to set the number of beads in the 'initialize' elements.
 
     Parameters
     ----------
@@ -257,7 +260,7 @@ def update_nbeads(root, n_beads):
 
 
 def update_hessian(root, n_doft, n_beads):
-    """Updates the shape attribute of the hessian elements in the XML tree.
+    """Update the shape attribute of the hessian elements in the XML tree.
 
     Parameters
     ----------
@@ -273,7 +276,7 @@ def update_hessian(root, n_doft, n_beads):
 
 
 def update_temperature(root, temperature):
-    """Updates the temperature element in the XML tree.
+    """Update the temperature element in the XML tree.
 
     Parameters
     ----------
@@ -291,7 +294,7 @@ def update_temperature(root, temperature):
 
 
 def update_title(root, title):
-    """Updates the XML tree to set the title in the 'output' elements.
+    """Update the XML tree to set the title in the 'output' elements.
 
     Parameters
     ----------
@@ -305,7 +308,7 @@ def update_title(root, title):
 
 
 def update_total_steps(root, total_steps):
-    """Updates the total_steps element in the XML tree.
+    """Update the total_steps element in the XML tree.
 
     Parameters
     ----------
@@ -319,7 +322,7 @@ def update_total_steps(root, total_steps):
 
 
 def update_optimiser(root, optimiser_mode):
-    """Updates the optimiser element in the XML tree to set the mode attribute.
+    """Update the optimiser element in the XML tree to set the mode attribute.
 
     Parameters
     ----------
@@ -333,7 +336,7 @@ def update_optimiser(root, optimiser_mode):
 
 
 def update_tol(root, energy, force, position):
-    """Updates the tolerances elements in the XML tree for both optimiser and instanton elements.
+    """Update the tolerances on both the optimiser and instanton elements.
 
     Parameters
     ----------
@@ -359,7 +362,7 @@ def update_tol(root, energy, force, position):
 
 
 def update_open_paths(root, n_atoms):
-    """Updates the open_paths elements in the XML tree within normal_modes.
+    """Update the open_paths elements in the XML tree within normal_modes.
 
     Parameters
     ----------
@@ -374,7 +377,7 @@ def update_open_paths(root, n_atoms):
 
 
 def update_timestep(root, timestep):
-    """Updates the timestep element in the XML tree.
+    """Update the timestep element in the XML tree.
 
     Parameters
     ----------
@@ -388,7 +391,7 @@ def update_timestep(root, timestep):
 
 
 def update_stride(root, stride):
-    """Updates the stride attribute for 'properties' and 'trajectory' elements in the XML tree.
+    """Update the stride on the 'properties' and 'trajectory' elements.
 
     Parameters
     ----------
@@ -403,7 +406,7 @@ def update_stride(root, stride):
 
 
 def update_checkpoint_stride(root, stride):
-    """Updates the stride attribute of the checkpoint elements within the output tags in the XML tree.
+    """Update the stride on the checkpoint elements within the output tags.
 
     Parameters
     ----------
@@ -418,7 +421,7 @@ def update_checkpoint_stride(root, stride):
 
 
 def find_parent(root, child):
-    """Finds the parent element of a given child element in an XML tree.
+    """Find the parent element of a given child element in an XML tree.
 
     Parameters
     ----------
@@ -438,7 +441,7 @@ def find_parent(root, child):
 
 
 def add_plumed_smotion_section(root):
-    """Adds a smotion section under the simulation tag in the XML tree.
+    """Add a smotion section under the simulation tag in the XML tree.
 
     Parameters
     ----------
@@ -456,7 +459,7 @@ def add_plumed_smotion_section(root):
 def add_trajectory_centroid(
     root, stride="10", filename="xc", text="x_centroid{angstrom}"
 ):
-    """Adds a <trajectory> element to the <output> tag in the XML tree.
+    """Add a <trajectory> element to the <output> tag in the XML tree.
 
     Parameters
     ----------
@@ -478,7 +481,7 @@ def add_trajectory_centroid(
 
 
 def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
-    """Adds a <trajectory> element to the <output> tag in the XML tree with specified plumed extras.
+    """Add a <trajectory> element carrying the requested PLUMED extras.
 
     Parameters
     ----------
@@ -506,7 +509,7 @@ def add_trajectory_plumed_extras(root, plumed_extras, stride=10):
 def add_plumed_ff_section(
     root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"
 ):
-    """Adds a PLUMED force field section to the XML tree.
+    """Add a PLUMED force field section to the XML tree.
 
     Parameters
     ----------
@@ -542,7 +545,7 @@ def add_plumed_ff_section(
 
 
 def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
-    """Adds a bias section to the XML tree under the ensemble tag.
+    """Add a bias section to the XML tree under the ensemble tag.
 
     Parameters
     ----------
@@ -571,7 +574,7 @@ def add_plumed_bias_section(root, plumed_extras=None, nbeads=1):
 def add_plumed_xml(
     root, plumed_extras=None, file_name="init.xyz", plumed_dat="plumed.dat"
 ):
-    """Adds PLUMED-related sections to the XML tree.
+    """Add PLUMED-related sections to the XML tree.
 
     Parameters
     ----------
@@ -594,9 +597,10 @@ def add_plumed_xml(
 
 
 def add_trajectory_file(root, filename="pos", stride=20, text="positions"):
-    """Adds or updates a <trajectory> element in the <output> tag in the XML tree.
-    If a trajectory element with the same filename exists, updates it;
-    otherwise adds a new element.
+    """Add or update a <trajectory> element in the <output> tag in the XML tree.
+
+    An existing element with the same filename is updated in place;
+    otherwise a new one is appended.
 
     Parameters
     ----------
@@ -631,7 +635,7 @@ def add_trajectory_file(root, filename="pos", stride=20, text="positions"):
 
 
 def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path=None):
-    """Adds or updates the <thermostat> section in the XML tree.
+    """Add or update the <thermostat> section in the XML tree.
 
     Parameters
     ----------
@@ -658,11 +662,11 @@ def add_thermostat_section(root, thermostat="smart_sampling_1ps_n6_w2", xml_path
 
 
 def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> None:
-    """Updates the splitting attribute in the dynamics section of the XML tree.
+    """Update the splitting attribute in the dynamics section of the XML tree.
 
     Parameters
     ----------
-    root : ElementTree.Element
+    root : Element
         The root element of the XML tree.
     splitting : str, optional
         The new splitting value. Default is "baoab".
@@ -685,11 +689,11 @@ def update_dynamics_splitting(root: et.Element, splitting: str = "baoab") -> Non
 
 
 def update_motion_fix_com(root: et.Element, fix_com: bool = False) -> None:
-    """Updates the fixcom field in the motion section of the XML tree.
+    """Update the fixcom field in the motion section of the XML tree.
 
     Parameters
     ----------
-    root : ElementTree.Element
+    root : Element
         The root element of the XML tree.
     fix_com : bool, optional
         Whether to fix the centre of mass. Default is False.

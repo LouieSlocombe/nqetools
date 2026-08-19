@@ -140,9 +140,9 @@ def test_ase_mace_driver_qmmm():
 
 
 def test_ase_orca_driver():
-    """Tests the ORCA driver using the ASE driver.
+    """Test the ORCA driver using the ASE driver.
 
-    This function builds a water molecule, centers it with a vacuum of 5.0 Å,
+    Builds a water molecule, centres it with a vacuum of 5.0 Å,
     sets up the ORCA driver, runs the optimisation, and stores the results
     in a specified directory.
     """
@@ -186,9 +186,9 @@ def test_ase_orca_driver_qmmm():
 
 @pytest.mark.fail
 def test_ase_nwchem_driver():
-    """Tests the NWChem driver using the ASE driver.
+    """Test the NWChem driver using the ASE driver.
 
-    This function builds a water molecule, centers it with a vacuum of 5.0 Å,
+    Builds a water molecule, centres it with a vacuum of 5.0 Å,
     sets up the NWChem driver, runs the optimisation, and stores the results
     in a specified directory.
     """
@@ -207,9 +207,9 @@ def test_ase_nwchem_driver():
 
 @pytest.mark.fail
 def test_nwchem_driver():
-    """Tests the NWChem driver.
+    """Test the NWChem driver.
 
-    This function builds a water molecule, centers it with a vacuum of 5.0 Å,
+    Builds a water molecule, centres it with a vacuum of 5.0 Å,
     sets up the NWChem driver, runs the optimisation, and stores the results
     in a specified directory.
     """

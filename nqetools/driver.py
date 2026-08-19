@@ -321,11 +321,11 @@ def write_nwchem_driver(
     solv=None,
     host="driver",
 ):
-    """Prepares and writes the input file for an NWChem calculation.
+    """Prepare and write the input file for an NWChem calculation.
 
     Parameters
     ----------
-    atoms : object
+    atoms : ase.Atoms
         An ASE Atoms object representing the atomic structure.
     directory : str
         The directory to write the NWChem input file to.
@@ -562,7 +562,7 @@ client.run(atoms)
 
 
 def move_zundel_driver_pes_files(directory):
-    """Copies the Zundel driver PES (Potential Energy Surface) files to the specified directory.
+    """Copy the Zundel driver PES files to the specified directory.
 
     Parameters
     ----------
@@ -576,11 +576,11 @@ def move_zundel_driver_pes_files(directory):
 
 
 def prep_driver(atoms, directory, f_driver, driver_args):
-    """Prepares the driver command based on the specified driver type and parameters.
+    """Prepare the driver command based on the specified driver type and parameters.
 
     Parameters
     ----------
-    atoms : object
+    atoms : ase.Atoms
         An ASE Atoms object representing the atomic structure.
     directory : str
         The directory where driver files will be written.
@@ -594,6 +594,11 @@ def prep_driver(atoms, directory, f_driver, driver_args):
     -------
     str
         The command to run the prepared driver.
+
+    Raises
+    ------
+    ValueError
+        If `f_driver` is not one of the recognised driver types.
     """
     driver_path = get_ipi_driver()
     if f_driver == "cbe":

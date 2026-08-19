@@ -106,6 +106,11 @@ def parse_ts_thermo_data(directory, filename="thermo_data.out"):
     -------
     dict
         Dictionary containing Qtras, Qrot, logQvib, and V/kBT values.
+
+    Raises
+    ------
+    ValueError
+        If the file contains none of the expected thermodynamic entries.
     """
     filepath = os.path.join(directory, filename)
 
@@ -143,7 +148,14 @@ def parse_inst_thermo_data(directory, filename="thermo_data.out"):
     Returns
     -------
     dict
-        Dictionary containing the thermodynamic values including Temperature, NBEADS, and 1/(betaP*hbar).
+        Thermodynamic values including Temperature, NBEADS and
+        1/(betaP*hbar), plus the BN, Qt, Qrot, log(Qvib*N) and S/hbar
+        columns when the table is present.
+
+    Raises
+    ------
+    ValueError
+        If the file contains none of the expected thermodynamic entries.
     """
     filepath = os.path.join(directory, filename)
 
@@ -225,9 +237,9 @@ def calc_kappa_full(
     filter_list=None,
     ref_energy=True,
 ):
-    """Calculates the tunnelling factor (kappa) using reactant, transition state, and instanton data.
+    """Calculate the tunnelling factor (kappa) from reactant, TS and instanton data.
 
-    This function processes the thermodynamic data for the reactant, transition state (TS),
+    Processes the thermodynamic data for the reactant, transition state (TS),
     and instanton, and calculates the tunnelling factor (kappa) based on the provided parameters.
 
     Parameters
@@ -416,9 +428,9 @@ def calc_forward_rate_orca(
 
 
 def exp_decay(t, a, tau, c) -> np.ndarray:
-    """Models an exponential decay function.
+    """Model an exponential decay function.
 
-    This function calculates the value of an exponential decay at time `t`
+    Calculates the value of an exponential decay at time `t`
     based on the given amplitude (`a`), decay constant (`tau`), and offset (`c`).
 
     Parameters
@@ -441,9 +453,9 @@ def exp_decay(t, a, tau, c) -> np.ndarray:
 
 
 def fit_exp_decay(x, y, p0=None, bounds=None):
-    """Fits an exponential decay function to the given data.
+    """Fit an exponential decay function to the given data.
 
-    This function uses non-linear least squares to fit the `exp_decay` function
+    Uses non-linear least squares to fit the `exp_decay` function
     to the provided data points `(x, y)`. It allows for optional initial parameter
     guesses and bounds for the fitting process.
 
@@ -463,7 +475,7 @@ def fit_exp_decay(x, y, p0=None, bounds=None):
     Returns
     -------
     tuple
-        Optimal values for the parameters (a, tau, c) that minimize the
+        Optimal values for the parameters (a, tau, c) that minimise the
         squared residuals between the observed and fitted data.
     """
     x = np.asarray(x, dtype=float)
@@ -484,9 +496,9 @@ def fit_exp_decay(x, y, p0=None, bounds=None):
 
 
 def extrapolate_inf_bead_limit(x, y, plot=False):
-    """Extrapolates the infinite bead limit for a given dataset.
+    """Extrapolate the infinite bead limit for a given dataset.
 
-    This function fits an exponential decay model to the provided data points `(x, y)`
+    Fits an exponential decay model to the provided data points `(x, y)`
     and optionally plots the data along with the fitted curve. It returns the extrapolated
     value at the infinite bead limit.
 
@@ -495,7 +507,7 @@ def extrapolate_inf_bead_limit(x, y, plot=False):
     x : array-like
         The independent variable data (e.g., number of beads).
     y : array-like
-        The dependent variable data (e.g., tunneling factor values).
+        The dependent variable data (e.g., tunnelling factor values).
     plot : bool, optional
         Whether to plot the data and the fitted curve. Defaults to False.
 

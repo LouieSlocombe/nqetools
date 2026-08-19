@@ -16,7 +16,7 @@ base_dir = nqe.find_nqetools_path()
 
 
 def vis_xml(root):
-    """Writes the XML tree to a file named 'input.xml' in the current working directory.
+    """Write the XML tree to a file named 'input.xml' in the current working directory.
 
     Parameters
     ----------
@@ -31,7 +31,7 @@ def vis_xml(root):
 
 
 def count_matching_words(input_string, target_word):
-    """Counts the number of occurrences of a target word in an input string.
+    """Count the number of occurrences of a target word in an input string.
 
     Parameters
     ----------

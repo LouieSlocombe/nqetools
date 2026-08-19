@@ -253,7 +253,7 @@ def _eckart_inner(
     e_ts: float,
     e_prod: float,
 ) -> np.ndarray:
-    """Compute the micro-canonical Eckart tunnelling correction factor (κ) for an energy grid.
+    """Compute the micro-canonical Eckart tunnelling factor (κ) on an energy grid.
 
     Parameters
     ----------
@@ -365,7 +365,7 @@ def eckart_correction(
     e_ts: float,
     e_prod: float,
 ) -> float:
-    """Compute the Eckart tunnelling correction factor (κ) for a reaction at a given temperature.
+    """Compute the Eckart tunnelling correction factor (κ) at a given temperature.
 
     Parameters
     ----------

@@ -38,9 +38,9 @@ def nwchem_calc_preset(
     solv=None,
     host=None,
 ):
-    """Create and configure an NWChem calculator preset for quantum chemistry calculations.
+    """Create and configure an NWChem calculator preset.
 
-    This function sets up the input parameters for an NWChem calculation, including
+    Sets up the input parameters for an NWChem calculation, including
     the directory, charge, exchange-correlation functional, basis set, dispersion
     corrections, solvent effects, and other options.
 
@@ -125,9 +125,9 @@ def qchem_calc_preset(
     scf_algorithm="DIIS",  # DIIS GDM DIIS_GDM
     solv_extra=None,
 ):
-    """Create and configure a Q-Chem calculator preset for quantum chemistry calculations.
+    """Create and configure a Q-Chem calculator preset.
 
-    This function sets up the input parameters for a Q-Chem calculation, including
+    Sets up the input parameters for a Q-Chem calculation, including
     charge, multiplicity, exchange-correlation functional, basis set, solvent effects,
     dispersion corrections, and other advanced options.
 
@@ -208,7 +208,7 @@ def qchem_calc_preset(
 def load_ir_data(filename):
     """Load IR spectrum data from ORCA output file into a pandas DataFrame.
 
-    This function reads an ORCA output file containing IR frequency data,
+    Reads an ORCA output file containing IR frequency data,
     extracts the relevant information, and returns it as a pandas DataFrame.
 
     Parameters
@@ -266,7 +266,7 @@ def load_ir_data(filename):
 def load_raman_data(filename):
     """Load Raman spectrum data from ORCA output file into a pandas DataFrame.
 
-    This function reads an ORCA output file containing Raman frequency data,
+    Reads an ORCA output file containing Raman frequency data,
     extracts the relevant information, and returns it as a pandas DataFrame.
 
     Parameters
@@ -392,7 +392,7 @@ def calculate_vib_spectrum(
 ):
     """Calculate vibrational spectrum data using the ORCA quantum chemistry package.
 
-    This function sets up and performs a vibrational spectrum calculation for a molecule
+    Sets up and performs a vibrational spectrum calculation for a molecule
     represented by an ASE `Atoms` object. It computes IR, Raman, and vibrational spectrum data.
 
     Parameters
@@ -489,7 +489,7 @@ def calculate_vib_spectrum(
 def get_total_electrons(atoms: Atoms) -> int:
     """Calculate the total number of electrons in a molecule.
 
-    This function computes the total number of electrons in a molecule
+    Computes the total number of electrons in a molecule
     represented by an ASE `Atoms` object. It sums the atomic numbers (Z)
     of all atoms in the molecule and adjusts for the explicit charge
     provided in the `Atoms.info` dictionary.
@@ -514,6 +514,7 @@ def get_total_electrons(atoms: Atoms) -> int:
 
 def round_to_nearest_two(number):
     """Round a number to the nearest multiple of 2.
+
     If the result would be 0, return 1 instead.
 
     Parameters
@@ -537,9 +538,9 @@ def round_to_nearest_two(number):
 def calculate_ccsd_energy(
     atoms, charge=0, multiplicity=1, orca_path=None, basis_set="def2-TZVPP", n_procs=10
 ):
-    """Perform a CCSD (Coupled Cluster Single and Double) energy calculation using the ORCA quantum chemistry package.
+    """Perform a CCSD (coupled cluster singles and doubles) calculation with ORCA.
 
-    This function sets up and executes a CCSD energy calculation for a molecule represented by an ASE `Atoms` object.
+    Sets up and executes a CCSD energy calculation for a molecule represented by an ASE `Atoms` object.
     It ensures that the number of processors used does not exceed the total number of electrons in the system.
 
     Parameters
@@ -592,7 +593,7 @@ def calculate_ccsd_energy(
 def grab_value(orca_file, term, splitter):
     """Extract a specific numerical value from an ORCA output file.
 
-    This function reads an ORCA output file in reverse order, searches for a specific term,
+    Reads an ORCA output file in reverse order, searches for a specific term,
     and extracts the numerical value associated with it. The value is converted from Hartree
     units to eV using the ASE `Hartree` constant.
 
@@ -635,11 +636,12 @@ def calculate_free_energy(
     use_ccsd=False,
     ccsd_energy=None,
 ):
-    """Calculate the Gibbs free energy of a molecule using the ORCA quantum chemistry package.
+    """Calculate the Gibbs free energy of a molecule with ORCA.
 
-    This function sets up and performs a vibrational frequency calculation for a molecule
+    Sets up and performs a vibrational frequency calculation for a molecule
     represented by an ASE `Atoms` object. It supports various options, including geometry
-    optimization, solvent effects, dispersion corrections, and CCSD energy calculations.
+    optimisation, solvent effects, dispersion corrections, and CCSD energy
+    calculations.
 
     Parameters
     ----------
@@ -660,9 +662,9 @@ def calculate_free_energy(
     basis_set : str, optional
         Basis set to use for the calculation. Default is 'def2-QZVP'.
     opt : bool, optional
-        Whether to perform geometry optimization. Default is False.
+        Whether to perform geometry optimisation. Default is False.
     tight_opt : bool, optional
-        Whether to use tight geometry optimization criteria. Default is False.
+        Whether to use tight geometry optimisation criteria. Default is False.
     tight_scf : bool, optional
         Whether to use tight SCF convergence criteria. Default is False.
     f_solv : bool, optional
@@ -780,8 +782,8 @@ def calculate_hessian(
 ):
     """Perform a Hessian matrix calculation using the ORCA quantum chemistry package.
 
-    This function sets up and executes a Hessian matrix calculation for a molecule
-    represented by an ASE `Atoms` object. It optimizes the geometry and computes
+    Sets up and executes a Hessian matrix calculation for a molecule
+    represented by an ASE `Atoms` object. It optimises the geometry and computes
     the Hessian matrix, which is used for vibrational analysis.
 
     Parameters
@@ -799,7 +801,7 @@ def calculate_hessian(
     basis_set : str, optional
         Basis set to use for the calculation. Default is 'def2-QZVP'.
     tight_opt : bool, optional
-        Whether to use tight geometry optimization. Default is False.
+        Whether to use tight geometry optimisation. Default is False.
     tight_scf : bool, optional
         Whether to use tight SCF convergence criteria. Default is False.
     f_solv : bool, optional
@@ -814,7 +816,7 @@ def calculate_hessian(
     tuple
         A tuple containing:
         - atoms : ase.Atoms
-            The optimized geometry of the molecule.
+            The optimised geometry of the molecule.
         - hessian_file : str
             Path to the file containing the Hessian matrix.
 

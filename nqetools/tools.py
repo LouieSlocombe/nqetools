@@ -27,7 +27,7 @@ from ase.optimize import BFGS
 
 
 def add_ipi_paths(base: str | None = None) -> None:
-    """Adds i-PI paths to the system path and environment variables.
+    """Add i-PI paths to the system path and environment variables.
 
     Parameters
     ----------
@@ -43,7 +43,7 @@ def add_ipi_paths(base: str | None = None) -> None:
 def get_ipi_driver() -> str:
     """Get the path to the i-PI driver executable.
 
-    This function locates the i-PI driver executable by finding the path
+    Locates the i-PI driver executable by finding the path
     to the i-PI package and appending the relative path to the executable.
 
     Returns
@@ -56,7 +56,7 @@ def get_ipi_driver() -> str:
 
 
 def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
-    """Removes stale i-PI unix sockets belonging to the current user.
+    """Remove stale i-PI unix sockets belonging to the current user.
 
     Only sockets owned by the calling user are considered, so this will not
     disturb i-PI runs started by anyone else sharing the machine.
@@ -89,7 +89,7 @@ def rm_ipi_tmp(tmp_dir: str | None = None, address: str | None = None) -> None:
 
 
 def has_pbc(atoms: Atoms) -> bool:
-    """Checks if an ASE atoms object has periodic boundary conditions (PBC).
+    """Check if an ASE atoms object has periodic boundary conditions (PBC).
 
     Parameters
     ----------
@@ -109,7 +109,7 @@ def add_hydrogen_halfway(atoms, index1, index2):
 
     Parameters
     ----------
-    atoms : Atoms
+    atoms : ase.Atoms
         The ASE Atoms object.
     index1 : int
         The index of the first atom.
@@ -118,7 +118,7 @@ def add_hydrogen_halfway(atoms, index1, index2):
 
     Returns
     -------
-    Atoms
+    ase.Atoms
         The updated Atoms object with the hydrogen atom added.
     """
     atoms = atoms.copy()
@@ -137,7 +137,7 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
 
     Parameters
     ----------
-    atoms : Atoms
+    atoms : ase.Atoms
         The ASE Atoms object.
     atom_index : int
         The index of the atom to move.
@@ -148,7 +148,7 @@ def move_atom_halfway(atoms, atom_index, target_index1, target_index2):
 
     Returns
     -------
-    Atoms
+    ase.Atoms
         The updated Atoms object with the atom moved.
     """
     atoms = atoms.copy()
@@ -173,7 +173,7 @@ def optimise_atom_halfway(
 
     Parameters
     ----------
-    atoms : Atoms
+    atoms : ase.Atoms
         The ASE Atoms object.
     atom_index : int
         The index of the atom to move.
@@ -188,7 +188,7 @@ def optimise_atom_halfway(
 
     Returns
     -------
-    Atoms
+    ase.Atoms
         The optimised Atoms object without any constraints.
     """
     atoms = move_atom_halfway(atoms, atom_index, target_index1, target_index2)
@@ -208,11 +208,11 @@ def optimise_atom_halfway(
 
 
 def add_hydrogen_at_distance(atoms, index1, index2, distance):
-    """Add a hydrogen atom at a specified distance from one atom along the line between two atoms in an Atoms object.
+    """Add a hydrogen a set distance from one atom, along the line to another.
 
     Parameters
     ----------
-    atoms : Atoms
+    atoms : ase.Atoms
         The ASE Atoms object.
     index1 : int
         The index of the first atom.
@@ -223,7 +223,7 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
 
     Returns
     -------
-    Atoms
+    ase.Atoms
         The updated Atoms object with the hydrogen atom added.
     """
     atoms = atoms.copy()
@@ -241,7 +241,7 @@ def add_hydrogen_at_distance(atoms, index1, index2, distance):
 
 
 def align_mols(atoms1, atoms2):
-    """Align two molecular structures by minimising their rotational and translational differences.
+    """Align two structures by minimising their rotation and translation.
 
     Parameters
     ----------
@@ -276,7 +276,12 @@ def align_principal_axis(atoms: Atoms, axis: str = "z") -> Atoms:
     Returns
     -------
     aligned_atoms : ase.Atoms
-        The rotated (aligned) Atoms object.
+        The rotated (aligned) Atoms object. The input is not modified.
+
+    Raises
+    ------
+    ValueError
+        If `axis` is not 'x', 'y' or 'z'.
     """
 
     directions = {
@@ -324,7 +329,7 @@ def round_sf(value, sig_figs=3):
 
 
 def get_file_extension(file_path):
-    """Returns the file extension for the given file path.
+    """Return the file extension for the given file path.
 
     Parameters
     ----------
@@ -394,7 +399,7 @@ def _connected_groups(
 
 
 def cluster_atoms(atoms: Atoms, multi=1.0) -> list[Atoms]:
-    """Clusters atoms based on their natural cutoffs.
+    """Cluster atoms based on their natural cutoffs.
 
     Groups atoms by connectivity, inferring bonds from ASE's natural
     cutoffs, and returns each group as its own Atoms object. Atoms within a
@@ -446,7 +451,7 @@ def cluster_non_hydrogen_atoms(atoms: Atoms) -> tuple[list[int], list[int]]:
 def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
     """Reindex atoms by their clusters.
 
-    This function takes an ASE Atoms object, clusters the atoms using the
+    Takes an ASE Atoms object, clusters the atoms using the
     `cluster_atoms` function, and then rejoins the clusters into a single
     Atoms object.
 
@@ -468,7 +473,7 @@ def reindex_atoms_by_cluster(atoms: Atoms) -> Atoms:
 
 
 def move_com_to_origin(atoms: Atoms) -> Atoms:
-    """Moves a set of atoms so that its centre of mass is at the origin.
+    """Move a set of atoms so that its centre of mass is at the origin.
 
     Parameters
     ----------
@@ -495,9 +500,9 @@ def move_clusters_to_distance(
 
     Parameters
     ----------
-    cluster1 : Atoms
+    cluster1 : ase.Atoms
         The first set of atoms.
-    cluster2 : Atoms
+    cluster2 : ase.Atoms
         The second set of atoms.
     index1 : int
         Index of the reference atom in cluster1.
@@ -508,9 +513,15 @@ def move_clusters_to_distance(
 
     Returns
     -------
-    Atoms
+    ase.Atoms
         A new Atoms object containing both clusters, repositioned. The inputs
         are not modified.
+
+    Raises
+    ------
+    ValueError
+        If the two reference atoms sit at the same position, leaving no
+        direction to move along.
     """
     cluster1 = cluster1.copy()
     cluster2 = cluster2.copy()
@@ -541,27 +552,32 @@ def move_clusters_to_distance(
 def move_to_distances(
     atoms: Atoms, index1: int, index2: int, distances: list[float]
 ) -> list[Atoms]:
-    """Move two clusters of atoms to specified distances along the vector connecting two target atoms.
+    """Generate a scan of two clusters held at a series of separations.
 
-    This function splits the input `Atoms` object into two clusters, calculates the vector
-    connecting the specified atoms in the clusters, and moves the clusters to achieve the
-    specified distances between the target atoms.
+    Splits `atoms` into its two bonded clusters and moves them rigidly along
+    the vector joining the two reference atoms, once per requested distance.
 
     Parameters
     ----------
     atoms : ase.Atoms
-        The ASE Atoms object containing the atomic structure.
+        Structure holding exactly two bonded clusters.
     index1 : int
-        The index of the reference atom in the first cluster.
+        Index of the reference atom in the first cluster.
     index2 : int
-        The index of the reference atom in the second cluster.
-    distances : list[float]
-        A list of target distances to move the clusters.
+        Index of the reference atom in the second cluster, as a global index
+        into `atoms`.
+    distances : list of float
+        Target separations, in Angstrom.
 
     Returns
     -------
-    list[ase.Atoms]
-        A list of ASE Atoms objects, each representing the clusters moved to the specified distances.
+    list of ase.Atoms
+        One structure per entry in `distances`. The input is not modified.
+
+    Raises
+    ------
+    ValueError
+        If `atoms` does not split into exactly two clusters.
     """
     clusters = cluster_atoms(atoms)
     if len(clusters) != 2:
@@ -594,7 +610,7 @@ def get_fes_times(
         Timestep in femtoseconds.
     total_steps : int
         Total number of simulation steps.
-    fes_arrays : list[np.ndarray]
+    fes_arrays : list of np.ndarray
         List of FES arrays.
 
     Returns
@@ -620,7 +636,7 @@ def get_fes_times(
 def make_dimer(atoms, translate=None, angle=180, axis="z"):
     """Create a dimer by combining two copies of a molecule.
 
-    This function takes an ASE Atoms object, centers the first molecule,
+    Takes an ASE Atoms object, centres the first molecule,
     creates a copy, rotates the copy by a specified angle around a given axis,
     translates the copy, and combines the two molecules into a single Atoms object.
 
@@ -628,7 +644,7 @@ def make_dimer(atoms, translate=None, angle=180, axis="z"):
     ----------
     atoms : ase.Atoms
         The ASE Atoms object representing the molecule.
-    translate : list[float], optional
+    translate : list of float, optional
         Translation vector for the second molecule. Default is [0.0, 3.4, 0.0].
     angle : float, optional
         Rotation angle in degrees for the second molecule. Default is 180 degrees.
@@ -656,15 +672,15 @@ def make_dimer(atoms, translate=None, angle=180, axis="z"):
 
 
 def convert_code_to_string(code):
-    """Converts a Python function or code object to its string representation.
+    """Convert a Python function or code object to its string representation.
 
-    This function uses the `inspect.getsource` method to retrieve the source
+    Uses the `inspect.getsource` method to retrieve the source
     code of the given function or code object and removes any common leading
     whitespace using `textwrap.dedent`.
 
     Parameters
     ----------
-    code : object
+    code : callable or types.CodeType
         The Python function or code object to convert.
 
     Returns
@@ -698,9 +714,9 @@ def get_distance(atoms: Atoms, idx1: int, idx2: int) -> float:
 
 
 def closest_corresponding_index(super_atoms, sub_atoms, sub_idx):
-    """Find the index of the atom in `super_atoms` that is closest to a specific atom in `sub_atoms`.
+    """Find the atom in `super_atoms` closest to a given atom in `sub_atoms`.
 
-    This function calculates the Euclidean distance between the position of a given atom
+    Calculates the Euclidean distance between the position of a given atom
     in `sub_atoms` (specified by `sub_idx`) and all atoms in `super_atoms`. It then returns
     the index of the atom in `super_atoms` with the smallest distance.
 
@@ -835,9 +851,9 @@ def combine_without_overlaps(
 
 
 def largest_bonded_cluster_indices(atoms: Atoms) -> list[int]:
-    """Finds the indices of the largest bonded cluster of atoms in an ASE Atoms object.
+    """Find the indices of the largest bonded cluster of atoms in an ASE Atoms object.
 
-    This function uses ASE's NeighborList to determine bonded groups of atoms based on
+    Uses ASE's NeighborList to determine bonded groups of atoms based on
     natural covalent radii. It identifies all connected components (clusters) of atoms
     and returns the indices of the atoms in the largest cluster. If there are ties in
     cluster size, the cluster with the smallest index is chosen.

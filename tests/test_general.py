@@ -28,9 +28,9 @@ import reactiontools as rt
 
 
 def test_calculate_good_nbeads():
-    """Tests the calculate_good_nbeads function from the nqetools module.
+    """Test the calculate_good_nbeads function from the nqetools module.
 
-    This function calculates the number of beads (replicas) needed for a
+    Calculates the number of beads (replicas) needed for a
     path integral molecular dynamics (PIMD) simulation based on the
     maximum vibrational frequency (omega_max) and temperature (T).
 
@@ -47,9 +47,9 @@ def test_calculate_good_nbeads():
 
 
 def test_mace_calc():
-    """Tests the MACE calculator.
+    """Test the MACE calculator.
 
-    This function builds a water molecule, sets up the MACE calculator with different presets,
+    Builds a water molecule, sets up the MACE calculator with different presets,
     runs the calculation to get the potential energy, and prints the energy and the time taken
     for the calculation.
     """
@@ -82,9 +82,9 @@ def test_mace_calc():
 
 
 def test_nwchem_calc():
-    """Tests the NWChem calculator from the nqetools module.
+    """Test the NWChem calculator from the nqetools module.
 
-    This function builds a water molecule, sets up the NWChem calculator,
+    Builds a water molecule, sets up the NWChem calculator,
     runs the calculation to get the potential energy, and prints the energy
     and the time taken for the calculation.
     """
@@ -106,9 +106,9 @@ def test_nwchem_calc():
 
 
 def test_exe_md():
-    """Tests the MACE MD calculator.
+    """Test the MACE MD calculator.
 
-    This function builds a water molecule, centers it with a vacuum of 5.0 Å,
+    Builds a water molecule, centres it with a vacuum of 5.0 Å,
     sets up the MACE MD calculator, runs the molecular dynamics simulation,
     and stores the results in a specified directory.
     """
@@ -219,9 +219,9 @@ def test_load_xyz_with_cell():
 
 
 def test_wigner_correction():
-    """Tests the Wigner tunneling correction factor calculation.
+    """Test the Wigner tunnelling correction factor calculation.
 
-    This function calculates the Wigner tunneling correction factor (κ)
+    Calculates the Wigner tunnelling correction factor (κ)
     using the `wigner_correction` function from the `nqetools` module.
     The calculation is based on the vibrational frequency (omega) and
     temperature (T). The result is printed and compared to an expected
@@ -229,7 +229,7 @@ def test_wigner_correction():
 
     Notes
     -----
-    Asserts that the calculated Wigner tunneling factor for each temperature
+    Asserts that the calculated Wigner tunnelling factor for each temperature
     in `temperature_list` matches the corresponding value in `kappa_list`
     within an absolute tolerance of 1e-2.
     """
@@ -245,9 +245,9 @@ def test_wigner_correction():
 
 
 def test_bell_correction():
-    """Tests the Bell tunneling correction factor calculation.
+    """Test the Bell tunnelling correction factor calculation.
 
-    This function calculates the Bell tunneling correction factor (κ)
+    Calculates the Bell tunnelling correction factor (κ)
     using the `bell_correction` function from the `nqetools` module.
     The calculation is based on the barrier height, width of the barrier,
     and reduced mass. The result is printed and compared to an expected
@@ -255,7 +255,7 @@ def test_bell_correction():
 
     Notes
     -----
-    Asserts that the calculated Bell tunneling factor is approximately
+    Asserts that the calculated Bell tunnelling factor is approximately
     28573.077 with a tolerance of 1e-2.
     """
     print(flush=True)
@@ -268,9 +268,9 @@ def test_bell_correction():
 
 
 def test_eckart_correction():
-    """Tests the Eckart tunneling correction factor calculation.
+    """Test the Eckart tunnelling correction factor calculation.
 
-    This function calculates the Eckart tunneling correction factor (κ)
+    Calculates the Eckart tunnelling correction factor (κ)
     using the `eckart_correction` function from the `nqetools` module.
     The calculation is based on the temperature, vibrational frequency,
     and energy values for the reactants, transition state, and products.
@@ -278,7 +278,7 @@ def test_eckart_correction():
 
     Notes
     -----
-    Asserts that the calculated Eckart tunneling factor for each temperature
+    Asserts that the calculated Eckart tunnelling factor for each temperature
     in `temperature_list` matches the corresponding value in `kappa_list`
     within a relative tolerance of 1e-2.
     """

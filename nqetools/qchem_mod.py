@@ -404,8 +404,7 @@ class QChem(FileIOCalculator):
 
         Handles both conventional SCF and NEO-SCF output, which report
         their energies and gradients under different headings and in
-        different layouts.
-            Results are stored in ``self.results``.
+        different layouts. Results are stored in ``self.results``.
 
         Raises
         ------

@@ -27,7 +27,7 @@ from .tools import round_sf, get_distance
 
 
 def _metad(args, pace, sigma, height, bias, temperature):
-    """The METAD directive that drives a well-tempered metadynamics scheme.
+    """Build the METAD directive that drives a well-tempered metadynamics scheme.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def _metad(args, pace, sigma, height, bias, temperature):
 
 
 def _opes(args, pace, barrier, temperature, stride_hills, explore=False):
-    """The OPES directive, in its EXPLORE variant when `explore` is set.
+    """Build the OPES directive, in its EXPLORE variant when `explore` is set.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def _opes(args, pace, barrier, temperature, stride_hills, explore=False):
 
 
 def _upper_wall(name, arg, at, kappa):
-    """A one-sided harmonic restraint holding `arg` below `at`.
+    """Build a one-sided harmonic restraint holding `arg` below `at`.
 
     Parameters
     ----------
@@ -109,7 +109,7 @@ def _upper_wall(name, arg, at, kappa):
 
 
 def _switching(d_low):
-    """The rational switching function the coordination-based schemes use.
+    """Build the rational switching function the coordination-based schemes use.
 
     Parameters
     ----------
@@ -141,7 +141,7 @@ def _atom_list(indices):
 
 
 def _coordination_group(atoms, *exclude):
-    """The atoms forming a coordination shell: everything except `exclude`.
+    """Build the atom group forming a coordination shell: everything except `exclude`.
 
     Parameters
     ----------
@@ -220,7 +220,7 @@ def _mtd_coordination_difference(
     bias,
     cv,
 ):
-    """Metadynamics on the donor-acceptor coordination-number difference.
+    """Write metadynamics on the donor-acceptor coordination-number difference.
 
     Shared by :func:`write_plumed_mtd_pt1` and
     :func:`write_plumed_mtd_pt_wob`, which differ only in `cv`.
@@ -273,7 +273,7 @@ def _opes_coordination_difference(
     explore,
     cv,
 ):
-    """OPES on the donor-acceptor coordination-number difference.
+    """Write OPES on the donor-acceptor coordination-number difference.
 
     Shared by :func:`write_plumed_opes_pt1` and
     :func:`write_plumed_opes_pt_wob`, which differ only in `cv`.
@@ -2628,7 +2628,7 @@ def write_plumed_opes_1pt_3donor_coord(
     d_upper = round_sf(d_upper * A_to_nm)
 
     def cutoff(first, second):
-        """Switching radius scaled from the distance the pair starts at."""
+        """Scale the switching radius by the distance the pair starts at."""
         return round_sf(get_distance(atoms, first, second) * r0 * A_to_nm)
 
     r_1 = cutoff(idx_n3, idx_h3)

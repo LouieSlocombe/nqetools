@@ -34,14 +34,15 @@ from .conversions import convert_atom_list_bohr_to_angstrom
 
 
 def read_ipi_xyz(filename, convert_units=True):
-    """Reads a file in xyz i-PI format and returns it in ASE format.
+    """Read a file in i-PI xyz format and return it in ASE format.
 
     Parameters
     ----------
     filename : str
         The path to the xyz file in i-PI format.
-    convert_units : bool
-        If True, converts coordinates and cell from Bohr to Angstrom.
+    convert_units : bool, optional
+        If True, convert coordinates and cell from Bohr to Angstrom. Default
+        is True.
 
     Returns
     -------
@@ -72,7 +73,7 @@ def read_ipi_xyz(filename, convert_units=True):
 
 
 def read_ipi_output(filename):
-    """Reads an i-PI output file and returns a dictionary with the properties in a tidy order.
+    """Read an i-PI output file into a dictionary of property columns.
 
     Parameters
     ----------
@@ -82,7 +83,13 @@ def read_ipi_output(filename):
     Returns
     -------
     dict
-        A dictionary where keys are property names and values are the corresponding data columns.
+        Property names mapped to their data columns, in the order the header
+        declares them. Repeated names are suffixed with '+'.
+
+    Raises
+    ------
+    ValueError
+        If a header comment line does not carry a parsable column mapping.
     """
 
     regex = re.compile(".*column *([0-9]*) *--> ([^ {]*)")
@@ -113,11 +120,11 @@ def read_ipi_output(filename):
 
 
 def write_xml(root, file):
-    """Writes an XML tree to a file, creating any necessary directories.
+    """Write an XML tree to a file, creating any necessary directories.
 
     Parameters
     ----------
-    root : xml.etree.ElementTree.Element
+    root : Element
         The root element of the XML tree.
     file : str
         The path to the file where the XML tree will be written.
@@ -131,8 +138,10 @@ def write_xml(root, file):
 
 
 def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
-    """Writes an ASE Atoms object to an XYZ file, ensuring the directory exists and centering the atoms with a specified vacuum.
-    If the atoms have no cell or a zero-sized cell, adds 5Å of vacuum by default.
+    """Write an ASE Atoms object to an XYZ file, centring it in its cell.
+
+    Any missing parent directories are created. A structure whose cell has
+    zero volume is given `vacuum_min` of padding first.
 
     Parameters
     ----------
@@ -141,14 +150,17 @@ def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
     file : str
         The path to the output XYZ file.
     vacuum : float, optional
-        The vacuum padding to apply when centering the atoms. Default is None.
+        Padding to centre the atoms with, in Angstrom. No centring is done
+        when None. Default is None.
     vacuum_min : float, optional
-        The minimum vacuum padding to apply if the cell size is zero. Default is 5.0Å.
+        Padding applied when the cell has zero volume, in Angstrom. Default
+        is 5.0.
 
     Returns
     -------
     ase.Atoms
-        The centered ASE Atoms object.
+        The same object, centred in its cell. Note that `atoms` is modified
+        in place rather than copied.
     """
     cell = atoms.get_cell()
     if cell.volume == 0:
@@ -166,7 +178,7 @@ def write_xyz(atoms, file, vacuum=None, vacuum_min=5.0):
 
 
 def remove_directory(directory):
-    """Removes a directory if it exists, otherwise prints a message.
+    """Remove a directory if it exists, and do nothing if it does not.
 
     Parameters
     ----------
@@ -180,7 +192,7 @@ def remove_directory(directory):
 
 
 def copy_and_rename_file(src, dst_dir, new_name):
-    """Copies a file to a new directory and renames it.
+    """Copy a file to a new directory and rename it.
 
     Parameters
     ----------
@@ -195,7 +207,7 @@ def copy_and_rename_file(src, dst_dir, new_name):
 
 
 def list_files_with_pattern(directory, pattern):
-    """Lists files in a directory that match a given pattern.
+    """List files in a directory that match a given pattern.
 
     Parameters
     ----------
@@ -213,7 +225,7 @@ def list_files_with_pattern(directory, pattern):
 
 
 def get_final_xyz(directory, sub="*FINAL_*.xyz"):
-    """Filters and returns the final XYZ file from a directory.
+    """Find the final XYZ file written by an i-PI run.
 
     Parameters
     ----------
@@ -225,7 +237,8 @@ def get_final_xyz(directory, sub="*FINAL_*.xyz"):
     Returns
     -------
     str
-        The path to the final XYZ file that matches the criteria.
+        Path to the final XYZ file. The force trajectory and the per-bead
+        files are discarded, leaving the centroid or single-bead positions.
     """
     files = list_files_with_pattern(directory, sub)
     # i-PI writes several XYZ files per run; discard the force trajectory and
@@ -237,7 +250,7 @@ def get_final_xyz(directory, sub="*FINAL_*.xyz"):
 
 
 def get_final_hess(directory, sub="*FINAL.hess*"):
-    """Retrieves the final Hessian file from a directory.
+    """Retrieve the final Hessian file from a directory.
 
     Parameters
     ----------
@@ -255,7 +268,7 @@ def get_final_hess(directory, sub="*FINAL.hess*"):
 
 
 def copy_xyz(file_in, new_dir, file_out="init.xyz"):
-    """Copies an XYZ file to a new directory, renaming it if necessary.
+    """Copy an XYZ file to a new directory, renaming it if necessary.
 
     Parameters
     ----------
@@ -276,7 +289,7 @@ def copy_xyz(file_in, new_dir, file_out="init.xyz"):
 
 
 def copy_hess(file_in, new_dir, file_out="hessian.dat"):
-    """Copies a Hessian file to a new directory, renaming it if necessary.
+    """Copy a Hessian file to a new directory, renaming it if necessary.
 
     Parameters
     ----------
@@ -292,7 +305,7 @@ def copy_hess(file_in, new_dir, file_out="hessian.dat"):
 
 
 def find_nqetools_path():
-    """Finds the path of the nqetools package.
+    """Find the path of the nqetools package.
 
     Returns
     -------
@@ -311,11 +324,11 @@ def find_nqetools_path():
 
 
 def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=False):
-    """Converts an XYZ file to an SDF file, optionally inferring bonds, sanitizing, and kekulizing the molecules.
+    """Convert an XYZ file to an SDF file, inferring bonds along the way.
 
-    This function reads molecular structures from an XYZ file, processes them into RDKit molecule objects,
-    and writes them to an SDF file. It supports optional charge parsing, bond inference, molecule sanitization,
-    and kekulization.
+    Each frame becomes an RDKit molecule, with its charge taken from the
+    comment line where one is given. Bonds are inferred from the geometry,
+    then optionally sanitised and kekulised before writing.
 
     Parameters
     ----------
@@ -324,20 +337,31 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
     sdf_path : str
         Path to the output SDF file.
     default_charge : int, optional
-        Default charge to use for bond inference if no charge is specified in the XYZ file. Default is 0.
+        Charge used for bond inference when a frame's comment line does not
+        give one. Default is 0.
     sanitize : bool, optional
-        If True, sanitizes the RDKit molecule objects before writing. Default is True.
+        If True, sanitise each molecule before writing, falling back to a
+        reduced set of operations if the full sanitisation fails. Default is
+        True.
     kekulize : bool, optional
-        If True, kekulizes the RDKit molecule objects before writing. Default is False.
+        If True, kekulise each molecule before writing. Failures are ignored
+        and the molecule is written as-is. Default is False.
 
     Returns
     -------
     int
         The number of molecules successfully written to the SDF file.
+
+    Raises
+    ------
+    OSError
+        If the SDF writer cannot be opened for `sdf_path`.
+    ValueError
+        If the XYZ file is empty, truncated, or has a malformed atom line.
     """
 
     def _parse_charge_from_comment(comment, fallback):
-        """Extracts an integer charge from the comment line of an XYZ frame.
+        """Extract an integer charge from the comment line of an XYZ frame.
 
         Parameters
         ----------
@@ -374,7 +398,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         return fallback
 
     def _read_xyz_frames(path):
-        """Reads molecular frames from an XYZ file.
+        """Read molecular frames from an XYZ file.
 
         Parameters
         ----------
@@ -384,7 +408,13 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         Returns
         -------
         list of tuple
-            A list of tuples, each containing the comment line and atom block for a frame.
+            One ``(comment, coord_lines)`` pair per frame.
+
+        Raises
+        ------
+        ValueError
+            If an atom count is not an integer, the file ends mid-frame, or
+            no frames are found.
         """
         frames = []
         with open(path, encoding="utf-8") as fh:
@@ -417,7 +447,7 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         return frames
 
     def _frame_to_mol(comment, coord_lines, name_fallback):
-        """Converts a single XYZ frame to an RDKit molecule object.
+        """Convert a single XYZ frame to an RDKit molecule object.
 
         Parameters
         ----------
@@ -431,7 +461,13 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
         Returns
         -------
         rdkit.Chem.Mol
-            The RDKit molecule object.
+            The molecule, with its conformer set and its ``_Name`` property
+            taken from the comment line or `name_fallback`.
+
+        Raises
+        ------
+        ValueError
+            If a coordinate line is malformed or its numbers cannot be read.
         """
         rw = Chem.RWMol()
         conf = Chem.Conformer(len(coord_lines))
@@ -505,9 +541,9 @@ def xyz_to_sdf(xyz_path, sdf_path, default_charge=0, sanitize=True, kekulize=Fal
 def extract_nonstandard_res(
     pdb_file_path: str, output_dir: str = ".", sdf: bool = False
 ) -> list:
-    """Extracts non-standard residues from a PDB file and saves them as XYZ files.
+    """Extract non-standard residues from a PDB file and save them as XYZ files.
 
-    This function identifies residues in a PDB file that are not part of a predefined
+    Identifies residues in a PDB file that are not part of a predefined
     set of standard residues. Each non-standard residue is saved as a separate XYZ file
     in the specified output directory. Optionally, the XYZ files can be converted to SDF format.
 
@@ -642,9 +678,9 @@ def extract_nonstandard_res(
 
 
 def get_non_standard_residues(pdb_file):
-    """Identifies non-standard residues in a PDB file.
+    """Identify non-standard residues in a PDB file.
 
-    This function reads a PDB file, splits it into residues, and compares each residue
+    Reads a PDB file, splits it into residues, and compares each residue
     against a predefined set of standard residues. Residues not in the standard set
     are considered non-standard and are returned as RDKit molecule objects.
 
@@ -741,9 +777,9 @@ def get_non_standard_residues(pdb_file):
 
 
 def list_non_standard_residues(pdb_file):
-    """Identifies and lists non-standard residues in a PDB file.
+    """Identify and lists non-standard residues in a PDB file.
 
-    This function reads a PDB file, splits it into residues, and compares each residue
+    Reads a PDB file, splits it into residues, and compares each residue
     against a predefined set of standard residues. Residues not in the standard set
     are considered non-standard and are returned.
 
@@ -835,9 +871,9 @@ def list_non_standard_residues(pdb_file):
 def clean_ions_in_pdb(
     pdb_input_path: str, ions_to_remove: list[str], pdb_output_path: str
 ) -> list[str]:
-    """Removes specified ion residues from a PDB file and saves the cleaned structure.
+    """Remove specified ion residues from a PDB file and save the cleaned structure.
 
-    This function identifies ion residues in a PDB file based on their names and removes
+    Identifies ion residues in a PDB file based on their names and removes
     those that match the provided list. The cleaned PDB structure is then saved to the
     specified output file. A list of all ion types found in the input file is returned.
 
@@ -890,9 +926,9 @@ def clean_ions_in_pdb(
 
 
 def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
-    """Relabels residues in a PDB file based on a provided mapping and saves the modified structure.
+    """Relabel residues in a PDB file and save the modified structure.
 
-    This function reads a PDB file, updates the residue names according to the `relabel_map`,
+    Reads a PDB file, updates the residue names according to the `relabel_map`,
     and writes the modified structure to an output file. A summary of changes is printed.
 
     Parameters
@@ -944,7 +980,7 @@ def relabel_residues_in_pdb(pdb_file_path, relabel_map, output_file):
 
 
 def remove_residues_in_pdb(input_pdb, output_pdb, names):
-    """Removes specific residues from a PDB file and writes the modified structure to a new file.
+    """Remove specific residues from a PDB file and write the result to a new file.
 
     Parameters
     ----------
@@ -975,9 +1011,9 @@ def remove_residues_in_pdb(input_pdb, output_pdb, names):
 
 
 def remove_water_residues_in_pdb(input_pdb, output_pdb, water_names=None):
-    """Removes water residues from a PDB file.
+    """Remove water residues from a PDB file.
 
-    This function identifies and removes residues considered to be water from a PDB file
+    Identifies and removes residues considered to be water from a PDB file
     and writes the resulting structure to a new PDB file. It is a convenience wrapper
     around `remove_residues_in_pdb`.
 

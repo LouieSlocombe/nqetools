@@ -95,23 +95,21 @@ def test_get_fes_times():
 
 
 def test_convert_code_to_string():
-    """Tests the conversion of a Python function to its string representation.
+    """Test the conversion of a Python function to its string representation.
 
-    This function defines a simple `add` function and uses the `convert_code_to_string`
-    function from the `nqetools` module to convert the `add` function into its string
-    representation. The result is then compared to the expected string representation
-    using an assertion.
+    Defines a small `add` function, round-trips it through
+    `convert_code_to_string`, and checks the source comes back verbatim.
     """
     print(flush=True)
 
     def add(a: int, b: int) -> int:
-        """Return the sum of *a* and *b*."""
+        """Return the sum of `a` and `b`."""
         return a + b
 
     s = nqe.convert_code_to_string(add)
     assert (
         s
-        == 'def add(a: int, b: int) -> int:\n    """Return the sum of *a* and *b*."""\n    return a + b\n'
+        == 'def add(a: int, b: int) -> int:\n    """Return the sum of `a` and `b`."""\n    return a + b\n'
     )
 
 

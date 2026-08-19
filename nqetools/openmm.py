@@ -44,9 +44,9 @@ from .io import (
 
 
 def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
-    """Fixes a PDB file using PDBFixer.
+    """Fix a PDB file using PDBFixer.
 
-    This function processes a PDB file to correct common issues like
+    Processes a PDB file to correct common issues like
     missing residues, non-standard residues, missing atoms, and missing
     hydrogens.
 
@@ -76,7 +76,7 @@ def fix_pdb(file_in, file_out, ph=7.0, rm_heterogens=True):
 
 
 def zero_velocities(n_atoms):
-    """Generates a list of zero velocity vectors for a given number of atoms.
+    """Generate a list of zero velocity vectors for a given number of atoms.
 
     Parameters
     ----------
@@ -94,9 +94,9 @@ def zero_velocities(n_atoms):
 
 
 def write_multimodel_pdb(topology, positions, fh, model_index):
-    """Writes a single model to a multi-model PDB file.
+    """Write a single model to a multi-model PDB file.
 
-    This function appends a model to an existing PDB file, allowing the creation
+    Appends a model to an existing PDB file, allowing the creation
     of a multi-model PDB file. Each model is identified by a unique index.
 
     Parameters
@@ -114,9 +114,9 @@ def write_multimodel_pdb(topology, positions, fh, model_index):
 
 
 def centroid_positions(simulation, n_atoms, n_beads):
-    """Computes the centroid positions of atoms across multiple beads in a simulation.
+    """Compute the centroid positions of atoms across multiple beads in a simulation.
 
-    This function calculates the average positions of atoms over a specified number
+    Calculates the average positions of atoms over a specified number
     of beads in a ring-polymer molecular dynamics (RPMD) simulation.
 
     Parameters
@@ -143,10 +143,10 @@ def centroid_positions(simulation, n_atoms, n_beads):
 
 
 def get_thermal_de_broglie_wavelength(mass, temperature):
-    """Calculates the thermal de Broglie wavelength for a given mass and temperature.
+    """Calculate the thermal de Broglie wavelength for a given mass and temperature.
 
     The thermal de Broglie wavelength is a quantum mechanical property that
-    characterizes the wave-like behavior of particles at a given temperature.
+    characterises the wave-like behaviour of particles at a given temperature.
 
     Parameters
     ----------
@@ -181,9 +181,9 @@ def get_thermal_de_broglie_wavelength(mass, temperature):
 
 
 def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=0.1):
-    """Initializes bead positions for a ring-polymer molecular dynamics (RPMD) simulation.
+    """Initialise ring-polymer (RPMD) bead positions.
 
-    This function perturbs the initial positions of atoms in the system to create
+    Perturbs the initial positions of atoms in the system to create
     multiple beads, scaled by the thermal de Broglie wavelength of each atom.
 
     Parameters
@@ -193,7 +193,7 @@ def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=
     positions : openmm.unit.Quantity or np.ndarray
         The initial atomic positions. If not a Quantity, it is assumed to be in nanometers.
     n_beads : int
-        The number of beads to initialize for the RPMD simulation.
+        The number of beads to initialise for the RPMD simulation.
     temperature : openmm.unit.Quantity
         The temperature of the system, used to calculate the thermal de Broglie wavelength.
     scale_factor : float, optional
@@ -229,9 +229,9 @@ def init_beads_scaled(simulation, positions, n_beads, temperature, scale_factor=
 
 
 def init_beads(modeller, simulation, n_beads, perturb=0.002):
-    """Initializes bead positions and velocities for a ring-polymer molecular dynamics (RPMD) simulation.
+    """Initialise ring-polymer (RPMD) bead positions and velocities.
 
-    This function perturbs the initial positions of atoms to create multiple beads
+    Perturbs the initial positions of atoms to create multiple beads
     and sets their velocities to zero.
 
     Parameters
@@ -241,7 +241,7 @@ def init_beads(modeller, simulation, n_beads, perturb=0.002):
     simulation : openmm.app.Simulation
         The OpenMM simulation object containing the integrator and system state.
     n_beads : int
-        The number of beads to initialize for the RPMD simulation.
+        The number of beads to initialise for the RPMD simulation.
     perturb : float, optional
         The magnitude of the random perturbation applied to the initial positions.
         Default is 0.002.
@@ -447,9 +447,9 @@ def md_analysis(file_in="md_log.txt"):
 
 
 def make_sdf(pdb_file, lig_name="LIG"):
-    """Converts a ligand from a PDB file to an SDF file.
+    """Convert a ligand from a PDB file to an SDF file.
 
-    This function reads a PDB file, extracts the ligand specified by its residue name,
+    Reads a PDB file, extracts the ligand specified by its residue name,
     and writes it to an SDF file. The ligand's atomic elements are guessed and added
     to the topology before conversion.
 
@@ -469,9 +469,9 @@ def make_sdf(pdb_file, lig_name="LIG"):
 
 
 def pdb_patcher(pdb_file, lig_name="LIG"):
-    """Modifies a PDB file to replace placeholder residue names and characters.
+    """Modify a PDB file to replace placeholder residue names and characters.
 
-    This function reads a PDB file, replaces occurrences of the character 'x' with a space,
+    Reads a PDB file, replaces occurrences of the character 'x' with a space,
     and changes the residue name 'UNK' to the specified ligand name. The modified PDB
     content is then written back to the same file.
 
@@ -491,9 +491,9 @@ def pdb_patcher(pdb_file, lig_name="LIG"):
 
 
 def combine_sdf_pdb(input_pdb, lig_name="LIG", patch=True):
-    """Combines a ligand from an SDF file with a receptor from a PDB file into a single PDB file.
+    """Combine an SDF ligand and a PDB receptor into a single PDB file.
 
-    This function reads a receptor structure from a PDB file and a ligand structure from an SDF file,
+    Reads a receptor structure from a PDB file and a ligand structure from an SDF file,
     then combines them into a single PDB file. Optionally, it can patch the resulting PDB file to
     replace placeholder residue names and characters.
 
@@ -529,9 +529,9 @@ def prepare_lig_system(
     save_lig_sdf=False,
     lig_name="LIG",
 ):
-    """Prepares a ligand-receptor system for molecular simulations.
+    """Prepare a ligand-receptor system for molecular simulations.
 
-    This function processes a PDB file to clean up water residues, optionally remove ions,
+    Processes a PDB file to clean up water residues, optionally remove ions,
     relabel residues, and extract the ligand. The ligand is saved as an SDF file, and the
     cleaned receptor and ligand are combined into a single PDB file. Temporary files can
     optionally be removed after processing.
@@ -599,9 +599,9 @@ def prepare_ligand_ff(
     pc_methods="mmff94",
     gaff_ver="gaff-2.11",
 ):
-    """Prepares a ligand-specific force field using the General Amber Force Field (GAFF).
+    """Prepare a ligand-specific force field using the General Amber Force Field (GAFF).
 
-    This function generates or loads GAFF parameters for a given molecule and integrates
+    Generates or loads GAFF parameters for a given molecule and integrates
     them into a standard force field. It supports caching of GAFF parameters for faster
     reuse and allows the generation of conformers and assignment of partial charges.
 
@@ -660,9 +660,9 @@ def prepare_ligand_ff(
 
 
 def deuterate_system(modeller, system, option="all", target_resname=None):
-    """Replaces hydrogen atoms with deuterium in a molecular system.
+    """Replace hydrogen atoms with deuterium in a molecular system.
 
-    This function modifies the masses of hydrogen atoms in the system to the mass of deuterium
+    Modifies the masses of hydrogen atoms in the system to the mass of deuterium
     based on the specified option. It supports deuteration of all hydrogens, or specific subsets
     such as water, protein, DNA, RNA, nucleic acids, or a specific ligand.
 
@@ -811,9 +811,9 @@ def deuterate_system(modeller, system, option="all", target_resname=None):
 
 
 def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
-    """Retrieves the atom indices of a specific residue in a PDB file.
+    """Retrieve the atom indices of a specific residue in a PDB file.
 
-    This function reads a PDB file, identifies the specified residue by its index
+    Reads a PDB file, identifies the specified residue by its index
     and optionally its chain ID, and returns the indices of all atoms in that residue.
 
     Parameters
@@ -887,9 +887,9 @@ def get_atoms_in_residue(pdb_file_path, residue_index, chain_id=None):
 
 
 def save_pdb_selection(input_pdb_path, atom_indices, output_pdb_path):
-    """Saves a subset of atoms from a PDB file to a new PDB file.
+    """Save a subset of atoms from a PDB file to a new PDB file.
 
-    This function reads a PDB file, selects a subset of atoms based on their indices,
+    Reads a PDB file, selects a subset of atoms based on their indices,
     and writes the selected atoms to a new PDB file. Atoms not in the specified indices
     are removed from the output.
 
@@ -2416,8 +2416,9 @@ def run_openmm_rpmd_prod(
 
 
 def _calculate_quantum_spread(integrator, atom_indices=None):
-    """Calculates the root-mean-square distance of beads from the ring polymer centroid.
-    This is a measure of quantum delocalization (quantum spread).
+    """Calculate the RMS distance of beads from the ring-polymer centroid.
+
+    This is a measure of quantum delocalisation (quantum spread).
 
     Parameters
     ----------
@@ -2519,7 +2520,7 @@ class RPMDQuantumSpreadReporter(_RPMDReporterBase):
     """
 
     def __init__(self, file, reportInterval, atom_indices, names=None):
-        """Initialize the reporter.
+        """Initialise the reporter.
 
         Parameters
         ----------
@@ -2592,7 +2593,7 @@ class RPMDBeadReporter(_RPMDReporterBase):
     """
 
     def __init__(self, file_base_name, reportInterval, num_beads, topology):
-        """Initialize the reporter.
+        """Initialise the reporter.
 
         Parameters
         ----------

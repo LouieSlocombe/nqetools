@@ -152,7 +152,7 @@ def test_calc_instanton_kappa_bead():
 
 def test_ch4hcbe_end_to_end():
     # CBE system
-    """Run CH4+H from minimisation to tunnelling-corrected rate with the analytic PES."""
+    """Run CH4+H from minimisation to corrected rate on the analytic PES."""
     print(flush=True)
 
     directory_opti = "opti"

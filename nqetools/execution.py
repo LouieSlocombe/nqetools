@@ -93,7 +93,7 @@ def working_directory(directory):
 
 
 def run_command(command):
-    """Runs a simple command using the subprocess module.
+    """Run a simple command using the subprocess module.
 
     Parameters
     ----------
@@ -112,7 +112,10 @@ def run_command(command):
 
 
 def check_driver_processes(n_processes, max_ratio=0.9, warn_only=False):
-    """Checks if the requested number of driver processes exceeds available system resources.
+    """Cap the requested driver process count at what the machine can run.
+
+    Anything above `max_ratio` of the core count is reduced, unless
+    `warn_only` is set, in which case the request is only reported.
 
     Parameters
     ----------
@@ -126,7 +129,8 @@ def check_driver_processes(n_processes, max_ratio=0.9, warn_only=False):
     Returns
     -------
     int
-        Recommended number of processes to use
+        The number of processes to start: the capped value, or `n_processes`
+        unchanged when it already fits or `warn_only` is set.
     """
 
     available_cores = multiprocessing.cpu_count()
@@ -152,7 +156,7 @@ def check_driver_processes(n_processes, max_ratio=0.9, warn_only=False):
 
 
 def run_ipi(directory, server, driver, outfile, n=1, t_sleep=5.0):
-    """Runs the i-PI server and driver processes for a simulation.
+    """Run the i-PI server and driver processes for a simulation.
 
     Parameters
     ----------
@@ -168,6 +172,12 @@ def run_ipi(directory, server, driver, outfile, n=1, t_sleep=5.0):
         Number of driver processes to start. Default is 1.
     t_sleep : float, optional
         Time to wait for the i-PI server to start. Default is 5.0 seconds.
+
+    Raises
+    ------
+    FileExistsError
+        If `outfile` is already present in `directory`, which marks the run
+        as done. Delete it to force a rerun.
     """
     # Check before changing directory, so a refused run leaves the cwd untouched
     if os.path.exists(os.path.join(directory, outfile)):
